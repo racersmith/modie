@@ -1,0 +1,1 @@
+Decision, documents must record immutable, point-in-time choices using the subtype `ADR`. Edits for clarification are allowed but chaning decisions made should be done by archiving the document, adding a "SUPERCEEDED" notice and specifying a `superceed_by: [document-id]` in the frontmatter.

@@ -1,0 +1,1 @@
+A rule assertion must be language-agnostic and falsifiable by a binary test or lint state. Rule content must not contain language-specific keywords, library identifiers, or concrete file path references, ensuring invariant validity across complete runtime rewrites.

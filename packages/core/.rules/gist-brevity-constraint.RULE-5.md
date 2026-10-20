@@ -1,0 +1,1 @@
+A `GIST.md` document must consist solely of prose with a maximum length of two terminal sentences. The core validator must fail parsing if a gist contains bulleted lists, header tags, code blocks, or references to other Canon document IDs.

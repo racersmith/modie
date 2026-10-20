@@ -1,0 +1,1 @@
+All file mutation paths declared with a `TASK` specification must resolve to paths at or strictly below the directory housing the task file. The traversal resolver must fail with an out-of-bounds error if any target path escapes this subtree.
