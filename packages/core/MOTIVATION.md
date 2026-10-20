@@ -1,2 +1,1 @@
-Define data models, filesystem traversal algorithms, and schema parsers for Canon primitive artifacts (`MOTIVATION`, `RULE`, `ADR`, `GIST`, `TASK`) independent of any specific CLI or transport protocol.
-
+Provide the foundational, protocol-agnostic governance engine and context compiler for Canon, isolating pure AST parsing, filesystem DAG traversal, and invariant verification from transport, UI, or runtime execution concerns.

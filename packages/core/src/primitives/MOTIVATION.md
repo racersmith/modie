@@ -1,1 +1,1 @@
-Define the data models, schemas, and lifecycle constraints for Canon's core primitive artifact types.
+Define the strongly-typed domain models and structural schemas that establish the distinct lifecycle and validation contracts for Canon's foundational artifact types (`MOTIVATION`, `RULE`, `ADR`, `GIST`, `TASK`).
