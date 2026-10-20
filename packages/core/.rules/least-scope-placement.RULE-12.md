@@ -1,0 +1,1 @@
+An artifact (`RULE`, `ADR`, `TASK`, `GIST`) must reside at the deepest common ancestor directory of the codebase elements it governs, influences, or modifies. Placing artifacts higher than their minimum necessary scope is prohibited to prevent token bloat and context pollution across sibling subtrees during upward compilation.

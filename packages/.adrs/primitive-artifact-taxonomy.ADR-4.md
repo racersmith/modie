@@ -2,8 +2,10 @@
 links:
   - ADR-2
   - RULE-1
+  - RULE-6
   - RULE-10
   - RULE-11
+  - RULE-12
 ---
 
 # Context
@@ -25,3 +27,12 @@ We adopt a taxonomy of five distinct core primitive artifact types:
 3. **`ADR`**: Immutable, point-in-time decision records capturing trade-offs, rationale, and supersession links.
 4. **`GIST`**: Ultra-concise implementation summaries for rapid wayfinding without full AST or file parsing.
 5. **`TASK`**: Ephemeral execution plans strictly constrained by directory blast radius and ancestral reference scopes.
+
+## Scope Minimization and Blast Radius
+
+All artifacts must adhere to the principle of least scope:
+
+- **Leaf-First Placement:** Artifacts must reside at the deepest common ancestor directory of the files they govern or mutate.
+- **Minimized Context Pollution:** Positioning artifacts at the lowest possible directory node ensures that upward traversal compiles only the minimal, relevant context needed for a target file, leaving sibling subtrees unburdened by unrelated invariants.
+- **Constrained Blast Radius:** Confining tasks and rules to localized subtrees limits architectural blast radius and prevents unintended ripple effects across unrelated modules.
+
