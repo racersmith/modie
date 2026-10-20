@@ -1,1 +1,3 @@
-Define the strongly-typed domain models and structural schemas that establish the distinct lifecycle and validation contracts for Canon's foundational artifact types (`MOTIVATION`, `RULE`, `ADR`, `GIST`, `TASK`).
+Establish strongly-typed domain models and structural schemas for Canon's foundational artifact types, treating architectural governance as formal data structures rather than unstructured documentation.
+
+Enable tools and agents to inspect, validate, and manipulate governance records with strict schema safety and lifecycle boundary guarantees.
