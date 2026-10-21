@@ -47,10 +47,10 @@ We adopt a **Hierarchical Branch & Author Namespaced Allocation Model**:
 - This guarantees that sub-tasks spawned on separate task branches can never collide with each other or with trunk tasks.
 
 ### 3. Feature Branch & Agent/Author Namespacing (`feature/*`, `agent/*`)
-- When working on arbitrary feature branches or when multiple agents work concurrently:
-  - The CLI checks for an explicit prefix flag (`--prefix <tag>`), a Git configuration key (`git config canon.prefix`), or the author's initials.
+- When working on feature branches or when multiple agents work concurrently:
+  - The CLI checks for an optional explicit prefix flag (`--prefix <tag>`) or a Git configuration key (`git config canon.prefix`).
   - Format: `TASK-<prefix><sequence>` (e.g., `TASK-J101`, `TASK-A101`).
-- If no prefix is explicitly configured, the CLI derives a short, sanitized branch token or prompts the user.
+- If no prefix is explicitly configured, the CLI falls back to the standard monotonic integer sequence (`TASK-1`, `TASK-2`...), defaulting to simplicity without prompting or synthesizing artificial branch tokens.
 
 ### 4. Global Multi-Ref Watermark Scanning
 - The watermark resolver inspects:
