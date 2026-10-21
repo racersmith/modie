@@ -34,11 +34,16 @@ Options:
 }
 
 /**
- * Handles argument parsing and execution for `canon task create`.
+ * Handles argument parsing and execution for `modie task create`.
  */
-export async function handleTaskCreate(args: string[], options: CliIoOptions = {}): Promise<number> {
-  const stdout = options.stdout ?? ((msg: string) => process.stdout.write(msg + "\n"));
-  const stderr = options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
+export async function handleTaskCreate(
+  args: string[],
+  options: CliIoOptions = {},
+): Promise<number> {
+  const stdout =
+    options.stdout ?? ((msg: string) => process.stdout.write(msg + "\n"));
+  const stderr =
+    options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
   const cwd = options.cwd ?? process.cwd();
 
   const titleWords: string[] = [];
@@ -128,7 +133,12 @@ export async function handleTaskCreate(args: string[], options: CliIoOptions = {
       if (arg === "--depend-on") {
         depends_on.push(val.trim());
       } else {
-        depends_on.push(...val.split(",").map((s) => s.trim()).filter(Boolean));
+        depends_on.push(
+          ...val
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+        );
       }
       continue;
     }
@@ -142,7 +152,12 @@ export async function handleTaskCreate(args: string[], options: CliIoOptions = {
       if (arg === "--link") {
         links.push(val.trim());
       } else {
-        links.push(...val.split(",").map((s) => s.trim()).filter(Boolean));
+        links.push(
+          ...val
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+        );
       }
       continue;
     }
@@ -161,13 +176,20 @@ export async function handleTaskCreate(args: string[], options: CliIoOptions = {
       if (arg === "-a" || arg === "--criterion") {
         acceptanceCriteria.push(val.trim());
       } else {
-        acceptanceCriteria.push(...val.split(",").map((s) => s.trim()).filter(Boolean));
+        acceptanceCriteria.push(
+          ...val
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+        );
       }
       continue;
     }
 
     if (arg.startsWith("-")) {
-      stderr(`Error: Unknown flag "${arg}". Run 'modie task create --help' for usage.`);
+      stderr(
+        `Error: Unknown flag "${arg}". Run 'modie task create --help' for usage.`,
+      );
       return 1;
     }
 
@@ -176,7 +198,9 @@ export async function handleTaskCreate(args: string[], options: CliIoOptions = {
 
   const title = titleWords.join(" ").trim();
   if (!title) {
-    stderr("Error: Missing required task title. Usage: modie task create <title> [options]");
+    stderr(
+      "Error: Missing required task title. Usage: modie task create <title> [options]",
+    );
     return 1;
   }
 
@@ -186,7 +210,8 @@ export async function handleTaskCreate(args: string[], options: CliIoOptions = {
     context,
     depends_on: depends_on.length > 0 ? depends_on : undefined,
     links: links.length > 0 ? links : undefined,
-    acceptanceCriteria: acceptanceCriteria.length > 0 ? acceptanceCriteria : undefined,
+    acceptanceCriteria:
+      acceptanceCriteria.length > 0 ? acceptanceCriteria : undefined,
     useSubtypeContainer,
     prefix,
     branch,
@@ -219,7 +244,9 @@ export async function handleTaskCreate(args: string[], options: CliIoOptions = {
         ),
       );
       // Status message strictly to stderr (RULE-27)
-      stderr(`✓ Created task TASK-${result.artifact.id} (${result.relativePath})`);
+      stderr(
+        `✓ Created task TASK-${result.artifact.id} (${result.relativePath})`,
+      );
     } else {
       // Machine-parsable path strictly to stdout (RULE-27)
       stdout(result.relativePath);

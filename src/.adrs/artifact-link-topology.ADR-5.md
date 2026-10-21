@@ -15,7 +15,7 @@ links:
 
 # Context
 
-As artifacts reference one another across the codebase to establish traceability (e.g. which rules enforce an ADR, or which decisions a task satisfies), unrestricted cross-linking threatens the integrity of Canon's tree-as-DAG model. If documents can link to arbitrary sibling directories or across incompatible lifecycle boundaries, upward compilation suffers from context graph explosion, and permanent documentation suffers from link rot caused by ephemeral references.
+As artifacts reference one another across the codebase to establish traceability (e.g. which rules enforce an ADR, or which decisions a task satisfies), unrestricted cross-linking threatens the integrity of Modie's tree-as-DAG model. If documents can link to arbitrary sibling directories or across incompatible lifecycle boundaries, upward compilation suffers from context graph explosion, and permanent documentation suffers from link rot caused by ephemeral references.
 
 # Alternatives Considered
 

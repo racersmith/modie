@@ -25,11 +25,16 @@ Options:
 }
 
 /**
- * Handles argument parsing and execution for `canon task complete`.
+ * Handles argument parsing and execution for `modie task complete`.
  */
-export async function handleTaskComplete(args: string[], options: CliIoOptions = {}): Promise<number> {
-  const stdout = options.stdout ?? ((msg: string) => process.stdout.write(msg + "\n"));
-  const stderr = options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
+export async function handleTaskComplete(
+  args: string[],
+  options: CliIoOptions = {},
+): Promise<number> {
+  const stdout =
+    options.stdout ?? ((msg: string) => process.stdout.write(msg + "\n"));
+  const stderr =
+    options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
   const cwd = options.cwd ?? process.cwd();
 
   let taskIdentifier: string | undefined;
@@ -61,7 +66,9 @@ export async function handleTaskComplete(args: string[], options: CliIoOptions =
     }
 
     if (arg.startsWith("-")) {
-      stderr(`Error: Unknown flag "${arg}". Run 'modie task complete --help' for usage.`);
+      stderr(
+        `Error: Unknown flag "${arg}". Run 'modie task complete --help' for usage.`,
+      );
       return 1;
     }
 
@@ -74,7 +81,9 @@ export async function handleTaskComplete(args: string[], options: CliIoOptions =
   }
 
   if (!taskIdentifier) {
-    stderr("Error: Missing required task identifier. Usage: modie task complete <id-or-path> [options]");
+    stderr(
+      "Error: Missing required task identifier. Usage: modie task complete <id-or-path> [options]",
+    );
     return 1;
   }
 
@@ -94,7 +103,9 @@ export async function handleTaskComplete(args: string[], options: CliIoOptions =
     const deletionNotice = result.deleted
       ? " (artifact deleted per RULE-21)"
       : " (artifact retained)";
-    stderr(`✓ Completed task TASK-${result.taskId}: ${result.filename}${deletionNotice}`);
+    stderr(
+      `✓ Completed task TASK-${result.taskId}: ${result.filename}${deletionNotice}`,
+    );
 
     return 0;
   } catch (error: unknown) {

@@ -24,11 +24,16 @@ Options:
 }
 
 /**
- * Handles argument parsing and execution for `canon task check`.
+ * Handles argument parsing and execution for `modie task check`.
  */
-export async function handleTaskCheck(args: string[], options: CliIoOptions = {}): Promise<number> {
-  const stdout = options.stdout ?? ((msg: string) => process.stdout.write(msg + "\n"));
-  const stderr = options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
+export async function handleTaskCheck(
+  args: string[],
+  options: CliIoOptions = {},
+): Promise<number> {
+  const stdout =
+    options.stdout ?? ((msg: string) => process.stdout.write(msg + "\n"));
+  const stderr =
+    options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
   const cwd = options.cwd ?? process.cwd();
 
   let taskIdentifier: string | undefined;
@@ -52,7 +57,9 @@ export async function handleTaskCheck(args: string[], options: CliIoOptions = {}
       }
       const parsed = parseInt(val, 10);
       if (isNaN(parsed) || parsed < 1) {
-        stderr(`Error: Invalid item index "${val}". Must be a positive integer (1-based index).`);
+        stderr(
+          `Error: Invalid item index "${val}". Must be a positive integer (1-based index).`,
+        );
         return 1;
       }
       itemIndex = parsed;
@@ -70,7 +77,9 @@ export async function handleTaskCheck(args: string[], options: CliIoOptions = {}
     }
 
     if (arg.startsWith("-")) {
-      stderr(`Error: Unknown flag "${arg}". Run 'modie task check --help' for usage.`);
+      stderr(
+        `Error: Unknown flag "${arg}". Run 'modie task check --help' for usage.`,
+      );
       return 1;
     }
 
@@ -83,12 +92,16 @@ export async function handleTaskCheck(args: string[], options: CliIoOptions = {}
   }
 
   if (!taskIdentifier) {
-    stderr("Error: Missing required task identifier. Usage: modie task check <id-or-path> --item <index>");
+    stderr(
+      "Error: Missing required task identifier. Usage: modie task check <id-or-path> --item <index>",
+    );
     return 1;
   }
 
   if (itemIndex === undefined) {
-    stderr("Error: Missing required --item flag. Usage: modie task check <id-or-path> --item <index>");
+    stderr(
+      "Error: Missing required --item flag. Usage: modie task check <id-or-path> --item <index>",
+    );
     return 1;
   }
 
@@ -111,7 +124,9 @@ export async function handleTaskCheck(args: string[], options: CliIoOptions = {}
     );
 
     if (result.allCompleted) {
-      stderr(`✓ All acceptance criteria for TASK-${result.taskId} are satisfied!`);
+      stderr(
+        `✓ All acceptance criteria for TASK-${result.taskId} are satisfied!`,
+      );
     }
 
     return 0;

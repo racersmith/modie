@@ -2,14 +2,12 @@
   "name": "modie",
   "module": "./src/index.ts",
   "bin": {
-    "modie": "./src/interfaces/cli/bin.ts",
-    "canon": "./src/interfaces/cli/bin.ts"
+    "modie": "./src/interfaces/cli/bin.ts"
   },
   "type": "module",
   "private": true,
   "scripts": {
     "modie": "PATH=\"$HOME/.bun/bin:$PATH\" bun --silent ./src/interfaces/cli/bin.ts",
-    "canon": "PATH=\"$HOME/.bun/bin:$PATH\" bun --silent ./src/interfaces/cli/bin.ts",
     "typecheck": "bun check",
     "test": "bun test"
   },
@@ -17,6 +15,6 @@
     "@types/bun": "latest"
   },
   "peerDependencies": {
-    "typescript": "^7"
+    "typescript": "^7.0.2"
   }
 }

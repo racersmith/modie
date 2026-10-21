@@ -6,7 +6,7 @@ links:
   - ADR-9
 ---
 
-All indexable Canon artifact filenames must conform to the tokenized grammar:
+All indexable Modie artifact filenames must conform to the tokenized grammar:
 `[slug].[SUBTYPE]-[ID](.ARCHIVED)?.md`
 
 Where:

@@ -1,5 +1,5 @@
 /**
- * Integration and unit tests for the Canon CLI.
+ * Integration and unit tests for the Modie CLI.
  * Tagged per ADR-7 and RULE-23 for universal rule verification.
  */
 
@@ -17,7 +17,10 @@ const execFileAsync = promisify(execFile);
 /**
  * Helper to capture stdout, stderr, and exitCode from in-process CLI execution.
  */
-async function captureCli(args: string[], cwd: string = process.cwd()): Promise<{
+async function captureCli(
+  args: string[],
+  cwd: string = process.cwd(),
+): Promise<{
   exitCode: number;
   stdout: string;
   stderr: string;
@@ -257,7 +260,7 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support", () => {
 describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE-27)", () => {
   // @verifies RULE-22, RULE-25, RULE-27
   it("[RULE-22][RULE-25][RULE-27] should check off an item, emit file path to stdout and status to stderr", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "canon-cli-check-"));
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-check-"));
     const taskPath = join(tempDir, "cli-check-test.TASK-200.md");
     await writeFile(
       taskPath,
@@ -300,7 +303,7 @@ Test task for CLI check.
 
   // @verifies RULE-22, RULE-27
   it("[RULE-22][RULE-27] should emit machine JSON to stdout when --json is passed", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "canon-cli-check-json-"));
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-check-json-"));
     const taskPath = join(tempDir, "cli-json.TASK-201.md");
     await writeFile(
       taskPath,
@@ -332,14 +335,16 @@ JSON check test.
     expect(parsed.allCompleted).toBe(true);
 
     expect(stderr).toContain("✓ Checked item 1");
-    expect(stderr).toContain("✓ All acceptance criteria for TASK-201 are satisfied!");
+    expect(stderr).toContain(
+      "✓ All acceptance criteria for TASK-201 are satisfied!",
+    );
 
     await rm(tempDir, { recursive: true, force: true });
   });
 
   // @verifies RULE-22, RULE-27
   it("[RULE-22][RULE-27] should support unchecking an item with -u / --uncheck", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "canon-cli-uncheck-"));
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-uncheck-"));
     const taskPath = join(tempDir, "cli-uncheck.TASK-202.md");
     await writeFile(
       taskPath,
@@ -374,7 +379,11 @@ Uncheck test.
 
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr when --item flag is missing", async () => {
-    const { exitCode, stdout, stderr } = await captureCli(["task", "check", "TASK-7-2"]);
+    const { exitCode, stdout, stderr } = await captureCli([
+      "task",
+      "check",
+      "TASK-7-2",
+    ]);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("Error: Missing required --item flag");
@@ -382,7 +391,12 @@ Uncheck test.
 
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr when task identifier is missing", async () => {
-    const { exitCode, stdout, stderr } = await captureCli(["task", "check", "--item", "1"]);
+    const { exitCode, stdout, stderr } = await captureCli([
+      "task",
+      "check",
+      "--item",
+      "1",
+    ]);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("Error: Missing required task identifier");
@@ -392,7 +406,7 @@ Uncheck test.
 describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, RULE-25, RULE-27)", () => {
   // @verifies RULE-21, RULE-22, RULE-27
   it("[RULE-21][RULE-22][RULE-27] should reject completion with error to stderr when criteria are incomplete", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "canon-cli-complete-err-"));
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-complete-err-"));
     const taskPath = join(tempDir, "incomplete-task.TASK-300.md");
     await writeFile(
       taskPath,
@@ -421,7 +435,9 @@ Incomplete task.
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
-    expect(stderr).toContain("Error: Cannot complete task 300: 1 acceptance criteria remain unchecked");
+    expect(stderr).toContain(
+      "Error: Cannot complete task 300: 1 acceptance criteria remain unchecked",
+    );
 
     // File must NOT be deleted
     const content = await readFile(taskPath, "utf8");
@@ -432,7 +448,7 @@ Incomplete task.
 
   // @verifies RULE-21, RULE-22, RULE-25, RULE-27
   it("[RULE-21][RULE-22][RULE-25][RULE-27] should complete task and delete file when all criteria are satisfied", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "canon-cli-complete-ok-"));
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-complete-ok-"));
     const taskPath = join(tempDir, "complete-task.TASK-301.md");
     await writeFile(
       taskPath,
@@ -463,7 +479,9 @@ Satisfied task.
     // Machine payload to stdout
     expect(stdout.trim()).toBe(taskPath);
     // Human status to stderr
-    expect(stderr).toContain("✓ Completed task TASK-301: complete-task.TASK-301.md (artifact deleted per RULE-21)");
+    expect(stderr).toContain(
+      "✓ Completed task TASK-301: complete-task.TASK-301.md (artifact deleted per RULE-21)",
+    );
 
     // File MUST be deleted per RULE-21
     await expect(readFile(taskPath, "utf8")).rejects.toThrow();
@@ -473,7 +491,7 @@ Satisfied task.
 
   // @verifies RULE-21, RULE-27
   it("[RULE-21][RULE-27] should support --force to bypass incomplete criteria", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "canon-cli-force-"));
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-force-"));
     const taskPath = join(tempDir, "force-task.TASK-302.md");
     await writeFile(
       taskPath,
@@ -506,7 +524,7 @@ Forced task.
 
   // @verifies RULE-21, RULE-27
   it("[RULE-21][RULE-27] should support --keep-file to retain artifact on disk", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "canon-cli-keep-"));
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-keep-"));
     const taskPath = join(tempDir, "keep-task.TASK-303.md");
     await writeFile(
       taskPath,
@@ -541,7 +559,7 @@ Retain test.
 
   // @verifies RULE-27
   it("[RULE-27] should emit machine JSON to stdout when --json is passed", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "canon-cli-complete-json-"));
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-complete-json-"));
     const taskPath = join(tempDir, "json-complete.TASK-304.md");
     await writeFile(
       taskPath,
@@ -636,7 +654,12 @@ describe("CLI Executable Subprocess - End-to-End via bin.ts", () => {
 
     // 3. Attempt to complete (should fail because item 2 is incomplete)
     try {
-      await execFileAsync(process.execPath, [binPath, "task", "complete", taskPath]);
+      await execFileAsync(process.execPath, [
+        binPath,
+        "task",
+        "complete",
+        taskPath,
+      ]);
       expect(true).toBe(false); // should not reach here
     } catch (err: any) {
       expect(err.stderr).toContain("1 acceptance criteria remain unchecked");

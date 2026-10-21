@@ -1,1 +1,1 @@
-A `MOTIVE.md` document must not contain links, citations, or references to any other Canon document IDs. The AST parser and linter must reject motivation documents containing cross-document references.
+A `MOTIVE.md` document must not contain links, citations, or references to any other Modie document IDs. The AST parser and linter must reject motivation documents containing cross-document references.

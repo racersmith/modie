@@ -1,5 +1,5 @@
 /**
- * Kebab-case slug generator and validator for Canon artifacts (RULE-1).
+ * Kebab-case slug generator and validator for Modie artifacts (RULE-1).
  */
 
 const KEBAB_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -31,7 +31,9 @@ export function generateSlug(input: string): string {
     .replace(/^-+|-+$/g, "");
 
   if (!normalized) {
-    throw new Error(`Cannot generate valid slug from empty or non-alphanumeric input: "${input}"`);
+    throw new Error(
+      `Cannot generate valid slug from empty or non-alphanumeric input: "${input}"`,
+    );
   }
 
   return normalized;

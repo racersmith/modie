@@ -6,7 +6,7 @@ links:
 
 # Context
 
-We need tooling (and standard Unix shells/globbers) to rapidly locate, filter, and state-check Canon artifacts without opening file bodies or parsing ASTs.
+We need tooling (and standard Unix shells/globbers) to rapidly locate, filter, and state-check Modie artifacts without opening file bodies or parsing ASTs.
 
 # Alternatives Considered
 

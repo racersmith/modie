@@ -50,10 +50,14 @@ Resolve test fixture
     const fileByRawId = await resolveTaskFile("42", { cwd: fixtureDir });
     expect(fileByRawId).toBe(taskPath);
 
-    const fileBySlug = await resolveTaskFile("sample-feature", { cwd: fixtureDir });
+    const fileBySlug = await resolveTaskFile("sample-feature", {
+      cwd: fixtureDir,
+    });
     expect(fileBySlug).toBe(taskPath);
 
-    const fileByDirectPath = await resolveTaskFile(taskPath, { cwd: fixtureDir });
+    const fileByDirectPath = await resolveTaskFile(taskPath, {
+      cwd: fixtureDir,
+    });
     expect(fileByDirectPath).toBe(taskPath);
 
     await rm(fixtureDir, { recursive: true, force: true });
@@ -61,9 +65,9 @@ Resolve test fixture
 
   it("should throw a descriptive error when task does not exist", async () => {
     const fixtureDir = await mkdtemp(join(tmpdir(), "modie-empty-test-"));
-    await expect(resolveTaskFile("TASK-99999", { cwd: fixtureDir })).rejects.toThrow(
-      /was not found among active tasks on disk/,
-    );
+    await expect(
+      resolveTaskFile("TASK-99999", { cwd: fixtureDir }),
+    ).rejects.toThrow(/was not found among active tasks on disk/);
     await rm(fixtureDir, { recursive: true, force: true });
   });
 });
@@ -73,7 +77,7 @@ describe("Task Checklist Progression - checkTaskItem (RULE-22, RULE-25)", () => 
   let testTaskPath: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "canon-checklist-test-"));
+    tempDir = await mkdtemp(join(tmpdir(), "modie-checklist-test-"));
     testTaskPath = join(tempDir, "sample-feature.TASK-99.md");
 
     const initialContent = `---
@@ -102,7 +106,10 @@ Test task for checklist progression.
 
   // @verifies RULE-22, RULE-25
   it("[RULE-22][RULE-25] should check off an item and update file on disk", async () => {
-    const result = await checkTaskItem(testTaskPath, 1, { completed: true, cwd: tempDir });
+    const result = await checkTaskItem(testTaskPath, 1, {
+      completed: true,
+      cwd: tempDir,
+    });
 
     expect(result.itemIndex).toBe(1);
     expect(result.itemText).toBe("First deliverable item");
@@ -125,7 +132,10 @@ Test task for checklist progression.
     expect(diskContent).toContain("- [x] Second deliverable item");
 
     // Uncheck item 2
-    const result = await checkTaskItem(testTaskPath, 2, { completed: false, cwd: tempDir });
+    const result = await checkTaskItem(testTaskPath, 2, {
+      completed: false,
+      cwd: tempDir,
+    });
     expect(result.completed).toBe(false);
     expect(result.completedCount).toBe(0);
 
@@ -137,7 +147,10 @@ Test task for checklist progression.
   it("[RULE-22] should report allCompleted: true when all items are checked", async () => {
     await checkTaskItem(testTaskPath, 1, { completed: true, cwd: tempDir });
     await checkTaskItem(testTaskPath, 2, { completed: true, cwd: tempDir });
-    const result = await checkTaskItem(testTaskPath, 3, { completed: true, cwd: tempDir });
+    const result = await checkTaskItem(testTaskPath, 3, {
+      completed: true,
+      cwd: tempDir,
+    });
 
     expect(result.completedCount).toBe(3);
     expect(result.totalItems).toBe(3);
@@ -155,22 +168,26 @@ Test task for checklist progression.
     expect(content).toContain("depends_on: []");
     expect(content).toContain("- ADR-6");
     expect(content).toContain("- RULE-22");
-    expect(content).toContain("# Context\n\nTest task for checklist progression.");
+    expect(content).toContain(
+      "# Context\n\nTest task for checklist progression.",
+    );
   });
 
   it("should throw an error for invalid item indices", async () => {
     // 0 is invalid (1-based index)
-    await expect(checkTaskItem(testTaskPath, 0, { cwd: tempDir })).rejects.toThrow(
-      /Item index must be a positive integer/,
-    );
+    await expect(
+      checkTaskItem(testTaskPath, 0, { cwd: tempDir }),
+    ).rejects.toThrow(/Item index must be a positive integer/);
 
     // Negative index is invalid
-    await expect(checkTaskItem(testTaskPath, -1, { cwd: tempDir })).rejects.toThrow(
-      /Item index must be a positive integer/,
-    );
+    await expect(
+      checkTaskItem(testTaskPath, -1, { cwd: tempDir }),
+    ).rejects.toThrow(/Item index must be a positive integer/);
 
     // Out of bounds index
-    await expect(checkTaskItem(testTaskPath, 10, { cwd: tempDir })).rejects.toThrow(
+    await expect(
+      checkTaskItem(testTaskPath, 10, { cwd: tempDir }),
+    ).rejects.toThrow(
       /Invalid item index 10\. Task TASK-99 has 3 acceptance criteria item\(s\)\./,
     );
   });
@@ -181,7 +198,7 @@ describe("Task Lifecycle Completion - completeTask (ADR-6, RULE-21, RULE-22)", (
   let testTaskPath: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "canon-complete-test-"));
+    tempDir = await mkdtemp(join(tmpdir(), "modie-complete-test-"));
     testTaskPath = join(tempDir, "ephemeral-lifecycle.TASK-100.md");
 
     const content = `---
@@ -240,7 +257,10 @@ Demonstrating ephemeral task completion lifecycle.
 
   // @verifies RULE-21, RULE-22
   it("[RULE-21][RULE-22] should allow force completion of incomplete tasks if force: true", async () => {
-    const result = await completeTask(testTaskPath, { force: true, cwd: tempDir });
+    const result = await completeTask(testTaskPath, {
+      force: true,
+      cwd: tempDir,
+    });
 
     expect(result.deleted).toBe(true);
     expect(result.criteriaCompleted).toBe(0);
@@ -255,7 +275,10 @@ Demonstrating ephemeral task completion lifecycle.
     await checkTaskItem(testTaskPath, 1, { completed: true, cwd: tempDir });
     await checkTaskItem(testTaskPath, 2, { completed: true, cwd: tempDir });
 
-    const result = await completeTask(testTaskPath, { deleteArtifact: false, cwd: tempDir });
+    const result = await completeTask(testTaskPath, {
+      deleteArtifact: false,
+      cwd: tempDir,
+    });
 
     expect(result.deleted).toBe(false);
 
@@ -282,8 +305,8 @@ Empty criteria task.
       "utf8",
     );
 
-    await expect(completeTask(emptyCriteriaTaskPath, { cwd: tempDir })).rejects.toThrow(
-      /Task declares no acceptance criteria checklist items/,
-    );
+    await expect(
+      completeTask(emptyCriteriaTaskPath, { cwd: tempDir }),
+    ).rejects.toThrow(/Task declares no acceptance criteria checklist items/);
   });
 });

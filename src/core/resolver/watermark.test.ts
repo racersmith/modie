@@ -21,7 +21,7 @@ import {
 describe("Watermark Resolver - Active Task Scanner", () => {
   // @verifies RULE-1, ADR-6
   it("[RULE-1][ADR-6] should recursively scan and detect active task files on disk", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "canon-active-scan-"));
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-active-scan-"));
 
     try {
       // Create nested directory structure including .tasks/
@@ -58,7 +58,7 @@ describe("Watermark Resolver - Active Task Scanner", () => {
 
   // @verifies ADR-6
   it("[ADR-6] should return empty array when no active tasks exist on disk", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "canon-empty-scan-"));
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-empty-scan-"));
     try {
       const taskIds = await scanActiveTaskIds(tempDir);
       expect(taskIds).toEqual([]);
@@ -71,7 +71,9 @@ describe("Watermark Resolver - Active Task Scanner", () => {
 describe("Watermark Resolver - Git History & Branch Detection", () => {
   // @verifies ADR-9
   it("[ADR-9] should parse parent task ID and slug from task branches", () => {
-    expect(parseTaskBranch("task/2-task-id-allocation-and-rule-alignment")).toEqual({
+    expect(
+      parseTaskBranch("task/2-task-id-allocation-and-rule-alignment"),
+    ).toEqual({
       parentId: "2",
       slug: "task-id-allocation-and-rule-alignment",
     });
@@ -295,9 +297,9 @@ describe("Watermark Resolver - Author / Agent Prefix Namespacing (ADR-9)", () =>
   });
 });
 
-describe("Watermark Resolver - Live Integration on Canon Repository", () => {
+describe("Watermark Resolver - Live Integration on Modie Repository", () => {
   // @verifies ADR-6, ADR-9, RULE-21
-  it("[ADR-6][ADR-9][RULE-21] should resolve live watermark on canon repository", async () => {
+  it("[ADR-6][ADR-9][RULE-21] should resolve live watermark on modie repository", async () => {
     const liveDetails = await resolveWatermark();
     expect(liveDetails.activeIds.length).toBeGreaterThanOrEqual(0);
     expect(liveDetails.deletedIds).toContain("2");

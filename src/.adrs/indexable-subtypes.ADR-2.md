@@ -6,7 +6,7 @@ links:
 
 # Context
 
-Not all of the files in canon need to have indexable file types. Whenever possible artifacts should not require the friction of indexable names to improve the developer experience. However, there are areas where the benefits of artifact reference far outweight the overhead.
+Not all of the files in modie need to have indexable file types. Whenever possible artifacts should not require the friction of indexable names to improve the developer experience. However, there are areas where the benefits of artifact reference far outweight the overhead.
 
 # Alternatives Considered
 

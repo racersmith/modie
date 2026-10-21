@@ -13,7 +13,10 @@ const execFileAsync = promisify(execFile);
 /**
  * Safely executes a git command, returning stdout trimmed or null on error.
  */
-export async function runGit(args: string[], cwd: string = process.cwd()): Promise<string | null> {
+export async function runGit(
+  args: string[],
+  cwd: string = process.cwd(),
+): Promise<string | null> {
   try {
     const { stdout } = await execFileAsync("git", args, {
       cwd,
@@ -30,7 +33,9 @@ export async function runGit(args: string[], cwd: string = process.cwd()): Promi
  * Detects the current git branch name.
  * Returns null if not in a git repo or in detached HEAD without branch metadata.
  */
-export async function detectGitBranch(cwd: string = process.cwd()): Promise<string | null> {
+export async function detectGitBranch(
+  cwd: string = process.cwd(),
+): Promise<string | null> {
   const branch = await runGit(["rev-parse", "--abbrev-ref", "HEAD"], cwd);
   if (branch && branch !== "HEAD") {
     return branch;
@@ -54,32 +59,51 @@ export async function detectGitBranch(cwd: string = process.cwd()): Promise<stri
 }
 
 /**
- * Retrieves the optional git config `modie.prefix` (or `canon.prefix`) if set.
+ * Retrieves the optional git config `modie.prefix` (or `modie.prefix`) if set.
  */
-export async function getGitConfigPrefix(cwd: string = process.cwd()): Promise<string | null> {
+export async function getGitConfigPrefix(
+  cwd: string = process.cwd(),
+): Promise<string | null> {
   const modiePrefix = await runGit(["config", "modie.prefix"], cwd);
   if (modiePrefix && modiePrefix.length > 0) {
     return modiePrefix;
   }
-  const canonPrefix = await runGit(["config", "canon.prefix"], cwd);
-  return canonPrefix && canonPrefix.length > 0 ? canonPrefix : null;
+  const modiePrefix = await runGit(["config", "modie.prefix"], cwd);
+  return modiePrefix && modiePrefix.length > 0 ? modiePrefix : null;
 }
 
 /**
  * Queries git commit history for deleted task files across reachable branches:
  * `git log --all --diff-filter=D --format= --name-only -- *.TASK-*.md`
  */
-export async function inspectGitDeletedTasks(cwd: string = process.cwd()): Promise<DiscoveredTask[]> {
+export async function inspectGitDeletedTasks(
+  cwd: string = process.cwd(),
+): Promise<DiscoveredTask[]> {
   // First attempt multi-ref global search
   let output = await runGit(
-    ["log", "--all", "--diff-filter=D", "--format=", "--name-only", "--", "*.TASK-*.md"],
+    [
+      "log",
+      "--all",
+      "--diff-filter=D",
+      "--format=",
+      "--name-only",
+      "--",
+      "*.TASK-*.md",
+    ],
     cwd,
   );
 
   // If --all fails (e.g. shallow clone or fresh branch with no reflogs), fall back to HEAD log
   if (output === null) {
     output = await runGit(
-      ["log", "--diff-filter=D", "--format=", "--name-only", "--", "*.TASK-*.md"],
+      [
+        "log",
+        "--diff-filter=D",
+        "--format=",
+        "--name-only",
+        "--",
+        "*.TASK-*.md",
+      ],
       cwd,
     );
   }
@@ -118,7 +142,9 @@ export async function inspectGitDeletedTasks(cwd: string = process.cwd()): Promi
 /**
  * Returns a deduplicated list of task IDs that were deleted in git history.
  */
-export async function inspectGitDeletedTaskIds(cwd: string = process.cwd()): Promise<string[]> {
+export async function inspectGitDeletedTaskIds(
+  cwd: string = process.cwd(),
+): Promise<string[]> {
   const tasks = await inspectGitDeletedTasks(cwd);
   return Array.from(new Set(tasks.map((t) => t.id)));
 }

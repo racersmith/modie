@@ -13,7 +13,8 @@ export const TASK_ID_REGEX = /^[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*$/;
 /**
  * Complete task filename regex matching: [slug].TASK-[ID].md
  */
-export const TASK_FILENAME_REGEX = /^([a-z0-9]+(?:-[a-z0-9]+)*)\.TASK-([A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*)\.md$/;
+export const TASK_FILENAME_REGEX =
+  /^([a-z0-9]+(?:-[a-z0-9]+)*)\.TASK-([A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*)\.md$/;
 
 export interface ParsedTaskFilename {
   slug: string;
@@ -22,7 +23,7 @@ export interface ParsedTaskFilename {
 }
 
 /**
- * Validates whether an ID token conforms to Canon's unpadded / branch-namespaced grammar.
+ * Validates whether an ID token conforms to Modie's unpadded / branch-namespaced grammar.
  */
 export function isValidTaskId(id: string | number): boolean {
   const strId = String(id).trim();
@@ -38,11 +39,15 @@ export function formatTaskFilename(slug: string, id: string | number): string {
   const strId = String(id).trim();
 
   if (!isValidSlug(slug)) {
-    throw new Error(`Invalid slug for task filename: "${slug}". Must be strict kebab-case (RULE-1).`);
+    throw new Error(
+      `Invalid slug for task filename: "${slug}". Must be strict kebab-case (RULE-1).`,
+    );
   }
 
   if (!isValidTaskId(strId)) {
-    throw new Error(`Invalid task ID: "${id}". Must be unpadded integer or branch-namespaced token (RULE-1, ADR-9).`);
+    throw new Error(
+      `Invalid task ID: "${id}". Must be unpadded integer or branch-namespaced token (RULE-1, ADR-9).`,
+    );
   }
 
   return `${slug}.TASK-${strId}.md`;
@@ -52,7 +57,9 @@ export function formatTaskFilename(slug: string, id: string | number): string {
  * Parses a task filename (or full filepath) into its slug and ID.
  * Returns null if the filename does not match the TASK artifact grammar.
  */
-export function parseTaskFilename(pathOrFilename: string): ParsedTaskFilename | null {
+export function parseTaskFilename(
+  pathOrFilename: string,
+): ParsedTaskFilename | null {
   const filename = pathOrFilename.split("/").pop() ?? pathOrFilename;
   const match = filename.match(TASK_FILENAME_REGEX);
 

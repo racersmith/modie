@@ -12,7 +12,7 @@ In multi-package repositories and monorepos, code in one package inevitably depe
 
 Attempting to eagerly resolve and import cross-package dependencies into the agent's initial prompt creates severe architectural hazards:
 
-1. **Tight Build-Tool Coupling:** Requires Canon to parse package manifests (`package.json`, `Cargo.toml`, `go.mod`, etc.), opening a maintenance nightmare across diverse ecosystems.
+1. **Tight Build-Tool Coupling:** Requires Modie to parse package manifests (`package.json`, `Cargo.toml`, `go.mod`, etc.), opening a maintenance nightmare across diverse ecosystems.
 2. **Context Flooding:** Dumps thousands of tokens of external package documentation into the agent's initial context window before the agent even determines whether it needs them.
 3. **Stale Configuration Risks:** Discrepancies between manifests and real code cause invalid context injections.
 
@@ -30,12 +30,12 @@ We adopt the **Signpost Model with Progressive On-Demand Disclosure**:
 
 1. **Lean Initial Context:**
    - The initial context compiler gathers only the target path's upward ancestry (`MOTIVE.md` and active `RULE`s).
-   - Along with the ancestral vector, Canon appends high-level **Signposts**—the immediate sibling folders and their 2-sentence `GIST.md` files.
+   - Along with the ancestral vector, Modie appends high-level **Signposts**—the immediate sibling folders and their 2-sentence `GIST.md` files.
 
 2. **Interactive On-Demand Drill-Down:**
    - When an AI agent or engineer determines that an external package or subsystem is needed, it calls an interactive inspection tool:
-     `canon_inspect_territory({ path: "src/core", depth: 2 })`
-   - Canon returns a compact structural tree of the requested territory containing exclusively its `MOTIVE.md` and `GIST.md` signposts.
+     `modie_inspect_territory({ path: "src/core", depth: 2 })`
+   - Modie returns a compact structural tree of the requested territory containing exclusively its `MOTIVE.md` and `GIST.md` signposts.
    - Raw source code is never dumped during signpost exploration.
 
 3. **Active Agent Navigation:**

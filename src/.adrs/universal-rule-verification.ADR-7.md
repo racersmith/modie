@@ -28,9 +28,9 @@ We adopt a **Universal Regex-Based Verification Scanner** supporting both commen
    - **Idiomatic Test Function Names:** `fn test_rule_xx_behavior()` or `def test_rule_xx():`
 
 2. **Universal Multi-Language Scanner:**
-   - The Canon linter uses a fast pattern matcher scanning for `\bRULE-\d+\b` within test directories and implementation files.
+   - The Modie linter uses a fast pattern matcher scanning for `\bRULE-\d+\b` within test directories and implementation files.
    - Requires zero language-specific plugins or runtime AST integration.
 
 3. **Verification Gap Reporting:**
-   - `canon lint --rules` matches all active `RULE` documents against code and test occurrences.
+   - `modie lint --rules` matches all active `RULE` documents against code and test occurrences.
    - Any rule lacking at least one matching `@verifies` tag or `[RULE-XX]` test header is reported as an actionable **Rule Verification Gap**.

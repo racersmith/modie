@@ -10,7 +10,6 @@ import { handleTaskCreate } from "./task-create.ts";
 import type { CliIoOptions } from "./types.ts";
 
 export const MODIE_VERSION = "0.1.0";
-export const CANON_VERSION = MODIE_VERSION;
 
 /**
  * Prints global Modie CLI usage to stderr.
@@ -37,11 +36,21 @@ Options:
 /**
  * Main CLI entrypoint router.
  */
-export async function runCli(args: string[], options: CliIoOptions = {}): Promise<number> {
-  const stdout = options.stdout ?? ((msg: string) => process.stdout.write(msg + "\n"));
-  const stderr = options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
+export async function runCli(
+  args: string[],
+  options: CliIoOptions = {},
+): Promise<number> {
+  const stdout =
+    options.stdout ?? ((msg: string) => process.stdout.write(msg + "\n"));
+  const stderr =
+    options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
 
-  if (args.length === 0 || args[0] === "-h" || args[0] === "--help" || args[0] === "help") {
+  if (
+    args.length === 0 ||
+    args[0] === "-h" ||
+    args[0] === "--help" ||
+    args[0] === "help"
+  ) {
     printGlobalHelp(stderr);
     return 0;
   }
@@ -54,7 +63,12 @@ export async function runCli(args: string[], options: CliIoOptions = {}): Promis
   const [command, ...subArgs] = args;
 
   if (command === "task") {
-    if (subArgs.length === 0 || subArgs[0] === "-h" || subArgs[0] === "--help" || subArgs[0] === "help") {
+    if (
+      subArgs.length === 0 ||
+      subArgs[0] === "-h" ||
+      subArgs[0] === "--help" ||
+      subArgs[0] === "help"
+    ) {
       stderr(`Usage: modie task <subcommand> [options]
 
 Subcommands:
@@ -79,10 +93,14 @@ Subcommands:
       return handleTaskComplete(taskArgs, options);
     }
 
-    stderr(`Error: Unknown task subcommand "${subcommand}". Available: create, check, complete`);
+    stderr(
+      `Error: Unknown task subcommand "${subcommand}". Available: create, check, complete`,
+    );
     return 1;
   }
 
-  stderr(`Error: Unknown command "${command}". Run 'modie --help' for available commands.`);
+  stderr(
+    `Error: Unknown command "${command}". Run 'modie --help' for available commands.`,
+  );
   return 1;
 }
