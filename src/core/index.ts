@@ -19,3 +19,19 @@ export type {
   CreateTaskOptions,
   CreateTaskResult,
 } from "./task-creation.ts";
+
+export {
+  checkTaskItem,
+  completeTask,
+  getTask,
+  normalizeTaskId,
+  resolveTaskFile,
+} from "./task-completion.ts";
+export type {
+  CheckTaskItemOptions,
+  CheckTaskItemResult,
+  CompleteTaskOptions,
+  CompleteTaskResult,
+  ResolveTaskOptions,
+} from "./task-completion.ts";
+

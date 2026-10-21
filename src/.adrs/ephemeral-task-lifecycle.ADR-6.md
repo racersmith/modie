@@ -81,7 +81,9 @@ We adopt the **Git-Backed Ephemeral Task Lifecycle** with **Monotonic Unscoped I
    - Optional developer or agent prefixes (e.g., `TASK-J101`, `TASK-A102`) may be utilized to prevent concurrent branch ID collisions.
 
 2. **Completion Signified by Deletion:**
-   - When a task's implementation is verified and committed, the task's markdown file is deleted from the working tree in that commit.
+   - When a task's implementation is verified, all acceptance criteria checklist items must be marked complete (`[x]`) and committed to Git (`feat: ... (satisfy TASK-XXXX)`).
+   - Once the completed state is committed, the task's markdown file is deleted from the working tree in a lifecycle chore commit (`chore(task): delete completed TASK-XXXX artifact per RULE-21`).
+   - This two-phase audit lifecycle ensures Git history permanently records verifiable completion before deletion, preventing completed tasks from appearing identical to abandoned tasks in diff logs.
    - Completed task files are never retained on disk (no `.ARCHIVED.` suffixes or `.done/` subdirectories), keeping the codebase pristine and eliminating context pollution for AI agents.
    - Git commit history serves as the immutable, permanent completion ledger (`git log --diff-filter=D -- "*.TASK-*.md"`).
 

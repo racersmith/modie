@@ -7,7 +7,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "canon": "bun ./src/interfaces/cli/bin.ts",
+    "canon": "bun --silent ./src/interfaces/cli/bin.ts",
     "typecheck": "bun check",
     "test": "bun test"
   },

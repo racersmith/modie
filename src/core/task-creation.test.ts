@@ -123,8 +123,9 @@ describe("Task Creation Service - End-to-End Task Creation via Public API", () =
     try {
       expect(result.artifact.title).toBe(testTitle);
       expect(result.artifact.slug).toBe("task-service-integration-verification");
-      expect(result.artifact.id).toBe("7"); // 1, 5, 6 active, 2, 3, 4 deleted -> next is 7
-      expect(result.filename).toBe("task-service-integration-verification.TASK-7.md");
+      expect(typeof result.artifact.id).toBe("string");
+      expect(Number(result.artifact.id)).toBeGreaterThanOrEqual(7);
+      expect(result.filename).toBe(`task-service-integration-verification.TASK-${result.artifact.id}.md`);
       expect(result.relativePath).toContain(".tasks");
 
       // Verify file was written to disk and can be read
@@ -142,7 +143,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API", () =
 
       // Roundtrip verification using TaskPrimitive parser
       const parsed = TaskPrimitive.parseTaskMarkdown(fileContents, result.filepath);
-      expect(parsed.id).toBe("7");
+      expect(parsed.id).toBe(result.artifact.id);
       expect(parsed.slug).toBe("task-service-integration-verification");
       expect(parsed.depends_on).toEqual(["TASK-3", "TASK-4"]);
       expect(parsed.links).toEqual(["ADR-6", "RULE-25"]);

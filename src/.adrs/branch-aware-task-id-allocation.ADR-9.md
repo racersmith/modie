@@ -5,6 +5,7 @@ links:
   - RULE-1
   - RULE-18
   - RULE-21
+  - RULE-28
 ---
 
 # Context
@@ -45,6 +46,7 @@ We adopt a **Hierarchical Branch & Author Namespaced Allocation Model**:
 - When working on a task-specific branch following the convention `task/<parent_id>-<slug>` (e.g., `task/2-task-id-allocation-and-rule-alignment`), any sub-tasks created within this branch automatically inherit the parent task namespace:
   - Format: `TASK-<parent_id>-<sequence>` (e.g., `TASK-2-1`, `TASK-2-2`).
 - This guarantees that sub-tasks spawned on separate task branches can never collide with each other or with trunk tasks.
+- Sub-task sequence suffixes (`-1`, `-2`) provide collision-free ID namespacing and do not inherently define execution order. Execution order between sub-tasks must be explicitly declared via `depends_on:` declarations per [RULE-18]. Independent sub-tasks can execute concurrently.
 
 ### 3. Feature Branch & Agent/Author Namespacing (`feature/*`, `agent/*`)
 - When working on feature branches or when multiple agents work concurrently:
@@ -61,3 +63,31 @@ We adopt a **Hierarchical Branch & Author Namespaced Allocation Model**:
 ### 5. Lifecyle and Merge Compatibility
 - Completed tasks are deleted from the working tree in their implementation commit ([RULE-21]).
 - If an active namespaced task merges into trunk, its unique ID remains valid in downstream `depends_on:` declarations until completed and deleted.
+
+### 6. Hierarchical Task Branch Topology & Merge Lifecycle
+
+To enable automated branch management and multi-agent isolation, tasks and sub-tasks follow a strict nested Git branch topology:
+
+1. **Branch Hierarchy:**
+   - **Trunk:** Primary development branch (`main` or `dev`).
+   - **Parent Task Branch:** `task/<parent_id>-<slug>` (branched directly from trunk).
+   - **Sub-Task Branch:** `task/<parent_id>-<sequence>-<slug>` (branched directly from the parent task branch).
+
+2. **Sub-Task Execution & Merge Loop:**
+   - When beginning a sub-task, the sub-task branch is spawned from the parent branch:
+     `git checkout -b task/<parent_id>-<sequence>-<slug> task/<parent_id>-<slug>`
+   - All mutations are restricted to the sub-task's scope subtree per [RULE-6].
+   - Upon verification of acceptance criteria, the sub-task artifact is deleted in the implementation commit per [RULE-21].
+   - The sub-task branch is merged back into the parent task branch, and the sub-task branch is deleted.
+   - Deletion of the sub-task artifact on the parent branch automatically updates the active disk queue, unblocking downstream sub-tasks per [ADR-6].
+
+3. **Parent Task Completion:**
+   - The parent task branch merges into trunk (`dev`) only after all child sub-tasks have completed, deleted their artifacts, and merged into the parent branch per [RULE-28].
+   - The parent task artifact is deleted in the parent completion commit.
+   - The parent task branch is merged into trunk and deleted.
+
+4. **CLI Automation Target:**
+   - CLI automation tools (`canon task start <id>`, `canon task complete <id>`) leverage this deterministic topology:
+     - `start` automatically detects parentage and checks out or creates the proper base and target branches.
+     - `complete` verifies criteria, executes deletion commits, and targets the correct merge destination (`parent branch` for sub-tasks, `trunk` for root tasks).
+
