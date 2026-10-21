@@ -7,6 +7,7 @@ links:
   - RULE-18
   - RULE-25
   - RULE-27
+  - RULE-28
 ---
 
 # Context
