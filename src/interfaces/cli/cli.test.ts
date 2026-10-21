@@ -200,7 +200,7 @@ describe("CLI Executable Subprocess - End-to-End via bin.ts", () => {
   // @verifies RULE-25, RULE-27
   it("[RULE-25][RULE-27] should execute bin.ts as a child process and return valid output", async () => {
     const binPath = "./src/interfaces/cli/bin.ts";
-    const { stdout, stderr } = await execFileAsync("bun", [
+    const { stdout, stderr } = await execFileAsync(process.execPath, [
       binPath,
       "task",
       "create",

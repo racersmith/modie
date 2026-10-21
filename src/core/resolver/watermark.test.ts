@@ -313,8 +313,11 @@ describe("Watermark Resolver - Live Integration on Canon Repository", () => {
     expect(allKnown).toContain("3");
     expect(allKnown).toContain("4");
     expect(allKnown).toContain("5");
-    expect(allKnown).toContain("6");
-    expect(trunkDetails.nextId).toBe("7");
-    expect(trunkDetails.fullTaskId).toBe("TASK-7");
+    const knownInts = allKnown
+      .filter((id) => /^[0-9]+$/.test(id))
+      .map((id) => parseInt(id, 10));
+    const expectedNextInt = Math.max(...knownInts) + 1;
+    expect(trunkDetails.nextId).toBe(String(expectedNextInt));
+    expect(trunkDetails.fullTaskId).toBe(`TASK-${expectedNextInt}`);
   });
 });
