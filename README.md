@@ -70,12 +70,12 @@ Modie is being built under its own laws (dogfooded). Current capabilities:
 
 ```bash
 # Global CLI
-npm install -g modie
+npm install -g @racersmith/modie
 
 # Or as a project devDependency
-pnpm add -D modie
+pnpm add -D @racersmith/modie
 # or
-bun add -d modie
+bun add -d @racersmith/modie
 ```
 
 ### Basic Commands
