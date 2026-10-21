@@ -1,6 +1,9 @@
 {
   "name": "canon",
   "module": "./src/index.ts",
+  "bin": {
+    "canon": "./src/interfaces/cli/bin.ts"
+  },
   "type": "module",
   "private": true,
   "scripts": {
