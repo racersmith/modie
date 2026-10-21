@@ -45,6 +45,7 @@ We adopt a **Hierarchical Branch & Author Namespaced Allocation Model**:
 - When working on a task-specific branch following the convention `task/<parent_id>-<slug>` (e.g., `task/2-task-id-allocation-and-rule-alignment`), any sub-tasks created within this branch automatically inherit the parent task namespace:
   - Format: `TASK-<parent_id>-<sequence>` (e.g., `TASK-2-1`, `TASK-2-2`).
 - This guarantees that sub-tasks spawned on separate task branches can never collide with each other or with trunk tasks.
+- Sub-task sequence suffixes (`-1`, `-2`) provide collision-free ID namespacing and do not inherently define execution order. Execution order between sub-tasks must be explicitly declared via `depends_on:` declarations per [RULE-18]. Independent sub-tasks can execute concurrently.
 
 ### 3. Feature Branch & Agent/Author Namespacing (`feature/*`, `agent/*`)
 - When working on feature branches or when multiple agents work concurrently:
