@@ -59,17 +59,13 @@ export async function detectGitBranch(
 }
 
 /**
- * Retrieves the optional git config `modie.prefix` (or `modie.prefix`) if set.
+ * Retrieves the optional git config `modie.prefix` if set.
  */
 export async function getGitConfigPrefix(
   cwd: string = process.cwd(),
 ): Promise<string | null> {
-  const modiePrefix = await runGit(["config", "modie.prefix"], cwd);
-  if (modiePrefix && modiePrefix.length > 0) {
-    return modiePrefix;
-  }
-  const modiePrefix = await runGit(["config", "modie.prefix"], cwd);
-  return modiePrefix && modiePrefix.length > 0 ? modiePrefix : null;
+  const prefix = await runGit(["config", "modie.prefix"], cwd);
+  return prefix && prefix.length > 0 ? prefix : null;
 }
 
 /**

@@ -33,7 +33,7 @@ export interface WatermarkResolutionOptions {
   prefix?: string;
 
   /**
-   * Git config prefix override (e.g. from `git config modie.prefix` or `git config modie.prefix`).
+   * Git config prefix override (e.g. from `git config modie.prefix`).
    */
   gitConfigPrefix?: string;
 
