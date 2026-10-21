@@ -22,7 +22,7 @@ Architectural governance and agentic context compilation require distinct catego
 
 We adopt a taxonomy of five distinct core primitive artifact types:
 
-1. **`MOTIVATION`**: Composable, slowest to change, expressing directory-level purpose and trajectory without referencing other documents.
+1. **`MOTIVE`**: Composable, slowest to change, expressing directory-level purpose and trajectory without referencing other documents.
 2. **`RULE`**: Atomic, falsifiable, implementation-agnostic invariants with ancestry-based influence.
 3. **`ADR`**: Immutable, point-in-time decision records capturing trade-offs, rationale, and supersession links.
 4. **`GIST`**: Ultra-concise implementation summaries for rapid wayfinding without full AST or file parsing.
@@ -35,4 +35,3 @@ All artifacts must adhere to the principle of least scope:
 - **Leaf-First Placement:** Artifacts must reside at the deepest common ancestor directory of the files they govern or mutate.
 - **Minimized Context Pollution:** Positioning artifacts at the lowest possible directory node ensures that upward traversal compiles only the minimal, relevant context needed for a target file, leaving sibling subtrees unburdened by unrelated invariants.
 - **Constrained Blast Radius:** Confining tasks and rules to localized subtrees limits architectural blast radius and prevents unintended ripple effects across unrelated modules.
-

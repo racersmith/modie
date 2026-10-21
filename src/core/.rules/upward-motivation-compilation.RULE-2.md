@@ -1,1 +1,1 @@
-The resolver must collect `MOTIVATION.md` files strictly by traversing parent directory nodes from the target path upward to the repository root. Sibling subtrees must never be evaluated, and the resulting collection must form a monotonically widening scope sequence terminating at root.
+The resolver must collect `MOTIVE.md` files strictly by traversing parent directory nodes from the target path upward to the repository root. Sibling subtrees must never be evaluated, and the resulting collection must form a monotonically widening scope sequence terminating at root.

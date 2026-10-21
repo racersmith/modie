@@ -18,4 +18,4 @@ We adopt a permissive containment model:
 
 1. `RULE`, `TASK`, and `ADR` files CAN live directly in `<dir>/` OR within dedicated dot-prefixed subdirectories (`<dir>/.rules/`, `<dir>/.tasks/`, `<dir>/.adrs/`).
 2. The core discovery engine treats `<dir>/[slug].RULE-0001.md` and `<dir>/.rules/[slug].RULE-0001.md` as semantically identical.
-3. `MOTIVATION.md` and `GIST.md` remain strictly at `<dir>/` to preserve instant wayfinding visibility.
+3. `MOTIVE.md` and `GIST.md` remain strictly at `<dir>/` to preserve instant wayfinding visibility.

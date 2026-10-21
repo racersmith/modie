@@ -1,7 +1,7 @@
 # Canon Artifact Triage
 
 Is this explaining the fundamental purpose, trajectory, and scope of this territory?
-└── YES ──► MOTIVATION.md
+└── YES ──► MOTIVE.md
 
 Is this debating architectural trade-offs, design rationale, or rejected options?
 └── YES ──► ADR
