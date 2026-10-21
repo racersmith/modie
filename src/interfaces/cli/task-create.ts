@@ -18,9 +18,11 @@ Arguments:
 Options:
   -s, --scope <dir>       Target scope directory (defaults to current working directory)
   -c, --context <text>    Context / problem statement for the task
-  -d, --depends-on <ids>  Comma-separated list of prerequisite TASK IDs (e.g. TASK-1,TASK-2)
-  -l, --links <targets>   Comma-separated list of ADR and RULE links (e.g. ADR-1,RULE-25)
-      --criteria <items>  Comma-separated list of acceptance criteria items
+  -d, --depends-on <ids>  Prerequisite TASK IDs (repeat flag or use comma-separated list)
+  -l, --link, --links <targets>
+                          ADR and RULE link targets (repeat flag or use comma-separated list)
+  -a, --criterion, --criteria <items>
+                          Acceptance criteria items (repeat -a/--criterion for verbatim items with punctuation)
   -p, --prefix <tag>      Custom task ID prefix tag (e.g. "J" for TASK-J1)
   -b, --branch <name>     Git branch override for ID allocation
       --flat              Create flat task file without .tasks container (RULE-8)
@@ -117,33 +119,50 @@ export async function handleTaskCreate(args: string[], options: CliIoOptions = {
       continue;
     }
 
-    if (arg === "-d" || arg === "--depends-on") {
+    if (arg === "-d" || arg === "--depend-on" || arg === "--depends-on") {
       const val = args[++i];
       if (!val) {
         stderr("Error: Missing argument for --depends-on flag.");
         return 1;
       }
-      depends_on.push(...val.split(",").map((s) => s.trim()).filter(Boolean));
+      if (arg === "--depend-on") {
+        depends_on.push(val.trim());
+      } else {
+        depends_on.push(...val.split(",").map((s) => s.trim()).filter(Boolean));
+      }
       continue;
     }
 
-    if (arg === "-l" || arg === "--links") {
+    if (arg === "-l" || arg === "--link" || arg === "--links") {
       const val = args[++i];
       if (!val) {
         stderr("Error: Missing argument for --links flag.");
         return 1;
       }
-      links.push(...val.split(",").map((s) => s.trim()).filter(Boolean));
+      if (arg === "--link") {
+        links.push(val.trim());
+      } else {
+        links.push(...val.split(",").map((s) => s.trim()).filter(Boolean));
+      }
       continue;
     }
 
-    if (arg === "--criteria" || arg === "--acceptance-criteria") {
+    if (
+      arg === "-a" ||
+      arg === "--criterion" ||
+      arg === "--criteria" ||
+      arg === "--acceptance-criteria"
+    ) {
       const val = args[++i];
       if (!val) {
         stderr("Error: Missing argument for --criteria flag.");
         return 1;
       }
-      acceptanceCriteria.push(...val.split(",").map((s) => s.trim()).filter(Boolean));
+      if (arg === "-a" || arg === "--criterion") {
+        acceptanceCriteria.push(val.trim());
+      } else {
+        acceptanceCriteria.push(...val.split(",").map((s) => s.trim()).filter(Boolean));
+      }
       continue;
     }
 
@@ -192,6 +211,7 @@ export async function handleTaskCreate(args: string[], options: CliIoOptions = {
             title: result.artifact.title,
             depends_on: result.artifact.depends_on,
             links: result.artifact.links,
+            acceptanceCriteria: result.artifact.acceptanceCriteria,
             watermark: result.watermark,
           },
           null,

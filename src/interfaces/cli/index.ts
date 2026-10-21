@@ -5,4 +5,6 @@
 
 export * from "./types.ts";
 export * from "./task-create.ts";
+export * from "./task-check.ts";
+export * from "./task-complete.ts";
 export * from "./cli.ts";
