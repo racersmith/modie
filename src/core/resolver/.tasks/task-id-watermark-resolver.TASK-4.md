@@ -18,8 +18,8 @@ This resolver inspects the working tree and queries git commit history (`git log
 
 # Acceptance Criteria
 
-- [ ] Active task scanner detects existing `*.TASK-*.md` files in the repository and extracts their IDs.
-- [ ] Git history inspector identifies IDs of completed/deleted task files via git log diff queries.
-- [ ] Watermark calculation reliably produces the next monotonic integer even when all active tasks on disk have been deleted.
-- [ ] Branch-aware allocation allocates collision-free IDs for concurrent git branches according to the TASK-2 specification.
-- [ ] Add unit tests covering fresh repos, existing disk tasks, deleted git tasks, and multi-branch watermark scenarios.
+- [x] Active task scanner detects existing `*.TASK-*.md` files in the repository and extracts their IDs.
+- [x] Git history inspector identifies IDs of completed/deleted task files via git log diff queries.
+- [x] Watermark calculation reliably produces the next monotonic integer even when all active tasks on disk have been deleted.
+- [x] Branch-aware allocation allocates collision-free IDs for concurrent git branches according to the TASK-2 specification.
+- [x] Add unit tests covering fresh repos, existing disk tasks, deleted git tasks, and multi-branch watermark scenarios.
