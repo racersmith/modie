@@ -1,6 +1,7 @@
 ---
 links:
   - RULE-1
+  - ADR-4
 ---
 
 # Context
