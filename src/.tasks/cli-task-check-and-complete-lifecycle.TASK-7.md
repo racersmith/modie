@@ -17,8 +17,8 @@ Implement programmatic checklist progression (canon task check) and automated ta
 
 # Acceptance Criteria
 
-- [ ] Implement core checklist progression service in core
-- [ ] Implement core task completion and deletion service in core
-- [ ] Implement CLI command canon task check
-- [ ] Implement CLI command canon task complete
-- [ ] Ensure strict stdout and stderr separation per RULE-27
+- [x] Implement core checklist progression service in core
+- [x] Implement core task completion and deletion service in core
+- [x] Implement CLI command canon task check
+- [x] Implement CLI command canon task complete
+- [x] Ensure strict stdout and stderr separation per RULE-27
