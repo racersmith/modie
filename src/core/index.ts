@@ -3,4 +3,5 @@
  * Public API exposed to interfaces (RULE-25).
  */
 
-export {};
+export * as TaskPrimitive from "./primitives/task/index.ts";
+export * from "./primitives/task/types.ts";

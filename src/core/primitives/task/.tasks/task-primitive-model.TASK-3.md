@@ -20,9 +20,9 @@ This encapsulates task representation and template construction into a reusable 
 
 # Acceptance Criteria
 
-- [ ] Define `TaskArtifact` data structure and frontmatter types (`depends_on`, `links`, title, slug, id).
-- [ ] Implement slug generator that converts arbitrary task titles to kebab-case slugs per RULE-1.
-- [ ] Implement task filename formatter and parser conforming to `[slug].TASK-[ID].md`.
-- [ ] Implement default task markdown template generator producing frontmatter, `# Context`, and `# Acceptance Criteria` checklist sections (RULE-22).
-- [ ] Implement acceptance criteria checklist parser and validator.
-- [ ] Add unit tests verifying slugification, filename formatting, and template rendering.
+- [x] Define `TaskArtifact` data structure and frontmatter types (`depends_on`, `links`, title, slug, id).
+- [x] Implement slug generator that converts arbitrary task titles to kebab-case slugs per RULE-1.
+- [x] Implement task filename formatter and parser conforming to `[slug].TASK-[ID].md`.
+- [x] Implement default task markdown template generator producing frontmatter, `# Context`, and `# Acceptance Criteria` checklist sections (RULE-22).
+- [x] Implement acceptance criteria checklist parser and validator.
+- [x] Add unit tests verifying slugification, filename formatting, and template rendering.
