@@ -46,7 +46,7 @@ describe("CLI Harness - Global Commands & Stream Separation (RULE-27)", () => {
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Usage:");
-    expect(stderr).toContain("canon <command>");
+    expect(stderr).toContain("modie <command>");
   });
 
   // @verifies RULE-27
@@ -70,7 +70,7 @@ describe("CLI Harness - Global Commands & Stream Separation (RULE-27)", () => {
     const { exitCode, stdout, stderr } = await captureCli(["task", "--help"]);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
-    expect(stderr).toContain("Usage: canon task <subcommand>");
+    expect(stderr).toContain("Usage: modie task <subcommand>");
   });
 });
 

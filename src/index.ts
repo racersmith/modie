@@ -1,5 +1,5 @@
 /**
- * Canon: Architectural governance engine & context compiler
+ * Modie: Architectural governance engine & context compiler
  */
 
 export {};

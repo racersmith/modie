@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Canon CLI executable entrypoint.
+ * Modie CLI executable entrypoint.
  */
 
 import { runCli } from "./cli.ts";

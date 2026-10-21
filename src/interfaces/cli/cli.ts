@@ -1,5 +1,5 @@
 /**
- * Canon CLI dispatcher.
+ * Modie CLI dispatcher.
  * Handles command routing and global flags (--help, --version).
  * Complies with RULE-27.
  */
@@ -9,23 +9,24 @@ import { handleTaskComplete } from "./task-complete.ts";
 import { handleTaskCreate } from "./task-create.ts";
 import type { CliIoOptions } from "./types.ts";
 
-export const CANON_VERSION = "0.1.0";
+export const MODIE_VERSION = "0.1.0";
+export const CANON_VERSION = MODIE_VERSION;
 
 /**
- * Prints global Canon CLI usage to stderr.
+ * Prints global Modie CLI usage to stderr.
  */
 export function printGlobalHelp(stderr: (msg: string) => void): void {
-  stderr(`Canon: Architectural Governance Engine & Context Compiler
+  stderr(`Modie: Architectural Governance Engine & Context Compiler
 
 Usage:
-  canon <command> [subcommand] [arguments] [options]
+  modie <command> [subcommand] [arguments] [options]
 
 Commands:
   task create <title>          Create a new TASK artifact with automatic watermark resolution
   task check <id> --item <n>   Check or uncheck an acceptance criteria item
   task complete <id>           Complete a task and delete its artifact per RULE-21
   help                         Show help for a command
-  version                      Show Canon version
+  version                      Show Modie version
 
 Options:
   -h, --help                   Show this help message
@@ -46,7 +47,7 @@ export async function runCli(args: string[], options: CliIoOptions = {}): Promis
   }
 
   if (args[0] === "-v" || args[0] === "--version" || args[0] === "version") {
-    stdout(CANON_VERSION);
+    stdout(MODIE_VERSION);
     return 0;
   }
 
@@ -54,7 +55,7 @@ export async function runCli(args: string[], options: CliIoOptions = {}): Promis
 
   if (command === "task") {
     if (subArgs.length === 0 || subArgs[0] === "-h" || subArgs[0] === "--help" || subArgs[0] === "help") {
-      stderr(`Usage: canon task <subcommand> [options]
+      stderr(`Usage: modie task <subcommand> [options]
 
 Subcommands:
   create <title>               Create a new TASK artifact
@@ -82,6 +83,6 @@ Subcommands:
     return 1;
   }
 
-  stderr(`Error: Unknown command "${command}". Run 'canon --help' for available commands.`);
+  stderr(`Error: Unknown command "${command}". Run 'modie --help' for available commands.`);
   return 1;
 }
