@@ -1,5 +1,5 @@
 /**
- * CLI command handler for `canon task check <id> --item <index> [options]`.
+ * CLI command handler for `modie task check <id> --item <index> [options]`.
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
  */
 
@@ -7,10 +7,10 @@ import { checkTaskItem } from "../../core/index.ts";
 import type { CliIoOptions } from "./types.ts";
 
 /**
- * Prints usage instructions for `canon task check`.
+ * Prints usage instructions for `modie task check`.
  */
 export function printTaskCheckHelp(stderr: (msg: string) => void): void {
-  stderr(`Usage: canon task check <id-or-path> [options]
+  stderr(`Usage: modie task check <id-or-path> [options]
 
 Arguments:
   <id-or-path>            Task ID (e.g. TASK-7-1, 7-1), slug, or file path
@@ -70,7 +70,7 @@ export async function handleTaskCheck(args: string[], options: CliIoOptions = {}
     }
 
     if (arg.startsWith("-")) {
-      stderr(`Error: Unknown flag "${arg}". Run 'canon task check --help' for usage.`);
+      stderr(`Error: Unknown flag "${arg}". Run 'modie task check --help' for usage.`);
       return 1;
     }
 
@@ -83,12 +83,12 @@ export async function handleTaskCheck(args: string[], options: CliIoOptions = {}
   }
 
   if (!taskIdentifier) {
-    stderr("Error: Missing required task identifier. Usage: canon task check <id-or-path> --item <index>");
+    stderr("Error: Missing required task identifier. Usage: modie task check <id-or-path> --item <index>");
     return 1;
   }
 
   if (itemIndex === undefined) {
-    stderr("Error: Missing required --item flag. Usage: canon task check <id-or-path> --item <index>");
+    stderr("Error: Missing required --item flag. Usage: modie task check <id-or-path> --item <index>");
     return 1;
   }
 

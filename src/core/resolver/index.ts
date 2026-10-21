@@ -1,5 +1,5 @@
 /**
- * Canon Core Resolver Module: Context compilation, active scanning, and watermark resolution.
+ * Modie Core Resolver Module: Context compilation, active scanning, and watermark resolution.
  * Complies with RULE-1, ADR-1, ADR-6, and ADR-9.
  */
 

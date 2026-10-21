@@ -1,5 +1,5 @@
 /**
- * CLI command handler for `canon task complete <id> [options]`.
+ * CLI command handler for `modie task complete <id> [options]`.
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
  * Enforces RULE-21 and RULE-22.
  */
@@ -8,10 +8,10 @@ import { completeTask } from "../../core/index.ts";
 import type { CliIoOptions } from "./types.ts";
 
 /**
- * Prints usage instructions for `canon task complete`.
+ * Prints usage instructions for `modie task complete`.
  */
 export function printTaskCompleteHelp(stderr: (msg: string) => void): void {
-  stderr(`Usage: canon task complete <id-or-path> [options]
+  stderr(`Usage: modie task complete <id-or-path> [options]
 
 Arguments:
   <id-or-path>            Task ID (e.g. TASK-7-1, 7-1), slug, or file path
@@ -61,7 +61,7 @@ export async function handleTaskComplete(args: string[], options: CliIoOptions =
     }
 
     if (arg.startsWith("-")) {
-      stderr(`Error: Unknown flag "${arg}". Run 'canon task complete --help' for usage.`);
+      stderr(`Error: Unknown flag "${arg}". Run 'modie task complete --help' for usage.`);
       return 1;
     }
 
@@ -74,7 +74,7 @@ export async function handleTaskComplete(args: string[], options: CliIoOptions =
   }
 
   if (!taskIdentifier) {
-    stderr("Error: Missing required task identifier. Usage: canon task complete <id-or-path> [options]");
+    stderr("Error: Missing required task identifier. Usage: modie task complete <id-or-path> [options]");
     return 1;
   }
 

@@ -1,5 +1,5 @@
 /**
- * CLI command handler for `canon task create <title> [options]`.
+ * CLI command handler for `modie task create <title> [options]`.
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
  */
 
@@ -7,10 +7,10 @@ import { createTask, type CreateTaskOptions } from "../../core/index.ts";
 import type { CliIoOptions } from "./types.ts";
 
 /**
- * Prints usage instructions for `canon task create`.
+ * Prints usage instructions for `modie task create`.
  */
 export function printTaskCreateHelp(stderr: (msg: string) => void): void {
-  stderr(`Usage: canon task create <title> [options]
+  stderr(`Usage: modie task create <title> [options]
 
 Arguments:
   <title>                 Title of the task to create (e.g. "Create CLI Harness")
@@ -167,7 +167,7 @@ export async function handleTaskCreate(args: string[], options: CliIoOptions = {
     }
 
     if (arg.startsWith("-")) {
-      stderr(`Error: Unknown flag "${arg}". Run 'canon task create --help' for usage.`);
+      stderr(`Error: Unknown flag "${arg}". Run 'modie task create --help' for usage.`);
       return 1;
     }
 
@@ -176,7 +176,7 @@ export async function handleTaskCreate(args: string[], options: CliIoOptions = {
 
   const title = titleWords.join(" ").trim();
   if (!title) {
-    stderr("Error: Missing required task title. Usage: canon task create <title> [options]");
+    stderr("Error: Missing required task title. Usage: modie task create <title> [options]");
     return 1;
   }
 

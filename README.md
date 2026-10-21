@@ -1,4 +1,4 @@
-# Canon Artifact Triage
+# Modie Artifact Triage
 
 Is this explaining the fundamental purpose, trajectory, and scope of this territory?
 └── YES ──► MOTIVE.md
