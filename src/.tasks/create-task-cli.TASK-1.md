@@ -25,7 +25,7 @@ As a human this should allow for simple creation with a good starting template f
 
 # Acceptance Criteria
 
-- [ ] New task files can be created using the CLI with a task title
-- [ ] Task IDs increment correctly with each new task on the same branch.
-- [ ] Creating tasks on separate git branches does not result in ID overlap.
-- [ ] Task IDs increment correctly when a completed task is delted.
+- [x] New task files can be created using the CLI with a task title
+- [x] Task IDs increment correctly with each new task on the same branch.
+- [x] Creating tasks on separate git branches does not result in ID overlap.
+- [x] Task IDs increment correctly when a completed task is delted.
