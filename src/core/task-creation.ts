@@ -6,7 +6,6 @@
 
 import { mkdir, writeFile } from "node:fs/promises";
 import { isAbsolute, join, normalize, relative, resolve } from "node:path";
-import { parseAcceptanceCriteria } from "./primitives/task/checklist.ts";
 import { formatTaskFilename } from "./primitives/task/filename.ts";
 import { generateSlug } from "./primitives/task/slug.ts";
 import { renderTaskMarkdown } from "./primitives/task/template.ts";
