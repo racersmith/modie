@@ -4,6 +4,8 @@
  * Complies with RULE-27.
  */
 
+import { handleTaskCheck } from "./task-check.ts";
+import { handleTaskComplete } from "./task-complete.ts";
 import { handleTaskCreate } from "./task-create.ts";
 import type { CliIoOptions } from "./types.ts";
 
@@ -19,13 +21,15 @@ Usage:
   canon <command> [subcommand] [arguments] [options]
 
 Commands:
-  task create <title>     Create a new TASK artifact with automatic watermark resolution
-  help                    Show help for a command
-  version                 Show Canon version
+  task create <title>          Create a new TASK artifact with automatic watermark resolution
+  task check <id> --item <n>   Check or uncheck an acceptance criteria item
+  task complete <id>           Complete a task and delete its artifact per RULE-21
+  help                         Show help for a command
+  version                      Show Canon version
 
 Options:
-  -h, --help              Show this help message
-  -v, --version           Show version
+  -h, --help                   Show this help message
+  -v, --version                Show version
 `);
 }
 
@@ -53,7 +57,9 @@ export async function runCli(args: string[], options: CliIoOptions = {}): Promis
       stderr(`Usage: canon task <subcommand> [options]
 
 Subcommands:
-  create <title>          Create a new TASK artifact
+  create <title>               Create a new TASK artifact
+  check <id> --item <n>        Check or uncheck an acceptance criteria item
+  complete <id>                Verify criteria and delete completed task per RULE-21
 `);
       return 0;
     }
@@ -64,7 +70,15 @@ Subcommands:
       return handleTaskCreate(taskArgs, options);
     }
 
-    stderr(`Error: Unknown task subcommand "${subcommand}". Available: create`);
+    if (subcommand === "check") {
+      return handleTaskCheck(taskArgs, options);
+    }
+
+    if (subcommand === "complete") {
+      return handleTaskComplete(taskArgs, options);
+    }
+
+    stderr(`Error: Unknown task subcommand "${subcommand}". Available: create, check, complete`);
     return 1;
   }
 
