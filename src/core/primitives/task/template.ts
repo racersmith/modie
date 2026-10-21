@@ -3,7 +3,6 @@
  * Enforces RULE-15, RULE-18, and RULE-22.
  */
 
-import { generateSlug } from "./slug.ts";
 import { renderAcceptanceCriteria } from "./checklist.ts";
 import type { TaskRenderOptions } from "./types.ts";
 
