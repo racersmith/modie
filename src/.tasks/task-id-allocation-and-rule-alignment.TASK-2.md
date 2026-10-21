@@ -5,6 +5,9 @@ links:
   - ADR-1
   - ADR-4
   - ADR-6
+  - ADR-9
+  - RULE-1
+  - RULE-12
 ---
 
 # Context
@@ -22,7 +25,7 @@ To support reliable task creation across distributed branches and ensure Canon's
 
 # Acceptance Criteria
 
-- [ ] Multi-branch task ID allocation strategy is formally decided and documented in an ADR or ADR-6 amendment.
-- [ ] RULE-1 is updated to resolve the 4-digit zero-padding conflict with ADR-1 and define valid branch-prefixed ID formats.
-- [ ] Universal artifact governance rules are relocated to `src/.rules/` so direct ancestry references from `src/.tasks/` and `src/interfaces/` satisfy RULE-7 and RULE-12.
-- [ ] Root repository territory motive (`/MOTIVE.md`) is established to complete the upward context compilation root.
+- [x] Multi-branch task ID allocation strategy is formally decided and documented in an ADR or ADR-6 amendment.
+- [x] RULE-1 is updated to resolve the 4-digit zero-padding conflict with ADR-1 and define valid branch-prefixed ID formats.
+- [x] Universal artifact governance rules are relocated to `src/.rules/` so direct ancestry references from `src/.tasks/` and `src/interfaces/` satisfy RULE-7 and RULE-12.
+- [x] Root repository territory motive (`/MOTIVE.md`) is established to complete the upward context compilation root.
