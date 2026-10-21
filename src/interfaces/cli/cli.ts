@@ -7,6 +7,8 @@
 import { handleTaskCheck } from "./task-check.ts";
 import { handleTaskComplete } from "./task-complete.ts";
 import { handleTaskCreate } from "./task-create.ts";
+import { handleTaskList } from "./task-list.ts";
+import { handleTaskStatus } from "./task-status.ts";
 import type { CliIoOptions } from "./types.ts";
 
 export const MODIE_VERSION = "0.1.0";
@@ -24,6 +26,8 @@ Commands:
   task create <title>          Create a new TASK artifact with automatic watermark resolution
   task check <id> --item <n>   Check or uncheck an acceptance criteria item
   task complete <id>           Complete a task and delete its artifact per RULE-21
+  task list [options]          List active tasks with DAG readiness and progress
+  task status [id]             Inspect active queue or specific task status
   help                         Show help for a command
   version                      Show Modie version
 
@@ -75,6 +79,8 @@ Subcommands:
   create <title>               Create a new TASK artifact
   check <id> --item <n>        Check or uncheck an acceptance criteria item
   complete <id>                Verify criteria and delete completed task per RULE-21
+  list [options]               List active tasks with DAG readiness and progress
+  status [id] [options]        Inspect active queue or specific task status
 `);
       return 0;
     }
@@ -93,8 +99,16 @@ Subcommands:
       return handleTaskComplete(taskArgs, options);
     }
 
+    if (subcommand === "list" || subcommand === "ls") {
+      return handleTaskList(taskArgs, options);
+    }
+
+    if (subcommand === "status") {
+      return handleTaskStatus(taskArgs, options);
+    }
+
     stderr(
-      `Error: Unknown task subcommand "${subcommand}". Available: create, check, complete`,
+      `Error: Unknown task subcommand "${subcommand}". Available: create, check, complete, list, status`,
     );
     return 1;
   }

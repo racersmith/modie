@@ -35,3 +35,14 @@ export type {
   ResolveTaskOptions,
 } from "./task-completion.ts";
 
+export {
+  compareTaskIds,
+  getTaskStatus,
+  queryTaskQueue,
+} from "./task-query.ts";
+export type {
+  TaskQueueItem,
+  TaskQueueQueryOptions,
+  TaskReadiness,
+  TaskStatusDetails,
+} from "./task-query.ts";
