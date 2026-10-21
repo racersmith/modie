@@ -7,7 +7,9 @@ links:
   - RULE-15
   - RULE-18
   - RULE-21
+  - RULE-22
 ---
+
 
 
 # Context
@@ -82,11 +84,24 @@ We adopt the **Git-Backed Ephemeral Task Lifecycle** with **Monotonic Unscoped I
    - Completed task files are never retained on disk (no `.ARCHIVED.` suffixes or `.done/` subdirectories), keeping the codebase pristine and eliminating context pollution for AI agents.
    - Git commit history serves as the immutable, permanent completion ledger (`git log --diff-filter=D -- "*.TASK-*.md"`).
 
-3. **Static Dependency Resolution:**
+3. **Static Dependency Resolution (Active Queue Model):**
    - Downstream tasks declare prerequisites via static `depends_on: [TASK-XXXX]` lists.
    - Downstream task files are **never mutated** when upstream tasks finish, eliminating multi-branch merge conflicts.
-   - A dependency `TASK-XXXX` is evaluated as follows:
-     - If `TASK-XXXX` exists on disk $\rightarrow$ **Blocked** (task still pending).
-     - If `TASK-XXXX` does not exist on disk, but was deleted in Git history $\rightarrow$ **Satisfied** (task completed).
-     - If `TASK-XXXX` does not exist on disk or in Git history $\rightarrow$ **Error** (invalid or unregistered task ID).
+   - A dependency `TASK-XXXX` is evaluated cleanly via active queue inspection:
+     - If `TASK-XXXX` exists on disk $\rightarrow$ **Blocked** (prerequisite task is still pending).
+     - If `TASK-XXXX` does not exist on disk $\rightarrow$ **Satisfied** (prerequisite task is complete).
+   - This eliminates complex Git log queries during runtime, ensuring instant evaluation that functions seamlessly in shallow CI clones (`--depth=1`) and gitless environments.
+   - Soft linter warnings flag any dependency that has never been registered in project history to guard against typos.
+
+4. **Standardized Acceptance Criteria & Programmatic Progress:**
+   - Tasks declare deliverables as a Markdown checklist (`- [ ]` / `- [x]`) under an `# Acceptance Criteria` section.
+   - Agents update progress programmatically via CLI or MCP tools (e.g. `canon task check TASK-XXXX --item 1`) rather than opening, reading, editing, and saving markdown files.
+   - This minimizes agent action cost (a single lightweight tool turn) and token consumption while providing machine-verifiable task completion status.
+
+5. **Automated Monotonic ID Allocation:**
+   - Humans and AI agents never manually compute or allocate task IDs.
+   - The Canon CLI and MCP tools automatically determine and assign the next monotonic ID upon task creation.
+   - When the active queue on disk is empty (all tasks completed and deleted), the tool resolves the watermark via Git history or a lightweight local watermark to ensure IDs monotonically advance without resetting.
+
+
 
