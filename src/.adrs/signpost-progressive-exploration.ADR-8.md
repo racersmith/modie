@@ -8,7 +8,7 @@ links:
 
 # Context
 
-In multi-package repositories and monorepos, code in one package inevitably depends on sibling packages or interfaces (e.g. `packages/interfaces/mcp` depending on `packages/core`).
+In multi-package repositories and monorepos, code in one package inevitably depends on sibling packages or interfaces (e.g. `src/interfaces/mcp` depending on `src/core`).
 
 Attempting to eagerly resolve and import cross-package dependencies into the agent's initial prompt creates severe architectural hazards:
 1. **Tight Build-Tool Coupling:** Requires Canon to parse package manifests (`package.json`, `Cargo.toml`, `go.mod`, etc.), opening a maintenance nightmare across diverse ecosystems.
@@ -33,7 +33,7 @@ We adopt the **Signpost Model with Progressive On-Demand Disclosure**:
 
 2. **Interactive On-Demand Drill-Down:**
    - When an AI agent or engineer determines that an external package or subsystem is needed, it calls an interactive inspection tool:
-     `canon_inspect_territory({ path: "packages/core", depth: 2 })`
+     `canon_inspect_territory({ path: "src/core", depth: 2 })`
    - Canon returns a compact structural tree of the requested territory containing exclusively its `MOTIVATION.md` and `GIST.md` signposts.
    - Raw source code is never dumped during signpost exploration.
 

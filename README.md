@@ -4,13 +4,13 @@ Is this explaining the fundamental purpose, trajectory, and scope of this territ
 └── YES ──► MOTIVATION.md
 
 Is this debating architectural trade-offs, design rationale, or rejected options?
-└── YES ──► ADR ([slug].ADR-[ID].md)
+└── YES ──► ADR
 
 Is this a non-negotiable law that code, tests, or a linter can assert as true/false?
-└── YES ──► RULE ([slug].RULE-[ID].md)
+└── YES ──► RULE
 
 Is this summarizing how the code is currently implemented without embedding code syntax?
-└── YES ──► GIST (GIST.md or <filename>.GIST.md)
+└── YES ──► GIST
 
 Is this an ephemeral plan for implementing a scoped unit of work?
-└── YES ──► TASK ([slug].TASK-[ID].md)
+└── YES ──► TASK
