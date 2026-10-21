@@ -17,8 +17,8 @@ The command will consume the public `@core` task creation service (RULE-25), han
 
 # Acceptance Criteria
 
-- [ ] Implement CLI command (`canon task create <title>`) with flags for target scope directory, links, and output formats.
-- [ ] Integrate with `@core` public API (`createTask`) without importing private core modules.
-- [ ] Ensure machine-parsable payloads (file path or JSON) are sent to stdout and human status/diagnostics to stderr (RULE-27).
-- [ ] Configure CLI executable entrypoint and register `bin` field in `package.json`.
-- [ ] Add CLI integration tests verifying command execution, error exit codes, and stdout/stderr separation.
+- [x] Implement CLI command (`canon task create <title>`) with flags for target scope directory, links, and output formats.
+- [x] Integrate with `@core` public API (`createTask`) without importing private core modules.
+- [x] Ensure machine-parsable payloads (file path or JSON) are sent to stdout and human status/diagnostics to stderr (RULE-27).
+- [x] Configure CLI executable entrypoint and register `bin` field in `package.json`.
+- [x] Add CLI integration tests verifying command execution, error exit codes, and stdout/stderr separation.
