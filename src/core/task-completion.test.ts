@@ -26,27 +26,45 @@ describe("Task Completion & Checklist Services - Normalization & Resolution", ()
   });
 
   it("should resolve active tasks on disk by ID and slug", async () => {
-    const active = await scanActiveTasks();
-    expect(active.length).toBeGreaterThan(0);
-    const target = active[0]!;
+    const fixtureDir = await mkdtemp(join(tmpdir(), "modie-resolve-test-"));
+    const taskPath = join(fixtureDir, "sample-feature.TASK-42.md");
+    await writeFile(
+      taskPath,
+      `---
+depends_on: []
+links: []
+---
 
-    const fileById = await resolveTaskFile(`TASK-${target.id}`);
-    expect(fileById).toBe(target.filepath);
+# Context
+Resolve test fixture
 
-    const fileByRawId = await resolveTaskFile(target.id);
-    expect(fileByRawId).toBe(target.filepath);
+# Acceptance Criteria
+- [ ] Sample item
+`,
+      "utf8",
+    );
 
-    const fileBySlug = await resolveTaskFile(target.slug);
-    expect(fileBySlug).toBe(target.filepath);
+    const fileById = await resolveTaskFile("TASK-42", { cwd: fixtureDir });
+    expect(fileById).toBe(taskPath);
 
-    const fileByDirectPath = await resolveTaskFile(target.filepath);
-    expect(fileByDirectPath).toBe(target.filepath);
+    const fileByRawId = await resolveTaskFile("42", { cwd: fixtureDir });
+    expect(fileByRawId).toBe(taskPath);
+
+    const fileBySlug = await resolveTaskFile("sample-feature", { cwd: fixtureDir });
+    expect(fileBySlug).toBe(taskPath);
+
+    const fileByDirectPath = await resolveTaskFile(taskPath, { cwd: fixtureDir });
+    expect(fileByDirectPath).toBe(taskPath);
+
+    await rm(fixtureDir, { recursive: true, force: true });
   });
 
   it("should throw a descriptive error when task does not exist", async () => {
-    await expect(resolveTaskFile("TASK-99999")).rejects.toThrow(
+    const fixtureDir = await mkdtemp(join(tmpdir(), "modie-empty-test-"));
+    await expect(resolveTaskFile("TASK-99999", { cwd: fixtureDir })).rejects.toThrow(
       /was not found among active tasks on disk/,
     );
+    await rm(fixtureDir, { recursive: true, force: true });
   });
 });
 

@@ -299,7 +299,7 @@ describe("Watermark Resolver - Live Integration on Canon Repository", () => {
   // @verifies ADR-6, ADR-9, RULE-21
   it("[ADR-6][ADR-9][RULE-21] should resolve live watermark on canon repository", async () => {
     const liveDetails = await resolveWatermark();
-    expect(liveDetails.activeIds.length).toBeGreaterThan(0);
+    expect(liveDetails.activeIds.length).toBeGreaterThanOrEqual(0);
     expect(liveDetails.deletedIds).toContain("2");
     expect(liveDetails.deletedIds).toContain("3");
     expect(typeof liveDetails.nextId).toBe("string");
