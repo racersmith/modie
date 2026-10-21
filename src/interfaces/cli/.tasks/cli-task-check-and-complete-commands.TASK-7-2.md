@@ -5,6 +5,8 @@ depends_on:
 links:
   - ADR-6
   - RULE-18
+  - RULE-21
+  - RULE-22
   - RULE-25
   - RULE-27
   - RULE-28
