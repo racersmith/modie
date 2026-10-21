@@ -1,15 +1,37 @@
 {
   "name": "modie",
-  "module": "./src/index.ts",
-  "bin": {
-    "modie": "./src/interfaces/cli/bin.ts"
+  "version": "0.1.0",
+  "description": "Filesystem-as-DAG architectural governance and task lifecycle engine",
+  "license": "MIT",
+  "author": "Josh Smith <racersmith@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/racersmith/modie.git"
   },
+  "bugs": {
+    "url": "https://github.com/racersmith/modie/issues"
+  },
+  "homepage": "https://github.com/racersmith/modie#readme",
   "type": "module",
-  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
+  "bin": {
+    "modie": "./dist/bin/bin.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
+    "build": "bun run build:bundle && bun run build:types",
+    "build:bundle": "bun build ./src/index.ts --outdir ./dist --target node && bun build ./src/interfaces/cli/bin.ts --outdir ./dist/bin --target node",
+    "build:types": "tsc --declaration --emitDeclarationOnly --noEmit false --rootDir ./src --outDir ./dist/types",
     "modie": "PATH=\"$HOME/.bun/bin:$PATH\" bun --silent ./src/interfaces/cli/bin.ts",
     "typecheck": "bun check",
-    "test": "bun test"
+    "test": "bun test",
+    "prepublishOnly": "bun run build && bun test"
   },
   "devDependencies": {
     "@types/bun": "latest"

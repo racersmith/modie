@@ -2,4 +2,5 @@
  * Modie: Architectural governance engine & context compiler
  */
 
-export {};
+export * from "./core/index.ts";
+
