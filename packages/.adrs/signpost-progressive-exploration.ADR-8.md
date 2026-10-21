@@ -8,7 +8,7 @@ links:
 
 # Context
 
-In multi-package repositories and monorepos, code in one package inevitably depends on sibling packages (e.g. `packages/mcp-server` depending on `packages/core`).
+In multi-package repositories and monorepos, code in one package inevitably depends on sibling packages or interfaces (e.g. `packages/interfaces/mcp` depending on `packages/core`).
 
 Attempting to eagerly resolve and import cross-package dependencies into the agent's initial prompt creates severe architectural hazards:
 1. **Tight Build-Tool Coupling:** Requires Canon to parse package manifests (`package.json`, `Cargo.toml`, `go.mod`, etc.), opening a maintenance nightmare across diverse ecosystems.
