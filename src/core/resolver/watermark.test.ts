@@ -308,10 +308,11 @@ describe("Watermark Resolver - Live Integration on Canon Repository", () => {
     const trunkDetails = await resolveWatermark({ branch: "dev" });
     expect(trunkDetails.strategy).toBe("trunk");
     expect(trunkDetails.activeIds).toContain("1");
-    expect(trunkDetails.activeIds).toContain("5");
     expect(trunkDetails.activeIds).toContain("6");
     expect(trunkDetails.deletedIds).toContain("2");
     expect(trunkDetails.deletedIds).toContain("3");
+    expect(trunkDetails.deletedIds).toContain("4");
+    expect(trunkDetails.deletedIds).toContain("5");
     expect(trunkDetails.nextId).toBe("7");
     expect(trunkDetails.fullTaskId).toBe("TASK-7");
   });
