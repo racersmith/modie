@@ -5,3 +5,17 @@
 
 export * as TaskPrimitive from "./primitives/task/index.ts";
 export * from "./primitives/task/types.ts";
+
+export * as Resolver from "./resolver/index.ts";
+export * from "./resolver/types.ts";
+
+export {
+  createTask,
+  findDeepestCommonAncestor,
+  resolveTaskDirectories,
+  validateTaskScope,
+} from "./task-creation.ts";
+export type {
+  CreateTaskOptions,
+  CreateTaskResult,
+} from "./task-creation.ts";

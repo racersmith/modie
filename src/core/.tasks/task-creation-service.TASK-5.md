@@ -20,10 +20,10 @@ In compliance with RULE-25 (Interface-Core Decoupling), this service must be exp
 
 # Acceptance Criteria
 
-- [ ] Implement `createTask` domain function in `src/core` accepting title, optional scope directory, links, and context.
-- [ ] Resolve target file location adhering to RULE-8 (`<dir>/.tasks/[slug].TASK-[ID].md` or `<dir>/[slug].TASK-[ID].md`).
-- [ ] Validate task placement and downward blast radius constraints per RULE-6 and RULE-12.
-- [ ] Call the watermark resolver (TASK-4) to obtain the next monotonic ID.
-- [ ] Call the task primitive template generator (TASK-3) and write the file to disk.
-- [ ] Export `createTask` and associated types from `src/core/index.ts` as the public domain API.
-- [ ] Add integration tests verifying end-to-end task creation via the core API.
+- [x] Implement `createTask` domain function in `src/core` accepting title, optional scope directory, links, and context.
+- [x] Resolve target file location adhering to RULE-8 (`<dir>/.tasks/[slug].TASK-[ID].md` or `<dir>/[slug].TASK-[ID].md`).
+- [x] Validate task placement and downward blast radius constraints per RULE-6 and RULE-12.
+- [x] Call the watermark resolver (TASK-4) to obtain the next monotonic ID.
+- [x] Call the task primitive template generator (TASK-3) and write the file to disk.
+- [x] Export `createTask` and associated types from `src/core/index.ts` as the public domain API.
+- [x] Add integration tests verifying end-to-end task creation via the core API.
