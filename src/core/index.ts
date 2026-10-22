@@ -109,6 +109,11 @@ export type {
 } from "./rule/creation.ts";
 
 // Query & inspection domain module
+export * as QueryPrimitive from "./query/index.ts";
+export * from "./query/types.ts";
+export {
+  findArtifactReferences,
+} from "./query/references.ts";
 export {
   getArtifactDetails,
   parseCanonicalTag,

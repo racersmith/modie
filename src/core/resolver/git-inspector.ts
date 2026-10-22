@@ -137,6 +137,18 @@ export async function inspectGitDeletedArtifacts(
     .map((l) => l.trim())
     .filter(Boolean);
 
+  // Collect currently active tracked artifact IDs in Git to distinguish renames from true deletions
+  const activeGitOutput = await runGit(["ls-files", "--", pattern], cwd);
+  const activeGitIds = new Set<string>();
+  if (activeGitOutput) {
+    for (const activeLine of activeGitOutput.split("\n")) {
+      const p = parseArtifactFilename(activeLine.trim());
+      if (p) {
+        activeGitIds.add(p.id.toLowerCase());
+      }
+    }
+  }
+
   const discovered: DiscoveredArtifact[] = [];
   const seenPaths = new Set<string>();
   const targetSubtype = subtype ? (subtype.toUpperCase() as IndexableSubtype) : undefined;
@@ -148,6 +160,11 @@ export async function inspectGitDeletedArtifacts(
     const parsed = parseArtifactFilename(line);
     if (parsed) {
       if (!targetSubtype || parsed.subtype === targetSubtype) {
+        // If an artifact with this ID is currently tracked in Git, it was renamed/moved, not deleted
+        if (activeGitIds.has(parsed.id.toLowerCase())) {
+          continue;
+        }
+
         discovered.push({
           id: parsed.id,
           subtype: parsed.subtype,
@@ -158,6 +175,34 @@ export async function inspectGitDeletedArtifacts(
           isArchived: parsed.isArchived,
           status: "deleted",
         });
+      }
+    }
+  }
+
+  // Ensure any task explicitly completed via commit ceremony is permanently recorded as deleted (RULE-21)
+  if (!targetSubtype || targetSubtype === "TASK") {
+    const completedLog = await runGit(
+      ["log", "--all", "--grep=delete completed TASK-", "--format=%s"],
+      cwd,
+    );
+    if (completedLog) {
+      for (const msg of completedLog.split("\n")) {
+        const match = msg.match(/delete completed TASK-([A-Za-z0-9_-]+)/i);
+        if (match && match[1]) {
+          const compId = match[1];
+          if (!discovered.some((d) => d.id.toLowerCase() === compId.toLowerCase())) {
+            discovered.push({
+              id: compId,
+              subtype: "TASK",
+              tag: `TASK-${compId}`,
+              slug: "",
+              filename: "",
+              filepath: "",
+              isArchived: false,
+              status: "deleted",
+            });
+          }
+        }
       }
     }
   }
