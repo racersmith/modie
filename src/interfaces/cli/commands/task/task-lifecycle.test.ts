@@ -394,8 +394,8 @@ CLI Commit Ceremony Test.
       { cwd: gitDir },
     );
     const messages = logOut.trim().split("\n");
-    expect(messages[0]).toBe("chore(task): delete completed TASK-305 artifact per RULE-21");
-    expect(messages[1]).toBe("feat: verify all acceptance criteria for TASK-305");
+    expect(messages[0]).toBe("chore(task): delete completed TASK-305 artifact");
+    expect(messages[1]).toBe("feat(TASK-305): commit-task");
 
     await rm(gitDir, { recursive: true, force: true });
   });

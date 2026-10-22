@@ -372,8 +372,8 @@ Two phase task commit test.
     );
 
     const commitMessages = logOut.trim().split("\n");
-    expect(commitMessages[0]).toBe("chore(task): delete completed TASK-50 artifact per RULE-21");
-    expect(commitMessages[1]).toBe("feat: verify all acceptance criteria for TASK-50");
+    expect(commitMessages[0]).toBe("chore(task): delete completed TASK-50 artifact");
+    expect(commitMessages[1]).toBe("feat(TASK-50): feature-x");
 
     // Verify git diff-filter=D detects the deleted task
     const { stdout: deletedOut } = await execFileAsync(
@@ -429,7 +429,7 @@ Retained commit test.
     );
     const commitMessages = logOut.trim().split("\n");
     expect(commitMessages.length).toBe(1);
-    expect(commitMessages[0]).toBe("feat: verify all acceptance criteria for TASK-51");
+    expect(commitMessages[0]).toBe("feat(TASK-51): retained");
   });
 
   // @verifies ADR-6, RULE-21, RULE-22

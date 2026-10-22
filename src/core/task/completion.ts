@@ -73,8 +73,8 @@ export interface CompleteTaskOptions {
 
   /**
    * Whether to execute the atomic two-phase Git commit ceremony per ADR-6 and RULE-21.
-   * Phase 1: feat: verify all acceptance criteria for TASK-<id>
-   * Phase 2: chore(task): delete completed TASK-<id> artifact per RULE-21
+   * - Phase 1: `feat(TASK-<id>): <slug>`
+   * - Phase 2: `chore(task): delete completed TASK-<id> artifact`
    */
   commit?: boolean;
 
@@ -407,7 +407,7 @@ export async function completeTask(
 
     let phase1Hash: string | undefined;
     if (stagedDiff && stagedDiff.length > 0) {
-      const phase1Msg = `feat: verify all acceptance criteria for TASK-${parsed.id}`;
+      const phase1Msg = `feat(TASK-${parsed.id}): ${parsed.slug}`;
       await runGitCommand(["commit", "-m", phase1Msg, "--", relFilepath], cwd);
       phase1Hash = (await runGitCommand(["rev-parse", "--short", "HEAD"], cwd)) || undefined;
     } else {
@@ -419,7 +419,7 @@ export async function completeTask(
       // Phase 2: Commit artifact deletion
       await rm(filepath, { force: true });
       await runGitCommand(["add", "-u", "--", relFilepath], cwd);
-      const phase2Msg = `chore(task): delete completed TASK-${parsed.id} artifact per RULE-21`;
+      const phase2Msg = `chore(task): delete completed TASK-${parsed.id} artifact`;
       await runGitCommand(["commit", "-m", phase2Msg, "--", relFilepath], cwd);
       phase2Hash = (await runGitCommand(["rev-parse", "--short", "HEAD"], cwd)) || undefined;
     }
@@ -449,8 +449,8 @@ export async function completeTask(
 
 /**
  * Orchestrates the atomic two-phase Git commit ceremony for completing a task per ADR-6 and RULE-21.
- * Phase 1: Commits verified acceptance criteria (feat: verify all acceptance criteria for TASK-<id>).
- * Phase 2: Commits artifact deletion (chore(task): delete completed TASK-<id> artifact per RULE-21).
+ * Phase 1: Commits verified acceptance criteria (feat(TASK-<id>): <slug>).
+ * Phase 2: Commits artifact deletion (chore(task): delete completed TASK-<id> artifact).
  */
 export async function executeTwoPhaseTaskCommit(
   taskIdentifier: string,
