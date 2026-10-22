@@ -16,7 +16,7 @@ Automate the two-phase Git commit ceremony for ephemeral task completion (commit
 
 # Acceptance Criteria
 
-- [ ] Implement core Git commit orchestration service for atomic two-phase completion (phase 1: verified criteria commit; phase 2: deletion commit)
-- [ ] Add --commit flag to modie task complete (or modie task finish alias) that executes both commit phases automatically with standard commit messages
-- [ ] Implement Git history guard preventing resurrection of previously deleted task IDs during task creation or validation
-- [ ] Add unit and integration tests verifying two-phase commit execution and zombie task resurrection prevention
+- [x] Implement core Git commit orchestration service for atomic two-phase completion (phase 1: verified criteria commit; phase 2: deletion commit)
+- [x] Add --commit flag to modie task complete (or modie task finish alias) that executes both commit phases automatically with standard commit messages
+- [x] Implement Git history guard preventing resurrection of previously deleted task IDs during task creation or validation
+- [x] Add unit and integration tests verifying two-phase commit execution and zombie task resurrection prevention
