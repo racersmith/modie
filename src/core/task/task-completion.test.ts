@@ -502,8 +502,8 @@ Non git.
     await rm(nonGitDir, { recursive: true, force: true });
   });
 
-  // @verifies ADR-6, RULE-21, RULE-22 (TASK-25)
-  it("[ADR-6][RULE-21][TASK-25] should stage all pending code and task changes in Phase 1 commit when working tree is dirty", async () => {
+  // @verifies ADR-6, RULE-21, RULE-22, RULE-32
+  it("[ADR-6][RULE-32] should stage all pending code and task changes in Phase 1 commit when working tree is dirty", async () => {
     const { execFile } = await import("node:child_process");
     const { promisify } = await import("node:util");
     const execFileAsync = promisify(execFile);
@@ -564,8 +564,8 @@ Dirty tree completion test.
     expect(statusOut.trim()).toBe("");
   });
 
-  // @verifies ADR-6, RULE-21, RULE-22 (TASK-25)
-  it("[ADR-6][RULE-21][TASK-25] should automatically skip Phase 1 commit when working tree is already clean", async () => {
+  // @verifies ADR-6, RULE-21, RULE-22, RULE-32
+  it("[ADR-6][RULE-32] should automatically skip Phase 1 commit when working tree is already clean", async () => {
     const { execFile } = await import("node:child_process");
     const { promisify } = await import("node:util");
     const execFileAsync = promisify(execFile);

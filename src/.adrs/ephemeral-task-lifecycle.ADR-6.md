@@ -8,6 +8,7 @@ links:
   - RULE-18
   - RULE-21
   - RULE-22
+  - RULE-32
   - ADR-9
 ---
 

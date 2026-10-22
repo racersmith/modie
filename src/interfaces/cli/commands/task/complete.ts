@@ -1,7 +1,7 @@
 /**
  * CLI command handler for `modie task complete <id> [options]` (alias: finish).
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
- * Enforces ADR-6, RULE-21, and RULE-22.
+ * Enforces ADR-6, RULE-21, RULE-22, and RULE-32.
  */
 
 import { completeTask, runGit } from "../../../../core/index.ts";
@@ -18,7 +18,7 @@ Arguments:
   <id-or-path>            Task ID (e.g. TASK-7-1, 7-1), slug, or file path
 
 Options:
-  -c, --commit            Execute atomic two-phase Git commit ceremony (ADR-6, RULE-21) (default in git repo)
+  -c, --commit            Execute atomic two-phase Git commit ceremony (ADR-6, RULE-21, RULE-32) (default in git repo)
       --no-commit         Disable automatic Git commits and only delete the artifact locally
   -f, --force             Force completion even if acceptance criteria remain unchecked
       --keep-file         Retain the task artifact file on disk instead of deleting it
