@@ -145,6 +145,11 @@ export type {
 // Resolver & scan domain module
 export * as Resolver from "./resolver/index.ts";
 export * from "./resolver/types.ts";
+export {
+  runGit,
+  runGitCommand,
+  detectGitBranch,
+} from "./resolver/git-inspector.ts";
 
 // Configuration domain module
 export * as ConfigPrimitive from "./config/index.ts";

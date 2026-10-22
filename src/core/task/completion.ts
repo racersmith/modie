@@ -397,21 +397,22 @@ export async function completeTask(
       await writeFile(filepath, updatedLines.join("\n"), "utf8");
     }
 
-    // Phase 1: Commit verified criteria state
-    await runGitCommand(["add", relFilepath], cwd);
-
-    const stagedDiff = await runGit(
-      ["diff", "--cached", "--name-only", "--", relFilepath],
-      cwd,
-    );
+    // Inspect working tree status for pending implementation and criteria changes
+    const statusOutput = await runGit(["status", "--porcelain"], cwd);
+    const hasPendingChanges = Boolean(statusOutput && statusOutput.trim().length > 0);
 
     let phase1Hash: string | undefined;
-    if (stagedDiff && stagedDiff.length > 0) {
-      const phase1Msg = `feat(TASK-${parsed.id}): ${parsed.slug}`;
-      await runGitCommand(["commit", "-m", phase1Msg, "--", relFilepath], cwd);
-      phase1Hash = (await runGitCommand(["rev-parse", "--short", "HEAD"], cwd)) || undefined;
-    } else {
-      phase1Hash = (await runGitCommand(["rev-parse", "--short", "HEAD"], cwd)) || undefined;
+
+    if (hasPendingChanges) {
+      // Phase 1: Stage all working tree changes and commit verified implementation/criteria state
+      await runGitCommand(["add", "-A"], cwd);
+
+      const stagedDiff = await runGit(["diff", "--cached", "--name-only"], cwd);
+      if (stagedDiff && stagedDiff.trim().length > 0) {
+        const phase1Msg = `feat(TASK-${parsed.id}): ${parsed.slug}`;
+        await runGitCommand(["commit", "-m", phase1Msg], cwd);
+        phase1Hash = (await runGitCommand(["rev-parse", "--short", "HEAD"], cwd)) || undefined;
+      }
     }
 
     let phase2Hash: string | undefined;

@@ -85,7 +85,7 @@ describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-
     let stdoutOutput = "";
     let stderrOutput = "";
 
-    const exitCode = await handleReferences(["TASK-20", "--to"], {
+    const exitCode = await handleReferences(["RULE-31", "--to"], {
       stdout: (msg) => {
         stdoutOutput += msg + "\n";
       },
