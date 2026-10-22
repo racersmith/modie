@@ -4,8 +4,9 @@
  * Enforces RULE-21 and RULE-22.
  */
 
-import { completeTask } from "../../core/index.ts";
-import type { CliIoOptions } from "./types.ts";
+import { completeTask } from "../../../../core/index.ts";
+import { parseCliArgs } from "../../arg-parser.ts";
+import type { CliIoOptions } from "../../types.ts";
 
 /**
  * Prints usage instructions for `modie task complete`.
@@ -37,55 +38,44 @@ export async function handleTaskComplete(
     options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
   const cwd = options.cwd ?? process.cwd();
 
-  let taskIdentifier: string | undefined;
-  let force = false;
-  let deleteArtifact = true;
-  let json = false;
+  const parsed = parseCliArgs({
+    args,
+    options: {
+      help: { type: "boolean", short: "h" },
+      json: { type: "boolean" },
+      force: { type: "boolean", short: "f" },
+      "keep-file": { type: "boolean" },
+      "no-delete": { type: "boolean" },
+    },
+    helpUsage: "modie task complete --help",
+    stderr,
+  });
 
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i]!;
-
-    if (arg === "-h" || arg === "--help") {
-      printTaskCompleteHelp(stderr);
-      return 0;
-    }
-
-    if (arg === "-f" || arg === "--force") {
-      force = true;
-      continue;
-    }
-
-    if (arg === "--keep-file" || arg === "--no-delete") {
-      deleteArtifact = false;
-      continue;
-    }
-
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-
-    if (arg.startsWith("-")) {
-      stderr(
-        `Error: Unknown flag "${arg}". Run 'modie task complete --help' for usage.`,
-      );
-      return 1;
-    }
-
-    if (!taskIdentifier) {
-      taskIdentifier = arg;
-    } else {
-      stderr(`Error: Unexpected additional argument "${arg}".`);
-      return 1;
-    }
+  if (!parsed) {
+    return 1;
   }
 
-  if (!taskIdentifier) {
+  if (parsed.values.help) {
+    printTaskCompleteHelp(stderr);
+    return 0;
+  }
+
+  if (parsed.positionals.length === 0) {
     stderr(
       "Error: Missing required task identifier. Usage: modie task complete <id-or-path> [options]",
     );
     return 1;
   }
+
+  if (parsed.positionals.length > 1) {
+    stderr(`Error: Unexpected additional argument "${parsed.positionals[1]}".`);
+    return 1;
+  }
+
+  const taskIdentifier = parsed.positionals[0]!;
+  const force = Boolean(parsed.values.force);
+  const deleteArtifact = !Boolean(parsed.values["keep-file"] || parsed.values["no-delete"]);
+  const json = Boolean(parsed.values.json);
 
   try {
     const result = await completeTask(taskIdentifier, {

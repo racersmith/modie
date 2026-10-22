@@ -1,20 +1,32 @@
 /**
- * Modie CLI dispatcher.
- * Handles command routing and global flags (--help, --version).
- * Complies with RULE-27.
+ * Modie CLI dispatcher and declarative command registry.
+ * Complies with RULE-25 and RULE-27.
  */
 
-import { handleFind } from "./find.ts";
-import { handleRuleCreate } from "./rule-create.ts";
-import { handleShow } from "./show.ts";
-import { handleTaskCheck } from "./task-check.ts";
-import { handleTaskComplete } from "./task-complete.ts";
-import { handleTaskCreate } from "./task-create.ts";
-import { handleTaskList } from "./task-list.ts";
-import { handleTaskStatus } from "./task-status.ts";
+import { handleFind } from "./commands/find/find.ts";
+import { handleShow } from "./commands/show/show.ts";
+import { handleRuleCreate } from "./commands/rule/create.ts";
+import {
+  handleTaskCheck,
+  handleTaskComplete,
+  handleTaskCreate,
+  handleTaskList,
+  handleTaskStatus,
+} from "./commands/task/index.ts";
 import type { CliIoOptions } from "./types.ts";
 
 export const MODIE_VERSION = "0.1.0";
+
+export type CommandHandler = (
+  args: string[],
+  options: CliIoOptions,
+) => Promise<number>;
+
+export interface CommandNamespace {
+  help: (stderr: (msg: string) => void) => void;
+  commands: Record<string, CommandHandler>;
+  aliases?: Record<string, string>;
+}
 
 /**
  * Prints global Modie CLI usage to stderr.
@@ -42,6 +54,53 @@ Options:
   -v, --version                Show version
 `);
 }
+
+export function printTaskNamespaceHelp(stderr: (msg: string) => void): void {
+  stderr(`Usage: modie task <subcommand> [options]
+
+Subcommands:
+  create <title>               Create a new TASK artifact
+  check <id> --item <n>        Check or uncheck an acceptance criteria item
+  complete <id>                Verify criteria and delete completed task per RULE-21
+  list [options]               List active tasks with DAG readiness and progress
+  status [id] [options]        Inspect active queue or specific task status
+`);
+}
+
+export function printRuleNamespaceHelp(stderr: (msg: string) => void): void {
+  stderr(`Usage: modie rule <subcommand> [options]
+
+Subcommands:
+  create <title>               Create a new RULE artifact
+`);
+}
+
+const directCommands: Record<string, CommandHandler> = {
+  find: handleFind,
+  show: handleShow,
+};
+
+const namespaces: Record<string, CommandNamespace> = {
+  task: {
+    help: printTaskNamespaceHelp,
+    commands: {
+      create: handleTaskCreate,
+      check: handleTaskCheck,
+      complete: handleTaskComplete,
+      list: handleTaskList,
+      status: handleTaskStatus,
+    },
+    aliases: {
+      ls: "list",
+    },
+  },
+  rule: {
+    help: printRuleNamespaceHelp,
+    commands: {
+      create: handleRuleCreate,
+    },
+  },
+};
 
 /**
  * Main CLI entrypoint router.
@@ -72,84 +131,36 @@ export async function runCli(
 
   const [command, ...subArgs] = args;
 
-  if (command === "find") {
-    return handleFind(subArgs, options);
+  // Direct root commands (find, show)
+  const directHandler = directCommands[command!];
+  if (directHandler) {
+    return directHandler(subArgs, options);
   }
 
-  if (command === "show") {
-    return handleShow(subArgs, options);
-  }
-
-  if (command === "rule") {
+  // Namespaced command groups (task, rule)
+  const ns = namespaces[command!];
+  if (ns) {
     if (
       subArgs.length === 0 ||
       subArgs[0] === "-h" ||
       subArgs[0] === "--help" ||
       subArgs[0] === "help"
     ) {
-      stderr(`Usage: modie rule <subcommand> [options]
-
-Subcommands:
-  create <title>               Create a new RULE artifact
-`);
+      ns.help(stderr);
       return 0;
     }
 
-    const [subcommand, ...ruleArgs] = subArgs;
+    const [rawSubcommand, ...cmdArgs] = subArgs;
+    const subcommand = ns.aliases?.[rawSubcommand!] ?? rawSubcommand!;
+    const handler = ns.commands[subcommand];
 
-    if (subcommand === "create") {
-      return handleRuleCreate(ruleArgs, options);
+    if (handler) {
+      return handler(cmdArgs, options);
     }
 
+    const available = Object.keys(ns.commands).join(", ");
     stderr(
-      `Error: Unknown rule subcommand "${subcommand}". Available: create`,
-    );
-    return 1;
-  }
-
-  if (command === "task") {
-    if (
-      subArgs.length === 0 ||
-      subArgs[0] === "-h" ||
-      subArgs[0] === "--help" ||
-      subArgs[0] === "help"
-    ) {
-      stderr(`Usage: modie task <subcommand> [options]
-
-Subcommands:
-  create <title>               Create a new TASK artifact
-  check <id> --item <n>        Check or uncheck an acceptance criteria item
-  complete <id>                Verify criteria and delete completed task per RULE-21
-  list [options]               List active tasks with DAG readiness and progress
-  status [id] [options]        Inspect active queue or specific task status
-`);
-      return 0;
-    }
-
-    const [subcommand, ...taskArgs] = subArgs;
-
-    if (subcommand === "create") {
-      return handleTaskCreate(taskArgs, options);
-    }
-
-    if (subcommand === "check") {
-      return handleTaskCheck(taskArgs, options);
-    }
-
-    if (subcommand === "complete") {
-      return handleTaskComplete(taskArgs, options);
-    }
-
-    if (subcommand === "list" || subcommand === "ls") {
-      return handleTaskList(taskArgs, options);
-    }
-
-    if (subcommand === "status") {
-      return handleTaskStatus(taskArgs, options);
-    }
-
-    stderr(
-      `Error: Unknown task subcommand "${subcommand}". Available: create, check, complete, list, status`,
+      `Error: Unknown ${command} subcommand "${rawSubcommand}". Available: ${available}`,
     );
     return 1;
   }

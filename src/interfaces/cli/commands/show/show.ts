@@ -3,8 +3,9 @@
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
  */
 
-import { getArtifactDetails } from "../../core/index.ts";
-import type { CliIoOptions } from "./types.ts";
+import { getArtifactDetails } from "../../../../core/index.ts";
+import { parseCliArgs } from "../../arg-parser.ts";
+import type { CliIoOptions } from "../../types.ts";
 
 /**
  * Prints usage instructions for `modie show`.
@@ -37,47 +38,40 @@ export async function handleShow(
     options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
   const cwd = options.cwd ?? process.cwd();
 
-  let targetIdentifier: string | undefined;
-  let json = false;
-  let raw = false;
+  const parsed = parseCliArgs({
+    args,
+    options: {
+      help: { type: "boolean", short: "h" },
+      json: { type: "boolean" },
+      raw: { type: "boolean" },
+      content: { type: "boolean" },
+    },
+    helpUsage: "modie show --help",
+    stderr,
+  });
 
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i]!;
-
-    if (arg === "-h" || arg === "--help") {
-      printShowHelp(stderr);
-      return 0;
-    }
-
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-
-    if (arg === "--raw" || arg === "--content") {
-      raw = true;
-      continue;
-    }
-
-    if (arg.startsWith("-")) {
-      stderr(
-        `Error: Unknown flag "${arg}". Run 'modie show --help' for usage.`,
-      );
-      return 1;
-    }
-
-    if (!targetIdentifier) {
-      targetIdentifier = arg;
-    } else {
-      stderr(`Error: Unexpected additional argument "${arg}".`);
-      return 1;
-    }
+  if (!parsed) {
+    return 1;
   }
 
-  if (!targetIdentifier) {
+  if (parsed.values.help) {
+    printShowHelp(stderr);
+    return 0;
+  }
+
+  if (parsed.positionals.length === 0) {
     stderr("Error: Missing required artifact identifier. Usage: modie show <tag>");
     return 1;
   }
+
+  if (parsed.positionals.length > 1) {
+    stderr(`Error: Unexpected additional argument "${parsed.positionals[1]}".`);
+    return 1;
+  }
+
+  const targetIdentifier = parsed.positionals[0]!;
+  const json = Boolean(parsed.values.json);
+  const raw = Boolean(parsed.values.raw || parsed.values.content);
 
   try {
     const details = await getArtifactDetails(targetIdentifier, { cwd });

@@ -3,8 +3,9 @@
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
  */
 
-import { checkTaskItem } from "../../core/index.ts";
-import type { CliIoOptions } from "./types.ts";
+import { checkTaskItem } from "../../../../core/index.ts";
+import { parseCliArgs } from "../../arg-parser.ts";
+import type { CliIoOptions } from "../../types.ts";
 
 /**
  * Prints usage instructions for `modie task check`.
@@ -36,74 +37,60 @@ export async function handleTaskCheck(
     options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
   const cwd = options.cwd ?? process.cwd();
 
-  let taskIdentifier: string | undefined;
-  let itemIndex: number | undefined;
-  let completed = true;
-  let json = false;
+  const parsed = parseCliArgs({
+    args,
+    options: {
+      help: { type: "boolean", short: "h" },
+      json: { type: "boolean" },
+      uncheck: { type: "boolean", short: "u" },
+      item: { type: "string", short: "i" },
+      index: { type: "string" },
+    },
+    helpUsage: "modie task check --help",
+    stderr,
+  });
 
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i]!;
-
-    if (arg === "-h" || arg === "--help") {
-      printTaskCheckHelp(stderr);
-      return 0;
-    }
-
-    if (arg === "-i" || arg === "--item" || arg === "--index") {
-      const val = args[++i];
-      if (!val) {
-        stderr("Error: Missing argument for --item flag.");
-        return 1;
-      }
-      const parsed = parseInt(val, 10);
-      if (isNaN(parsed) || parsed < 1) {
-        stderr(
-          `Error: Invalid item index "${val}". Must be a positive integer (1-based index).`,
-        );
-        return 1;
-      }
-      itemIndex = parsed;
-      continue;
-    }
-
-    if (arg === "-u" || arg === "--uncheck") {
-      completed = false;
-      continue;
-    }
-
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-
-    if (arg.startsWith("-")) {
-      stderr(
-        `Error: Unknown flag "${arg}". Run 'modie task check --help' for usage.`,
-      );
-      return 1;
-    }
-
-    if (!taskIdentifier) {
-      taskIdentifier = arg;
-    } else {
-      stderr(`Error: Unexpected additional argument "${arg}".`);
-      return 1;
-    }
+  if (!parsed) {
+    return 1;
   }
 
-  if (!taskIdentifier) {
+  if (parsed.values.help) {
+    printTaskCheckHelp(stderr);
+    return 0;
+  }
+
+  if (parsed.positionals.length === 0) {
     stderr(
       "Error: Missing required task identifier. Usage: modie task check <id-or-path> --item <index>",
     );
     return 1;
   }
 
-  if (itemIndex === undefined) {
+  if (parsed.positionals.length > 1) {
+    stderr(`Error: Unexpected additional argument "${parsed.positionals[1]}".`);
+    return 1;
+  }
+
+  const taskIdentifier = parsed.positionals[0]!;
+  const rawItem = parsed.values.item ?? parsed.values.index;
+
+  if (rawItem === undefined) {
     stderr(
       "Error: Missing required --item flag. Usage: modie task check <id-or-path> --item <index>",
     );
     return 1;
   }
+
+  const itemIndex = parseInt(String(rawItem), 10);
+  if (isNaN(itemIndex) || itemIndex < 1) {
+    stderr(
+      `Error: Invalid item index "${rawItem}". Must be a positive integer (1-based index).`,
+    );
+    return 1;
+  }
+
+  const completed = !parsed.values.uncheck;
+  const json = Boolean(parsed.values.json);
 
   try {
     const result = await checkTaskItem(taskIdentifier, itemIndex, {

@@ -3,8 +3,9 @@
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
  */
 
-import { queryTaskQueue, type TaskQueueItem } from "../../core/index.ts";
-import type { CliIoOptions } from "./types.ts";
+import { queryTaskQueue, type TaskQueueItem } from "../../../../core/index.ts";
+import { parseCliArgs } from "../../arg-parser.ts";
+import type { CliIoOptions } from "../../types.ts";
 
 /**
  * Prints usage instructions for `modie task list`.
@@ -78,54 +79,37 @@ export async function handleTaskList(
     options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
   const cwd = options.cwd ?? process.cwd();
 
-  let readyOnly = false;
-  let blockedOnly = false;
-  let json = false;
-  let scope: string | undefined;
+  const parsed = parseCliArgs({
+    args,
+    options: {
+      help: { type: "boolean", short: "h" },
+      json: { type: "boolean" },
+      ready: { type: "boolean", short: "r" },
+      blocked: { type: "boolean", short: "b" },
+      scope: { type: "string" },
+    },
+    helpUsage: "modie task list --help",
+    stderr,
+  });
 
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i]!;
-
-    if (arg === "-h" || arg === "--help") {
-      printTaskListHelp(stderr);
-      return 0;
-    }
-
-    if (arg === "-r" || arg === "--ready") {
-      readyOnly = true;
-      continue;
-    }
-
-    if (arg === "-b" || arg === "--blocked") {
-      blockedOnly = true;
-      continue;
-    }
-
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-
-    if (arg === "--scope") {
-      const val = args[++i];
-      if (!val) {
-        stderr("Error: Missing argument for --scope flag.");
-        return 1;
-      }
-      scope = val;
-      continue;
-    }
-
-    if (arg.startsWith("-")) {
-      stderr(
-        `Error: Unknown flag "${arg}". Run 'modie task list --help' for usage.`,
-      );
-      return 1;
-    }
-
-    stderr(`Error: Unexpected argument "${arg}".`);
+  if (!parsed) {
     return 1;
   }
+
+  if (parsed.values.help) {
+    printTaskListHelp(stderr);
+    return 0;
+  }
+
+  if (parsed.positionals.length > 0) {
+    stderr(`Error: Unexpected argument "${parsed.positionals[0]}".`);
+    return 1;
+  }
+
+  const readyOnly = Boolean(parsed.values.ready);
+  const blockedOnly = Boolean(parsed.values.blocked);
+  const json = Boolean(parsed.values.json);
+  const scope = parsed.values.scope as string | undefined;
 
   try {
     const tasks = await queryTaskQueue({

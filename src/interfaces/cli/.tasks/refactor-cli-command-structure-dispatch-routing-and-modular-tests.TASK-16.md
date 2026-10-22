@@ -15,8 +15,8 @@ Refactor the CLI interface architecture to improve maintainability: group comman
 
 # Acceptance Criteria
 
-- [ ] Organize CLI command handlers into dedicated subdirectories under src/interfaces/cli/commands/ (task, rule, find, show)
-- [ ] Adopt node:util.parseArgs for structured, zero-dependency flag and option parsing adhering strictly to RULE-27
-- [ ] Refactor CLI dispatcher in cli.ts to use a declarative command registry or router
-- [ ] Extract shared test fixtures and split cli.test.ts into command-scoped test files
-- [ ] Verify all CLI commands, edge cases, subprocess executions, typecheck, and build pass with zero regression
+- [x] Organize CLI command handlers into dedicated subdirectories under src/interfaces/cli/commands/ (task, rule, find, show)
+- [x] Adopt node:util.parseArgs for structured, zero-dependency flag and option parsing adhering strictly to RULE-27
+- [x] Refactor CLI dispatcher in cli.ts to use a declarative command registry or router
+- [x] Extract shared test fixtures and split cli.test.ts into command-scoped test files
+- [x] Verify all CLI commands, edge cases, subprocess executions, typecheck, and build pass with zero regression

@@ -4,12 +4,8 @@
  */
 
 export * from "./types.ts";
-export * from "./task-create.ts";
-export * from "./task-check.ts";
-export * from "./task-complete.ts";
-export * from "./task-list.ts";
-export * from "./task-status.ts";
-export * from "./rule-create.ts";
-export * from "./find.ts";
-export * from "./show.ts";
+export * from "./commands/find/index.ts";
+export * from "./commands/show/index.ts";
+export * from "./commands/task/index.ts";
+export * from "./commands/rule/index.ts";
 export * from "./cli.ts";

@@ -3,8 +3,9 @@
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
  */
 
-import { createRule, type CreateRuleOptions } from "../../core/index.ts";
-import type { CliIoOptions } from "./types.ts";
+import { createRule, type CreateRuleOptions } from "../../../../core/index.ts";
+import { parseCliArgs } from "../../arg-parser.ts";
+import type { CliIoOptions } from "../../types.ts";
 
 /**
  * Prints usage instructions for `modie rule create`.
@@ -39,80 +40,32 @@ export async function handleRuleCreate(
     options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
   const cwd = options.cwd ?? process.cwd();
 
-  const titleWords: string[] = [];
-  let scopeDir: string | undefined;
-  let context: string | undefined;
-  const links: string[] = [];
-  let useSubtypeContainer = true;
-  let json = false;
+  const parsed = parseCliArgs({
+    args,
+    options: {
+      help: { type: "boolean", short: "h" },
+      json: { type: "boolean" },
+      flat: { type: "boolean" },
+      scope: { type: "string", short: "s" },
+      context: { type: "string", short: "c" },
+      assertion: { type: "string" },
+      link: { type: "string", multiple: true, short: "l" },
+      links: { type: "string", multiple: true },
+    },
+    helpUsage: "modie rule create --help",
+    stderr,
+  });
 
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    if (!arg) continue;
-
-    if (arg === "-h" || arg === "--help") {
-      printRuleCreateHelp(stderr);
-      return 0;
-    }
-
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-
-    if (arg === "--flat") {
-      useSubtypeContainer = false;
-      continue;
-    }
-
-    if (arg === "-s" || arg === "--scope") {
-      scopeDir = args[++i];
-      if (!scopeDir) {
-        stderr("Error: Missing argument for --scope flag.");
-        return 1;
-      }
-      continue;
-    }
-
-    if (arg === "-c" || arg === "--context" || arg === "--assertion") {
-      context = args[++i];
-      if (!context) {
-        stderr("Error: Missing argument for --context flag.");
-        return 1;
-      }
-      continue;
-    }
-
-    if (arg === "-l" || arg === "--link" || arg === "--links") {
-      const val = args[++i];
-      if (!val) {
-        stderr("Error: Missing argument for --links flag.");
-        return 1;
-      }
-      if (arg === "--link") {
-        links.push(val.trim());
-      } else {
-        links.push(
-          ...val
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean),
-        );
-      }
-      continue;
-    }
-
-    if (arg.startsWith("-")) {
-      stderr(
-        `Error: Unknown flag "${arg}". Run 'modie rule create --help' for usage.`,
-      );
-      return 1;
-    }
-
-    titleWords.push(arg);
+  if (!parsed) {
+    return 1;
   }
 
-  const title = titleWords.join(" ").trim();
+  if (parsed.values.help) {
+    printRuleCreateHelp(stderr);
+    return 0;
+  }
+
+  const title = parsed.positionals.join(" ").trim();
   if (!title) {
     stderr(
       "Error: Missing required rule title. Usage: modie rule create <title> [options]",
@@ -120,19 +73,29 @@ export async function handleRuleCreate(
     return 1;
   }
 
+  // Aggregate link values from repeated -l/--link and comma-separated --links
+  const rawLinks: string[] = [
+    ...(parsed.values.link ?? []),
+    ...(parsed.values.links ?? []),
+  ];
+  const links: string[] = [];
+  for (const item of rawLinks) {
+    links.push(...item.split(",").map((s) => s.trim()).filter(Boolean));
+  }
+
   const ruleOptions: CreateRuleOptions = {
     title,
-    scopeDir,
-    context,
+    scopeDir: parsed.values.scope,
+    context: parsed.values.context ?? parsed.values.assertion,
     links: links.length > 0 ? links : undefined,
-    useSubtypeContainer,
+    useSubtypeContainer: !parsed.values.flat,
     cwd,
   };
 
   try {
     const result = await createRule(ruleOptions);
 
-    if (json) {
+    if (parsed.values.json) {
       // Machine-parsable JSON output strictly to stdout (RULE-27)
       stdout(
         JSON.stringify(

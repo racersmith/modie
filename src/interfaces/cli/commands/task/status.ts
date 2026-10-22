@@ -3,9 +3,10 @@
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
  */
 
-import { getTaskStatus } from "../../core/index.ts";
-import { handleTaskList } from "./task-list.ts";
-import type { CliIoOptions } from "./types.ts";
+import { getTaskStatus } from "../../../../core/index.ts";
+import { parseCliArgs } from "../../arg-parser.ts";
+import type { CliIoOptions } from "../../types.ts";
+import { handleTaskList } from "./list.ts";
 
 /**
  * Prints usage instructions for `modie task status`.
@@ -37,36 +38,32 @@ export async function handleTaskStatus(
     options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
   const cwd = options.cwd ?? process.cwd();
 
-  let taskIdentifier: string | undefined;
-  let json = false;
+  const parsed = parseCliArgs({
+    args,
+    options: {
+      help: { type: "boolean", short: "h" },
+      json: { type: "boolean" },
+    },
+    helpUsage: "modie task status --help",
+    stderr,
+  });
 
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i]!;
-
-    if (arg === "-h" || arg === "--help") {
-      printTaskStatusHelp(stderr);
-      return 0;
-    }
-
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-
-    if (arg.startsWith("-")) {
-      stderr(
-        `Error: Unknown flag "${arg}". Run 'modie task status --help' for usage.`,
-      );
-      return 1;
-    }
-
-    if (!taskIdentifier) {
-      taskIdentifier = arg;
-    } else {
-      stderr(`Error: Unexpected additional argument "${arg}".`);
-      return 1;
-    }
+  if (!parsed) {
+    return 1;
   }
+
+  if (parsed.values.help) {
+    printTaskStatusHelp(stderr);
+    return 0;
+  }
+
+  if (parsed.positionals.length > 1) {
+    stderr(`Error: Unexpected additional argument "${parsed.positionals[1]}".`);
+    return 1;
+  }
+
+  const json = Boolean(parsed.values.json);
+  const taskIdentifier = parsed.positionals[0];
 
   // If no task identifier is passed, show the full queue status table
   if (!taskIdentifier) {
