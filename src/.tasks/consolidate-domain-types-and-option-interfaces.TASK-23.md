@@ -12,7 +12,7 @@ CreateRuleOptions, CreateAdrOptions, and CreateTaskOptions (along with their res
 
 # Acceptance Criteria
 
-- [ ] Move CreateRuleOptions and CreateRuleResult to src/core/rule/types.ts and update all imports
-- [ ] Move CreateAdrOptions and CreateAdrResult to src/core/adr/types.ts and update all imports
-- [ ] Move CreateTaskOptions and CreateTaskResult to src/core/task/types.ts and update all imports
-- [ ] Ensure src/core/index.ts re-exports all types cleanly and verify 0 cyclic dependencies with bun test and bun check
+- [x] Move CreateRuleOptions and CreateRuleResult to src/core/rule/types.ts and update all imports
+- [x] Move CreateAdrOptions and CreateAdrResult to src/core/adr/types.ts and update all imports
+- [x] Move CreateTaskOptions and CreateTaskResult to src/core/task/types.ts and update all imports
+- [x] Ensure src/core/index.ts re-exports all types cleanly and verify 0 cyclic dependencies with bun test and bun check

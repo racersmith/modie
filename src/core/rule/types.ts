@@ -66,3 +66,54 @@ export interface RuleRenderOptions {
    */
   assertion?: string;
 }
+
+export interface CreateRuleOptions {
+  /**
+   * Title of the rule (human-readable string).
+   * E.g. "Rule Verification Tagging"
+   */
+  title: string;
+
+  /**
+   * Optional target scope directory where the rule should reside.
+   * Defaults to workspace root (cwd).
+   */
+  scopeDir?: string;
+
+  /**
+   * Single invariant assertion claim text (RULE-3, RULE-11).
+   */
+  assertion?: string;
+
+  /**
+   * Context / description alias for assertion.
+   */
+  context?: string;
+
+  /**
+   * ADR artifact links (`links`). Must only reference `ADR-` identifiers per RULE-13.
+   * Each referenced ADR must reside in the rule's directory or an ancestor directory per RULE-16.
+   */
+  links?: string[];
+
+  /**
+   * Whether to place in a `.rules/` subtype container directory (RULE-8).
+   * Defaults to true. If false (e.g. --flat), placed flat in target directory.
+   */
+  useSubtypeContainer?: boolean;
+
+  /**
+   * Workspace root directory. Defaults to process.cwd().
+   */
+  cwd?: string;
+}
+
+export interface CreateRuleResult {
+  artifact: RuleArtifact;
+  filename: string;
+  filepath: string;
+  relativePath: string;
+  markdown: string;
+  id: string;
+  tag: string;
+}

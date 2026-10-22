@@ -43,10 +43,6 @@ export {
   resolveTaskDirectories,
   validateTaskScope,
 } from "./task/creation.ts";
-export type {
-  CreateTaskOptions,
-  CreateTaskResult,
-} from "./task/creation.ts";
 export {
   assertNotZombieTask,
   checkTaskItem,
@@ -103,10 +99,6 @@ export {
   resolveRuleDirectories,
   validateRuleAncestry,
 } from "./rule/creation.ts";
-export type {
-  CreateRuleOptions,
-  CreateRuleResult,
-} from "./rule/creation.ts";
 
 // Query & inspection domain module
 export * as QueryPrimitive from "./query/index.ts";
@@ -136,10 +128,6 @@ export {
   createAdr,
   resolveAdrDirectories,
   validateAdrScope,
-} from "./adr/creation.ts";
-export type {
-  CreateAdrOptions,
-  CreateAdrResult,
 } from "./adr/creation.ts";
 
 // Resolver & scan domain module
