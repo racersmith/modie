@@ -3,91 +3,92 @@
  * Public API exposed to interfaces (RULE-25).
  */
 
-export * as CommonPrimitive from "./primitives/common/index.ts";
-export * from "./primitives/common/types.ts";
+// Common primitive utilities & types
+export * as CommonPrimitive from "./common/index.ts";
+export * from "./common/types.ts";
 export {
   formatArtifactFilename,
   parseArtifactFilename,
   isArtifactFilename,
   isValidArtifactId,
-} from "./primitives/common/filename.ts";
+} from "./common/filename.ts";
 export {
   generateSlug,
   isValidSlug,
-} from "./primitives/common/slug.ts";
+} from "./common/slug.ts";
 export {
+  findDeepestCommonAncestor,
   getSubtypeContainerName,
   resolveArtifactDirectories,
-} from "./primitives/common/directories.ts";
+} from "./common/directories.ts";
 
-export * as TaskPrimitive from "./primitives/task/index.ts";
-export * from "./primitives/task/types.ts";
-
-export * as RulePrimitive from "./primitives/rule/index.ts";
-export * from "./primitives/rule/types.ts";
-export {
-  renderRuleMarkdown,
-  validateRuleLinks,
-} from "./primitives/rule/template.ts";
-
-export * as Resolver from "./resolver/index.ts";
-export * from "./resolver/types.ts";
-
+// Task domain module
+export * as TaskPrimitive from "./task/index.ts";
+export * from "./task/types.ts";
 export {
   createTask,
-  findDeepestCommonAncestor,
   resolveTaskDirectories,
   validateTaskScope,
-} from "./task-creation.ts";
+} from "./task/creation.ts";
 export type {
   CreateTaskOptions,
   CreateTaskResult,
-} from "./task-creation.ts";
-
-export {
-  createRule,
-  resolveRuleDirectories,
-  validateRuleAncestry,
-} from "./rule-creation.ts";
-export type {
-  CreateRuleOptions,
-  CreateRuleResult,
-} from "./rule-creation.ts";
-
+} from "./task/creation.ts";
 export {
   checkTaskItem,
   completeTask,
   getTask,
   normalizeTaskId,
   resolveTaskFile,
-} from "./task-completion.ts";
+} from "./task/completion.ts";
 export type {
   CheckTaskItemOptions,
   CheckTaskItemResult,
   CompleteTaskOptions,
   CompleteTaskResult,
   ResolveTaskOptions,
-} from "./task-completion.ts";
-
+} from "./task/completion.ts";
 export {
   compareTaskIds,
   getTaskStatus,
   queryTaskQueue,
-} from "./task-query.ts";
+} from "./task/query.ts";
 export type {
   TaskQueueItem,
   TaskQueueQueryOptions,
   TaskReadiness,
   TaskStatusDetails,
-} from "./task-query.ts";
+} from "./task/query.ts";
 
+// Rule domain module
+export * as RulePrimitive from "./rule/index.ts";
+export * from "./rule/types.ts";
+export {
+  renderRuleMarkdown,
+  validateRuleLinks,
+} from "./rule/template.ts";
+export {
+  createRule,
+  resolveRuleDirectories,
+  validateRuleAncestry,
+} from "./rule/creation.ts";
+export type {
+  CreateRuleOptions,
+  CreateRuleResult,
+} from "./rule/creation.ts";
+
+// Query & inspection domain module
 export {
   getArtifactDetails,
   parseCanonicalTag,
   resolveArtifactByTag,
-} from "./artifact-query.ts";
+} from "./query/artifact-query.ts";
 export type {
   ArtifactDetails,
   ResolveArtifactOptions,
   ResolvedArtifact,
-} from "./artifact-query.ts";
+} from "./query/artifact-query.ts";
+
+// Resolver & scan domain module
+export * as Resolver from "./resolver/index.ts";
+export * from "./resolver/types.ts";

@@ -5,11 +5,11 @@
 
 import { readFile } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
-import { parseAcceptanceCriteria } from "./primitives/task/checklist.ts";
-import type { TaskAcceptanceCriteriaItem } from "./primitives/task/types.ts";
-import { parseArtifactFilename } from "./primitives/common/filename.ts";
-import type { IndexableSubtype } from "./primitives/common/types.ts";
-import { scanActiveArtifacts } from "./resolver/active-scanner.ts";
+import { parseArtifactFilename } from "../common/filename.ts";
+import type { IndexableSubtype } from "../common/types.ts";
+import { scanActiveArtifacts } from "../resolver/active-scanner.ts";
+import { parseAcceptanceCriteria } from "../task/checklist.ts";
+import type { TaskAcceptanceCriteriaItem } from "../task/types.ts";
 
 export interface ResolvedArtifact {
   /**

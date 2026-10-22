@@ -15,8 +15,8 @@ Refactor the core architecture to establish domain-driven locality and symmetric
 
 # Acceptance Criteria
 
-- [ ] Consolidate task domain primitives and services into src/core/task/ (types, template, creation, completion, query, and tests)
-- [ ] Consolidate rule domain primitives and services into src/core/rule/ (types, template, creation, ancestry validation, and tests)
-- [ ] Relocate artifact query and inspection services into src/core/query/
-- [ ] Elevate common primitives from primitives/common/ to src/core/common/ and clean up empty primitives/ stubs
-- [ ] Preserve public core API surface in src/core/index.ts per RULE-25 and verify all tests, typecheck, and build pass with zero regression
+- [x] Consolidate task domain primitives and services into src/core/task/ (types, template, creation, completion, query, and tests)
+- [x] Consolidate rule domain primitives and services into src/core/rule/ (types, template, creation, ancestry validation, and tests)
+- [x] Relocate artifact query and inspection services into src/core/query/
+- [x] Elevate common primitives from primitives/common/ to src/core/common/ and clean up empty primitives/ stubs
+- [x] Preserve public core API surface in src/core/index.ts per RULE-25 and verify all tests, typecheck, and build pass with zero regression

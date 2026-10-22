@@ -5,12 +5,6 @@
 
 import { describe, expect, it } from "bun:test";
 import {
-  generateSlug,
-  isValidSlug,
-  formatTaskFilename,
-  parseTaskFilename,
-  isTaskFilename,
-  isValidTaskId,
   parseAcceptanceCriteria,
   areAllAcceptanceCriteriaCompleted,
   renderAcceptanceCriteria,
@@ -19,89 +13,6 @@ import {
   validateTaskDependencies,
   parseTaskMarkdown,
 } from "./index.ts";
-
-describe("TASK Primitive - Slug Generation & Validation", () => {
-  // @verifies RULE-1
-  it("[RULE-1] should generate valid kebab-case slugs from human titles", () => {
-    expect(generateSlug("Create Task CLI")).toBe("create-task-cli");
-    expect(generateSlug("Task Primitive Model (Core)")).toBe("task-primitive-model-core");
-    expect(generateSlug("   Multiple   Spaces   ")).toBe("multiple-spaces");
-    expect(generateSlug("Mixed_Case_With-Punctuation! & Symbols?")).toBe("mixed-case-with-punctuation-symbols");
-    expect(generateSlug("---Leading and Trailing Hyphens---")).toBe("leading-and-trailing-hyphens");
-  });
-
-  // @verifies RULE-1
-  it("[RULE-1] should validate strict kebab-case slugs", () => {
-    expect(isValidSlug("create-task-cli")).toBe(true);
-    expect(isValidSlug("task-123")).toBe(true);
-    expect(isValidSlug("simple")).toBe(true);
-
-    expect(isValidSlug("Create-task-cli")).toBe(false);
-    expect(isValidSlug("create_task")).toBe(false);
-    expect(isValidSlug("create--task")).toBe(false);
-    expect(isValidSlug("-create-task")).toBe(false);
-    expect(isValidSlug("create-task-")).toBe(false);
-    expect(isValidSlug("")).toBe(false);
-  });
-
-  it("should throw an error when generating slug from empty or invalid strings", () => {
-    expect(() => generateSlug("")).toThrow();
-    expect(() => generateSlug("   ")).toThrow();
-    expect(() => generateSlug("!@#$%^&*()")).toThrow();
-  });
-});
-
-describe("TASK Primitive - Filename Formatting & Parsing", () => {
-  // @verifies RULE-1
-  it("[RULE-1] should format valid task filenames with unpadded monotonic integers", () => {
-    expect(formatTaskFilename("create-task-cli", 1)).toBe("create-task-cli.TASK-1.md");
-    expect(formatTaskFilename("task-primitive-model", "42")).toBe("task-primitive-model.TASK-42.md");
-  });
-
-  // @verifies RULE-1
-  it("[RULE-1] should format valid task filenames with branch-namespaced IDs", () => {
-    expect(formatTaskFilename("sub-feature", "2-1")).toBe("sub-feature.TASK-2-1.md");
-    expect(formatTaskFilename("agent-task", "J101")).toBe("agent-task.TASK-J101.md");
-    expect(formatTaskFilename("agent-subtask", "A102.1")).toBe("agent-subtask.TASK-A102.1.md");
-  });
-
-  // @verifies RULE-1
-  it("[RULE-1] should reject invalid slugs or IDs when formatting filenames", () => {
-    expect(() => formatTaskFilename("Invalid_Slug", 1)).toThrow(/Invalid slug/);
-    expect(() => formatTaskFilename("valid-slug", "")).toThrow(/Invalid task ID/);
-    expect(() => formatTaskFilename("valid-slug", "ID with spaces")).toThrow(/Invalid task ID/);
-  });
-
-  // @verifies RULE-1
-  it("[RULE-1] should parse valid task filenames and file paths", () => {
-    const parsed1 = parseTaskFilename("create-task-cli.TASK-1.md");
-    expect(parsed1).toEqual({
-      slug: "create-task-cli",
-      id: "1",
-      filename: "create-task-cli.TASK-1.md",
-    });
-
-    const parsed2 = parseTaskFilename("src/core/primitives/task/.tasks/sub-feature.TASK-2-1.md");
-    expect(parsed2).toEqual({
-      slug: "sub-feature",
-      id: "2-1",
-      filename: "sub-feature.TASK-2-1.md",
-    });
-
-    expect(isTaskFilename("create-task-cli.TASK-1.md")).toBe(true);
-    expect(isTaskFilename("not-a-task.RULE-1.md")).toBe(false);
-    expect(isTaskFilename("random-notes.md")).toBe(false);
-  });
-
-  it("should validate allowed task ID formats", () => {
-    expect(isValidTaskId(1)).toBe(true);
-    expect(isValidTaskId("42")).toBe(true);
-    expect(isValidTaskId("2-1")).toBe(true);
-    expect(isValidTaskId("J101")).toBe(true);
-    expect(isValidTaskId("")).toBe(false);
-    expect(isValidTaskId("foo bar")).toBe(false);
-  });
-});
 
 describe("TASK Primitive - Acceptance Criteria Checklist (RULE-22)", () => {
   // @verifies RULE-22

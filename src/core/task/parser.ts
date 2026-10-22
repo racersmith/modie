@@ -2,8 +2,8 @@
  * Markdown parser for TASK primitive artifacts.
  */
 
+import { parseArtifactFilename } from "../common/index.ts";
 import { parseAcceptanceCriteria } from "./checklist.ts";
-import { parseTaskFilename } from "./filename.ts";
 import type { TaskArtifact } from "./types.ts";
 
 /**
@@ -115,8 +115,8 @@ export function parseTaskMarkdown(content: string, filePathOrFilename?: string):
   let slug = "";
 
   if (filePathOrFilename) {
-    const parsedFilename = parseTaskFilename(filePathOrFilename);
-    if (parsedFilename) {
+    const parsedFilename = parseArtifactFilename(filePathOrFilename);
+    if (parsedFilename && parsedFilename.subtype === "TASK") {
       id = parsedFilename.id;
       slug = parsedFilename.slug;
     }

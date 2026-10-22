@@ -14,7 +14,7 @@ import {
   normalizeTaskId,
   resolveTaskFile,
 } from "./index.ts";
-import { scanActiveTasks } from "./resolver/active-scanner.ts";
+import { scanActiveTasks } from "../resolver/active-scanner.ts";
 
 describe("Task Completion & Checklist Services - Normalization & Resolution", () => {
   it("should normalize diverse task ID formats", () => {

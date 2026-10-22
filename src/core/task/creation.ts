@@ -5,21 +5,21 @@
  */
 
 import { mkdir, writeFile } from "node:fs/promises";
-import { isAbsolute, join, normalize, relative, resolve } from "node:path";
-import { formatTaskFilename } from "./primitives/task/filename.ts";
-import { generateSlug } from "./primitives/task/slug.ts";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import {
   findDeepestCommonAncestor,
+  formatArtifactFilename,
+  generateSlug,
   resolveArtifactDirectories,
-} from "./primitives/common/directories.ts";
-import { renderTaskMarkdown } from "./primitives/task/template.ts";
+} from "../common/index.ts";
+import type { WatermarkDetails } from "../resolver/types.ts";
+import { resolveWatermark } from "../resolver/watermark.ts";
+import { renderTaskMarkdown } from "./template.ts";
 import type {
   TaskAcceptanceCriteriaItem,
   TaskArtifact,
   TaskRenderOptions,
-} from "./primitives/task/types.ts";
-import type { WatermarkDetails } from "./resolver/types.ts";
-import { resolveWatermark } from "./resolver/watermark.ts";
+} from "./types.ts";
 
 export interface CreateTaskOptions {
   /**
@@ -102,7 +102,7 @@ export interface CreateTaskResult {
   watermark: WatermarkDetails;
 }
 
-export { findDeepestCommonAncestor } from "./primitives/common/directories.ts";
+export { findDeepestCommonAncestor } from "../common/directories.ts";
 
 /**
  * Normalizes scope directory and target directory per RULE-8.
@@ -188,7 +188,11 @@ export async function createTask(options: CreateTaskOptions): Promise<CreateTask
   const nextId = watermark.nextId;
 
   // 5. Format task filename per RULE-1
-  const filename = formatTaskFilename(slug, nextId);
+  const filename = formatArtifactFilename({
+    slug,
+    subtype: "TASK",
+    id: nextId,
+  });
   const filepath = join(targetDir, filename);
 
   // 6. Normalize acceptance criteria checklist per RULE-22

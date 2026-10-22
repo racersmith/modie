@@ -5,7 +5,7 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { parseArtifactFilename } from "../primitives/common/filename.ts";
+import { parseArtifactFilename } from "../common/filename.ts";
 import type { DiscoveredArtifact, DiscoveredTask, IndexableSubtype } from "./types.ts";
 
 const execFileAsync = promisify(execFile);

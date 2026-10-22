@@ -7,18 +7,15 @@
 
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative } from "node:path";
-import { resolveArtifactByTag } from "./artifact-query.ts";
 import {
   formatArtifactFilename,
   generateSlug,
   resolveArtifactDirectories,
-} from "./primitives/common/index.ts";
-import {
-  renderRuleMarkdown,
-  validateRuleLinks,
-  type RuleArtifact,
-} from "./primitives/rule/index.ts";
-import { resolveNextArtifactId } from "./resolver/watermark.ts";
+} from "../common/index.ts";
+import { resolveArtifactByTag } from "../query/index.ts";
+import { resolveNextArtifactId } from "../resolver/watermark.ts";
+import { renderRuleMarkdown, validateRuleLinks } from "./template.ts";
+import type { RuleArtifact } from "./types.ts";
 
 export interface CreateRuleOptions {
   /**

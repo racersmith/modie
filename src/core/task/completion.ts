@@ -4,12 +4,12 @@
  */
 
 import { readFile, rm, stat, writeFile } from "node:fs/promises";
-import { isAbsolute, resolve, basename } from "node:path";
-import { parseAcceptanceCriteria } from "./primitives/task/checklist.ts";
-import { parseTaskFilename } from "./primitives/task/filename.ts";
-import { parseTaskMarkdown } from "./primitives/task/parser.ts";
-import type { TaskArtifact } from "./primitives/task/types.ts";
-import { scanActiveTasks } from "./resolver/active-scanner.ts";
+import { basename, isAbsolute, resolve } from "node:path";
+import { parseArtifactFilename } from "../common/index.ts";
+import { scanActiveTasks } from "../resolver/active-scanner.ts";
+import { parseAcceptanceCriteria } from "./checklist.ts";
+import { parseTaskMarkdown } from "./parser.ts";
+import type { TaskArtifact } from "./types.ts";
 
 export interface ResolveTaskOptions {
   /**
@@ -105,8 +105,8 @@ export async function resolveTaskFile(
     const fileStat = await stat(candidatePath);
     if (fileStat.isFile()) {
       const filename = basename(candidatePath);
-      const parsedFilename = parseTaskFilename(filename);
-      if (parsedFilename) {
+      const parsedFilename = parseArtifactFilename(filename);
+      if (parsedFilename && parsedFilename.subtype === "TASK" && !parsedFilename.isArchived) {
         return candidatePath;
       }
     }
@@ -233,7 +233,7 @@ export async function checkTaskItem(
 
   if (targetLineIndex === -1) {
     const filename = basename(filepath);
-    const parsed = parseTaskFilename(filename);
+    const parsed = parseArtifactFilename(filename);
     const taskIdDisplay = parsed?.id ? `TASK-${parsed.id}` : filename;
     throw new Error(
       `Invalid item index ${itemIndex}. Task ${taskIdDisplay} has ${currentItemIndex} acceptance criteria item(s).`,
@@ -249,7 +249,7 @@ export async function checkTaskItem(
   const allCompleted = totalItems > 0 && completedCount === totalItems;
 
   const filename = basename(filepath);
-  const parsedFilename = parseTaskFilename(filename);
+  const parsedFilename = parseArtifactFilename(filename);
   const taskId = parsedFilename?.id ?? "";
 
   return {

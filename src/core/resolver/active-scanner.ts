@@ -6,7 +6,7 @@
 
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { parseArtifactFilename } from "../primitives/common/filename.ts";
+import { parseArtifactFilename } from "../common/filename.ts";
 import type { DiscoveredArtifact, DiscoveredTask, IndexableSubtype } from "./types.ts";
 
 const IGNORED_DIRECTORIES = new Set([

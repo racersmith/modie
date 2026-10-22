@@ -11,7 +11,7 @@ import {
   createRule,
   resolveRuleDirectories,
   validateRuleAncestry,
-} from "./rule-creation.ts";
+} from "./index.ts";
 
 describe("Rule Creation - Scope & Directory Resolution (RULE-8)", () => {
   // @verifies RULE-8

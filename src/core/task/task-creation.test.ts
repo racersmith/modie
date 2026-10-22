@@ -5,11 +5,11 @@
 
 import { describe, expect, it } from "bun:test";
 import { readFile, rm } from "node:fs/promises";
+import * as TaskPrimitive from "./index.ts";
 import {
   createTask,
   findDeepestCommonAncestor,
   resolveTaskDirectories,
-  TaskPrimitive,
   validateTaskScope,
 } from "./index.ts";
 

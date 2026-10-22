@@ -3,7 +3,7 @@
  * Complies with RULE-1, ADR-1, ADR-2, ADR-6, and ADR-9.
  */
 
-import type { DiscoveredArtifact, IndexableSubtype } from "../primitives/common/types.ts";
+import type { DiscoveredArtifact, IndexableSubtype } from "../common/types.ts";
 
 export type { DiscoveredArtifact, IndexableSubtype };
 

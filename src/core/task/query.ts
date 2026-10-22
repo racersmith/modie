@@ -5,12 +5,11 @@
 
 import { readFile } from "node:fs/promises";
 import { relative } from "node:path";
-import type { TaskAcceptanceCriteriaItem } from "./primitives/task/types.ts";
-import { parseTaskMarkdown } from "./primitives/task/parser.ts";
-import { parseTaskFilename } from "./primitives/task/filename.ts";
-import { scanActiveTasks } from "./resolver/active-scanner.ts";
-import { normalizeTaskId, resolveTaskFile } from "./task-completion.ts";
-import type { DiscoveredTask } from "./resolver/types.ts";
+import { scanActiveTasks } from "../resolver/active-scanner.ts";
+import type { DiscoveredTask } from "../resolver/types.ts";
+import { normalizeTaskId, resolveTaskFile } from "./completion.ts";
+import { parseTaskMarkdown } from "./parser.ts";
+import type { TaskAcceptanceCriteriaItem } from "./types.ts";
 
 export type TaskReadiness = "READY" | "BLOCKED";
 
@@ -162,12 +161,14 @@ export async function queryTaskQueue(
       // If not active on disk => satisfied/completed per ADR-6 Section 3
     }
 
-    const readiness: TaskReadiness = blockedBy.length === 0 ? "READY" : "BLOCKED";
+    const readiness: TaskReadiness =
+      blockedBy.length === 0 ? "READY" : "BLOCKED";
 
     const criteria = parsed.acceptanceCriteria ?? [];
     const criteriaTotal = criteria.length;
     const criteriaCompleted = criteria.filter((c) => c.completed).length;
-    const allCriteriaSatisfied = criteriaTotal > 0 && criteriaCompleted === criteriaTotal;
+    const allCriteriaSatisfied =
+      criteriaTotal > 0 && criteriaCompleted === criteriaTotal;
 
     const fullTaskId = `TASK-${disc.id}`;
     const title = disc.slug.replace(/-/g, " ");
