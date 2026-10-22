@@ -5,6 +5,7 @@
  */
 
 import { handleFind } from "./find.ts";
+import { handleRuleCreate } from "./rule-create.ts";
 import { handleShow } from "./show.ts";
 import { handleTaskCheck } from "./task-check.ts";
 import { handleTaskComplete } from "./task-complete.ts";
@@ -27,6 +28,7 @@ Usage:
 Commands:
   find <tag> [options]         Find the file path of an artifact by tag
   show <tag> [options]         Display artifact details or content
+  rule create <title>          Create a new RULE artifact
   task create <title>          Create a new TASK artifact with automatic watermark resolution
   task check <id> --item <n>   Check or uncheck an acceptance criteria item
   task complete <id>           Complete a task and delete its artifact per RULE-21
@@ -76,6 +78,33 @@ export async function runCli(
 
   if (command === "show") {
     return handleShow(subArgs, options);
+  }
+
+  if (command === "rule") {
+    if (
+      subArgs.length === 0 ||
+      subArgs[0] === "-h" ||
+      subArgs[0] === "--help" ||
+      subArgs[0] === "help"
+    ) {
+      stderr(`Usage: modie rule <subcommand> [options]
+
+Subcommands:
+  create <title>               Create a new RULE artifact
+`);
+      return 0;
+    }
+
+    const [subcommand, ...ruleArgs] = subArgs;
+
+    if (subcommand === "create") {
+      return handleRuleCreate(ruleArgs, options);
+    }
+
+    stderr(
+      `Error: Unknown rule subcommand "${subcommand}". Available: create`,
+    );
+    return 1;
   }
 
   if (command === "task") {

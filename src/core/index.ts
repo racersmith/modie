@@ -23,6 +23,13 @@ export {
 export * as TaskPrimitive from "./primitives/task/index.ts";
 export * from "./primitives/task/types.ts";
 
+export * as RulePrimitive from "./primitives/rule/index.ts";
+export * from "./primitives/rule/types.ts";
+export {
+  renderRuleMarkdown,
+  validateRuleLinks,
+} from "./primitives/rule/template.ts";
+
 export * as Resolver from "./resolver/index.ts";
 export * from "./resolver/types.ts";
 
@@ -36,6 +43,16 @@ export type {
   CreateTaskOptions,
   CreateTaskResult,
 } from "./task-creation.ts";
+
+export {
+  createRule,
+  resolveRuleDirectories,
+  validateRuleAncestry,
+} from "./rule-creation.ts";
+export type {
+  CreateRuleOptions,
+  CreateRuleResult,
+} from "./rule-creation.ts";
 
 export {
   checkTaskItem,

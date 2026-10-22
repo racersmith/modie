@@ -23,8 +23,8 @@ Provide automated creation of RULE artifacts via modie rule create <title> ensur
 
 # Acceptance Criteria
 
-- [ ] Implement createRule core service in src/core/rule-creation.ts with frontmatter validation enforcing RULE-13 (only ADR links) and RULE-16 (ancestral ADR scope)
-- [ ] Implement rule template renderer in src/core/primitives/rule/ producing standard markdown with single invariant assertion per RULE-3 and RULE-11
-- [ ] Implement CLI command modie rule create <title> with --scope, --link, --context, --flat, and --json options per RULE-25 and RULE-27
-- [ ] Wire rule create subcommand into CLI router and help output
-- [ ] Add unit and integration tests verifying rule creation, ID progression, frontmatter link validation, and CLI stream separation
+- [x] Implement createRule core service in src/core/rule-creation.ts with frontmatter validation enforcing RULE-13 (only ADR links) and RULE-16 (ancestral ADR scope)
+- [x] Implement rule template renderer in src/core/primitives/rule/ producing standard markdown with single invariant assertion per RULE-3 and RULE-11
+- [x] Implement CLI command modie rule create <title> with --scope, --link, --context, --flat, and --json options per RULE-25 and RULE-27
+- [x] Wire rule create subcommand into CLI router and help output
+- [x] Add unit and integration tests verifying rule creation, ID progression, frontmatter link validation, and CLI stream separation
