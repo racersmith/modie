@@ -3,14 +3,25 @@
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
  */
 
+import { z } from "zod";
 import { getTaskStatus, type TaskStatusDetails } from "../../../../core/index.ts";
 import {
   createCommandHandler,
+  defineCommand,
   generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
 import type { CliIoOptions } from "../../types.ts";
 import { handleTaskList } from "./list.ts";
+
+export const taskStatusSchema = z.object({
+  id: z
+    .string()
+    .optional()
+    .describe("Task ID (e.g. TASK-9, 9), slug, or file path (optional)"),
+});
+
+export type TaskStatusInput = z.infer<typeof taskStatusSchema>;
 
 export interface TaskStatusFlags {
   json?: boolean;
@@ -21,33 +32,38 @@ export interface TaskStatusFlags {
  */
 export const taskStatusCommand: CliCommandDefinition<
   TaskStatusFlags,
-  TaskStatusDetails
-> = {
+  TaskStatusDetails,
+  typeof taskStatusSchema
+> = defineCommand({
+  id: "task_status",
   name: "status",
   usage: "modie task status [id-or-path] [options]",
   description:
     "Inspect active task queue status or deep inspection of a specific task.",
+  agentGuidance:
+    "Call this tool to inspect detailed progress, dependencies, blockers, and acceptance criteria checklist for a specific task.",
   helpUsage: "modie task status --help",
+  schema: taskStatusSchema,
   positionals: [
     {
       name: "id-or-path",
+      property: "id",
       description: "Task ID (e.g. TASK-9, 9), slug, or file path (optional)",
       required: false,
     },
   ],
   flags: {},
-  run: async (context) => {
-    const taskIdentifier = context.positionals[0];
-
+  execute: async (input, context) => {
     // If no task identifier is passed, delegate to task list
-    if (!taskIdentifier) {
+    if (!input.id) {
       const listArgs = context.flags.json ? ["--json"] : [];
-      return handleTaskList(listArgs, context.io);
+      return handleTaskList(listArgs, context.io) as any;
     }
 
-    return getTaskStatus(taskIdentifier, { cwd: context.cwd });
+    return getTaskStatus(input.id, { cwd: context.cwd });
   },
   render: (status, context) => {
+    if (!status || typeof status === "number") return;
     context.stderr(`${status.fullTaskId}: ${status.slug}`);
     context.stderr(`Status:      ${status.readiness}`);
     if (status.blockedBy.length > 0) {
@@ -70,16 +86,17 @@ export const taskStatusCommand: CliCommandDefinition<
 
     if (status.acceptanceCriteria.length > 0) {
       context.stderr(`\nAcceptance Criteria:`);
-      status.acceptanceCriteria.forEach((c, idx) => {
+      status.acceptanceCriteria.forEach((c: { completed: boolean; text: string }, idx: number) => {
         const box = c.completed ? "[x]" : "[ ]";
         context.stderr(`  ${idx + 1}. ${box} ${c.text}`);
       });
     }
   },
   renderJson: (status, context) => {
+    if (!status || typeof status === "number") return;
     context.stdout(JSON.stringify(status, null, 2));
   },
-};
+});
 
 /**
  * CLI command handler for `modie task status`.

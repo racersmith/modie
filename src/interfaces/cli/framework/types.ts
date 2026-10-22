@@ -3,6 +3,7 @@
  * Enforces RULE-25 (interface core decoupling) and RULE-27 (stdout/stderr separation).
  */
 
+import type { z } from "zod";
 import type { CliIoOptions } from "../types.ts";
 
 export interface CliFlagDefinition {
@@ -40,6 +41,17 @@ export interface CliFlagDefinition {
    * Alternate flag names (e.g. ["links"] for flag "link").
    */
   aliases?: string[];
+
+  /**
+   * Target property in the Zod schema to map this flag into.
+   */
+  property?: string;
+
+  /**
+   * Whether string values should be split on commas when mapping to an array schema property.
+   * Defaults to true unless verbatim preservation is required.
+   */
+  splitCommas?: boolean;
 }
 
 export interface CliPositionalDefinition {
@@ -68,6 +80,11 @@ export interface CliPositionalDefinition {
    * Custom error message emitted if this required positional argument is omitted.
    */
   missingError?: string;
+
+  /**
+   * Target property in the Zod schema to map this positional argument into.
+   */
+  property?: string;
 }
 
 export interface CliExecutionContext<TFlags = Record<string, any>> {
@@ -110,16 +127,31 @@ export interface CliExecutionContext<TFlags = Record<string, any>> {
   io: CliIoOptions;
 }
 
-export interface CliCommandDefinition<TFlags = Record<string, any>, TResult = any> {
+export interface CliCommandDefinition<
+  TFlags = Record<string, any>,
+  TResult = any,
+  TSchema extends z.ZodObject<any> = any,
+> {
   /**
    * Canonical name of the command or subcommand (e.g. "create", "list").
    */
   name: string;
 
   /**
+   * Canonical action identifier (e.g. "task_create", "find").
+   * Used as the tool name when projected into protocol interfaces (MCP).
+   */
+  id?: string;
+
+  /**
    * Short description of the command's purpose.
    */
   description?: string;
+
+  /**
+   * Optional guidance for AI agents on when and why to invoke this command/tool.
+   */
+  agentGuidance?: string;
 
   /**
    * Full usage banner (e.g. "modie rule create <title> [options]").
@@ -142,13 +174,27 @@ export interface CliCommandDefinition<TFlags = Record<string, any>, TResult = an
   flags?: Record<string, CliFlagDefinition>;
 
   /**
+   * Declarative Zod schema defining the input contract.
+   * Shared between CLI argument adapter and protocol (MCP) tool registrations.
+   */
+  schema?: TSchema;
+
+  /**
    * Optional custom help formatter override.
    * If omitted, standardized help is generated automatically from definition metadata.
    */
   help?: (stderr: (msg: string) => void) => void;
 
   /**
-   * Core execution handler.
+   * Typed domain execution handler receiving parsed and validated Zod inputs.
+   */
+  execute?: (
+    input: z.infer<TSchema>,
+    context: CliExecutionContext<TFlags>,
+  ) => Promise<TResult | number | void> | TResult | number | void;
+
+  /**
+   * Core CLI execution handler.
    * Returns a structured result payload, a numeric exit code, or void.
    */
   run: (
@@ -167,3 +213,19 @@ export interface CliCommandDefinition<TFlags = Record<string, any>, TResult = an
    */
   renderJson?: (result: TResult, context: CliExecutionContext<TFlags>) => void;
 }
+
+export type DefineCommandOptions<
+  TSchema extends z.ZodObject<any>,
+  TResult = any,
+  TFlags = Record<string, any>,
+> = Omit<CliCommandDefinition<TFlags, TResult, TSchema>, "run"> & {
+  schema: TSchema;
+  execute: (
+    input: z.infer<TSchema>,
+    context: CliExecutionContext<TFlags>,
+  ) => Promise<TResult | number | void> | TResult | number | void;
+  run?: (
+    context: CliExecutionContext<TFlags>,
+  ) => Promise<TResult | number | void> | TResult | number | void;
+};
+

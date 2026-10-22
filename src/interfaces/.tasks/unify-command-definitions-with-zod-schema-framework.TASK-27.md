@@ -13,7 +13,7 @@ Transition interface command definitions to use Zod schemas as the single source
 
 # Acceptance Criteria
 
-- [ ] Define a shared declarative action definition schema supporting Zod input schemas, CLI binding metadata, and domain execution handlers
-- [ ] Implement a CLI argument adapter that maps command-line tokens to Zod schema properties with type coercion and generates aligned help text
-- [ ] Migrate all registered interface commands to the Zod-backed action definition contract without altering external CLI behavior
-- [ ] Verify all CLI integration test suites pass with Zod schema validation and confirm syntax errors are emitted exclusively to stderr
+- [x] Define a shared declarative action definition schema supporting Zod input schemas, CLI binding metadata, and domain execution handlers
+- [x] Implement a CLI argument adapter that maps command-line tokens to Zod schema properties with type coercion and generates aligned help text
+- [x] Migrate all registered interface commands to the Zod-backed action definition contract without altering external CLI behavior
+- [x] Verify all CLI integration test suites pass with Zod schema validation and confirm syntax errors are emitted exclusively to stderr

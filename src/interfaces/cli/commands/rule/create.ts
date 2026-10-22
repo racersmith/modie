@@ -3,13 +3,41 @@
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
  */
 
+import { z } from "zod";
 import { createRule, type CreateRuleOptions } from "../../../../core/index.ts";
 import {
   createCommandHandler,
+  defineCommand,
   generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
 import type { CliIoOptions } from "../../types.ts";
+
+export const ruleCreateSchema = z.object({
+  title: z
+    .string()
+    .min(1, "Rule title is required")
+    .describe("Title of the rule to create (e.g. 'Rule Verification Tagging')"),
+  scope: z
+    .string()
+    .optional()
+    .describe("Target scope directory (defaults to current working directory)"),
+  context: z
+    .string()
+    .optional()
+    .describe("Invariant assertion claim text"),
+  links: z
+    .array(z.string())
+    .optional()
+    .default([])
+    .describe("ADR link targets (repeat flag or use comma-separated list)"),
+  flat: z
+    .boolean()
+    .default(false)
+    .describe("Create flat rule file without .rules container"),
+});
+
+export type RuleCreateInput = z.infer<typeof ruleCreateSchema>;
 
 export interface RuleCreateFlags {
   scope?: string;
@@ -37,15 +65,19 @@ export interface RuleCreateResultPayload {
  */
 export const ruleCreateCommand: CliCommandDefinition<
   RuleCreateFlags,
-  RuleCreateResultPayload
-> = {
+  RuleCreateResultPayload,
+  typeof ruleCreateSchema
+> = defineCommand({
+  id: "rule_create",
   name: "create",
   usage: "modie rule create <title> [options]",
   description: "Create a new RULE artifact",
   helpUsage: "modie rule create --help",
+  schema: ruleCreateSchema,
   positionals: [
     {
       name: "title",
+      property: "title",
       description: 'Title of the rule to create (e.g. "Rule Verification Tagging")',
       required: true,
       variadic: true,
@@ -65,11 +97,7 @@ export const ruleCreateCommand: CliCommandDefinition<
       short: "c",
       placeholder: "<text>",
       description: "Invariant assertion claim text",
-    },
-    assertion: {
-      type: "string",
-      placeholder: "<text>",
-      description: "Invariant assertion claim text",
+      aliases: ["assertion"],
     },
     link: {
       type: "string",
@@ -79,31 +107,20 @@ export const ruleCreateCommand: CliCommandDefinition<
       description:
         "ADR link targets (repeat flag or use comma-separated list)",
       aliases: ["links"],
+      property: "links",
     },
     flat: {
       type: "boolean",
       description: "Create flat rule file without .rules container",
     },
   },
-  run: async (context) => {
-    const title = context.positionals.join(" ").trim();
-
-    // Aggregate link values from repeated -l/--link and comma-separated --links
-    const rawLinks: string[] = [
-      ...(context.flags.link ?? []),
-      ...(context.flags.links ?? []),
-    ];
-    const links: string[] = [];
-    for (const item of rawLinks) {
-      links.push(...item.split(",").map((s) => s.trim()).filter(Boolean));
-    }
-
+  execute: async (input, context): Promise<RuleCreateResultPayload> => {
     const ruleOptions: CreateRuleOptions = {
-      title,
-      scopeDir: context.flags.scope,
-      context: context.flags.context ?? context.flags.assertion,
-      links: links.length > 0 ? links : undefined,
-      useSubtypeContainer: !context.flags.flat,
+      title: input.title,
+      scopeDir: input.scope,
+      context: input.context,
+      links: input.links.length > 0 ? input.links : undefined,
+      useSubtypeContainer: !input.flat,
       cwd: context.cwd,
     };
 
@@ -129,7 +146,7 @@ export const ruleCreateCommand: CliCommandDefinition<
     context.stdout(JSON.stringify(result, null, 2));
     context.stderr(`✓ Created rule ${result.tag} (${result.relativePath})`);
   },
-};
+});
 
 /**
  * CLI command handler for `modie rule create`.

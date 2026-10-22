@@ -3,16 +3,31 @@
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
  */
 
+import { z } from "zod";
 import {
   getArtifactDetails,
   type ArtifactDetails,
 } from "../../../../core/index.ts";
 import {
   createCommandHandler,
+  defineCommand,
   generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
 import type { CliIoOptions } from "../../types.ts";
+
+export const showSchema = z.object({
+  tag: z
+    .string()
+    .min(1, "Artifact tag or identifier is required")
+    .describe("Artifact tag (e.g. RULE-1, ADR-6, TASK-12), slug, or filename"),
+  raw: z
+    .boolean()
+    .default(false)
+    .describe("Emit unparsed raw markdown content to stdout"),
+});
+
+export type ShowInput = z.infer<typeof showSchema>;
 
 export interface ShowFlags {
   raw?: boolean;
@@ -25,16 +40,20 @@ export interface ShowFlags {
  */
 export const showCommand: CliCommandDefinition<
   ShowFlags,
-  ArtifactDetails
-> = {
+  ArtifactDetails,
+  typeof showSchema
+> = defineCommand({
+  id: "show",
   name: "show",
   usage: "modie show <tag-or-identifier> [options]",
   description:
     "Display artifact details or content in human or agent-optimized format.",
   helpUsage: "modie show --help",
+  schema: showSchema,
   positionals: [
     {
       name: "tag-or-identifier",
+      property: "tag",
       description:
         "Artifact tag (e.g. RULE-1, ADR-6, TASK-12), slug, or filename",
       required: true,
@@ -49,9 +68,8 @@ export const showCommand: CliCommandDefinition<
       aliases: ["content"],
     },
   },
-  run: async (context) => {
-    const targetIdentifier = context.positionals[0]!;
-    return getArtifactDetails(targetIdentifier, { cwd: context.cwd });
+  execute: async (input, context) => {
+    return getArtifactDetails(input.tag, { cwd: context.cwd });
   },
   render: (details, context) => {
     if (context.flags.raw) {
@@ -132,7 +150,7 @@ export const showCommand: CliCommandDefinition<
 
     context.stdout(JSON.stringify(payload, null, 2));
   },
-};
+});
 
 /**
  * CLI command handler for `modie show`.

@@ -4,16 +4,45 @@
  * Enforces RULE-28 and ADR-9.
  */
 
+import { z } from "zod";
 import {
   mergeTaskBranch,
   type MergeTaskBranchResult,
 } from "../../../../core/index.ts";
 import {
   createCommandHandler,
+  defineCommand,
   generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
 import type { CliIoOptions } from "../../types.ts";
+
+export const taskMergeSchema = z.object({
+  id: z
+    .string()
+    .min(1, "Task identifier is required")
+    .describe("Task ID (e.g. TASK-11, 11-1), slug, or file path"),
+  target: z
+    .string()
+    .optional()
+    .describe(
+      "Target branch to merge into (default: parent branch or trunk)",
+    ),
+  keepBranch: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Retain the task branch after merging instead of deleting it",
+    ),
+  force: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Bypass completion verification and protected branch guards",
+    ),
+});
+
+export type TaskMergeInput = z.infer<typeof taskMergeSchema>;
 
 export interface TaskMergeFlags {
   target?: string;
@@ -22,32 +51,26 @@ export interface TaskMergeFlags {
   json?: boolean;
 }
 
-function renderMergeStatus(
-  result: MergeTaskBranchResult,
-  stderr: (msg: string) => void,
-): void {
-  const deletionNotice = result.deletedSourceBranch
-    ? `and deleted branch "${result.sourceBranch}"`
-    : `retaining branch "${result.sourceBranch}"`;
-  stderr(
-    `✓ Merged task branch "${result.sourceBranch}" into "${result.targetBranch}" (${deletionNotice})`,
-  );
-}
-
 /**
  * Declarative definition for the `modie task merge` command.
  */
 export const taskMergeCommand: CliCommandDefinition<
   TaskMergeFlags,
-  MergeTaskBranchResult
-> = {
+  MergeTaskBranchResult,
+  typeof taskMergeSchema
+> = defineCommand({
+  id: "task_merge",
   name: "merge",
   usage: "modie task merge <id-or-path> [options]",
   description: "Merge completed task branch back into parent or trunk",
+  agentGuidance:
+    "Call this tool to merge a completed task branch back into its parent branch or trunk according to hierarchical task branch topology.",
   helpUsage: "modie task merge --help",
+  schema: taskMergeSchema,
   positionals: [
     {
       name: "id-or-path",
+      property: "id",
       description: "Task ID (e.g. TASK-11, 11-1), slug, or file path",
       required: true,
       missingError:
@@ -66,6 +89,7 @@ export const taskMergeCommand: CliCommandDefinition<
       type: "boolean",
       description:
         "Retain the task branch after merging instead of deleting it",
+      property: "keepBranch",
     },
     force: {
       type: "boolean",
@@ -74,30 +98,35 @@ export const taskMergeCommand: CliCommandDefinition<
         "Bypass completion verification and protected branch guards",
     },
   },
-  run: async (context) => {
-    const taskIdentifier = context.positionals[0]!;
-    const target = context.flags.target
-      ? String(context.flags.target)
-      : undefined;
-    const keepBranch = Boolean(context.flags["keep-branch"]);
-    const force = Boolean(context.flags.force);
-
-    return mergeTaskBranch(taskIdentifier, {
-      target,
-      keepBranch,
-      force,
+  execute: async (input, context) => {
+    return mergeTaskBranch(input.id, {
+      target: input.target,
+      keepBranch: input.keepBranch,
+      force: input.force,
       cwd: context.cwd,
     });
   },
   render: (result, context) => {
     context.stdout(result.targetBranch);
-    renderMergeStatus(result, context.stderr);
+
+    const deletionNotice = result.deletedSourceBranch
+      ? `and deleted branch "${result.sourceBranch}"`
+      : `retaining branch "${result.sourceBranch}"`;
+    context.stderr(
+      `✓ Merged task branch "${result.sourceBranch}" into "${result.targetBranch}" (${deletionNotice})`,
+    );
   },
   renderJson: (result, context) => {
     context.stdout(JSON.stringify(result, null, 2));
-    renderMergeStatus(result, context.stderr);
+
+    const deletionNotice = result.deletedSourceBranch
+      ? `and deleted branch "${result.sourceBranch}"`
+      : `retaining branch "${result.sourceBranch}"`;
+    context.stderr(
+      `✓ Merged task branch "${result.sourceBranch}" into "${result.targetBranch}" (${deletionNotice})`,
+    );
   },
-};
+});
 
 /**
  * CLI command handler for `modie task merge`.

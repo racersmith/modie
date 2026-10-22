@@ -204,10 +204,14 @@ export async function executeCliCommand<TFlags = Record<string, any>, TResult = 
 
     return 0;
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    stderr(`Error: ${message}`);
+    const rawMessage = error instanceof Error ? error.message : String(error);
+    const message = rawMessage.startsWith("Error:")
+      ? rawMessage
+      : `Error: ${rawMessage}`;
+    stderr(message);
     return 1;
   }
+
 }
 
 /**

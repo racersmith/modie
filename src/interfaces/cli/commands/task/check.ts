@@ -3,18 +3,46 @@
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
  */
 
+import { z } from "zod";
 import { checkTaskItem, type CheckTaskItemResult } from "../../../../core/index.ts";
 import {
   createCommandHandler,
+  defineCommand,
   generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
 import type { CliIoOptions } from "../../types.ts";
 
+export const taskCheckSchema = z.object({
+  id: z
+    .string()
+    .min(1, "Task identifier is required")
+    .describe("Task ID (e.g. TASK-7-1, 7-1), slug, or file path"),
+  item: z.preprocess(
+    (val) => {
+      if (val === undefined || val === null || val === "") return undefined;
+      const n = Number(val);
+      return isNaN(n) ? val : n;
+    },
+    z
+      .number()
+      .int("Item index must be a positive integer (1-based index)")
+      .positive("Item index must be a positive integer (1-based index)")
+      .describe("1-based index of the acceptance criteria item (required)"),
+  ),
+  uncheck: z
+    .boolean()
+    .default(false)
+    .describe("Uncheck the item (mark incomplete)"),
+});
+
+export type TaskCheckInput = z.infer<typeof taskCheckSchema>;
+
 export interface TaskCheckFlags {
   item?: string;
   index?: string;
   uncheck?: boolean;
+  json?: boolean;
 }
 
 /**
@@ -22,15 +50,21 @@ export interface TaskCheckFlags {
  */
 export const taskCheckCommand: CliCommandDefinition<
   TaskCheckFlags,
-  CheckTaskItemResult
-> = {
+  CheckTaskItemResult,
+  typeof taskCheckSchema
+> = defineCommand({
+  id: "task_check",
   name: "check",
   usage: "modie task check <id-or-path> [options]",
   description: "Check or uncheck an acceptance criteria item",
+  agentGuidance:
+    "Call this tool to mark an acceptance criteria item as completed (or incomplete). All checklist items must be satisfied before completing a task.",
   helpUsage: "modie task check --help",
+  schema: taskCheckSchema,
   positionals: [
     {
       name: "id-or-path",
+      property: "id",
       description: "Task ID (e.g. TASK-7-1, 7-1), slug, or file path",
       required: true,
       missingError:
@@ -51,27 +85,9 @@ export const taskCheckCommand: CliCommandDefinition<
       description: "Uncheck the item (mark incomplete)",
     },
   },
-  run: async (context) => {
-    const taskIdentifier = context.positionals[0]!;
-    const rawItem = context.flags.item;
-
-    if (rawItem === undefined) {
-      throw new Error(
-        "Missing required --item flag. Usage: modie task check <id-or-path> --item <index>",
-      );
-    }
-
-    const itemIndex = parseInt(String(rawItem), 10);
-    if (isNaN(itemIndex) || itemIndex < 1) {
-      throw new Error(
-        `Invalid item index "${rawItem}". Must be a positive integer (1-based index).`,
-      );
-    }
-
-    const completed = !context.flags.uncheck;
-
-    return checkTaskItem(taskIdentifier, itemIndex, {
-      completed,
+  execute: async (input, context) => {
+    return checkTaskItem(input.id, input.item, {
+      completed: !input.uncheck,
       cwd: context.cwd,
     });
   },
@@ -107,7 +123,7 @@ export const taskCheckCommand: CliCommandDefinition<
       );
     }
   },
-};
+});
 
 /**
  * CLI command handler for `modie task check`.
