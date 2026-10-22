@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
 import {
-  createCommandHandler,
   executeCliCommand,
   generateCommandHelp,
   type CliCommandDefinition,
@@ -97,7 +96,8 @@ describe("Declarative CLI Subcommand Framework (TASK-19, RULE-25, RULE-27)", () 
           name: "target",
           description: "Deployment environment",
           required: true,
-          missingError: "Error: Missing deployment target. Specify staging or prod.",
+          missingError:
+            "Error: Missing deployment target. Specify staging or prod.",
         },
       ],
       run: () => 0,
@@ -129,12 +129,18 @@ describe("Declarative CLI Subcommand Framework (TASK-19, RULE-25, RULE-27)", () 
       run: () => 0,
     };
 
-    const exitCode = await executeCliCommand(testCommand, ["123", "extra-arg"], {
-      stderr: (msg) => (stderrOutput += msg + "\n"),
-    });
+    const exitCode = await executeCliCommand(
+      testCommand,
+      ["123", "extra-arg"],
+      {
+        stderr: (msg) => (stderrOutput += msg + "\n"),
+      },
+    );
 
     expect(exitCode).toBe(1);
-    expect(stderrOutput).toContain('Error: Unexpected additional argument "extra-arg".');
+    expect(stderrOutput).toContain(
+      'Error: Unexpected additional argument "extra-arg".',
+    );
   });
 
   it("should support variadic positionals for multi-word arguments", async () => {
@@ -238,23 +244,28 @@ describe("Declarative CLI Subcommand Framework (TASK-19, RULE-25, RULE-27)", () 
   it("should fall back to flag alias when primary flag is omitted", async () => {
     let capturedItem: string | undefined;
 
-    const testCommand: CliCommandDefinition<{ item?: string; index?: string }> = {
-      name: "select",
-      flags: {
-        item: {
-          type: "string",
-          short: "i",
-          description: "Target item index",
-          aliases: ["index"],
+    const testCommand: CliCommandDefinition<{ item?: string; index?: string }> =
+      {
+        name: "select",
+        flags: {
+          item: {
+            type: "string",
+            short: "i",
+            description: "Target item index",
+            aliases: ["index"],
+          },
         },
-      },
-      run: (context) => {
-        capturedItem = context.flags.item;
-        return 0;
-      },
-    };
+        run: (context) => {
+          capturedItem = context.flags.item;
+          return 0;
+        },
+      };
 
-    const exitCode = await executeCliCommand(testCommand, ["--index", "99"], {});
+    const exitCode = await executeCliCommand(
+      testCommand,
+      ["--index", "99"],
+      {},
+    );
     expect(exitCode).toBe(0);
     expect(capturedItem).toBe("99");
   });
