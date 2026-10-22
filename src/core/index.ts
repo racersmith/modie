@@ -89,6 +89,23 @@ export type {
   ResolvedArtifact,
 } from "./query/artifact-query.ts";
 
+// ADR domain module
+export * as AdrPrimitive from "./adr/index.ts";
+export * from "./adr/types.ts";
+export {
+  renderAdrMarkdown,
+  validateAdrLinks,
+} from "./adr/template.ts";
+export {
+  createAdr,
+  resolveAdrDirectories,
+  validateAdrScope,
+} from "./adr/creation.ts";
+export type {
+  CreateAdrOptions,
+  CreateAdrResult,
+} from "./adr/creation.ts";
+
 // Resolver & scan domain module
 export * as Resolver from "./resolver/index.ts";
 export * from "./resolver/types.ts";

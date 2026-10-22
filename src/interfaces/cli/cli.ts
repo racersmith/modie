@@ -6,6 +6,7 @@
 import { handleFind } from "./commands/find/find.ts";
 import { handleShow } from "./commands/show/show.ts";
 import { handleRuleCreate } from "./commands/rule/create.ts";
+import { handleAdrCreate } from "./commands/adr/create.ts";
 import {
   handleTaskCheck,
   handleTaskComplete,
@@ -41,6 +42,7 @@ Commands:
   find <tag> [options]         Find the file path of an artifact by tag
   show <tag> [options]         Display artifact details or content
   rule create <title>          Create a new RULE artifact
+  adr create <title>           Create a new ADR artifact
   task create <title>          Create a new TASK artifact with automatic watermark resolution
   task check <id> --item <n>   Check or uncheck an acceptance criteria item
   task complete <id>           Complete a task and delete its artifact per RULE-21
@@ -75,6 +77,14 @@ Subcommands:
 `);
 }
 
+export function printAdrNamespaceHelp(stderr: (msg: string) => void): void {
+  stderr(`Usage: modie adr <subcommand> [options]
+
+Subcommands:
+  create <title>               Create a new ADR artifact
+`);
+}
+
 const directCommands: Record<string, CommandHandler> = {
   find: handleFind,
   show: handleShow,
@@ -98,6 +108,12 @@ const namespaces: Record<string, CommandNamespace> = {
     help: printRuleNamespaceHelp,
     commands: {
       create: handleRuleCreate,
+    },
+  },
+  adr: {
+    help: printAdrNamespaceHelp,
+    commands: {
+      create: handleAdrCreate,
     },
   },
 };
