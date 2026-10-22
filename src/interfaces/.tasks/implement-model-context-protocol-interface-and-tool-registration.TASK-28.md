@@ -15,8 +15,8 @@ Expose Modie's governance and task orchestration capabilities directly to AI cod
 
 # Acceptance Criteria
 
-- [ ] Implement an MCP server module using @modelcontextprotocol/sdk supporting standard I/O transport
-- [ ] Implement an automated tool registry that exposes shared Zod action definitions as typed MCP tools
-- [ ] Ensure all MCP tool responses return strictly actionable schema payloads conforming to RULE-26 token economy
-- [ ] Expose read-only MCP resources for active ready tasks and workspace governance rules
-- [ ] Add a CLI entrypoint subcommand to launch the MCP server over standard I/O and verify tool execution via integration tests
+- [x] Implement an MCP server module using @modelcontextprotocol/sdk supporting standard I/O transport
+- [x] Implement an automated tool registry that exposes shared Zod action definitions as typed MCP tools
+- [x] Ensure all MCP tool responses return strictly actionable schema payloads conforming to RULE-26 token economy
+- [x] Expose read-only MCP resources for active ready tasks and workspace governance rules
+- [x] Add a CLI entrypoint subcommand to launch the MCP server over standard I/O and verify tool execution via integration tests

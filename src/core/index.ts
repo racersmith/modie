@@ -138,6 +138,10 @@ export {
   runGitCommand,
   detectGitBranch,
 } from "./resolver/git-inspector.ts";
+export {
+  scanActiveArtifacts,
+  scanActiveTasks,
+} from "./resolver/active-scanner.ts";
 
 // Configuration domain module
 export * as ConfigPrimitive from "./config/index.ts";

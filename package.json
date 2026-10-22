@@ -20,7 +20,8 @@
   "module": "./dist/index.js",
   "types": "./dist/types/index.d.ts",
   "bin": {
-    "modie": "./dist/bin/bin.js"
+    "modie": "./dist/bin/bin.js",
+    "modie-mcp": "./dist/bin/mcp.js"
   },
   "files": [
     "dist",
@@ -29,7 +30,7 @@
   ],
   "scripts": {
     "build": "bun run build:bundle && bun run build:types",
-    "build:bundle": "bun build ./src/index.ts --outdir ./dist --target node && bun build ./src/interfaces/cli/bin.ts --outdir ./dist/bin --target node",
+    "build:bundle": "bun build ./src/index.ts --outdir ./dist --target node && bun build ./src/interfaces/cli/bin.ts --outdir ./dist/bin --target node && bun build ./src/interfaces/mcp/bin.ts --outfile ./dist/bin/mcp.js --target node",
     "build:types": "tsc --declaration --emitDeclarationOnly --noEmit false --rootDir ./src --outDir ./dist/types",
     "modie": "PATH=\"$HOME/.bun/bin:$PATH\" bun --silent ./src/interfaces/cli/bin.ts",
     "typecheck": "bun check",

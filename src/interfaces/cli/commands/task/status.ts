@@ -4,7 +4,12 @@
  */
 
 import { z } from "zod";
-import { getTaskStatus, type TaskStatusDetails } from "../../../../core/index.ts";
+import {
+  getTaskStatus,
+  queryTaskQueue,
+  type TaskQueueItem,
+  type TaskStatusDetails,
+} from "../../../../core/index.ts";
 import {
   createCommandHandler,
   defineCommand,
@@ -12,7 +17,7 @@ import {
   type CliCommandDefinition,
 } from "../../framework/index.ts";
 import type { CliIoOptions } from "../../types.ts";
-import { handleTaskList } from "./list.ts";
+import { renderTaskQueueTable } from "./list.ts";
 
 export const taskStatusSchema = z.object({
   id: z
@@ -32,7 +37,7 @@ export interface TaskStatusFlags {
  */
 export const taskStatusCommand: CliCommandDefinition<
   TaskStatusFlags,
-  TaskStatusDetails,
+  TaskStatusDetails | TaskQueueItem[],
   typeof taskStatusSchema
 > = defineCommand({
   id: "task_status",
@@ -54,16 +59,23 @@ export const taskStatusCommand: CliCommandDefinition<
   ],
   flags: {},
   execute: async (input, context) => {
-    // If no task identifier is passed, delegate to task list
+    // If no task identifier is passed, return active task queue
     if (!input.id) {
-      const listArgs = context.flags.json ? ["--json"] : [];
-      return handleTaskList(listArgs, context.io) as any;
+      return queryTaskQueue({ cwd: context.cwd });
     }
 
     return getTaskStatus(input.id, { cwd: context.cwd });
   },
   render: (status, context) => {
     if (!status || typeof status === "number") return;
+    if (Array.isArray(status)) {
+      if (status.length === 0) {
+        context.stderr("No active tasks found in working tree.");
+        return;
+      }
+      context.stdout(renderTaskQueueTable(status));
+      return;
+    }
     context.stderr(`${status.fullTaskId}: ${status.slug}`);
     context.stderr(`Status:      ${status.readiness}`);
     if (status.blockedBy.length > 0) {
