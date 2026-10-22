@@ -13,7 +13,7 @@ TASK-19 introduced CliCommandDefinition and createCommandHandler for rule create
 
 # Acceptance Criteria
 
-- [ ] Migrate find and show root commands to declarative CliCommandDefinition schemas
-- [ ] Migrate task start to declarative CliCommandDefinition schema
-- [ ] Migrate task complete and task merge to declarative CliCommandDefinition schemas
-- [ ] Verify all migrated subcommands enforce RULE-27 stream separation and pass all test suites
+- [x] Migrate find and show root commands to declarative CliCommandDefinition schemas
+- [x] Migrate task start to declarative CliCommandDefinition schema
+- [x] Migrate task complete and task merge to declarative CliCommandDefinition schemas
+- [x] Verify all migrated subcommands enforce RULE-27 stream separation and pass all test suites
