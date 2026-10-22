@@ -18,8 +18,8 @@ Loft reusable artifact domain primitives from TASK into shared core modules to s
 
 # Acceptance Criteria
 
-- [ ] Extract common slug generator and kebab-case validator into shared primitive module
-- [ ] Implement generalized artifact filename formatter and parser supporting RULE, ADR, and TASK per RULE-1
-- [ ] Generalize directory resolution to map any subtype to its container (.rules/, .adrs/, .tasks/) or flat placement per RULE-8
-- [ ] Generalize active scanner and Git history watermark resolver to discover and allocate next monotonic IDs for RULE and ADR subtypes
-- [ ] Add unit tests verifying generalized filename parsing, subtype directory resolution, and monotonic watermark allocation across all subtypes
+- [x] Extract common slug generator and kebab-case validator into shared primitive module
+- [x] Implement generalized artifact filename formatter and parser supporting RULE, ADR, and TASK per RULE-1
+- [x] Generalize directory resolution to map any subtype to its container (.rules/, .adrs/, .tasks/) or flat placement per RULE-8
+- [x] Generalize active scanner and Git history watermark resolver to discover and allocate next monotonic IDs for RULE and ADR subtypes
+- [x] Add unit tests verifying generalized filename parsing, subtype directory resolution, and monotonic watermark allocation across all subtypes

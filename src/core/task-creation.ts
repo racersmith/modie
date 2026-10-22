@@ -8,6 +8,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { isAbsolute, join, normalize, relative, resolve } from "node:path";
 import { formatTaskFilename } from "./primitives/task/filename.ts";
 import { generateSlug } from "./primitives/task/slug.ts";
+import {
+  findDeepestCommonAncestor,
+  resolveArtifactDirectories,
+} from "./primitives/common/directories.ts";
 import { renderTaskMarkdown } from "./primitives/task/template.ts";
 import type {
   TaskAcceptanceCriteriaItem,
@@ -98,35 +102,7 @@ export interface CreateTaskResult {
   watermark: WatermarkDetails;
 }
 
-/**
- * Computes the deepest common ancestor directory from a list of paths.
- */
-export function findDeepestCommonAncestor(paths: string[], cwd: string = process.cwd()): string | null {
-  if (paths.length === 0) return null;
-
-  const absolutePaths = paths.map((p) => resolve(cwd, p));
-  const firstPath = absolutePaths[0];
-  if (!firstPath) return null;
-  if (absolutePaths.length === 1) {
-    return firstPath;
-  }
-
-  const pathParts = absolutePaths.map((p) => p.split("/"));
-  const firstParts = pathParts[0];
-  if (!firstParts) return null;
-
-  let commonIndex = 0;
-
-  while (
-    commonIndex < firstParts.length &&
-    pathParts.every((parts) => parts[commonIndex] === firstParts[commonIndex])
-  ) {
-    commonIndex++;
-  }
-
-  const common = firstParts.slice(0, commonIndex).join("/");
-  return common.length > 0 ? common : "/";
-}
+export { findDeepestCommonAncestor } from "./primitives/common/directories.ts";
 
 /**
  * Normalizes scope directory and target directory per RULE-8.
@@ -136,25 +112,7 @@ export function resolveTaskDirectories(
   useSubtypeContainer: boolean = true,
   cwd: string = process.cwd(),
 ): { normalizedScopeDir: string; targetDir: string } {
-  const resolvedPath = scopeDirInput ? resolve(cwd, scopeDirInput) : cwd;
-  const normalized = normalize(resolvedPath);
-
-  // If input explicitly pointed inside .tasks or .tasks/, normalize scope to parent
-  let normalizedScopeDir = normalized;
-  if (normalized.endsWith("/.tasks") || normalized.endsWith(".tasks")) {
-    normalizedScopeDir = resolve(normalized, "..");
-    return {
-      normalizedScopeDir,
-      targetDir: normalized,
-    };
-  }
-
-  const targetDir = useSubtypeContainer ? join(normalizedScopeDir, ".tasks") : normalizedScopeDir;
-
-  return {
-    normalizedScopeDir,
-    targetDir,
-  };
+  return resolveArtifactDirectories("TASK", scopeDirInput, useSubtypeContainer, cwd);
 }
 
 /**

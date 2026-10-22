@@ -1,13 +1,13 @@
 /**
- * Active task scanner.
- * Scans the workspace filesystem for *.TASK-*.md files and extracts active task IDs.
- * Complies with RULE-1, ADR-6, and ADR-9.
+ * Active artifact scanner.
+ * Scans the workspace filesystem for indexable artifact files (*.RULE-*.md, *.ADR-*.md, *.TASK-*.md) and extracts IDs.
+ * Complies with RULE-1, ADR-1, ADR-2, ADR-6, and ADR-9.
  */
 
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { parseTaskFilename } from "../primitives/task/filename.ts";
-import type { DiscoveredTask } from "./types.ts";
+import { parseArtifactFilename } from "../primitives/common/filename.ts";
+import type { DiscoveredArtifact, DiscoveredTask, IndexableSubtype } from "./types.ts";
 
 const IGNORED_DIRECTORIES = new Set([
   ".git",
@@ -21,10 +21,15 @@ const IGNORED_DIRECTORIES = new Set([
 ]);
 
 /**
- * Recursively scans directory for active task files (*.TASK-*.md).
+ * Recursively scans directory for active indexable artifact files.
+ * Can be filtered to a specific subtype (RULE, ADR, or TASK).
  */
-export async function scanActiveTasks(rootDir: string = process.cwd()): Promise<DiscoveredTask[]> {
-  const discovered: DiscoveredTask[] = [];
+export async function scanActiveArtifacts(
+  rootDir: string = process.cwd(),
+  subtype?: IndexableSubtype,
+): Promise<DiscoveredArtifact[]> {
+  const discovered: DiscoveredArtifact[] = [];
+  const targetSubtype = subtype ? (subtype.toUpperCase() as IndexableSubtype) : undefined;
 
   async function walk(dir: string): Promise<void> {
     let entries;
@@ -40,15 +45,20 @@ export async function scanActiveTasks(rootDir: string = process.cwd()): Promise<
           await walk(join(dir, entry.name));
         }
       } else if (entry.isFile()) {
-        const parsed = parseTaskFilename(entry.name);
+        const parsed = parseArtifactFilename(entry.name);
         if (parsed) {
-          discovered.push({
-            id: parsed.id,
-            slug: parsed.slug,
-            filename: parsed.filename,
-            filepath: join(dir, entry.name),
-            status: "active",
-          });
+          if (!targetSubtype || parsed.subtype === targetSubtype) {
+            discovered.push({
+              id: parsed.id,
+              subtype: parsed.subtype,
+              tag: parsed.tag,
+              slug: parsed.slug,
+              filename: parsed.filename,
+              filepath: join(dir, entry.name),
+              isArchived: parsed.isArchived,
+              status: "active",
+            });
+          }
         }
       }
     }
@@ -59,9 +69,37 @@ export async function scanActiveTasks(rootDir: string = process.cwd()): Promise<
 }
 
 /**
+ * Returns a deduplicated list of active artifact IDs found on disk for a given subtype.
+ */
+export async function scanActiveArtifactIds(
+  rootDir: string = process.cwd(),
+  subtype?: IndexableSubtype,
+): Promise<string[]> {
+  const artifacts = await scanActiveArtifacts(rootDir, subtype);
+  return Array.from(new Set(artifacts.map((a) => a.id)));
+}
+
+/**
+ * Recursively scans directory for active task files (*.TASK-*.md).
+ * Backward compatibility wrapper around scanActiveArtifacts.
+ */
+export async function scanActiveTasks(rootDir: string = process.cwd()): Promise<DiscoveredTask[]> {
+  const artifacts = await scanActiveArtifacts(rootDir, "TASK");
+  return artifacts
+    .filter((a) => !a.isArchived)
+    .map((a) => ({
+      id: a.id,
+      slug: a.slug,
+      filename: a.filename,
+      filepath: a.filepath,
+      status: "active",
+    }));
+}
+
+/**
  * Returns a deduplicated list of active task IDs found on disk.
+ * Backward compatibility wrapper around scanActiveArtifactIds.
  */
 export async function scanActiveTaskIds(rootDir: string = process.cwd()): Promise<string[]> {
-  const tasks = await scanActiveTasks(rootDir);
-  return Array.from(new Set(tasks.map((t) => t.id)));
+  return scanActiveArtifactIds(rootDir, "TASK");
 }

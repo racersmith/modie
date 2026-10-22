@@ -323,3 +323,50 @@ describe("Watermark Resolver - Live Integration on Modie Repository", () => {
     expect(trunkDetails.fullTaskId).toBe(`TASK-${expectedNextInt}`);
   });
 });
+
+describe("Watermark Resolver - Multi-Subtype Monotonic Allocation (ADR-1, ADR-2, RULE-1)", () => {
+  // @verifies ADR-1, ADR-2, RULE-1
+  it("[ADR-1][ADR-2][RULE-1] should allocate next RULE ID monotonically across active and deleted IDs", async () => {
+    const details = await resolveWatermark({
+      subtype: "RULE",
+      activeIds: ["1", "2", "3"],
+      deletedIds: ["4"],
+    });
+
+    expect(details.subtype).toBe("RULE");
+    expect(details.nextId).toBe("5");
+    expect(details.tag).toBe("RULE-5");
+    expect(details.strategy).toBe("trunk");
+  });
+
+  // @verifies ADR-1, ADR-2, RULE-1
+  it("[ADR-1][ADR-2][RULE-1] should allocate next ADR ID monotonically across active and deleted IDs", async () => {
+    const details = await resolveWatermark({
+      subtype: "ADR",
+      activeIds: ["1", "2"],
+      deletedIds: [],
+    });
+
+    expect(details.subtype).toBe("ADR");
+    expect(details.nextId).toBe("3");
+    expect(details.tag).toBe("ADR-3");
+    expect(details.strategy).toBe("trunk");
+  });
+
+  // @verifies ADR-1, ADR-2, RULE-1
+  it("[ADR-1][ADR-2][RULE-1] should resolve live RULE and ADR watermarks accurately on modie repository", async () => {
+    const ruleDetails = await resolveWatermark({ subtype: "RULE" });
+    expect(ruleDetails.subtype).toBe("RULE");
+    const ruleNum = parseInt(ruleDetails.nextId, 10);
+    // Highest rule on disk is currently at least 29
+    expect(ruleNum).toBeGreaterThanOrEqual(30);
+    expect(ruleDetails.tag).toBe(`RULE-${ruleNum}`);
+
+    const adrDetails = await resolveWatermark({ subtype: "ADR" });
+    expect(adrDetails.subtype).toBe("ADR");
+    const adrNum = parseInt(adrDetails.nextId, 10);
+    // Highest ADR on disk is currently 9
+    expect(adrNum).toBe(10);
+    expect(adrDetails.tag).toBe("ADR-10");
+  });
+});
