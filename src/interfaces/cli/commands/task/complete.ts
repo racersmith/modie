@@ -18,6 +18,7 @@ Arguments:
   <id-or-path>            Task ID (e.g. TASK-7-1, 7-1), slug, or file path
 
 Options:
+  -c, --commit            Execute atomic two-phase Git commit ceremony (ADR-6, RULE-21)
   -f, --force             Force completion even if acceptance criteria remain unchecked
       --keep-file         Retain the task artifact file on disk instead of deleting it
       --json              Emit machine-parsable JSON payload to stdout (RULE-27)
@@ -43,6 +44,7 @@ export async function handleTaskComplete(
     options: {
       help: { type: "boolean", short: "h" },
       json: { type: "boolean" },
+      commit: { type: "boolean", short: "c" },
       force: { type: "boolean", short: "f" },
       "keep-file": { type: "boolean" },
       "no-delete": { type: "boolean" },
@@ -75,12 +77,14 @@ export async function handleTaskComplete(
   const taskIdentifier = parsed.positionals[0]!;
   const force = Boolean(parsed.values.force);
   const deleteArtifact = !Boolean(parsed.values["keep-file"] || parsed.values["no-delete"]);
+  const commit = Boolean(parsed.values.commit);
   const json = Boolean(parsed.values.json);
 
   try {
     const result = await completeTask(taskIdentifier, {
       force,
       deleteArtifact,
+      commit,
       cwd,
     });
 
@@ -96,6 +100,13 @@ export async function handleTaskComplete(
     stderr(
       `✓ Completed task TASK-${result.taskId}: ${result.filename}${deletionNotice}`,
     );
+
+    if (result.commits?.phase1) {
+      stderr(`  Phase 1 commit (verified criteria): ${result.commits.phase1}`);
+    }
+    if (result.commits?.phase2) {
+      stderr(`  Phase 2 commit (artifact deletion): ${result.commits.phase2}`);
+    }
 
     return 0;
   } catch (error: unknown) {

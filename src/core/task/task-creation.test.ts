@@ -208,4 +208,45 @@ describe("Task Creation Service - End-to-End Task Creation via Public API", () =
       }),
     ).rejects.toThrow(/Invalid task dependency.*RULE-18/);
   });
+
+  // @verifies ADR-6, RULE-21
+  it("[ADR-6][RULE-21] should prevent zombie task resurrection for completed task IDs in git history", async () => {
+    const { mkdtemp, rm, writeFile } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const execFileAsync = promisify(execFile);
+
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-create-zombie-"));
+    try {
+      await execFileAsync("git", ["init", "-q"], { cwd: tempDir });
+      await execFileAsync("git", ["config", "user.name", "Test"], { cwd: tempDir });
+      await execFileAsync("git", ["config", "user.email", "test@modie.dev"], { cwd: tempDir });
+
+      // Create and delete TASK-1 in git
+      const dummyPath = join(tempDir, "dummy.TASK-1.md");
+      await writeFile(
+        dummyPath,
+        "---\ndepends_on: []\nlinks: []\n---\n# Context\nTest\n# Acceptance Criteria\n- [x] Item\n",
+        "utf8",
+      );
+      await execFileAsync("git", ["add", "dummy.TASK-1.md"], { cwd: tempDir });
+      await execFileAsync("git", ["commit", "-m", "feat: done"], { cwd: tempDir });
+      await rm(dummyPath);
+      await execFileAsync("git", ["add", "-u", "dummy.TASK-1.md"], { cwd: tempDir });
+      await execFileAsync("git", ["commit", "-m", "chore: delete"], { cwd: tempDir });
+
+      // Next monotonic creation in tempDir advances to TASK-2 (never reuses deleted TASK-1)
+      const res = await createTask({
+        title: "New Task After Deletion",
+        cwd: tempDir,
+      });
+
+      expect(res.artifact.id).toBe("2");
+      expect(res.filename).toBe("new-task-after-deletion.TASK-2.md");
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
 });

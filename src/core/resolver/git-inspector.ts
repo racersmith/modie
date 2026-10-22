@@ -30,6 +30,27 @@ export async function runGit(
 }
 
 /**
+ * Executes a git command and returns trimmed stdout.
+ * Throws a descriptive Error containing git stderr/message if execution fails.
+ */
+export async function runGitCommand(
+  args: string[],
+  cwd: string = process.cwd(),
+): Promise<string> {
+  try {
+    const { stdout } = await execFileAsync("git", args, {
+      cwd,
+      encoding: "utf8",
+      maxBuffer: 10 * 1024 * 1024,
+    });
+    return stdout.trim();
+  } catch (error: any) {
+    const message = error.stderr?.trim() || error.message || String(error);
+    throw new Error(`Git command failed "git ${args.join(" ")}": ${message}`);
+  }
+}
+
+/**
  * Detects the current git branch name.
  * Returns null if not in a git repo or in detached HEAD without branch metadata.
  */

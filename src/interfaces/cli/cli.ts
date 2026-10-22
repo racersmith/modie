@@ -45,7 +45,7 @@ Commands:
   adr create <title>           Create a new ADR artifact
   task create <title>          Create a new TASK artifact with automatic watermark resolution
   task check <id> --item <n>   Check or uncheck an acceptance criteria item
-  task complete <id>           Complete a task and delete its artifact per RULE-21
+  task complete <id>           Complete a task and delete its artifact per RULE-21 (alias: finish)
   task list [options]          List active tasks with DAG readiness and progress
   task status [id]             Inspect active queue or specific task status
   help                         Show help for a command
@@ -63,7 +63,7 @@ export function printTaskNamespaceHelp(stderr: (msg: string) => void): void {
 Subcommands:
   create <title>               Create a new TASK artifact
   check <id> --item <n>        Check or uncheck an acceptance criteria item
-  complete <id>                Verify criteria and delete completed task per RULE-21
+  complete <id>                Verify criteria and delete completed task per RULE-21 (alias: finish)
   list [options]               List active tasks with DAG readiness and progress
   status [id] [options]        Inspect active queue or specific task status
 `);
@@ -102,6 +102,7 @@ const namespaces: Record<string, CommandNamespace> = {
     },
     aliases: {
       ls: "list",
+      finish: "complete",
     },
   },
   rule: {

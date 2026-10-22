@@ -310,3 +310,303 @@ Empty criteria task.
     ).rejects.toThrow(/Task declares no acceptance criteria checklist items/);
   });
 });
+
+describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
+  let gitDir: string;
+
+  beforeEach(async () => {
+    gitDir = await mkdtemp(join(tmpdir(), "modie-two-phase-git-"));
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const execFileAsync = promisify(execFile);
+
+    await execFileAsync("git", ["init", "-q"], { cwd: gitDir });
+    await execFileAsync("git", ["config", "user.name", "Modie Test"], { cwd: gitDir });
+    await execFileAsync("git", ["config", "user.email", "test@modie.dev"], { cwd: gitDir });
+  });
+
+  afterEach(async () => {
+    await rm(gitDir, { recursive: true, force: true });
+  });
+
+  // @verifies ADR-6, RULE-21, RULE-22
+  it("[ADR-6][RULE-21][RULE-22] should execute atomic two-phase commit on completeTask with commit: true", async () => {
+    const taskPath = join(gitDir, "feature-x.TASK-50.md");
+    await writeFile(
+      taskPath,
+      `---
+depends_on: []
+links: []
+---
+
+# Context
+Two phase task commit test.
+
+# Acceptance Criteria
+
+- [x] Implemented core service
+- [x] Added unit tests
+`,
+      "utf8",
+    );
+
+    const result = await completeTask(taskPath, { commit: true, cwd: gitDir });
+
+    expect(result.deleted).toBe(true);
+    expect(result.commits).toBeDefined();
+    expect(result.commits?.phase1).toBeDefined();
+    expect(result.commits?.phase2).toBeDefined();
+
+    // Verify file is deleted on disk
+    await expect(readFile(taskPath, "utf8")).rejects.toThrow();
+
+    // Verify git log contains both ceremony commits
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const execFileAsync = promisify(execFile);
+
+    const { stdout: logOut } = await execFileAsync(
+      "git",
+      ["log", "--oneline", "--format=%s"],
+      { cwd: gitDir },
+    );
+
+    const commitMessages = logOut.trim().split("\n");
+    expect(commitMessages[0]).toBe("chore(task): delete completed TASK-50 artifact per RULE-21");
+    expect(commitMessages[1]).toBe("feat: verify all acceptance criteria for TASK-50");
+
+    // Verify git diff-filter=D detects the deleted task
+    const { stdout: deletedOut } = await execFileAsync(
+      "git",
+      ["log", "--diff-filter=D", "--name-only", "--format="],
+      { cwd: gitDir },
+    );
+    expect(deletedOut).toContain("feature-x.TASK-50.md");
+  });
+
+  // @verifies ADR-6, RULE-21
+  it("[ADR-6][RULE-21] should only execute Phase 1 commit when deleteArtifact: false", async () => {
+    const taskPath = join(gitDir, "retained.TASK-51.md");
+    await writeFile(
+      taskPath,
+      `---
+depends_on: []
+links: []
+---
+
+# Context
+Retained commit test.
+
+# Acceptance Criteria
+
+- [x] Item 1
+`,
+      "utf8",
+    );
+
+    const result = await completeTask(taskPath, {
+      commit: true,
+      deleteArtifact: false,
+      cwd: gitDir,
+    });
+
+    expect(result.deleted).toBe(false);
+    expect(result.commits?.phase1).toBeDefined();
+    expect(result.commits?.phase2).toBeUndefined();
+
+    // File remains on disk
+    const content = await readFile(taskPath, "utf8");
+    expect(content).toContain("- [x] Item 1");
+
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const execFileAsync = promisify(execFile);
+
+    const { stdout: logOut } = await execFileAsync(
+      "git",
+      ["log", "--oneline", "--format=%s"],
+      { cwd: gitDir },
+    );
+    const commitMessages = logOut.trim().split("\n");
+    expect(commitMessages.length).toBe(1);
+    expect(commitMessages[0]).toBe("feat: verify all acceptance criteria for TASK-51");
+  });
+
+  // @verifies ADR-6, RULE-21, RULE-22
+  it("[ADR-6][RULE-21][RULE-22] should update unchecked items to checked on disk during forced commit", async () => {
+    const taskPath = join(gitDir, "forced.TASK-52.md");
+    await writeFile(
+      taskPath,
+      `---
+depends_on: []
+links: []
+---
+
+# Context
+Forced task commit.
+
+# Acceptance Criteria
+
+- [ ] Item unchecked
+`,
+      "utf8",
+    );
+
+    const result = await completeTask(taskPath, {
+      commit: true,
+      force: true,
+      cwd: gitDir,
+    });
+
+    expect(result.deleted).toBe(true);
+    expect(result.commits?.phase1).toBeDefined();
+    expect(result.commits?.phase2).toBeDefined();
+
+    // Verify git diff of Phase 1 commit shows checked criterion
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const execFileAsync = promisify(execFile);
+
+    const { stdout: diffOut } = await execFileAsync(
+      "git",
+      ["show", result.commits!.phase1!],
+      { cwd: gitDir },
+    );
+    expect(diffOut).toContain("- [x] Item unchecked");
+  });
+
+  it("should throw error if commit: true is run outside a git repository", async () => {
+    const nonGitDir = await mkdtemp(join(tmpdir(), "modie-nongit-"));
+    const taskPath = join(nonGitDir, "fail.TASK-53.md");
+    await writeFile(
+      taskPath,
+      `---
+depends_on: []
+links: []
+---
+
+# Context
+Non git.
+
+# Acceptance Criteria
+
+- [x] Item 1
+`,
+      "utf8",
+    );
+
+    await expect(
+      completeTask(taskPath, { commit: true, cwd: nonGitDir }),
+    ).rejects.toThrow(/directory is not a git repository/);
+
+    await rm(nonGitDir, { recursive: true, force: true });
+  });
+});
+
+describe("Zombie Task Resurrection Prevention (ADR-6, RULE-21)", () => {
+  let gitDir: string;
+
+  beforeEach(async () => {
+    gitDir = await mkdtemp(join(tmpdir(), "modie-zombie-git-"));
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const execFileAsync = promisify(execFile);
+
+    await execFileAsync("git", ["init", "-q"], { cwd: gitDir });
+    await execFileAsync("git", ["config", "user.name", "Modie Test"], { cwd: gitDir });
+    await execFileAsync("git", ["config", "user.email", "test@modie.dev"], { cwd: gitDir });
+
+    // Create and complete TASK-99 via two-phase commit
+    const taskPath = join(gitDir, "zombie-target.TASK-99.md");
+    await writeFile(
+      taskPath,
+      `---
+depends_on: []
+links: []
+---
+
+# Context
+Zombie test task.
+
+# Acceptance Criteria
+
+- [x] Criterion 1
+`,
+      "utf8",
+    );
+
+    await execFileAsync("git", ["add", "zombie-target.TASK-99.md"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "feat: verify all acceptance criteria for TASK-99"], { cwd: gitDir });
+    await rm(taskPath, { force: true });
+    await execFileAsync("git", ["add", "-u", "zombie-target.TASK-99.md"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "chore(task): delete completed TASK-99 artifact per RULE-21"], { cwd: gitDir });
+  });
+
+  afterEach(async () => {
+    await rm(gitDir, { recursive: true, force: true });
+  });
+
+  // @verifies ADR-6, RULE-21
+  it("[ADR-6][RULE-21] should reject resolving a resurrected zombie task file on disk", async () => {
+    // Re-create deleted TASK-99 on disk
+    const zombieFile = join(gitDir, "resurrected.TASK-99.md");
+    await writeFile(
+      zombieFile,
+      `---
+depends_on: []
+links: []
+---
+
+# Context
+Zombie resurrected.
+
+# Acceptance Criteria
+
+- [ ] Criterion
+`,
+      "utf8",
+    );
+
+    // Attempting to resolve TASK-99 must throw zombie detection error
+    await expect(
+      resolveTaskFile("TASK-99", { cwd: gitDir }),
+    ).rejects.toThrow(/Zombie task detected: Task "TASK-99" was previously completed and deleted in Git history/);
+
+    // Bypassing with allowZombie: true resolves the path
+    const resolved = await resolveTaskFile("TASK-99", { cwd: gitDir, allowZombie: true });
+    expect(resolved).toBe(zombieFile);
+  });
+
+  // @verifies ADR-6, RULE-21
+  it("[ADR-6][RULE-21] should detect zombie tasks across active queue", async () => {
+    const { detectZombieTasks } = await import("./index.ts");
+
+    // Initially no active tasks on disk
+    let zombies = await detectZombieTasks(gitDir);
+    expect(zombies.length).toBe(0);
+
+    // Re-create deleted TASK-99 on disk
+    const zombieFile = join(gitDir, "resurrected.TASK-99.md");
+    await writeFile(
+      zombieFile,
+      `---
+depends_on: []
+links: []
+---
+
+# Context
+Zombie.
+
+# Acceptance Criteria
+
+- [ ] Item
+`,
+      "utf8",
+    );
+
+    zombies = await detectZombieTasks(gitDir);
+    expect(zombies.length).toBe(1);
+    expect(zombies[0]?.id).toBe("99");
+  });
+});
+

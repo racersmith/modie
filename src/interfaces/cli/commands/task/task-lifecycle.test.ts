@@ -347,6 +347,124 @@ JSON complete test.
 
     await rm(tempDir, { recursive: true, force: true });
   });
+
+  // @verifies ADR-6, RULE-21, RULE-27
+  it("[ADR-6][RULE-21][RULE-27] should execute two-phase commit ceremony with -c / --commit", async () => {
+    const gitDir = await mkdtemp(join(tmpdir(), "modie-cli-commit-"));
+    await execFileAsync("git", ["init", "-q"], { cwd: gitDir });
+    await execFileAsync("git", ["config", "user.name", "CLI Tester"], { cwd: gitDir });
+    await execFileAsync("git", ["config", "user.email", "tester@modie.dev"], { cwd: gitDir });
+
+    const taskPath = join(gitDir, "commit-task.TASK-305.md");
+    await writeFile(
+      taskPath,
+      `---
+depends_on: []
+links: []
+---
+
+# Context
+CLI Commit Ceremony Test.
+
+# Acceptance Criteria
+
+- [x] Verified item
+`,
+      "utf8",
+    );
+
+    const { exitCode, stdout, stderr } = await captureCli(
+      ["task", "complete", "TASK-305", "--commit"],
+      gitDir,
+    );
+
+    expect(exitCode).toBe(0);
+    expect(stdout.trim()).toBe(taskPath);
+    expect(stderr).toContain("✓ Completed task TASK-305: commit-task.TASK-305.md");
+    expect(stderr).toContain("Phase 1 commit (verified criteria):");
+    expect(stderr).toContain("Phase 2 commit (artifact deletion):");
+
+    // Verify task is deleted on disk
+    await expect(readFile(taskPath, "utf8")).rejects.toThrow();
+
+    // Verify git history has both ceremony commits
+    const { stdout: logOut } = await execFileAsync(
+      "git",
+      ["log", "--oneline", "--format=%s"],
+      { cwd: gitDir },
+    );
+    const messages = logOut.trim().split("\n");
+    expect(messages[0]).toBe("chore(task): delete completed TASK-305 artifact per RULE-21");
+    expect(messages[1]).toBe("feat: verify all acceptance criteria for TASK-305");
+
+    await rm(gitDir, { recursive: true, force: true });
+  });
+
+  // @verifies ADR-6, RULE-21, RULE-27
+  it("[ADR-6][RULE-21][RULE-27] should support task finish alias for complete", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-finish-"));
+    const taskPath = join(tempDir, "finish-task.TASK-306.md");
+    await writeFile(
+      taskPath,
+      `---
+depends_on: []
+links: []
+---
+
+# Context
+Finish alias test.
+
+# Acceptance Criteria
+
+- [x] Finished item
+`,
+      "utf8",
+    );
+
+    const { exitCode, stdout, stderr } = await captureCli(
+      ["task", "finish", "TASK-306"],
+      tempDir,
+    );
+
+    expect(exitCode).toBe(0);
+    expect(stderr).toContain("✓ Completed task TASK-306");
+    await expect(readFile(taskPath, "utf8")).rejects.toThrow();
+
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  // @verifies ADR-6, RULE-21, RULE-27
+  it("[ADR-6][RULE-21][RULE-27] should reject completing a zombie task with error to stderr", async () => {
+    const gitDir = await mkdtemp(join(tmpdir(), "modie-cli-zombie-"));
+    await execFileAsync("git", ["init", "-q"], { cwd: gitDir });
+    await execFileAsync("git", ["config", "user.name", "CLI Tester"], { cwd: gitDir });
+    await execFileAsync("git", ["config", "user.email", "tester@modie.dev"], { cwd: gitDir });
+
+    // Create and delete TASK-307 in git
+    const originalFile = join(gitDir, "orig.TASK-307.md");
+    await writeFile(originalFile, "---\ndepends_on: []\nlinks: []\n---\n# Context\nOrig\n# Acceptance Criteria\n- [x] Done\n", "utf8");
+    await execFileAsync("git", ["add", "orig.TASK-307.md"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "feat: done"], { cwd: gitDir });
+    await rm(originalFile, { force: true });
+    await execFileAsync("git", ["add", "-u", "orig.TASK-307.md"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "chore: delete"], { cwd: gitDir });
+
+    // Re-create resurrected zombie file
+    const zombieFile = join(gitDir, "zombie.TASK-307.md");
+    await writeFile(zombieFile, "---\ndepends_on: []\nlinks: []\n---\n# Context\nZombie\n# Acceptance Criteria\n- [x] Done\n", "utf8");
+
+    const { exitCode, stdout, stderr } = await captureCli(
+      ["task", "complete", "TASK-307"],
+      gitDir,
+    );
+
+    expect(exitCode).toBe(1);
+    expect(stdout).toBe("");
+    expect(stderr).toContain("Zombie task detected");
+    expect(stderr).toContain("TASK-307");
+
+    await rm(gitDir, { recursive: true, force: true });
+  });
 });
 
 describe("CLI Task Lifecycle - End-to-End Subprocess via bin.ts", () => {

@@ -13,6 +13,7 @@ import {
   resolveArtifactDirectories,
 } from "../common/index.ts";
 import type { WatermarkDetails } from "../resolver/types.ts";
+import { inspectGitDeletedTaskIds } from "../resolver/git-inspector.ts";
 import { resolveWatermark } from "../resolver/watermark.ts";
 import { renderTaskMarkdown } from "./template.ts";
 import type {
@@ -186,6 +187,14 @@ export async function createTask(options: CreateTaskOptions): Promise<CreateTask
   });
 
   const nextId = watermark.nextId;
+
+  // Guard against zombie task resurrection (ADR-6, RULE-21)
+  const deletedIds = await inspectGitDeletedTaskIds(cwd);
+  if (deletedIds.includes(nextId)) {
+    throw new Error(
+      `Zombie task resurrection violation: Task ID "TASK-${nextId}" was previously completed and deleted in Git history. Re-creating a completed task ID is prohibited (ADR-6, RULE-21).`,
+    );
+  }
 
   // 5. Format task filename per RULE-1
   const filename = formatArtifactFilename({

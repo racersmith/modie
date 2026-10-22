@@ -35,8 +35,11 @@ export type {
   CreateTaskResult,
 } from "./task/creation.ts";
 export {
+  assertNotZombieTask,
   checkTaskItem,
   completeTask,
+  detectZombieTasks,
+  executeTwoPhaseTaskCommit,
   getTask,
   normalizeTaskId,
   resolveTaskFile,
