@@ -5,16 +5,12 @@
  * Complies with ADR-1, ADR-2, ADR-3, RULE-1, RULE-3, RULE-8, RULE-11, RULE-13, RULE-16, and RULE-25.
  */
 
-import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative } from "node:path";
-import {
-  formatArtifactFilename,
-  generateSlug,
-  resolveArtifactDirectories,
-} from "../common/index.ts";
+import { dirname, isAbsolute, relative } from "node:path";
+import { resolveArtifactDirectories } from "../common/index.ts";
 import { resolveArtifactByTag } from "../query/index.ts";
-import { resolveNextArtifactId } from "../resolver/watermark.ts";
-import { renderRuleMarkdown, validateRuleLinks } from "./template.ts";
+import { createArtifact } from "../pipeline/create.ts";
+import { ruleDefinition } from "./definition.ts";
+import { validateRuleLinks } from "./template.ts";
 import type { RuleArtifact } from "./types.ts";
 
 export interface CreateRuleOptions {
@@ -129,74 +125,14 @@ export async function validateRuleAncestry(
 export async function createRule(
   options: CreateRuleOptions,
 ): Promise<CreateRuleResult> {
-  const cwd = options.cwd ?? process.cwd();
-
-  if (!options.title || options.title.trim().length === 0) {
-    throw new Error("Rule title must be a non-empty string.");
-  }
-
-  // 1. Generate slug per RULE-1
-  const slug = generateSlug(options.title);
-
-  // 2. Resolve directory scope & target placement per RULE-8
-  const { normalizedScopeDir, targetDir } = resolveRuleDirectories(
-    options.scopeDir,
-    options.useSubtypeContainer ?? true,
-    cwd,
-  );
-
-  // 3. Validate links and ancestry per RULE-13 and RULE-16
-  const links = options.links ?? [];
-  await validateRuleAncestry(normalizedScopeDir, links, cwd);
-
-  // 4. Resolve next monotonic RULE ID (ADR-2, RULE-1)
-  const nextId = await resolveNextArtifactId("RULE", { cwd });
-  const tag = `RULE-${nextId}`;
-
-  // 5. Format canonical filename per RULE-1
-  const filename = formatArtifactFilename({
-    slug,
-    subtype: "RULE",
-    id: nextId,
-  });
-  const filepath = join(targetDir, filename);
-
-  // 6. Render markdown template per RULE-3 and RULE-11
-  const assertionText =
-    options.assertion?.trim() ||
-    options.context?.trim() ||
-    `A discrete invariant assertion regarding ${options.title.trim()}.`;
-
-  const markdown = renderRuleMarkdown({
-    id: nextId,
-    slug,
-    title: options.title.trim(),
-    links,
-    assertion: assertionText,
-  });
-
-  // 7. Write rule artifact to disk
-  await mkdir(targetDir, { recursive: true });
-  await writeFile(filepath, markdown, "utf8");
-
-  // 8. Construct RuleArtifact representation
-  const artifact: RuleArtifact = {
-    id: nextId,
-    slug,
-    title: options.title.trim(),
-    links,
-    assertion: assertionText,
-    filePath: filepath,
-    rawContent: markdown,
-  };
-
+  const result = await createArtifact(ruleDefinition, options);
   return {
-    artifact,
-    filename,
-    filepath,
-    relativePath: relative(cwd, filepath),
-    markdown,
-    id: nextId,
-    tag,
+    artifact: result.artifact,
+    filename: result.filename,
+    filepath: result.filepath,
+    relativePath: result.relativePath,
+    markdown: result.markdown,
+    id: result.id,
+    tag: result.tag,
   };
 }

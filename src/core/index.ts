@@ -11,6 +11,9 @@ export {
   parseArtifactFilename,
   isArtifactFilename,
   isValidArtifactId,
+  isRegisteredArtifactSubtype,
+  registerArtifactSubtype,
+  resetRegisteredArtifactSubtypes,
 } from "./common/filename.ts";
 export {
   generateSlug,
@@ -21,6 +24,16 @@ export {
   getSubtypeContainerName,
   resolveArtifactDirectories,
 } from "./common/directories.ts";
+
+// Declarative artifact pipeline module
+export * as PipelinePrimitive from "./pipeline/index.ts";
+export * from "./pipeline/types.ts";
+export {
+  createArtifact,
+  ruleDefinition,
+  adrDefinition,
+  taskDefinition,
+} from "./pipeline/index.ts";
 
 // Task domain module
 export * as TaskPrimitive from "./task/index.ts";
