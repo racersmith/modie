@@ -63,3 +63,14 @@ export type {
   TaskReadiness,
   TaskStatusDetails,
 } from "./task-query.ts";
+
+export {
+  getArtifactDetails,
+  parseCanonicalTag,
+  resolveArtifactByTag,
+} from "./artifact-query.ts";
+export type {
+  ArtifactDetails,
+  ResolveArtifactOptions,
+  ResolvedArtifact,
+} from "./artifact-query.ts";

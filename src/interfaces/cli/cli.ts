@@ -4,6 +4,8 @@
  * Complies with RULE-27.
  */
 
+import { handleFind } from "./find.ts";
+import { handleShow } from "./show.ts";
 import { handleTaskCheck } from "./task-check.ts";
 import { handleTaskComplete } from "./task-complete.ts";
 import { handleTaskCreate } from "./task-create.ts";
@@ -23,6 +25,8 @@ Usage:
   modie <command> [subcommand] [arguments] [options]
 
 Commands:
+  find <tag> [options]         Find the file path of an artifact by tag
+  show <tag> [options]         Display artifact details or content
   task create <title>          Create a new TASK artifact with automatic watermark resolution
   task check <id> --item <n>   Check or uncheck an acceptance criteria item
   task complete <id>           Complete a task and delete its artifact per RULE-21
@@ -65,6 +69,14 @@ export async function runCli(
   }
 
   const [command, ...subArgs] = args;
+
+  if (command === "find") {
+    return handleFind(subArgs, options);
+  }
+
+  if (command === "show") {
+    return handleShow(subArgs, options);
+  }
 
   if (command === "task") {
     if (

@@ -9,4 +9,6 @@ export * from "./task-check.ts";
 export * from "./task-complete.ts";
 export * from "./task-list.ts";
 export * from "./task-status.ts";
+export * from "./find.ts";
+export * from "./show.ts";
 export * from "./cli.ts";
