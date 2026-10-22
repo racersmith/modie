@@ -1,0 +1,6 @@
+{
+  "git": {
+    "trunk": "dev",
+    "protectedBranches": ["main"]
+  }
+}

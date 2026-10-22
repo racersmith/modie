@@ -62,6 +62,21 @@ export type {
   TaskReadiness,
   TaskStatusDetails,
 } from "./task/query.ts";
+export {
+  branchExists,
+  computeTaskBranchTopology,
+  formatTaskBranchName,
+  mergeTaskBranch,
+  parseSubtaskId,
+  startTaskBranch,
+} from "./task/branching.ts";
+export type {
+  MergeTaskBranchOptions,
+  MergeTaskBranchResult,
+  StartTaskBranchOptions,
+  StartTaskBranchResult,
+  TaskBranchTopology,
+} from "./task/types.ts";
 
 // Rule domain module
 export * as RulePrimitive from "./rule/index.ts";
@@ -112,3 +127,13 @@ export type {
 // Resolver & scan domain module
 export * as Resolver from "./resolver/index.ts";
 export * from "./resolver/types.ts";
+
+// Configuration domain module
+export * as ConfigPrimitive from "./config/index.ts";
+export * from "./config/types.ts";
+export {
+  DEFAULT_PROTECTED_BRANCHES,
+  DEFAULT_TRUNK_BRANCH,
+  findModieConfigFile,
+  loadModieConfig,
+} from "./config/loader.ts";

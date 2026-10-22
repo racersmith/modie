@@ -12,6 +12,8 @@ import {
   handleTaskComplete,
   handleTaskCreate,
   handleTaskList,
+  handleTaskMerge,
+  handleTaskStart,
   handleTaskStatus,
 } from "./commands/task/index.ts";
 import type { CliIoOptions } from "./types.ts";
@@ -44,8 +46,10 @@ Commands:
   rule create <title>          Create a new RULE artifact
   adr create <title>           Create a new ADR artifact
   task create <title>          Create a new TASK artifact with automatic watermark resolution
+  task start <id>              Create and checkout a hierarchical task branch (RULE-28)
   task check <id> --item <n>   Check or uncheck an acceptance criteria item
   task complete <id>           Complete a task and delete its artifact per RULE-21 (alias: finish)
+  task merge <id>              Merge completed task branch back into parent or trunk (RULE-28)
   task list [options]          List active tasks with DAG readiness and progress
   task status [id]             Inspect active queue or specific task status
   help                         Show help for a command
@@ -62,8 +66,10 @@ export function printTaskNamespaceHelp(stderr: (msg: string) => void): void {
 
 Subcommands:
   create <title>               Create a new TASK artifact
+  start <id> [options]         Create and checkout a hierarchical task branch (RULE-28)
   check <id> --item <n>        Check or uncheck an acceptance criteria item
   complete <id>                Verify criteria and delete completed task per RULE-21 (alias: finish)
+  merge <id> [options]         Merge completed task branch back into parent or trunk (RULE-28)
   list [options]               List active tasks with DAG readiness and progress
   status [id] [options]        Inspect active queue or specific task status
 `);
@@ -95,8 +101,10 @@ const namespaces: Record<string, CommandNamespace> = {
     help: printTaskNamespaceHelp,
     commands: {
       create: handleTaskCreate,
+      start: handleTaskStart,
       check: handleTaskCheck,
       complete: handleTaskComplete,
+      merge: handleTaskMerge,
       list: handleTaskList,
       status: handleTaskStatus,
     },
