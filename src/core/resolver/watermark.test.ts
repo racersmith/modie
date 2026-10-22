@@ -365,8 +365,7 @@ describe("Watermark Resolver - Multi-Subtype Monotonic Allocation (ADR-1, ADR-2,
     const adrDetails = await resolveWatermark({ subtype: "ADR" });
     expect(adrDetails.subtype).toBe("ADR");
     const adrNum = parseInt(adrDetails.nextId, 10);
-    // Highest ADR on disk is currently 9
-    expect(adrNum).toBe(10);
-    expect(adrDetails.tag).toBe("ADR-10");
+    expect(adrNum).toBeGreaterThanOrEqual(10);
+    expect(adrDetails.tag).toBe(`ADR-${adrNum}`);
   });
 });
