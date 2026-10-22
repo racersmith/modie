@@ -13,7 +13,7 @@ completeTask currently stages and commits only the task artifact file (relFilepa
 
 # Acceptance Criteria
 
-- [ ] Update completeTask to inspect git status and stage all pending working tree changes for Phase 1
-- [ ] Automatically skip Phase 1 commit if working tree is already clean and criteria are satisfied
-- [ ] Execute Phase 2 artifact deletion and commit atomically without requiring manual pre-commit steps
-- [ ] Add unit and integration tests verifying clean and dirty working tree scenarios for two-phase completion
+- [x] Update completeTask to inspect git status and stage all pending working tree changes for Phase 1
+- [x] Automatically skip Phase 1 commit if working tree is already clean and criteria are satisfied
+- [x] Execute Phase 2 artifact deletion and commit atomically without requiring manual pre-commit steps
+- [x] Add unit and integration tests verifying clean and dirty working tree scenarios for two-phase completion

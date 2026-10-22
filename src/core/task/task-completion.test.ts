@@ -501,6 +501,126 @@ Non git.
 
     await rm(nonGitDir, { recursive: true, force: true });
   });
+
+  // @verifies ADR-6, RULE-21, RULE-22 (TASK-25)
+  it("[ADR-6][RULE-21][TASK-25] should stage all pending code and task changes in Phase 1 commit when working tree is dirty", async () => {
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const execFileAsync = promisify(execFile);
+
+    // 1. Create an uncommitted code file in the repo
+    const codePath = join(gitDir, "service.ts");
+    await writeFile(codePath, 'export const value = "implemented";\n', "utf8");
+
+    // 2. Create an uncommitted task file
+    const taskPath = join(gitDir, "dirty-tree.TASK-60.md");
+    await writeFile(
+      taskPath,
+      `---
+depends_on: []
+links: []
+---
+
+# Context
+Dirty tree completion test.
+
+# Acceptance Criteria
+
+- [x] Service implemented
+`,
+      "utf8",
+    );
+
+    // 3. Complete task with commit: true
+    const result = await completeTask(taskPath, { commit: true, cwd: gitDir });
+
+    expect(result.deleted).toBe(true);
+    expect(result.commits?.phase1).toBeDefined();
+    expect(result.commits?.phase2).toBeDefined();
+
+    // Verify Phase 1 commit contains BOTH the code file and the task file
+    const { stdout: phase1Files } = await execFileAsync(
+      "git",
+      ["diff-tree", "--root", "--no-commit-id", "--name-only", "-r", result.commits!.phase1!],
+      { cwd: gitDir },
+    );
+    expect(phase1Files).toContain("service.ts");
+    expect(phase1Files).toContain("dirty-tree.TASK-60.md");
+
+    // Verify Phase 2 commit deleted the task file
+    const { stdout: phase2Files } = await execFileAsync(
+      "git",
+      ["diff-tree", "--no-commit-id", "--name-only", "-r", result.commits!.phase2!],
+      { cwd: gitDir },
+    );
+    expect(phase2Files.trim()).toBe("dirty-tree.TASK-60.md");
+
+    // Verify working tree is completely clean
+    const { stdout: statusOut } = await execFileAsync(
+      "git",
+      ["status", "--porcelain"],
+      { cwd: gitDir },
+    );
+    expect(statusOut.trim()).toBe("");
+  });
+
+  // @verifies ADR-6, RULE-21, RULE-22 (TASK-25)
+  it("[ADR-6][RULE-21][TASK-25] should automatically skip Phase 1 commit when working tree is already clean", async () => {
+    const { execFile } = await import("node:child_process");
+    const { promisify } = await import("node:util");
+    const execFileAsync = promisify(execFile);
+
+    // 1. Create code file and task file
+    const codePath = join(gitDir, "feature.ts");
+    await writeFile(codePath, 'export const ready = true;\n', "utf8");
+
+    const taskPath = join(gitDir, "clean-tree.TASK-61.md");
+    await writeFile(
+      taskPath,
+      `---
+depends_on: []
+links: []
+---
+
+# Context
+Clean tree completion test.
+
+# Acceptance Criteria
+
+- [x] Ready to complete
+`,
+      "utf8",
+    );
+
+    // 2. Pre-commit implementation and task file so working tree is clean
+    await execFileAsync("git", ["add", "-A"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "feat(TASK-61): pre-committed implementation"], { cwd: gitDir });
+
+    const { stdout: cleanStatus } = await execFileAsync("git", ["status", "--porcelain"], { cwd: gitDir });
+    expect(cleanStatus.trim()).toBe("");
+
+    // 3. Complete task with commit: true
+    const result = await completeTask(taskPath, { commit: true, cwd: gitDir });
+
+    expect(result.deleted).toBe(true);
+    // Phase 1 is skipped because working tree was already clean
+    expect(result.commits?.phase1).toBeUndefined();
+    // Phase 2 executed the artifact deletion
+    expect(result.commits?.phase2).toBeDefined();
+
+    const { stdout: logOut } = await execFileAsync(
+      "git",
+      ["log", "--oneline", "--format=%s", "-n", "2"],
+      { cwd: gitDir },
+    );
+    const messages = logOut.trim().split("\n");
+    expect(messages[0]).toBe("chore(task): delete completed TASK-61 artifact");
+    expect(messages[1]).toBe("feat(TASK-61): pre-committed implementation");
+
+    // Working tree remains clean
+    const { stdout: finalStatus } = await execFileAsync("git", ["status", "--porcelain"], { cwd: gitDir });
+    expect(finalStatus.trim()).toBe("");
+  });
 });
 
 describe("Zombie Task Resurrection Prevention (ADR-6, RULE-21)", () => {

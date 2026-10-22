@@ -527,12 +527,13 @@ describe("CLI Task Lifecycle - End-to-End Subprocess via bin.ts", () => {
     ]);
     expect(check2.stderr).toContain("✓ All acceptance criteria");
 
-    // 5. Complete task
+    // 5. Complete task (pass --no-commit to avoid committing in the host repository)
     const completeResult = await execFileAsync(process.execPath, [
       binPath,
       "task",
       "complete",
       taskPath,
+      "--no-commit",
     ]);
     expect(completeResult.stderr).toContain("✓ Completed task");
     expect(completeResult.stderr).toContain("artifact deleted per RULE-21");

@@ -1,10 +1,10 @@
 /**
- * CLI command handler for `modie task complete <id> [options]`.
+ * CLI command handler for `modie task complete <id> [options]` (alias: finish).
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
- * Enforces RULE-21 and RULE-22.
+ * Enforces ADR-6, RULE-21, and RULE-22.
  */
 
-import { completeTask } from "../../../../core/index.ts";
+import { completeTask, runGit } from "../../../../core/index.ts";
 import { parseCliArgs } from "../../arg-parser.ts";
 import type { CliIoOptions } from "../../types.ts";
 
@@ -12,13 +12,14 @@ import type { CliIoOptions } from "../../types.ts";
  * Prints usage instructions for `modie task complete`.
  */
 export function printTaskCompleteHelp(stderr: (msg: string) => void): void {
-  stderr(`Usage: modie task complete <id-or-path> [options]
+  stderr(`Usage: modie task complete <id-or-path> [options] (alias: finish)
 
 Arguments:
   <id-or-path>            Task ID (e.g. TASK-7-1, 7-1), slug, or file path
 
 Options:
-  -c, --commit            Execute atomic two-phase Git commit ceremony (ADR-6, RULE-21)
+  -c, --commit            Execute atomic two-phase Git commit ceremony (ADR-6, RULE-21) (default in git repo)
+      --no-commit         Disable automatic Git commits and only delete the artifact locally
   -f, --force             Force completion even if acceptance criteria remain unchecked
       --keep-file         Retain the task artifact file on disk instead of deleting it
       --json              Emit machine-parsable JSON payload to stdout (RULE-27)
@@ -45,6 +46,7 @@ export async function handleTaskComplete(
       help: { type: "boolean", short: "h" },
       json: { type: "boolean" },
       commit: { type: "boolean", short: "c" },
+      "no-commit": { type: "boolean" },
       force: { type: "boolean", short: "f" },
       "keep-file": { type: "boolean" },
       "no-delete": { type: "boolean" },
@@ -77,8 +79,11 @@ export async function handleTaskComplete(
   const taskIdentifier = parsed.positionals[0]!;
   const force = Boolean(parsed.values.force);
   const deleteArtifact = !Boolean(parsed.values["keep-file"] || parsed.values["no-delete"]);
-  const commit = Boolean(parsed.values.commit);
   const json = Boolean(parsed.values.json);
+
+  const isGitRepo = (await runGit(["rev-parse", "--is-inside-work-tree"], cwd)) === "true";
+  const noCommit = Boolean(parsed.values["no-commit"]);
+  const commit = noCommit ? false : Boolean(parsed.values.commit || isGitRepo);
 
   try {
     const result = await completeTask(taskIdentifier, {
@@ -103,6 +108,8 @@ export async function handleTaskComplete(
 
     if (result.commits?.phase1) {
       stderr(`  Phase 1 commit (verified criteria): ${result.commits.phase1}`);
+    } else if (result.commits?.phase2) {
+      stderr(`  Phase 1 commit (verified criteria): (skipped - working tree already clean)`);
     }
     if (result.commits?.phase2) {
       stderr(`  Phase 2 commit (artifact deletion): ${result.commits.phase2}`);
