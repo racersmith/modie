@@ -1,6 +1,8 @@
 ---
 links:
   - RULE-8
+superseded_by:
+  - ADR-10
 ---
 
 # Context
