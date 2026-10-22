@@ -14,11 +14,11 @@ links:
 
 # Context
 
-Provide automated discovery and classification of artifact references across the repository, capturing both "referenced by" (citations across governance artifacts, source code, and tests) and "points to" (declared outbound links and dependencies) to power guarded archival checks and codebase refactoring.
+Provide automated discovery and classification of artifact references across the repository, capturing both "found in" (citations across governance artifacts, source code, and tests) and "links to" (declared outbound links and dependencies) to power guarded archival checks and codebase refactoring.
 
 # Acceptance Criteria
 
-- [ ] Implement core reference resolution service computing "referenced by" (governance, code, test, prose) and "points to" (links, dependencies) for any artifact tag
+- [ ] Implement core reference resolution service computing "found in" (governance, code, test, prose) and "links to" (links, dependencies) for any artifact tag
 - [ ] Evaluate subtype-agnostic archival guard status (canArchive, blockingReasons) based on active governance citations
 - [ ] Implement CLI command modie references <tag> (alias: refs) supporting formatted terminal output and machine-parsable JSON (RULE-27)
 - [ ] Wire references command into CLI router and global help output
