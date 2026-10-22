@@ -1,27 +1,20 @@
 /**
- * CLI command handler for `modie task list [options]`.
+ * Declarative CLI command definition for `modie task list [options]`.
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
  */
 
 import { queryTaskQueue, type TaskQueueItem } from "../../../../core/index.ts";
-import { parseCliArgs } from "../../arg-parser.ts";
+import {
+  createCommandHandler,
+  generateCommandHelp,
+  type CliCommandDefinition,
+} from "../../framework/index.ts";
 import type { CliIoOptions } from "../../types.ts";
 
-/**
- * Prints usage instructions for `modie task list`.
- */
-export function printTaskListHelp(stderr: (msg: string) => void): void {
-  stderr(`Usage: modie task list [options]
-
-List active tasks in the working tree with DAG dependency readiness and progress.
-
-Options:
-  -r, --ready             Show only unblocked tasks ready for execution
-  -b, --blocked           Show only tasks blocked by pending dependencies
-      --scope <path>      Filter tasks located within specified directory scope
-      --json              Emit machine-parsable JSON payload to stdout (RULE-27)
-  -h, --help              Show this help message
-`);
+export interface TaskListFlags {
+  ready?: boolean;
+  blocked?: boolean;
+  scope?: string;
 }
 
 /**
@@ -67,72 +60,60 @@ export function renderTaskQueueTable(tasks: TaskQueueItem[]): string {
 }
 
 /**
- * Handles argument parsing and execution for `modie task list`.
+ * Declarative definition for the `modie task list` command.
  */
-export async function handleTaskList(
-  args: string[],
-  options: CliIoOptions = {},
-): Promise<number> {
-  const stdout =
-    options.stdout ?? ((msg: string) => process.stdout.write(msg + "\n"));
-  const stderr =
-    options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
-  const cwd = options.cwd ?? process.cwd();
-
-  const parsed = parseCliArgs({
-    args,
-    options: {
-      help: { type: "boolean", short: "h" },
-      json: { type: "boolean" },
-      ready: { type: "boolean", short: "r" },
-      blocked: { type: "boolean", short: "b" },
-      scope: { type: "string" },
+export const taskListCommand: CliCommandDefinition<
+  TaskListFlags,
+  TaskQueueItem[]
+> = {
+  name: "list",
+  usage: "modie task list [options]",
+  description:
+    "List active tasks in the working tree with DAG dependency readiness and progress.",
+  helpUsage: "modie task list --help",
+  positionals: [],
+  flags: {
+    ready: {
+      type: "boolean",
+      short: "r",
+      description: "Show only unblocked tasks ready for execution",
     },
-    helpUsage: "modie task list --help",
-    stderr,
-  });
+    blocked: {
+      type: "boolean",
+      short: "b",
+      description: "Show only tasks blocked by pending dependencies",
+    },
+    scope: {
+      type: "string",
+      placeholder: "<path>",
+      description: "Filter tasks located within specified directory scope",
+    },
+  },
+  run: async (context) => {
+    const readyOnly = Boolean(context.flags.ready);
+    const blockedOnly = Boolean(context.flags.blocked);
+    const scope = context.flags.scope;
 
-  if (!parsed) {
-    return 1;
-  }
-
-  if (parsed.values.help) {
-    printTaskListHelp(stderr);
-    return 0;
-  }
-
-  if (parsed.positionals.length > 0) {
-    stderr(`Error: Unexpected argument "${parsed.positionals[0]}".`);
-    return 1;
-  }
-
-  const readyOnly = Boolean(parsed.values.ready);
-  const blockedOnly = Boolean(parsed.values.blocked);
-  const json = Boolean(parsed.values.json);
-  const scope = parsed.values.scope as string | undefined;
-
-  try {
-    const tasks = await queryTaskQueue({
-      cwd,
+    return queryTaskQueue({
+      cwd: context.cwd,
       readyOnly,
       blockedOnly,
       scope,
     });
-
-    if (json) {
-      stdout(JSON.stringify(tasks, null, 2));
-      return 0;
-    }
+  },
+  render: (tasks, context) => {
+    const readyOnly = Boolean(context.flags.ready);
+    const blockedOnly = Boolean(context.flags.blocked);
 
     if (tasks.length === 0) {
       if (readyOnly) {
-        stderr("No ready tasks found in active queue.");
+        context.stderr("No ready tasks found in active queue.");
       } else if (blockedOnly) {
-        stderr("No blocked tasks found in active queue.");
+        context.stderr("No blocked tasks found in active queue.");
       } else {
-        stderr("Active task queue is empty. No pending tasks found on disk.");
+        context.stderr("Active task queue is empty. No pending tasks found on disk.");
       }
-      return 0;
+      return;
     }
 
     const readyCount = tasks.filter((t) => t.readiness === "READY").length;
@@ -147,13 +128,25 @@ export async function handleTaskList(
       filterSummary = ` (${tasks.length} task${tasks.length === 1 ? "" : "s"}: ${readyCount} ready, ${blockedCount} blocked)`;
     }
 
-    stderr(`Active Task Queue${filterSummary}:\n`);
-    stderr(renderTaskQueueTable(tasks));
+    context.stderr(`Active Task Queue${filterSummary}:\n`);
+    context.stderr(renderTaskQueueTable(tasks));
+  },
+  renderJson: (tasks, context) => {
+    context.stdout(JSON.stringify(tasks, null, 2));
+  },
+};
 
-    return 0;
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    stderr(`Error: ${message}`);
-    return 1;
-  }
+/**
+ * CLI command handler for `modie task list`.
+ */
+export const handleTaskList: (
+  args: string[],
+  options?: CliIoOptions,
+) => Promise<number> = createCommandHandler(taskListCommand);
+
+/**
+ * Prints usage instructions for `modie task list`.
+ */
+export function printTaskListHelp(stderr: (msg: string) => void): void {
+  stderr(generateCommandHelp(taskListCommand));
 }

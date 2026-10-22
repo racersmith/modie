@@ -16,14 +16,9 @@ import {
   handleTaskStart,
   handleTaskStatus,
 } from "./commands/task/index.ts";
-import type { CliIoOptions } from "./types.ts";
+import type { CliIoOptions, CommandHandler } from "./types.ts";
 
 export const MODIE_VERSION = "0.1.0";
-
-export type CommandHandler = (
-  args: string[],
-  options: CliIoOptions,
-) => Promise<number>;
 
 export interface CommandNamespace {
   help: (stderr: (msg: string) => void) => void;
