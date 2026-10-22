@@ -18,9 +18,9 @@ Automate hierarchical branch creation and merging per RULE-28 and ADR-9 Section 
 
 # Acceptance Criteria
 
-- [ ] Implement Modie project configuration loader (.modie/config.json and git config) with trunk and protectedBranches definitions
-- [ ] Implement core Git branching service to compute branch topology (detect root task vs subtask parent branch and protected status)
-- [ ] Implement modie task start <id> to create and check out the correct task branch (task/<id>-<slug>), guarding against starting from protected branches
-- [ ] Implement modie task merge <id> to verify completion and merge subtask branches back into their parent branch per RULE-28, guarding against merging into protected branches
-- [ ] Add CLI validation preventing subtask branches from merging directly into trunk dev or protected branches
-- [ ] Add unit and integration tests for task branch creation, protected branch guards, parent-child topology resolution, and merge verification
+- [x] Implement Modie project configuration loader (.modie/config.json and git config) with trunk and protectedBranches definitions
+- [x] Implement core Git branching service to compute branch topology (detect root task vs subtask parent branch and protected status)
+- [x] Implement modie task start <id> to create and check out the correct task branch (task/<id>-<slug>), guarding against starting from protected branches
+- [x] Implement modie task merge <id> to verify completion and merge subtask branches back into their parent branch per RULE-28, guarding against merging into protected branches
+- [x] Add CLI validation preventing subtask branches from merging directly into trunk dev or protected branches
+- [x] Add unit and integration tests for task branch creation, protected branch guards, parent-child topology resolution, and merge verification
