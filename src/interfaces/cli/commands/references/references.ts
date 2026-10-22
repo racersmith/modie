@@ -4,16 +4,43 @@
  * Evaluates subtype-agnostic archival safety per RULE-31.
  */
 
+import { z } from "zod";
 import {
   findArtifactReferences,
   type ArtifactReferencesResult,
 } from "../../../../core/index.ts";
 import {
   createCommandHandler,
+  defineCommand,
   generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
 import type { CliIoOptions } from "../../types.ts";
+
+export const referencesSchema = z.object({
+  tag: z
+    .string()
+    .min(1, "Artifact tag or identifier is required")
+    .describe("Artifact tag (e.g. RULE-25, ADR-4, TASK-20), slug, or filepath"),
+  by: z
+    .boolean()
+    .default(false)
+    .describe("Display only 'Found In' citations"),
+  to: z
+    .boolean()
+    .default(false)
+    .describe("Display only 'Links To' declared outbound links"),
+  codeOnly: z
+    .boolean()
+    .default(false)
+    .describe("Filter citations to source code and tests only"),
+  governanceOnly: z
+    .boolean()
+    .default(false)
+    .describe("Filter citations to governance artifacts only"),
+});
+
+export type ReferencesInput = z.infer<typeof referencesSchema>;
 
 export interface ReferencesFlags {
   by?: boolean;
@@ -30,16 +57,20 @@ export interface ReferencesFlags {
  */
 export const referencesCommandDefinition: CliCommandDefinition<
   ReferencesFlags,
-  ArtifactReferencesResult
-> = {
+  ArtifactReferencesResult,
+  typeof referencesSchema
+> = defineCommand({
+  id: "references",
   name: "references",
   usage: "modie references <tag> [options] (alias: refs)",
   description:
     "Discover all citations found across governance, code, and tests ('Found In') and declared outbound links ('Links To').",
   helpUsage: "modie references --help",
+  schema: referencesSchema,
   positionals: [
     {
       name: "tag",
+      property: "tag",
       description: "Artifact tag (e.g. RULE-25, ADR-4, TASK-20), slug, or filepath",
       required: true,
       missingError:
@@ -60,15 +91,16 @@ export const referencesCommandDefinition: CliCommandDefinition<
     "code-only": {
       type: "boolean",
       description: "Filter citations to source code and tests only",
+      property: "codeOnly",
     },
     "governance-only": {
       type: "boolean",
       description: "Filter citations to governance artifacts only",
+      property: "governanceOnly",
     },
   },
-  run: async (context) => {
-    const targetTag = context.positionals[0]!;
-    return findArtifactReferences(targetTag, { cwd: context.cwd });
+  execute: async (input, context) => {
+    return findArtifactReferences(input.tag, { cwd: context.cwd });
   },
   render: (result, context) => {
     const showOnlyBy = Boolean(context.flags.by && !context.flags.to);
@@ -166,7 +198,7 @@ export const referencesCommandDefinition: CliCommandDefinition<
   renderJson: (result, context) => {
     context.stdout(JSON.stringify(result, null, 2));
   },
-};
+});
 
 /**
  * CLI command handler for `modie references`.

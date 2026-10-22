@@ -276,7 +276,7 @@ describe("Declarative CLI Subcommand Framework (TASK-19, RULE-25, RULE-27)", () 
     expect(capturedItem).toBe("99");
   });
 
-  it("should verify declared core command definitions conform to CliCommandDefinition", () => {
+  it("should verify declared core command definitions conform to CliCommandDefinition with Zod schemas", () => {
     const declaredCommands = [
       findCommand,
       showCommand,
@@ -295,8 +295,111 @@ describe("Declarative CLI Subcommand Framework (TASK-19, RULE-25, RULE-27)", () 
     for (const cmd of declaredCommands) {
       expect(cmd.name).toBeDefined();
       expect(typeof cmd.name).toBe("string");
+      expect(cmd.id).toBeDefined();
+      expect(typeof cmd.id).toBe("string");
       expect(cmd.usage).toBeDefined();
+      expect(cmd.schema).toBeDefined();
+      expect(typeof cmd.execute).toBe("function");
       expect(typeof cmd.run).toBe("function");
     }
   });
+
+  it("should coerce arguments and execute handlers via defineCommand", async () => {
+    let capturedInput: any = null;
+
+    const widgetSchema = (await import("zod")).z.object({
+      id: (await import("zod")).z.string().describe("Widget ID"),
+      count: (await import("zod")).z.coerce.number().int().positive().describe("Count"),
+      verbose: (await import("zod")).z.boolean().default(false).describe("Verbose mode"),
+      tags: (await import("zod")).z.array((await import("zod")).z.string()).default([]).describe("Tags"),
+    });
+
+    const widgetCommand = (await import("./index.ts")).defineCommand({
+      id: "widget_process",
+      name: "widget",
+      usage: "modie widget <id> [options]",
+      schema: widgetSchema,
+      positionals: [
+        {
+          name: "id",
+          property: "id",
+          description: "Widget ID",
+          required: true,
+        },
+      ],
+      flags: {
+        count: {
+          type: "string",
+          short: "c",
+          description: "Count",
+        },
+        verbose: {
+          type: "boolean",
+          short: "v",
+          description: "Verbose mode",
+        },
+        tags: {
+          type: "string",
+          multiple: true,
+          description: "Tags",
+          splitCommas: true,
+        },
+      },
+      execute: (input) => {
+        capturedInput = input;
+        return { processed: true };
+      },
+    });
+
+    let stdoutOutput = "";
+    let stderrOutput = "";
+    const exitCode = await (await import("./index.ts")).executeCliCommand(
+      widgetCommand,
+      ["W-123", "--count", "42", "--verbose", "--tags", "alpha,beta"],
+      {
+        stdout: (msg) => (stdoutOutput += msg + "\n"),
+        stderr: (msg) => (stderrOutput += msg + "\n"),
+      },
+    );
+
+    expect(exitCode).toBe(0);
+    expect(capturedInput).toEqual({
+      id: "W-123",
+      count: 42,
+      verbose: true,
+      tags: ["alpha", "beta"],
+    });
+  });
+
+  it("should fail validation and emit error to stderr when required Zod flag is missing", async () => {
+    const requiredFlagSchema = (await import("zod")).z.object({
+      target: (await import("zod")).z.string().describe("Target"),
+    });
+
+    const strictCommand = (await import("./index.ts")).defineCommand({
+      id: "strict_op",
+      name: "strict",
+      schema: requiredFlagSchema,
+      flags: {
+        target: {
+          type: "string",
+          description: "Target",
+        },
+      },
+      execute: () => 0,
+    });
+
+    let stderrOutput = "";
+    const exitCode = await (await import("./index.ts")).executeCliCommand(
+      strictCommand,
+      [],
+      {
+        stderr: (msg) => (stderrOutput += msg + "\n"),
+      },
+    );
+
+    expect(exitCode).toBe(1);
+    expect(stderrOutput).toContain("Error: Missing required --target flag");
+  });
 });
+

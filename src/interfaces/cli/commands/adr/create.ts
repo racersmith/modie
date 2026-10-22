@@ -3,13 +3,51 @@
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
  */
 
+import { z } from "zod";
 import { createAdr, type CreateAdrOptions } from "../../../../core/index.ts";
 import {
   createCommandHandler,
+  defineCommand,
   generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
 import type { CliIoOptions } from "../../types.ts";
+
+export const adrCreateSchema = z.object({
+  title: z
+    .string()
+    .min(1, "ADR title is required")
+    .describe(
+      "Title of the architectural decision record (e.g. 'Subtype Directory Partitioning')",
+    ),
+  scope: z
+    .string()
+    .optional()
+    .describe("Target scope directory (defaults to current working directory)"),
+  context: z
+    .string()
+    .optional()
+    .describe("Problem statement and architectural motivation"),
+  alternatives: z
+    .string()
+    .optional()
+    .describe("Alternatives considered and trade-off evaluations"),
+  decision: z
+    .string()
+    .optional()
+    .describe("Adopted decision specification"),
+  links: z
+    .array(z.string())
+    .optional()
+    .default([])
+    .describe("ADR and RULE link targets (repeat flag or use comma-separated list)"),
+  flat: z
+    .boolean()
+    .default(false)
+    .describe("Create flat ADR file without .adrs container"),
+});
+
+export type AdrCreateInput = z.infer<typeof adrCreateSchema>;
 
 export interface AdrCreateFlags {
   scope?: string;
@@ -40,15 +78,19 @@ export interface AdrCreateResultPayload {
  */
 export const adrCreateCommand: CliCommandDefinition<
   AdrCreateFlags,
-  AdrCreateResultPayload
-> = {
+  AdrCreateResultPayload,
+  typeof adrCreateSchema
+> = defineCommand({
+  id: "adr_create",
   name: "create",
   usage: "modie adr create <title> [options]",
   description: "Create a new ADR artifact",
   helpUsage: "modie adr create --help",
+  schema: adrCreateSchema,
   positionals: [
     {
       name: "title",
+      property: "title",
       description:
         'Title of the architectural decision record (e.g. "Subtype Directory Partitioning")',
       required: true,
@@ -90,33 +132,22 @@ export const adrCreateCommand: CliCommandDefinition<
       description:
         "ADR and RULE link targets (repeat flag or use comma-separated list)",
       aliases: ["links"],
+      property: "links",
     },
     flat: {
       type: "boolean",
       description: "Create flat ADR file without .adrs container",
     },
   },
-  run: async (context) => {
-    const title = context.positionals.join(" ").trim();
-
-    // Aggregate link values from repeated -l/--link and comma-separated --links
-    const rawLinks: string[] = [
-      ...(context.flags.link ?? []),
-      ...(context.flags.links ?? []),
-    ];
-    const links: string[] = [];
-    for (const item of rawLinks) {
-      links.push(...item.split(",").map((s) => s.trim()).filter(Boolean));
-    }
-
+  execute: async (input, context): Promise<AdrCreateResultPayload> => {
     const adrOptions: CreateAdrOptions = {
-      title,
-      scopeDir: context.flags.scope,
-      context: context.flags.context,
-      alternatives: context.flags.alternatives,
-      decision: context.flags.decision,
-      links: links.length > 0 ? links : undefined,
-      useSubtypeContainer: !context.flags.flat,
+      title: input.title,
+      scopeDir: input.scope,
+      context: input.context,
+      alternatives: input.alternatives,
+      decision: input.decision,
+      links: input.links.length > 0 ? input.links : undefined,
+      useSubtypeContainer: !input.flat,
       cwd: context.cwd,
     };
 
@@ -144,7 +175,7 @@ export const adrCreateCommand: CliCommandDefinition<
     context.stdout(JSON.stringify(result, null, 2));
     context.stderr(`✓ Created ADR ${result.tag} (${result.relativePath})`);
   },
-};
+});
 
 /**
  * CLI command handler for `modie adr create`.

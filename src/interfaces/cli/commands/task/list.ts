@@ -3,18 +3,38 @@
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
  */
 
+import { z } from "zod";
 import { queryTaskQueue, type TaskQueueItem } from "../../../../core/index.ts";
 import {
   createCommandHandler,
+  defineCommand,
   generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
 import type { CliIoOptions } from "../../types.ts";
 
+export const taskListSchema = z.object({
+  ready: z
+    .boolean()
+    .default(false)
+    .describe("Show only unblocked tasks ready for execution"),
+  blocked: z
+    .boolean()
+    .default(false)
+    .describe("Show only tasks blocked by pending dependencies"),
+  scope: z
+    .string()
+    .optional()
+    .describe("Filter tasks located within specified directory scope"),
+});
+
+export type TaskListInput = z.infer<typeof taskListSchema>;
+
 export interface TaskListFlags {
   ready?: boolean;
   blocked?: boolean;
   scope?: string;
+  json?: boolean;
 }
 
 /**
@@ -64,13 +84,18 @@ export function renderTaskQueueTable(tasks: TaskQueueItem[]): string {
  */
 export const taskListCommand: CliCommandDefinition<
   TaskListFlags,
-  TaskQueueItem[]
-> = {
+  TaskQueueItem[],
+  typeof taskListSchema
+> = defineCommand({
+  id: "task_list",
   name: "list",
   usage: "modie task list [options]",
   description:
     "List active tasks in the working tree with DAG dependency readiness and progress.",
+  agentGuidance:
+    "Call this tool to inspect active tasks in the repository DAG. Filter by ready: true to discover unblocked tasks ready for execution.",
   helpUsage: "modie task list --help",
+  schema: taskListSchema,
   positionals: [],
   flags: {
     ready: {
@@ -89,16 +114,12 @@ export const taskListCommand: CliCommandDefinition<
       description: "Filter tasks located within specified directory scope",
     },
   },
-  run: async (context) => {
-    const readyOnly = Boolean(context.flags.ready);
-    const blockedOnly = Boolean(context.flags.blocked);
-    const scope = context.flags.scope;
-
+  execute: async (input, context) => {
     return queryTaskQueue({
       cwd: context.cwd,
-      readyOnly,
-      blockedOnly,
-      scope,
+      readyOnly: input.ready,
+      blockedOnly: input.blocked,
+      scope: input.scope,
     });
   },
   render: (tasks, context) => {
@@ -134,7 +155,7 @@ export const taskListCommand: CliCommandDefinition<
   renderJson: (tasks, context) => {
     context.stdout(JSON.stringify(tasks, null, 2));
   },
-};
+});
 
 /**
  * CLI command handler for `modie task list`.

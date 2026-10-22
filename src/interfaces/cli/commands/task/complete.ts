@@ -4,6 +4,7 @@
  * Enforces ADR-6, RULE-21, RULE-22, and RULE-32.
  */
 
+import { z } from "zod";
 import {
   completeTask,
   runGit,
@@ -11,10 +12,42 @@ import {
 } from "../../../../core/index.ts";
 import {
   createCommandHandler,
+  defineCommand,
   generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
 import type { CliIoOptions } from "../../types.ts";
+
+export const taskCompleteSchema = z.object({
+  id: z
+    .string()
+    .min(1, "Task identifier is required")
+    .describe("Task ID (e.g. TASK-7-1, 7-1), slug, or file path"),
+  commit: z
+    .boolean()
+    .optional()
+    .describe(
+      "Execute atomic two-phase Git commit ceremony (default in git repo)",
+    ),
+  noCommit: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Disable automatic Git commits and only delete the artifact locally",
+    ),
+  force: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Force completion even if acceptance criteria remain unchecked",
+    ),
+  keepFile: z
+    .boolean()
+    .default(false)
+    .describe("Retain the task artifact file on disk instead of deleting it"),
+});
+
+export type TaskCompleteInput = z.infer<typeof taskCompleteSchema>;
 
 export interface TaskCompleteFlags {
   commit?: boolean;
@@ -25,43 +58,27 @@ export interface TaskCompleteFlags {
   json?: boolean;
 }
 
-function renderCompletionStatus(
-  result: CompleteTaskResult,
-  stderr: (msg: string) => void,
-): void {
-  const deletionNotice = result.deleted
-    ? " (artifact deleted)"
-    : " (artifact retained)";
-  stderr(
-    `✓ Completed task TASK-${result.taskId}: ${result.filename}${deletionNotice}`,
-  );
-
-  if (result.commits?.phase1) {
-    stderr(`  Phase 1 commit (verified criteria): ${result.commits.phase1}`);
-  } else if (result.commits?.phase2) {
-    stderr(
-      `  Phase 1 commit (verified criteria): (skipped - working tree already clean)`,
-    );
-  }
-  if (result.commits?.phase2) {
-    stderr(`  Phase 2 commit (artifact deletion): ${result.commits.phase2}`);
-  }
-}
-
 /**
  * Declarative definition for the `modie task complete` command.
  */
 export const taskCompleteCommand: CliCommandDefinition<
   TaskCompleteFlags,
-  CompleteTaskResult
-> = {
+  CompleteTaskResult,
+  typeof taskCompleteSchema
+> = defineCommand({
+  id: "task_complete",
   name: "complete",
   usage: "modie task complete <id-or-path> [options] (alias: finish)",
-  description: "Verify criteria and delete completed task",
+  description:
+    "Verify criteria and delete completed task artifact (alias: finish)",
+  agentGuidance:
+    "Call this tool only when all acceptance criteria are satisfied and tests pass. Executes the atomic two-phase commit ceremony and deletes the ephemeral task file.",
   helpUsage: "modie task complete --help",
+  schema: taskCompleteSchema,
   positionals: [
     {
       name: "id-or-path",
+      property: "id",
       description: "Task ID (e.g. TASK-7-1, 7-1), slug, or file path",
       required: true,
       missingError:
@@ -79,6 +96,7 @@ export const taskCompleteCommand: CliCommandDefinition<
       type: "boolean",
       description:
         "Disable automatic Git commits and only delete the artifact locally",
+      property: "noCommit",
     },
     force: {
       type: "boolean",
@@ -88,26 +106,24 @@ export const taskCompleteCommand: CliCommandDefinition<
     },
     "keep-file": {
       type: "boolean",
-      description:
-        "Retain the task artifact file on disk instead of deleting it",
+      description: "Retain the task artifact file on disk instead of deleting it",
       aliases: ["no-delete"],
+      property: "keepFile",
     },
   },
-  run: async (context) => {
-    const taskIdentifier = context.positionals[0]!;
-    const force = Boolean(context.flags.force);
-    const deleteArtifact = !Boolean(
-      context.flags["keep-file"] || context.flags["no-delete"],
-    );
-
+  execute: async (input, context) => {
     const isGitRepo =
       (await runGit(["rev-parse", "--is-inside-work-tree"], context.cwd)) ===
       "true";
-    const noCommit = Boolean(context.flags["no-commit"]);
-    const commit = noCommit ? false : Boolean(context.flags.commit || isGitRepo);
+    const commit = input.noCommit
+      ? false
+      : input.commit !== undefined
+        ? input.commit
+        : isGitRepo;
+    const deleteArtifact = !input.keepFile;
 
-    return completeTask(taskIdentifier, {
-      force,
+    return completeTask(input.id, {
+      force: input.force,
       deleteArtifact,
       commit,
       cwd: context.cwd,
@@ -115,13 +131,40 @@ export const taskCompleteCommand: CliCommandDefinition<
   },
   render: (result, context) => {
     context.stdout(result.filepath);
-    renderCompletionStatus(result, context.stderr);
+
+    const deletionNotice = result.deleted
+      ? " (artifact deleted)"
+      : " (artifact retained)";
+    context.stderr(
+      `✓ Completed task TASK-${result.taskId}: ${result.filename}${deletionNotice}`,
+    );
+
+    if (result.commits?.phase1) {
+      context.stderr(
+        `  Phase 1 commit (verified criteria): ${result.commits.phase1}`,
+      );
+    } else if (result.commits?.phase2) {
+      context.stderr(
+        `  Phase 1 commit (verified criteria): (skipped - working tree already clean)`,
+      );
+    }
+    if (result.commits?.phase2) {
+      context.stderr(
+        `  Phase 2 commit (artifact deletion): ${result.commits.phase2}`,
+      );
+    }
   },
   renderJson: (result, context) => {
     context.stdout(JSON.stringify(result, null, 2));
-    renderCompletionStatus(result, context.stderr);
+
+    const deletionNotice = result.deleted
+      ? " (artifact deleted)"
+      : " (artifact retained)";
+    context.stderr(
+      `✓ Completed task TASK-${result.taskId} (${result.filename})${deletionNotice}`,
+    );
   },
-};
+});
 
 /**
  * CLI command handler for `modie task complete`.

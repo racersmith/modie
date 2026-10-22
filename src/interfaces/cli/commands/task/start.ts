@@ -4,16 +4,35 @@
  * Enforces RULE-28 and ADR-9.
  */
 
+import { z } from "zod";
 import {
   startTaskBranch,
   type StartTaskBranchResult,
 } from "../../../../core/index.ts";
 import {
   createCommandHandler,
+  defineCommand,
   generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
 import type { CliIoOptions } from "../../types.ts";
+
+export const taskStartSchema = z.object({
+  id: z
+    .string()
+    .min(1, "Task identifier is required")
+    .describe("Task ID (e.g. TASK-11, 11-1), slug, or file path"),
+  base: z
+    .string()
+    .optional()
+    .describe("Base branch to branch from (default: parent task branch or trunk)"),
+  force: z
+    .boolean()
+    .default(false)
+    .describe("Bypass branch protection checks"),
+});
+
+export type TaskStartInput = z.infer<typeof taskStartSchema>;
 
 export interface TaskStartFlags {
   base?: string;
@@ -26,15 +45,21 @@ export interface TaskStartFlags {
  */
 export const taskStartCommand: CliCommandDefinition<
   TaskStartFlags,
-  StartTaskBranchResult
-> = {
+  StartTaskBranchResult,
+  typeof taskStartSchema
+> = defineCommand({
+  id: "task_start",
   name: "start",
   usage: "modie task start <id-or-path> [options]",
   description: "Create and checkout a hierarchical task branch",
+  agentGuidance:
+    "Call this tool before implementing deliverables for a task to create and checkout the appropriate Git branch conforming to Modie branch topology.",
   helpUsage: "modie task start --help",
+  schema: taskStartSchema,
   positionals: [
     {
       name: "id-or-path",
+      property: "id",
       description: "Task ID (e.g. TASK-11, 11-1), slug, or file path",
       required: true,
       missingError:
@@ -55,14 +80,10 @@ export const taskStartCommand: CliCommandDefinition<
       description: "Bypass branch protection checks",
     },
   },
-  run: async (context) => {
-    const taskIdentifier = context.positionals[0]!;
-    const base = context.flags.base ? String(context.flags.base) : undefined;
-    const force = Boolean(context.flags.force);
-
-    return startTaskBranch(taskIdentifier, {
-      base,
-      force,
+  execute: async (input, context) => {
+    return startTaskBranch(input.id, {
+      base: input.base,
+      force: input.force,
       cwd: context.cwd,
     });
   },
@@ -82,7 +103,7 @@ export const taskStartCommand: CliCommandDefinition<
       `✓ Switched to branch "${result.branchName}" (${action} from ${result.baseBranch})`,
     );
   },
-};
+});
 
 /**
  * CLI command handler for `modie task start`.
