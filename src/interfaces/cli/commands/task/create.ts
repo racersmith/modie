@@ -133,7 +133,7 @@ export const taskCreateCommand: CliCommandDefinition<
     },
     flat: {
       type: "boolean",
-      description: "Create flat task file without .tasks container (RULE-8)",
+      description: "Create flat task file without .tasks container",
     },
     "force-trunk": {
       type: "boolean",
@@ -141,7 +141,7 @@ export const taskCreateCommand: CliCommandDefinition<
     },
     "allow-broad-scope": {
       type: "boolean",
-      description: "Allow placing task above deepest common ancestor (RULE-12)",
+      description: "Allow placing task above deepest common ancestor",
     },
   },
   run: async (context) => {

@@ -21,7 +21,7 @@ Options:
   -t, --target <branch>   Target branch to merge into (default: parent branch or trunk)
       --keep-branch       Retain the task branch after merging instead of deleting it
   -f, --force             Bypass completion verification and protected branch guards
-      --json              Emit machine-parsable JSON payload to stdout (RULE-27)
+      --json              Emit machine-parsable JSON payload to stdout
   -h, --help              Show this help message
 `);
 }

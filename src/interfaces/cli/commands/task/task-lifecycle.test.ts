@@ -236,7 +236,7 @@ Satisfied task.
     expect(stdout.trim()).toBe(taskPath);
     // Human status to stderr
     expect(stderr).toContain(
-      "✓ Completed task TASK-301: complete-task.TASK-301.md (artifact deleted per RULE-21)",
+      "✓ Completed task TASK-301: complete-task.TASK-301.md (artifact deleted)",
     );
 
     // File MUST be deleted per RULE-21
@@ -536,7 +536,7 @@ describe("CLI Task Lifecycle - End-to-End Subprocess via bin.ts", () => {
       "--no-commit",
     ]);
     expect(completeResult.stderr).toContain("✓ Completed task");
-    expect(completeResult.stderr).toContain("artifact deleted per RULE-21");
+    expect(completeResult.stderr).toContain("artifact deleted");
 
     // Verify deletion
     await expect(readFile(taskPath, "utf8")).rejects.toThrow();

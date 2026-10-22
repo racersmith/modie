@@ -13,14 +13,14 @@ import type { CliIoOptions } from "../../types.ts";
 export function printShowHelp(stderr: (msg: string) => void): void {
   stderr(`Usage: modie show <tag-or-identifier> [options]
 
-Display artifact details or content in human or agent-optimized format (RULE-29).
+Display artifact details or content in human or agent-optimized format.
 
 Arguments:
   <tag-or-identifier>     Artifact tag (e.g. RULE-1, ADR-6, TASK-12), slug, or filename
 
 Options:
-      --json              Emit agent-optimized JSON payload to stdout (RULE-26, RULE-27)
-      --raw, --content    Emit unparsed raw markdown content to stdout (RULE-27)
+      --json              Emit agent-optimized JSON payload to stdout
+      --raw, --content    Emit unparsed raw markdown content to stdout
   -h, --help              Show this help message
 `);
 }

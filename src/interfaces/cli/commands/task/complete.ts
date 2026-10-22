@@ -18,11 +18,11 @@ Arguments:
   <id-or-path>            Task ID (e.g. TASK-7-1, 7-1), slug, or file path
 
 Options:
-  -c, --commit            Execute atomic two-phase Git commit ceremony (ADR-6, RULE-21, RULE-32) (default in git repo)
+  -c, --commit            Execute atomic two-phase Git commit ceremony (default in git repo)
       --no-commit         Disable automatic Git commits and only delete the artifact locally
   -f, --force             Force completion even if acceptance criteria remain unchecked
       --keep-file         Retain the task artifact file on disk instead of deleting it
-      --json              Emit machine-parsable JSON payload to stdout (RULE-27)
+      --json              Emit machine-parsable JSON payload to stdout
   -h, --help              Show this help message
 `);
 }
@@ -100,7 +100,7 @@ export async function handleTaskComplete(
     }
 
     const deletionNotice = result.deleted
-      ? " (artifact deleted per RULE-21)"
+      ? " (artifact deleted)"
       : " (artifact retained)";
     stderr(
       `✓ Completed task TASK-${result.taskId}: ${result.filename}${deletionNotice}`,

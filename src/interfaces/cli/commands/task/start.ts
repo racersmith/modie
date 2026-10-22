@@ -20,7 +20,7 @@ Arguments:
 Options:
   -b, --base <branch>     Base branch to branch from (default: parent task branch or trunk)
   -f, --force             Bypass branch protection checks
-      --json              Emit machine-parsable JSON payload to stdout (RULE-27)
+      --json              Emit machine-parsable JSON payload to stdout
   -h, --help              Show this help message
 `);
 }

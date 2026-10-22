@@ -68,19 +68,19 @@ export const adrCreateCommand: CliCommandDefinition<
       type: "string",
       short: "c",
       placeholder: "<text>",
-      description: "Problem statement and architectural motivation (ADR-4)",
+      description: "Problem statement and architectural motivation",
     },
     alternatives: {
       type: "string",
       short: "a",
       placeholder: "<text>",
-      description: "Alternatives considered and trade-off evaluations (ADR-4)",
+      description: "Alternatives considered and trade-off evaluations",
     },
     decision: {
       type: "string",
       short: "d",
       placeholder: "<text>",
-      description: "Adopted decision specification (ADR-4)",
+      description: "Adopted decision specification",
     },
     link: {
       type: "string",
@@ -88,12 +88,12 @@ export const adrCreateCommand: CliCommandDefinition<
       multiple: true,
       placeholder: "<targets>",
       description:
-        "ADR and RULE link targets (repeat flag or use comma-separated list) (RULE-14, RULE-17)",
+        "ADR and RULE link targets (repeat flag or use comma-separated list)",
       aliases: ["links"],
     },
     flat: {
       type: "boolean",
-      description: "Create flat ADR file without .adrs container (RULE-8)",
+      description: "Create flat ADR file without .adrs container",
     },
   },
   run: async (context) => {

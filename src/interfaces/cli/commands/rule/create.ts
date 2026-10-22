@@ -64,12 +64,12 @@ export const ruleCreateCommand: CliCommandDefinition<
       type: "string",
       short: "c",
       placeholder: "<text>",
-      description: "Invariant assertion claim text (RULE-3, RULE-11)",
+      description: "Invariant assertion claim text",
     },
     assertion: {
       type: "string",
       placeholder: "<text>",
-      description: "Invariant assertion claim text (RULE-3, RULE-11)",
+      description: "Invariant assertion claim text",
     },
     link: {
       type: "string",
@@ -77,12 +77,12 @@ export const ruleCreateCommand: CliCommandDefinition<
       multiple: true,
       placeholder: "<targets>",
       description:
-        "ADR link targets (repeat flag or use comma-separated list) (RULE-13, RULE-16)",
+        "ADR link targets (repeat flag or use comma-separated list)",
       aliases: ["links"],
     },
     flat: {
       type: "boolean",
-      description: "Create flat rule file without .rules container (RULE-8)",
+      description: "Create flat rule file without .rules container",
     },
   },
   run: async (context) => {

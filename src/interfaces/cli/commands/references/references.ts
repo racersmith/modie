@@ -151,7 +151,7 @@ export const referencesCommandDefinition: CliCommandDefinition<
     // Section 3: Archival Guard
     if (!showOnlyTo) {
       const guard = result.archivalGuard;
-      context.stderr(`\n[Archival Safety Check] (RULE-31)`);
+      context.stderr(`\n[Archival Safety Check]`);
       if (guard.canArchive) {
         context.stderr(`  Can Archive: YES (0 active blocking governance links)`);
       } else {

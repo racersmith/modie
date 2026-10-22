@@ -72,7 +72,7 @@ export function generateCommandHelp(definition: CliCommandDefinition<any, any>):
   if (!standardFlags.json) {
     standardFlags.json = {
       type: "boolean",
-      description: "Emit machine-parsable JSON payload to stdout (RULE-27)",
+      description: "Emit machine-parsable JSON payload to stdout",
     };
   }
 

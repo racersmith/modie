@@ -13,14 +13,14 @@ import type { CliIoOptions } from "../../types.ts";
 export function printFindHelp(stderr: (msg: string) => void): void {
   stderr(`Usage: modie find <tag-or-identifier> [options]
 
-Find the filesystem path of an indexable artifact by canonical tag (RULE-29).
+Find the filesystem path of an indexable artifact by canonical tag.
 
 Arguments:
   <tag-or-identifier>     Artifact tag (e.g. RULE-1, ADR-6, TASK-12), slug, or filename
 
 Options:
       --absolute          Emit absolute file path instead of relative path
-      --json              Emit machine-parsable JSON payload to stdout (RULE-27)
+      --json              Emit machine-parsable JSON payload to stdout
   -h, --help              Show this help message
 `);
 }
