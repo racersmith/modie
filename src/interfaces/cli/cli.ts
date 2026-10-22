@@ -5,6 +5,7 @@
 
 import { handleFind } from "./commands/find/find.ts";
 import { handleShow } from "./commands/show/show.ts";
+import { handleReferences } from "./commands/references/references.ts";
 import { handleRuleCreate } from "./commands/rule/create.ts";
 import { handleAdrCreate } from "./commands/adr/create.ts";
 import {
@@ -38,6 +39,7 @@ Usage:
 Commands:
   find <tag> [options]         Find the file path of an artifact by tag
   show <tag> [options]         Display artifact details or content
+  references <tag> [options]   Display citations and declared outbound links (alias: refs)
   rule create <title>          Create a new RULE artifact
   adr create <title>           Create a new ADR artifact
   task create <title>          Create a new TASK artifact with automatic watermark resolution
@@ -89,6 +91,8 @@ Subcommands:
 const directCommands: Record<string, CommandHandler> = {
   find: handleFind,
   show: handleShow,
+  references: handleReferences,
+  refs: handleReferences,
 };
 
 const namespaces: Record<string, CommandNamespace> = {

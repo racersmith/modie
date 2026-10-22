@@ -8,5 +8,6 @@ export * from "./commands/find/index.ts";
 export * from "./commands/show/index.ts";
 export * from "./commands/task/index.ts";
 export * from "./commands/rule/index.ts";
+export * from "./commands/references/index.ts";
 export * from "./framework/index.ts";
 export * from "./cli.ts";

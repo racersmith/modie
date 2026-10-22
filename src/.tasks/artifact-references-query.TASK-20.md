@@ -18,8 +18,8 @@ Provide automated discovery and classification of artifact references across the
 
 # Acceptance Criteria
 
-- [ ] Implement core reference resolution service computing "found in" (governance, code, test, prose) and "links to" (links, dependencies) for any artifact tag
-- [ ] Evaluate subtype-agnostic archival guard status (canArchive, blockingReasons) based on active governance citations
-- [ ] Implement CLI command modie references <tag> (alias: refs) supporting formatted terminal output and machine-parsable JSON (RULE-27)
-- [ ] Wire references command into CLI router and global help output
-- [ ] Add unit and integration tests verifying reference discovery, classification, and archival guard evaluation across ADR, RULE, and TASK targets
+- [x] Implement core reference resolution service computing "found in" (governance, code, test, prose) and "links to" (links, dependencies) for any artifact tag
+- [x] Evaluate subtype-agnostic archival guard status (canArchive, blockingReasons) based on active governance citations
+- [x] Implement CLI command modie references <tag> (alias: refs) supporting formatted terminal output and machine-parsable JSON (RULE-27)
+- [x] Wire references command into CLI router and global help output
+- [x] Add unit and integration tests verifying reference discovery, classification, and archival guard evaluation across ADR, RULE, and TASK targets
