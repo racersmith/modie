@@ -91,3 +91,59 @@ export interface AdrRenderOptions {
    */
   decision?: string;
 }
+
+export interface CreateAdrOptions {
+  /**
+   * Title of the architectural decision record (human-readable string).
+   * E.g. "Self-Indexing Filenames"
+   */
+  title: string;
+
+  /**
+   * Optional target scope directory where the ADR should reside.
+   * Defaults to workspace root (cwd).
+   */
+  scopeDir?: string;
+
+  /**
+   * Context / problem statement (ADR-4).
+   */
+  context?: string;
+
+  /**
+   * Alternatives considered (ADR-4).
+   */
+  alternatives?: string;
+
+  /**
+   * Adopted decision description (ADR-4).
+   */
+  decision?: string;
+
+  /**
+   * Artifact links (`links`). Must only reference `ADR-` and `RULE-` identifiers per RULE-14.
+   * Any referenced `RULE` must reside in the ADR's directory or a descendant subtree per RULE-17.
+   */
+  links?: string[];
+
+  /**
+   * Whether to place in a `.adrs/` subtype container directory (RULE-8).
+   * Defaults to true. If false (e.g. --flat), placed flat in target directory.
+   */
+  useSubtypeContainer?: boolean;
+
+  /**
+   * Workspace root directory. Defaults to process.cwd().
+   */
+  cwd?: string;
+}
+
+export interface CreateAdrResult {
+  artifact: AdrArtifact;
+  filename: string;
+  filepath: string;
+  relativePath: string;
+  markdown: string;
+  id: string;
+  tag: string;
+}

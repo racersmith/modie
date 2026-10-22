@@ -81,3 +81,84 @@ export interface MergeTaskBranchResult {
   isSubtask: boolean;
   mergeCommitHash?: string;
 }
+
+export interface CreateTaskOptions {
+  /**
+   * Title of the task (human-readable string).
+   * E.g. "Create Task CLI"
+   */
+  title: string;
+
+  /**
+   * Optional target scope directory where the task should reside.
+   * Defaults to workspace root (cwd).
+   */
+  scopeDir?: string;
+
+  /**
+   * Context / user story / background explanation for the task.
+   */
+  context?: string;
+
+  /**
+   * Task dependencies (`depends_on`). Must only reference `TASK-` identifiers per RULE-18.
+   */
+  depends_on?: string[];
+
+  /**
+   * Artifact links (`links`). Must only reference `ADR-` and `RULE-` identifiers per RULE-15.
+   */
+  links?: string[];
+
+  /**
+   * Acceptance criteria checklist items per RULE-22.
+   * Can be strings or { text, completed } items.
+   */
+  acceptanceCriteria?: Array<string | TaskAcceptanceCriteriaItem>;
+
+  /**
+   * Whether to place in a `.tasks/` subtype container directory (RULE-8).
+   * Defaults to true.
+   */
+  useSubtypeContainer?: boolean;
+
+  /**
+   * Workspace root directory. Defaults to process.cwd().
+   */
+  cwd?: string;
+
+  /**
+   * Explicit branch name override (passed to watermark resolver).
+   */
+  branch?: string;
+
+  /**
+   * Explicit task prefix tag override (e.g. "J" for TASK-J1).
+   */
+  prefix?: string;
+
+  /**
+   * Force trunk monotonic allocation even on task/feature branches.
+   */
+  forceTrunk?: boolean;
+
+  /**
+   * Target mutation paths that this task will affect.
+   * Validated against downward blast radius (RULE-6) and least-scope placement (RULE-12).
+   */
+  targetPaths?: string[];
+
+  /**
+   * If true, bypasses strict least-scope common ancestor enforcement when targetPaths are provided.
+   */
+  allowBroadScope?: boolean;
+}
+
+export interface CreateTaskResult {
+  artifact: TaskArtifact;
+  filename: string;
+  filepath: string;
+  relativePath: string;
+  markdown: string;
+  watermark: import("../resolver/types.ts").WatermarkDetails;
+}
