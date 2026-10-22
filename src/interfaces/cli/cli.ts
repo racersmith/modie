@@ -17,6 +17,7 @@ import {
   handleTaskStart,
   handleTaskStatus,
 } from "./commands/task/index.ts";
+import { handleMcp } from "./commands/mcp/index.ts";
 import type { CliIoOptions, CommandHandler } from "./types.ts";
 
 export const MODIE_VERSION = "0.1.0";
@@ -49,6 +50,7 @@ Commands:
   task merge <id>              Merge completed task branch back into parent or trunk
   task list [options]          List active tasks with DAG readiness and progress
   task status [id]             Inspect active queue or specific task status
+  mcp                          Launch Model Context Protocol server over standard I/O
   help                         Show help for a command
   version                      Show Modie version
 
@@ -93,6 +95,7 @@ const directCommands: Record<string, CommandHandler> = {
   show: handleShow,
   references: handleReferences,
   refs: handleReferences,
+  mcp: handleMcp,
 };
 
 const namespaces: Record<string, CommandNamespace> = {
