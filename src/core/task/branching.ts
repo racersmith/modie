@@ -4,8 +4,6 @@
  */
 
 import { readFile } from "node:fs/promises";
-import { basename } from "node:path";
-import { parseArtifactFilename } from "../common/filename.ts";
 import { loadModieConfig } from "../config/loader.ts";
 import {
   detectGitBranch,
@@ -57,7 +55,10 @@ export async function branchExists(
   branchName: string,
   cwd: string = process.cwd(),
 ): Promise<boolean> {
-  const output = await runGit(["rev-parse", "--verify", `refs/heads/${branchName}`], cwd);
+  const output = await runGit(
+    ["rev-parse", "--verify", `refs/heads/${branchName}`],
+    cwd,
+  );
   return output !== null;
 }
 
@@ -71,7 +72,10 @@ async function resolveTaskMetaForBranching(
 ): Promise<{ id: string; slug: string; filepath?: string }> {
   // 1. Attempt to resolve active task on disk
   try {
-    const filepath = await resolveTaskFile(taskIdentifier, { cwd, allowZombie: true });
+    const filepath = await resolveTaskFile(taskIdentifier, {
+      cwd,
+      allowZombie: true,
+    });
     const content = await readFile(filepath, "utf8");
     const parsed = parseTaskMarkdown(content, filepath);
     return {
@@ -87,7 +91,9 @@ async function resolveTaskMetaForBranching(
 
   // 2. Inspect deleted artifacts in Git history (ground truth for completed tasks)
   const deleted = await inspectGitDeletedArtifacts(cwd, "TASK");
-  const matchDeleted = deleted.find((d) => normalizeTaskId(d.id) === normalized);
+  const matchDeleted = deleted.find(
+    (d) => normalizeTaskId(d.id) === normalized,
+  );
   if (matchDeleted) {
     return {
       id: matchDeleted.id,
@@ -96,7 +102,10 @@ async function resolveTaskMetaForBranching(
   }
 
   // 3. Check local git branches matching task/<normalized>-*
-  const branchList = await runGit(["branch", "--list", `task/${normalized}-*`], cwd);
+  const branchList = await runGit(
+    ["branch", "--list", `task/${normalized}-*`],
+    cwd,
+  );
   if (branchList && branchList.length > 0) {
     const firstBranch = branchList
       .split("\n")
@@ -125,7 +134,10 @@ async function findParentTaskBranch(
   const normParent = normalizeTaskId(parentId);
 
   // 1. Check existing local git branches
-  const branches = await runGit(["branch", "--list", `task/${normParent}-*`], cwd);
+  const branches = await runGit(
+    ["branch", "--list", `task/${normParent}-*`],
+    cwd,
+  );
   if (branches) {
     const matched = branches
       .split("\n")
@@ -133,7 +145,12 @@ async function findParentTaskBranch(
       .filter((b) => {
         // Exclude subtask branches of this parent (e.g. task/106-1-sub when looking for parent 106)
         const match = b.match(/^task\/([A-Za-z0-9]+)-(.*)$/);
-        return Boolean(match && match[1] === normParent && match[2] && !/^\d+-/.test(match[2]));
+        return Boolean(
+          match &&
+          match[1] === normParent &&
+          match[2] &&
+          !/^\d+-/.test(match[2]),
+        );
       });
     if (matched.length > 0 && matched[0]) {
       return matched[0];
@@ -151,7 +168,9 @@ async function findParentTaskBranch(
 
   // 3. Check deleted artifacts in Git
   const deleted = await inspectGitDeletedArtifacts(cwd, "TASK");
-  const matchDeleted = deleted.find((d) => normalizeTaskId(d.id) === normParent);
+  const matchDeleted = deleted.find(
+    (d) => normalizeTaskId(d.id) === normParent,
+  );
   if (matchDeleted) {
     return `task/${normParent}-${matchDeleted.slug}`;
   }
@@ -181,7 +200,8 @@ export async function computeTaskBranchTopology(
 
   if (isSubtask && subtaskInfo) {
     parentBranchName = await findParentTaskBranch(subtaskInfo.parentId, cwd);
-    expectedBaseBranch = options.base ?? parentBranchName ?? `task/${subtaskInfo.parentId}`;
+    expectedBaseBranch =
+      options.base ?? parentBranchName ?? `task/${subtaskInfo.parentId}`;
   } else {
     expectedBaseBranch = options.base ?? config.trunk;
   }
@@ -219,11 +239,7 @@ export async function startTaskBranch(
   const topology = await computeTaskBranchTopology(taskIdentifier, options);
 
   // 1. Guard against starting directly from a protected branch
-  if (
-    topology.isCurrentBranchProtected &&
-    !options.base &&
-    !options.force
-  ) {
+  if (topology.isCurrentBranchProtected && !options.base && !options.force) {
     throw new Error(
       `Cannot start task from protected branch "${topology.currentBranch}". Protected branches cannot spawn task branches directly. Please switch to trunk branch "${topology.trunkBranch}" or specify --base.`,
     );
@@ -300,7 +316,10 @@ export async function mergeTaskBranch(
 
   // 2. Verify completion status per RULE-21 and RULE-22
   try {
-    const filepath = await resolveTaskFile(taskIdentifier, { cwd, allowZombie: true });
+    const filepath = await resolveTaskFile(taskIdentifier, {
+      cwd,
+      allowZombie: true,
+    });
     const content = await readFile(filepath, "utf8");
     const parsed = parseTaskMarkdown(content, filepath);
     const incomplete = parsed.acceptanceCriteria.filter((c) => !c.completed);
@@ -318,15 +337,23 @@ export async function mergeTaskBranch(
     }
   } catch (error: unknown) {
     // If resolveTaskFile fails because file was deleted (or zombie), verify completion
-    if (error instanceof Error && error.message.includes("incomplete acceptance criteria")) {
+    if (
+      error instanceof Error &&
+      error.message.includes("incomplete acceptance criteria")
+    ) {
       throw error;
     }
-    if (error instanceof Error && error.message.includes("artifact has not been completed")) {
+    if (
+      error instanceof Error &&
+      error.message.includes("artifact has not been completed")
+    ) {
       throw error;
     }
     // File not found on disk: verify that it was completed/deleted in Git
     const deleted = await inspectGitDeletedArtifacts(cwd, "TASK");
-    const isDeletedInGit = deleted.some((d) => normalizeTaskId(d.id) === normalizeTaskId(topology.taskId));
+    const isDeletedInGit = deleted.some(
+      (d) => normalizeTaskId(d.id) === normalizeTaskId(topology.taskId),
+    );
     if (!isDeletedInGit && !options.force) {
       throw new Error(
         `Cannot merge task branch "${sourceBranch}": Task "TASK-${topology.taskId}" has neither an active verified artifact nor a completion record in Git history per RULE-21.`,
@@ -371,12 +398,18 @@ export async function mergeTaskBranch(
 
     // Verify all child subtasks have completed and merged per RULE-28
     const normId = normalizeTaskId(topology.taskId);
-    const subtaskBranchesOut = await runGit(["branch", "--list", `task/${normId}-*`], cwd);
+    const subtaskBranchesOut = await runGit(
+      ["branch", "--list", `task/${normId}-*`],
+      cwd,
+    );
     if (subtaskBranchesOut && subtaskBranchesOut.length > 0) {
       const activeChildBranches = subtaskBranchesOut
         .split("\n")
         .map((b) => b.replace(/^\*?\s+/, "").trim())
-        .filter((b) => new RegExp(`^task/${normId}-\\d+-`).test(b) && b !== sourceBranch);
+        .filter(
+          (b) =>
+            new RegExp(`^task/${normId}-\\d+-`).test(b) && b !== sourceBranch,
+        );
 
       if (activeChildBranches.length > 0 && !options.force) {
         throw new Error(
@@ -397,7 +430,13 @@ export async function mergeTaskBranch(
   // 5. Execute checkout and merge
   await runGitCommand(["checkout", targetBranch], cwd);
   await runGitCommand(
-    ["merge", "--no-ff", "-m", `merge: ${sourceBranch} into ${targetBranch}`, sourceBranch],
+    [
+      "merge",
+      "--no-ff",
+      "-m",
+      `merge: ${sourceBranch} into ${targetBranch}`,
+      sourceBranch,
+    ],
     cwd,
   );
 
