@@ -85,24 +85,7 @@ async function resolveTaskMetaForBranching(
 
   const normalized = normalizeTaskId(taskIdentifier);
 
-  // 2. Check local git branches matching task/<normalized>-*
-  const branchList = await runGit(["branch", "--list", `task/${normalized}-*`], cwd);
-  if (branchList && branchList.length > 0) {
-    const firstBranch = branchList
-      .split("\n")
-      .map((b) => b.replace(/^\*?\s+/, "").trim())[0];
-    if (firstBranch) {
-      const match = firstBranch.match(/^task\/([A-Za-z0-9-]+)-(.*)$/);
-      if (match && match[1] && match[2]) {
-        return {
-          id: match[1],
-          slug: match[2],
-        };
-      }
-    }
-  }
-
-  // 3. Inspect deleted artifacts in Git history
+  // 2. Inspect deleted artifacts in Git history (ground truth for completed tasks)
   const deleted = await inspectGitDeletedArtifacts(cwd, "TASK");
   const matchDeleted = deleted.find((d) => normalizeTaskId(d.id) === normalized);
   if (matchDeleted) {
@@ -110,6 +93,21 @@ async function resolveTaskMetaForBranching(
       id: matchDeleted.id,
       slug: matchDeleted.slug,
     };
+  }
+
+  // 3. Check local git branches matching task/<normalized>-*
+  const branchList = await runGit(["branch", "--list", `task/${normalized}-*`], cwd);
+  if (branchList && branchList.length > 0) {
+    const firstBranch = branchList
+      .split("\n")
+      .map((b) => b.replace(/^\*?\s+/, "").trim())[0];
+    const prefix = `task/${normalized}-`;
+    if (firstBranch && firstBranch.startsWith(prefix)) {
+      return {
+        id: normalized,
+        slug: firstBranch.slice(prefix.length),
+      };
+    }
   }
 
   throw new Error(
@@ -373,12 +371,12 @@ export async function mergeTaskBranch(
 
     // Verify all child subtasks have completed and merged per RULE-28
     const normId = normalizeTaskId(topology.taskId);
-    const subtaskBranchesOut = await runGit(["branch", "--list", `task/${normId}-*-*`], cwd);
+    const subtaskBranchesOut = await runGit(["branch", "--list", `task/${normId}-*`], cwd);
     if (subtaskBranchesOut && subtaskBranchesOut.length > 0) {
       const activeChildBranches = subtaskBranchesOut
         .split("\n")
         .map((b) => b.replace(/^\*?\s+/, "").trim())
-        .filter(Boolean);
+        .filter((b) => new RegExp(`^task/${normId}-\\d+-`).test(b) && b !== sourceBranch);
 
       if (activeChildBranches.length > 0 && !options.force) {
         throw new Error(
