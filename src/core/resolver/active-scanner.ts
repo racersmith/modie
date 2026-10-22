@@ -6,7 +6,7 @@
 
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { parseArtifactFilename } from "../common/filename.ts";
+import { parseArtifactFilename, registerArtifactSubtype } from "../common/filename.ts";
 import type { DiscoveredArtifact, DiscoveredTask, IndexableSubtype } from "./types.ts";
 
 const IGNORED_DIRECTORIES = new Set([
@@ -28,6 +28,9 @@ export async function scanActiveArtifacts(
   rootDir: string = process.cwd(),
   subtype?: IndexableSubtype,
 ): Promise<DiscoveredArtifact[]> {
+  if (subtype) {
+    registerArtifactSubtype(subtype);
+  }
   const discovered: DiscoveredArtifact[] = [];
   const targetSubtype = subtype ? (subtype.toUpperCase() as IndexableSubtype) : undefined;
 

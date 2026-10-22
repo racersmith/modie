@@ -3,6 +3,7 @@
  * Complies with RULE-1, ADR-1, ADR-2, ADR-6, and ADR-9.
  */
 
+import { registerArtifactSubtype } from "../common/filename.ts";
 import { scanActiveArtifactIds } from "./active-scanner.ts";
 import {
   detectGitBranch,
@@ -49,9 +50,9 @@ export function parseTaskBranch(branch: string): { parentId: string; slug?: stri
 
 /**
  * Resolves comprehensive watermark details and calculates the next unique, collision-free ID
- * for any indexable artifact subtype (RULE, ADR, TASK).
+ * for any indexable artifact subtype (RULE, ADR, TASK, or custom subtype).
  *
- * - For RULE and ADR: Uses strict monotonic integer progression per RULE-1.
+ * - For non-TASK subtypes (RULE, ADR, custom): Uses strict monotonic integer progression per RULE-1.
  * - For TASK: Follows the Hierarchical Branch & Author Namespaced Allocation Model defined in ADR-9.
  */
 export async function resolveWatermark(
@@ -59,6 +60,7 @@ export async function resolveWatermark(
 ): Promise<WatermarkDetails> {
   const cwd = options.cwd ?? process.cwd();
   const subtype: IndexableSubtype = (options.subtype?.toUpperCase() as IndexableSubtype) ?? "TASK";
+  registerArtifactSubtype(subtype);
 
   // 1. Gather active IDs from disk (or use provided overrides for testing)
   const activeIds =
@@ -82,8 +84,8 @@ export async function resolveWatermark(
       ? options.branch
       : (await detectGitBranch(cwd)) ?? "dev";
 
-  // 5. Allocation Strategy: Non-TASK subtypes (RULE and ADR) always follow pure monotonic progression (RULE-1)
-  if (subtype === "RULE" || subtype === "ADR") {
+  // 5. Allocation Strategy: Non-TASK subtypes always follow pure monotonic progression (RULE-1)
+  if (subtype !== "TASK") {
     const pureIntegerIds = allKnownIds
       .map((id) => (/^[0-9]+$/.test(id) ? parseInt(id, 10) : null))
       .filter((n): n is number => n !== null);

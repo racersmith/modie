@@ -4,22 +4,17 @@
  * Complies with ADR-4, ADR-6, RULE-1, RULE-6, RULE-8, RULE-12, RULE-15, RULE-18, RULE-22, and RULE-25.
  */
 
-import { mkdir, writeFile } from "node:fs/promises";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { isAbsolute, relative, resolve } from "node:path";
 import {
   findDeepestCommonAncestor,
-  formatArtifactFilename,
-  generateSlug,
   resolveArtifactDirectories,
 } from "../common/index.ts";
 import type { WatermarkDetails } from "../resolver/types.ts";
-import { inspectGitDeletedTaskIds } from "../resolver/git-inspector.ts";
-import { resolveWatermark } from "../resolver/watermark.ts";
-import { renderTaskMarkdown } from "./template.ts";
+import { createArtifact } from "../pipeline/create.ts";
+import { taskDefinition } from "./definition.ts";
 import type {
   TaskAcceptanceCriteriaItem,
   TaskArtifact,
-  TaskRenderOptions,
 } from "./types.ts";
 
 export interface CreateTaskOptions {
@@ -157,98 +152,13 @@ export function validateTaskScope(
  * Follows RULE-1, RULE-6, RULE-8, RULE-12, RULE-15, RULE-18, RULE-22, RULE-25, and ADR-9.
  */
 export async function createTask(options: CreateTaskOptions): Promise<CreateTaskResult> {
-  const cwd = options.cwd ?? process.cwd();
-
-  if (!options.title || options.title.trim().length === 0) {
-    throw new Error("Task title must be a non-empty string.");
-  }
-
-  // 1. Generate slug per RULE-1
-  const slug = generateSlug(options.title);
-
-  // 2. Resolve directory scope & target placement per RULE-8
-  const { normalizedScopeDir, targetDir } = resolveTaskDirectories(
-    options.scopeDir,
-    options.useSubtypeContainer ?? true,
-    cwd,
-  );
-
-  // 3. Validate task scope against downward blast radius (RULE-6) and least scope (RULE-12)
-  if (options.targetPaths && options.targetPaths.length > 0) {
-    validateTaskScope(normalizedScopeDir, options.targetPaths, options.allowBroadScope, cwd);
-  }
-
-  // 4. Resolve watermark and next task ID (TASK-4, ADR-9)
-  const watermark = await resolveWatermark({
-    cwd,
-    branch: options.branch,
-    prefix: options.prefix,
-    forceTrunk: options.forceTrunk,
-  });
-
-  const nextId = watermark.nextId;
-
-  // Guard against zombie task resurrection (ADR-6, RULE-21)
-  const deletedIds = await inspectGitDeletedTaskIds(cwd);
-  if (deletedIds.includes(nextId)) {
-    throw new Error(
-      `Zombie task resurrection violation: Task ID "TASK-${nextId}" was previously completed and deleted in Git history. Re-creating a completed task ID is prohibited (ADR-6, RULE-21).`,
-    );
-  }
-
-  // 5. Format task filename per RULE-1
-  const filename = formatArtifactFilename({
-    slug,
-    subtype: "TASK",
-    id: nextId,
-  });
-  const filepath = join(targetDir, filename);
-
-  // 6. Normalize acceptance criteria checklist per RULE-22
-  const rawCriteria = options.acceptanceCriteria ?? [];
-  const normalizedCriteria: TaskAcceptanceCriteriaItem[] = rawCriteria.map((item) => {
-    if (typeof item === "string") {
-      return { text: item, completed: false };
-    }
-    return { text: item.text, completed: item.completed ?? false };
-  });
-
-  // 7. Render Markdown template adhering to RULE-15, RULE-18, and RULE-22
-  const renderOptions: TaskRenderOptions = {
-    id: nextId,
-    slug,
-    title: options.title.trim(),
-    context: options.context ?? "",
-    depends_on: options.depends_on ?? [],
-    links: options.links ?? [],
-    acceptanceCriteria: normalizedCriteria,
-  };
-
-  const markdown = renderTaskMarkdown(renderOptions);
-
-  // 8. Write task file to disk
-  await mkdir(targetDir, { recursive: true });
-  await writeFile(filepath, markdown, "utf8");
-
-  // 9. Construct TaskArtifact representation
-  const artifact: TaskArtifact = {
-    id: nextId,
-    slug,
-    title: options.title.trim(),
-    depends_on: options.depends_on ?? [],
-    links: options.links ?? [],
-    context: options.context ?? "",
-    acceptanceCriteria: normalizedCriteria,
-    rawContent: markdown,
-    filePath: filepath,
-  };
-
+  const result = await createArtifact(taskDefinition, options);
   return {
-    artifact,
-    filename,
-    filepath,
-    relativePath: relative(cwd, filepath),
-    markdown,
-    watermark,
+    artifact: result.artifact,
+    filename: result.filename,
+    filepath: result.filepath,
+    relativePath: result.relativePath,
+    markdown: result.markdown,
+    watermark: result.watermark!,
   };
 }

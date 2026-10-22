@@ -5,16 +5,12 @@
  * Complies with ADR-1, ADR-2, ADR-3, ADR-4, RULE-1, RULE-4, RULE-8, RULE-14, RULE-17, and RULE-25.
  */
 
-import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative } from "node:path";
-import {
-  formatArtifactFilename,
-  generateSlug,
-  resolveArtifactDirectories,
-} from "../common/index.ts";
+import { dirname, isAbsolute, relative } from "node:path";
+import { resolveArtifactDirectories } from "../common/index.ts";
 import { resolveArtifactByTag } from "../query/index.ts";
-import { resolveNextArtifactId } from "../resolver/watermark.ts";
-import { renderAdrMarkdown, validateAdrLinks } from "./template.ts";
+import { createArtifact } from "../pipeline/create.ts";
+import { adrDefinition } from "./definition.ts";
+import { validateAdrLinks } from "./template.ts";
 import type { AdrArtifact } from "./types.ts";
 
 export interface CreateAdrOptions {
@@ -140,73 +136,14 @@ export async function validateAdrScope(
 export async function createAdr(
   options: CreateAdrOptions,
 ): Promise<CreateAdrResult> {
-  const cwd = options.cwd ?? process.cwd();
-
-  if (!options.title || options.title.trim().length === 0) {
-    throw new Error("ADR title must be a non-empty string.");
-  }
-
-  // 1. Generate slug per RULE-1
-  const slug = generateSlug(options.title);
-
-  // 2. Resolve directory scope & target placement per RULE-8
-  const { normalizedScopeDir, targetDir } = resolveAdrDirectories(
-    options.scopeDir,
-    options.useSubtypeContainer ?? true,
-    cwd,
-  );
-
-  // 3. Validate links and rule scope per RULE-14 and RULE-17
-  const links = options.links ?? [];
-  await validateAdrScope(normalizedScopeDir, links, cwd);
-
-  // 4. Resolve next monotonic ADR ID (ADR-2, RULE-1)
-  const nextId = await resolveNextArtifactId("ADR", { cwd });
-  const tag = `ADR-${nextId}`;
-
-  // 5. Format canonical filename per RULE-1
-  const filename = formatArtifactFilename({
-    slug,
-    subtype: "ADR",
-    id: nextId,
-  });
-  const filepath = join(targetDir, filename);
-
-  // 6. Render markdown template per ADR-4
-  const markdown = renderAdrMarkdown({
-    id: nextId,
-    slug,
-    title: options.title.trim(),
-    links,
-    context: options.context?.trim(),
-    alternatives: options.alternatives?.trim(),
-    decision: options.decision?.trim(),
-  });
-
-  // 7. Write ADR artifact to disk
-  await mkdir(targetDir, { recursive: true });
-  await writeFile(filepath, markdown, "utf8");
-
-  // 8. Construct AdrArtifact representation
-  const artifact: AdrArtifact = {
-    id: nextId,
-    slug,
-    title: options.title.trim(),
-    links,
-    context: options.context?.trim(),
-    alternatives: options.alternatives?.trim(),
-    decision: options.decision?.trim(),
-    filePath: filepath,
-    rawContent: markdown,
-  };
-
+  const result = await createArtifact(adrDefinition, options);
   return {
-    artifact,
-    filename,
-    filepath,
-    relativePath: relative(cwd, filepath),
-    markdown,
-    id: nextId,
-    tag,
+    artifact: result.artifact,
+    filename: result.filename,
+    filepath: result.filepath,
+    relativePath: result.relativePath,
+    markdown: result.markdown,
+    id: result.id,
+    tag: result.tag,
   };
 }
