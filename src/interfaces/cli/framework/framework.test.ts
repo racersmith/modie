@@ -10,6 +10,12 @@ import { taskCreateCommand } from "../commands/task/create.ts";
 import { taskListCommand } from "../commands/task/list.ts";
 import { taskCheckCommand } from "../commands/task/check.ts";
 import { taskStatusCommand } from "../commands/task/status.ts";
+import { findCommand } from "../commands/find/find.ts";
+import { showCommand } from "../commands/show/show.ts";
+import { referencesCommandDefinition } from "../commands/references/references.ts";
+import { taskStartCommand } from "../commands/task/start.ts";
+import { taskCompleteCommand } from "../commands/task/complete.ts";
+import { taskMergeCommand } from "../commands/task/merge.ts";
 
 describe("Declarative CLI Subcommand Framework (TASK-19, RULE-25, RULE-27)", () => {
   it("should generate standardized aligned help output from command metadata", () => {
@@ -272,12 +278,18 @@ describe("Declarative CLI Subcommand Framework (TASK-19, RULE-25, RULE-27)", () 
 
   it("should verify declared core command definitions conform to CliCommandDefinition", () => {
     const declaredCommands = [
+      findCommand,
+      showCommand,
+      referencesCommandDefinition,
       ruleCreateCommand,
       adrCreateCommand,
       taskCreateCommand,
       taskListCommand,
       taskCheckCommand,
       taskStatusCommand,
+      taskStartCommand,
+      taskCompleteCommand,
+      taskMergeCommand,
     ];
 
     for (const cmd of declaredCommands) {
