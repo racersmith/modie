@@ -9,3 +9,4 @@ export * from "./parser.ts";
 export * from "./creation.ts";
 export * from "./completion.ts";
 export * from "./query.ts";
+export * from "./branching.ts";

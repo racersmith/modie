@@ -1,0 +1,423 @@
+/**
+ * Hierarchical task branching automation and protected branch enforcement.
+ * Complies with ADR-6, ADR-9, ADR-10, RULE-21, and RULE-28.
+ */
+
+import { readFile } from "node:fs/promises";
+import { basename } from "node:path";
+import { parseArtifactFilename } from "../common/filename.ts";
+import { loadModieConfig } from "../config/loader.ts";
+import {
+  detectGitBranch,
+  inspectGitDeletedArtifacts,
+  runGit,
+  runGitCommand,
+} from "../resolver/git-inspector.ts";
+import { normalizeTaskId, resolveTaskFile } from "./completion.ts";
+import { parseTaskMarkdown } from "./parser.ts";
+import { scanActiveTasks } from "../resolver/active-scanner.ts";
+import type {
+  MergeTaskBranchOptions,
+  MergeTaskBranchResult,
+  StartTaskBranchOptions,
+  StartTaskBranchResult,
+  TaskBranchTopology,
+} from "./types.ts";
+
+/**
+ * Formats canonical task branch name: `task/<id>-<slug>`
+ */
+export function formatTaskBranchName(taskId: string, slug: string): string {
+  const normId = normalizeTaskId(taskId);
+  return `task/${normId}-${slug}`;
+}
+
+/**
+ * Parses subtask parent ID and sequence from task ID token per ADR-9.
+ * Subtasks follow `TASK-<parentId>-<sequence>` (e.g. `2-1`, `11-2`, `J101-1`).
+ */
+export function parseSubtaskId(
+  taskId: string,
+): { parentId: string; sequence: string } | null {
+  const normId = normalizeTaskId(taskId);
+  const match = normId.match(/^([A-Za-z0-9]+)-([0-9]+)$/);
+  if (!match || !match[1] || !match[2]) {
+    return null;
+  }
+  return {
+    parentId: match[1],
+    sequence: match[2],
+  };
+}
+
+/**
+ * Checks whether a local git branch exists.
+ */
+export async function branchExists(
+  branchName: string,
+  cwd: string = process.cwd(),
+): Promise<boolean> {
+  const output = await runGit(["rev-parse", "--verify", `refs/heads/${branchName}`], cwd);
+  return output !== null;
+}
+
+/**
+ * Resolves a task's ID and slug for branching operations.
+ * Checks active tasks on disk, local git branches, and Git deletion logs.
+ */
+async function resolveTaskMetaForBranching(
+  taskIdentifier: string,
+  cwd: string,
+): Promise<{ id: string; slug: string; filepath?: string }> {
+  // 1. Attempt to resolve active task on disk
+  try {
+    const filepath = await resolveTaskFile(taskIdentifier, { cwd, allowZombie: true });
+    const content = await readFile(filepath, "utf8");
+    const parsed = parseTaskMarkdown(content, filepath);
+    return {
+      id: parsed.id,
+      slug: parsed.slug,
+      filepath,
+    };
+  } catch {
+    // Not found as active on disk; fall through
+  }
+
+  const normalized = normalizeTaskId(taskIdentifier);
+
+  // 2. Check local git branches matching task/<normalized>-*
+  const branchList = await runGit(["branch", "--list", `task/${normalized}-*`], cwd);
+  if (branchList && branchList.length > 0) {
+    const firstBranch = branchList
+      .split("\n")
+      .map((b) => b.replace(/^\*?\s+/, "").trim())[0];
+    if (firstBranch) {
+      const match = firstBranch.match(/^task\/([A-Za-z0-9-]+)-(.*)$/);
+      if (match && match[1] && match[2]) {
+        return {
+          id: match[1],
+          slug: match[2],
+        };
+      }
+    }
+  }
+
+  // 3. Inspect deleted artifacts in Git history
+  const deleted = await inspectGitDeletedArtifacts(cwd, "TASK");
+  const matchDeleted = deleted.find((d) => normalizeTaskId(d.id) === normalized);
+  if (matchDeleted) {
+    return {
+      id: matchDeleted.id,
+      slug: matchDeleted.slug,
+    };
+  }
+
+  throw new Error(
+    `Cannot resolve task "${taskIdentifier}": No active artifact on disk, matching git branch, or git history record found.`,
+  );
+}
+
+/**
+ * Finds the parent task branch for a subtask per RULE-28 and ADR-9.
+ */
+async function findParentTaskBranch(
+  parentId: string,
+  cwd: string,
+): Promise<string | undefined> {
+  const normParent = normalizeTaskId(parentId);
+
+  // 1. Check existing local git branches
+  const branches = await runGit(["branch", "--list", `task/${normParent}-*`], cwd);
+  if (branches) {
+    const matched = branches
+      .split("\n")
+      .map((b) => b.replace(/^\*?\s+/, "").trim())
+      .filter((b) => {
+        // Exclude subtask branches of this parent (e.g. task/106-1-sub when looking for parent 106)
+        const match = b.match(/^task\/([A-Za-z0-9]+)-(.*)$/);
+        return Boolean(match && match[1] === normParent && match[2] && !/^\d+-/.test(match[2]));
+      });
+    if (matched.length > 0 && matched[0]) {
+      return matched[0];
+    }
+  }
+
+  // 2. Check active task file on disk with exact ID match
+  const activeTasks = await scanActiveTasks(cwd);
+  const parentTask = activeTasks.find(
+    (t) => normalizeTaskId(t.id).toLowerCase() === normParent.toLowerCase(),
+  );
+  if (parentTask) {
+    return `task/${normParent}-${parentTask.slug}`;
+  }
+
+  // 3. Check deleted artifacts in Git
+  const deleted = await inspectGitDeletedArtifacts(cwd, "TASK");
+  const matchDeleted = deleted.find((d) => normalizeTaskId(d.id) === normParent);
+  if (matchDeleted) {
+    return `task/${normParent}-${matchDeleted.slug}`;
+  }
+
+  return undefined;
+}
+
+/**
+ * Computes the branch topology for a task, determining parentage, base branch,
+ * target branch, and protected branch status.
+ */
+export async function computeTaskBranchTopology(
+  taskIdentifier: string,
+  options: { base?: string; cwd?: string } = {},
+): Promise<TaskBranchTopology> {
+  const cwd = options.cwd ?? process.cwd();
+  const config = await loadModieConfig(cwd);
+  const meta = await resolveTaskMetaForBranching(taskIdentifier, cwd);
+  const currentBranch = await detectGitBranch(cwd);
+
+  const subtaskInfo = parseSubtaskId(meta.id);
+  const isSubtask = subtaskInfo !== null;
+  const branchName = formatTaskBranchName(meta.id, meta.slug);
+
+  let parentBranchName: string | undefined;
+  let expectedBaseBranch: string;
+
+  if (isSubtask && subtaskInfo) {
+    parentBranchName = await findParentTaskBranch(subtaskInfo.parentId, cwd);
+    expectedBaseBranch = options.base ?? parentBranchName ?? `task/${subtaskInfo.parentId}`;
+  } else {
+    expectedBaseBranch = options.base ?? config.trunk;
+  }
+
+  const isCurrentBranchProtected = currentBranch
+    ? config.protectedBranches.includes(currentBranch)
+    : false;
+
+  return {
+    taskId: meta.id,
+    slug: meta.slug,
+    branchName,
+    isSubtask,
+    parentId: subtaskInfo?.parentId,
+    subtaskSequence: subtaskInfo?.sequence,
+    parentBranchName,
+    expectedBaseBranch,
+    currentBranch,
+    isCurrentBranchProtected,
+    trunkBranch: config.trunk,
+    protectedBranches: config.protectedBranches,
+  };
+}
+
+/**
+ * Starts a task branch per RULE-28 and ADR-9.
+ * Validates branch hierarchy, guards against starting directly from protected branches,
+ * and creates/checks out the task branch.
+ */
+export async function startTaskBranch(
+  taskIdentifier: string,
+  options: StartTaskBranchOptions = {},
+): Promise<StartTaskBranchResult> {
+  const cwd = options.cwd ?? process.cwd();
+  const topology = await computeTaskBranchTopology(taskIdentifier, options);
+
+  // 1. Guard against starting directly from a protected branch
+  if (
+    topology.isCurrentBranchProtected &&
+    !options.base &&
+    !options.force
+  ) {
+    throw new Error(
+      `Cannot start task from protected branch "${topology.currentBranch}". Protected branches cannot spawn task branches directly. Please switch to trunk branch "${topology.trunkBranch}" or specify --base.`,
+    );
+  }
+
+  // 2. Validate subtask parent branch existence per RULE-28
+  if (topology.isSubtask) {
+    if (!topology.parentBranchName) {
+      throw new Error(
+        `Cannot start subtask "TASK-${topology.taskId}": Parent task branch could not be determined. Ensure parent task TASK-${topology.parentId} exists per RULE-28.`,
+      );
+    }
+
+    const parentExists = await branchExists(topology.parentBranchName, cwd);
+    if (!parentExists && !options.base && !options.force) {
+      throw new Error(
+        `Cannot start subtask "TASK-${topology.taskId}": Parent task branch "${topology.parentBranchName}" does not exist in local git branches. Create or checkout the parent task branch first per RULE-28.`,
+      );
+    }
+  }
+
+  const baseBranch = options.base ?? topology.expectedBaseBranch;
+  const targetExists = await branchExists(topology.branchName, cwd);
+
+  // 3. Checkout or create the target branch
+  if (targetExists) {
+    if (topology.currentBranch !== topology.branchName) {
+      await runGitCommand(["checkout", topology.branchName], cwd);
+    }
+    return {
+      taskId: topology.taskId,
+      slug: topology.slug,
+      branchName: topology.branchName,
+      baseBranch,
+      created: false,
+      isSubtask: topology.isSubtask,
+      parentBranch: topology.parentBranchName,
+    };
+  }
+
+  // Create new branch from baseBranch
+  await runGitCommand(["checkout", "-b", topology.branchName, baseBranch], cwd);
+
+  return {
+    taskId: topology.taskId,
+    slug: topology.slug,
+    branchName: topology.branchName,
+    baseBranch,
+    created: true,
+    isSubtask: topology.isSubtask,
+    parentBranch: topology.parentBranchName,
+  };
+}
+
+/**
+ * Merges a completed task branch back into its parent branch (subtask) or trunk (root task)
+ * per RULE-28, guarding against merging into protected branches.
+ */
+export async function mergeTaskBranch(
+  taskIdentifier: string,
+  options: MergeTaskBranchOptions = {},
+): Promise<MergeTaskBranchResult> {
+  const cwd = options.cwd ?? process.cwd();
+  const topology = await computeTaskBranchTopology(taskIdentifier, options);
+  const sourceBranch = topology.branchName;
+
+  // 1. Verify source branch exists
+  const sourceExists = await branchExists(sourceBranch, cwd);
+  if (!sourceExists) {
+    throw new Error(
+      `Cannot merge task "TASK-${topology.taskId}": Task branch "${sourceBranch}" does not exist in local git branches.`,
+    );
+  }
+
+  // 2. Verify completion status per RULE-21 and RULE-22
+  try {
+    const filepath = await resolveTaskFile(taskIdentifier, { cwd, allowZombie: true });
+    const content = await readFile(filepath, "utf8");
+    const parsed = parseTaskMarkdown(content, filepath);
+    const incomplete = parsed.acceptanceCriteria.filter((c) => !c.completed);
+
+    if (incomplete.length > 0 && !options.force) {
+      throw new Error(
+        `Cannot merge task branch "${sourceBranch}": Task "TASK-${topology.taskId}" has ${incomplete.length} incomplete acceptance criteria. Verify all criteria before merging per RULE-22 and RULE-28.`,
+      );
+    }
+
+    if (!options.force) {
+      throw new Error(
+        `Cannot merge task branch "${sourceBranch}": Task "TASK-${topology.taskId}" artifact has not been completed. Run 'modie task complete ${topology.taskId}' to execute the completion ceremony before merging per RULE-21 and RULE-28.`,
+      );
+    }
+  } catch (error: unknown) {
+    // If resolveTaskFile fails because file was deleted (or zombie), verify completion
+    if (error instanceof Error && error.message.includes("incomplete acceptance criteria")) {
+      throw error;
+    }
+    if (error instanceof Error && error.message.includes("artifact has not been completed")) {
+      throw error;
+    }
+    // File not found on disk: verify that it was completed/deleted in Git
+    const deleted = await inspectGitDeletedArtifacts(cwd, "TASK");
+    const isDeletedInGit = deleted.some((d) => normalizeTaskId(d.id) === normalizeTaskId(topology.taskId));
+    if (!isDeletedInGit && !options.force) {
+      throw new Error(
+        `Cannot merge task branch "${sourceBranch}": Task "TASK-${topology.taskId}" has neither an active verified artifact nor a completion record in Git history per RULE-21.`,
+      );
+    }
+  }
+
+  // 3. Determine and guard target branch
+  let targetBranch: string;
+
+  if (topology.isSubtask) {
+    targetBranch = options.target ?? topology.parentBranchName!;
+
+    if (!targetBranch) {
+      throw new Error(
+        `Cannot merge subtask branch "${sourceBranch}": Parent task branch could not be determined. Specify --target explicitly.`,
+      );
+    }
+
+    // Prohibit subtasks from merging directly into trunk per RULE-28
+    if (targetBranch === topology.trunkBranch && !options.force) {
+      throw new Error(
+        `Subtask branch "${sourceBranch}" cannot be merged directly into trunk branch "${targetBranch}" per RULE-28. Subtasks must merge back into their parent task branch ("${topology.parentBranchName}").`,
+      );
+    }
+
+    // Prohibit merging into protected branches
+    if (topology.protectedBranches.includes(targetBranch) && !options.force) {
+      throw new Error(
+        `Cannot merge subtask branch "${sourceBranch}" into protected branch "${targetBranch}". Protected branches cannot receive direct task merges.`,
+      );
+    }
+  } else {
+    targetBranch = options.target ?? topology.trunkBranch;
+
+    // Prohibit merging root tasks directly into protected branches
+    if (topology.protectedBranches.includes(targetBranch) && !options.force) {
+      throw new Error(
+        `Cannot merge root task branch "${sourceBranch}" directly into protected branch "${targetBranch}". Merges must target trunk branch "${topology.trunkBranch}".`,
+      );
+    }
+
+    // Verify all child subtasks have completed and merged per RULE-28
+    const normId = normalizeTaskId(topology.taskId);
+    const subtaskBranchesOut = await runGit(["branch", "--list", `task/${normId}-*-*`], cwd);
+    if (subtaskBranchesOut && subtaskBranchesOut.length > 0) {
+      const activeChildBranches = subtaskBranchesOut
+        .split("\n")
+        .map((b) => b.replace(/^\*?\s+/, "").trim())
+        .filter(Boolean);
+
+      if (activeChildBranches.length > 0 && !options.force) {
+        throw new Error(
+          `Cannot merge parent task branch "${sourceBranch}" into trunk: Active child subtask branch "${activeChildBranches[0]}" has not been merged into parent branch per RULE-28.`,
+        );
+      }
+    }
+  }
+
+  // 4. Verify target branch exists in local git branches
+  const targetExists = await branchExists(targetBranch, cwd);
+  if (!targetExists) {
+    throw new Error(
+      `Cannot merge into target branch "${targetBranch}": Branch does not exist in local git repository.`,
+    );
+  }
+
+  // 5. Execute checkout and merge
+  await runGitCommand(["checkout", targetBranch], cwd);
+  await runGitCommand(
+    ["merge", "--no-ff", "-m", `merge: ${sourceBranch} into ${targetBranch}`, sourceBranch],
+    cwd,
+  );
+
+  const mergeHash = await runGitCommand(["rev-parse", "--short", "HEAD"], cwd);
+
+  // 6. Delete source branch unless keepBranch is specified
+  const deleteSource = !Boolean(options.keepBranch);
+  if (deleteSource) {
+    await runGitCommand(["branch", "-d", sourceBranch], cwd);
+  }
+
+  return {
+    taskId: topology.taskId,
+    slug: topology.slug,
+    sourceBranch,
+    targetBranch,
+    deletedSourceBranch: deleteSource,
+    isSubtask: topology.isSubtask,
+    mergeCommitHash: mergeHash || undefined,
+  };
+}
