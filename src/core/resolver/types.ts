@@ -4,6 +4,7 @@
  */
 
 import type { DiscoveredArtifact, IndexableSubtype } from "../common/types.ts";
+import type { IVcsAdapter } from "../vcs/types.ts";
 
 export type { DiscoveredArtifact, IndexableSubtype };
 
@@ -66,6 +67,11 @@ export interface WatermarkResolutionOptions {
    * Pre-provided deleted artifact IDs (used for isolated unit testing without git execution).
    */
   deletedIds?: string[];
+
+  /**
+   * Optional VCS adapter (defaults to defaultVcsAdapter).
+   */
+  vcs?: IVcsAdapter;
 }
 
 export interface WatermarkDetails {

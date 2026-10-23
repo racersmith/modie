@@ -14,6 +14,8 @@ import {
 } from "../resolver/git-inspector.ts";
 import type { DiscoveredArtifact, IndexableSubtype } from "../common/types.ts";
 import { parseTaskIdFromBranch } from "../common/index.ts";
+import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
+import type { IVcsAdapter } from "../vcs/types.ts";
 import { normalizeTaskId, resolveTaskFile } from "./completion.ts";
 import { parseTaskMarkdown } from "./parser.ts";
 import { scanActiveTasks } from "../resolver/active-scanner.ts";
@@ -57,12 +59,9 @@ export function parseSubtaskId(
 export async function branchExists(
   branchName: string,
   cwd: string = process.cwd(),
+  vcs: IVcsAdapter = defaultVcsAdapter,
 ): Promise<boolean> {
-  const output = await runGit(
-    ["rev-parse", "--verify", `refs/heads/${branchName}`],
-    cwd,
-  );
-  return output !== null;
+  return vcs.branchExists(branchName, cwd);
 }
 
 export interface ArtifactCollision {
@@ -82,10 +81,11 @@ export async function detectArtifactCollisions(
   sourceBranch: string,
   targetBranch: string,
   cwd: string = process.cwd(),
+  vcs: IVcsAdapter = defaultVcsAdapter,
 ): Promise<ArtifactCollision[]> {
   const [sourceArtifacts, targetArtifacts] = await Promise.all([
-    inspectGitTreeArtifacts(sourceBranch, cwd),
-    inspectGitTreeArtifacts(targetBranch, cwd),
+    vcs.inspectTreeArtifacts(sourceBranch, cwd),
+    vcs.inspectTreeArtifacts(targetBranch, cwd),
   ]);
 
   if (sourceArtifacts.length === 0 || targetArtifacts.length === 0) {
@@ -93,14 +93,10 @@ export async function detectArtifactCollisions(
   }
 
   // Find common ancestor commit between target and source branches
-  const mergeBaseOut = await runGit(
-    ["merge-base", targetBranch, sourceBranch],
-    cwd,
-  );
-  const mergeBase = mergeBaseOut ? mergeBaseOut.trim() : null;
+  const mergeBase = await vcs.mergeBase(targetBranch, sourceBranch, cwd);
 
   const baseArtifacts = mergeBase
-    ? await inspectGitTreeArtifacts(mergeBase, cwd)
+    ? await vcs.inspectTreeArtifacts(mergeBase, cwd)
     : [];
 
   const baseMap = new Map<string, DiscoveredArtifact>();
@@ -108,10 +104,10 @@ export async function detectArtifactCollisions(
     baseMap.set(art.tag.toUpperCase(), art);
   }
 
-  const targetTagMap = new Map<string, DiscoveredArtifact>();
+  const targetMap = new Map<string, DiscoveredArtifact>();
   const targetPathMap = new Map<string, DiscoveredArtifact>();
   for (const art of targetArtifacts) {
-    targetTagMap.set(art.tag.toUpperCase(), art);
+    targetMap.set(art.tag.toUpperCase(), art);
     targetPathMap.set(art.filepath, art);
   }
 
@@ -120,12 +116,12 @@ export async function detectArtifactCollisions(
 
   for (const sourceArt of sourceArtifacts) {
     const tagKey = sourceArt.tag.toUpperCase();
-    const targetArt = targetTagMap.get(tagKey);
+    const targetArt = targetMap.get(tagKey);
     const baseArt = baseMap.get(tagKey);
 
     if (targetArt) {
       if (!baseArt) {
-        // Tag was introduced independently on source branch after merge-base
+        // Tag was created independently on both branches
         const key = `${tagKey}:${sourceArt.filepath}:${targetArt.filepath}:duplicate_tag`;
         if (!seenCollisions.has(key)) {
           seenCollisions.add(key);
@@ -190,12 +186,14 @@ export async function detectArtifactCollisions(
 async function resolveTaskMetaForBranching(
   taskIdentifier: string,
   cwd: string,
+  vcs: IVcsAdapter = defaultVcsAdapter,
 ): Promise<{ id: string; slug: string; filepath?: string }> {
   // 1. Attempt to resolve active task on disk
   try {
     const filepath = await resolveTaskFile(taskIdentifier, {
       cwd,
       allowZombie: true,
+      vcs,
     });
     const content = await readFile(filepath, "utf8");
     const parsed = parseTaskMarkdown(content, filepath);
@@ -211,7 +209,7 @@ async function resolveTaskMetaForBranching(
   const normalized = normalizeTaskId(taskIdentifier);
 
   // 2. Inspect deleted artifacts in Git history (ground truth for completed tasks)
-  const deleted = await inspectGitDeletedArtifacts(cwd, "TASK");
+  const deleted = await vcs.inspectDeletedArtifacts(cwd, "TASK");
   const matchDeleted = deleted.find(
     (d) => normalizeTaskId(d.id) === normalized,
   );
@@ -223,7 +221,7 @@ async function resolveTaskMetaForBranching(
   }
 
   // 3. Check local git branches matching task/<normalized>-*
-  const branchList = await runGit(
+  const branchList = await vcs.run(
     ["branch", "--list", `task/${normalized}-*`],
     cwd,
   );
@@ -251,11 +249,12 @@ async function resolveTaskMetaForBranching(
 async function findParentTaskBranch(
   parentId: string,
   cwd: string,
+  vcs: IVcsAdapter = defaultVcsAdapter,
 ): Promise<string | undefined> {
   const normParent = normalizeTaskId(parentId);
 
   // 1. Check existing local git branches
-  const branches = await runGit(
+  const branches = await vcs.run(
     ["branch", "--list", `task/${normParent}-*`],
     cwd,
   );
@@ -288,11 +287,11 @@ async function findParentTaskBranch(
   }
 
   // 3. Check deleted artifacts in Git
-  const deleted = await inspectGitDeletedArtifacts(cwd, "TASK");
+  const deleted = await vcs.inspectDeletedArtifacts(cwd, "TASK");
   const matchDeleted = deleted.find(
-    (d) => normalizeTaskId(d.id) === normParent,
+    (d) => normalizeTaskId(d.id).toLowerCase() === normParent.toLowerCase(),
   );
-  if (matchDeleted) {
+  if (matchDeleted && matchDeleted.slug) {
     return `task/${normParent}-${matchDeleted.slug}`;
   }
 
@@ -305,12 +304,13 @@ async function findParentTaskBranch(
  */
 export async function computeTaskBranchTopology(
   taskIdentifier: string,
-  options: { base?: string; cwd?: string } = {},
+  options: { base?: string; cwd?: string; vcs?: IVcsAdapter } = {},
 ): Promise<TaskBranchTopology> {
   const cwd = options.cwd ?? process.cwd();
-  const config = await loadModieConfig(cwd);
-  const meta = await resolveTaskMetaForBranching(taskIdentifier, cwd);
-  const currentBranch = await detectGitBranch(cwd);
+  const vcs = options.vcs ?? defaultVcsAdapter;
+  const config = await loadModieConfig(cwd, vcs);
+  const meta = await resolveTaskMetaForBranching(taskIdentifier, cwd, vcs);
+  const currentBranch = await vcs.detectCurrentBranch(cwd);
 
   const subtaskInfo = parseSubtaskId(meta.id);
   const isSubtask = subtaskInfo !== null;
@@ -320,7 +320,7 @@ export async function computeTaskBranchTopology(
   let expectedBaseBranch: string;
 
   if (isSubtask && subtaskInfo) {
-    parentBranchName = await findParentTaskBranch(subtaskInfo.parentId, cwd);
+    parentBranchName = await findParentTaskBranch(subtaskInfo.parentId, cwd, vcs);
     expectedBaseBranch =
       options.base ?? parentBranchName ?? `task/${subtaskInfo.parentId}`;
   } else {
@@ -357,7 +357,8 @@ export async function startTaskBranch(
   options: StartTaskBranchOptions = {},
 ): Promise<StartTaskBranchResult> {
   const cwd = options.cwd ?? process.cwd();
-  const topology = await computeTaskBranchTopology(taskIdentifier, options);
+  const vcs = options.vcs ?? defaultVcsAdapter;
+  const topology = await computeTaskBranchTopology(taskIdentifier, { ...options, vcs });
 
   // 1. Guard against starting directly from a protected branch
   if (topology.isCurrentBranchProtected && !options.base && !options.force) {
@@ -370,12 +371,12 @@ export async function startTaskBranch(
   if (topology.isSubtask) {
     if (!topology.parentBranchName) {
       throw new Error(
-        `Cannot start subtask "TASK-${topology.taskId}": Parent task branch could not be determined. Ensure parent task TASK-${topology.parentId} exists per RULE-28.`,
+        `Cannot start subtask "TASK-${topology.taskId}": Parent task "TASK-${topology.parentId}" does not have an active task branch or active artifact on disk. Subtasks must branch from their parent task branch per RULE-28.`,
       );
     }
 
-    const parentExists = await branchExists(topology.parentBranchName, cwd);
-    if (!parentExists && !options.base && !options.force) {
+    const parentExists = await vcs.branchExists(topology.parentBranchName, cwd);
+    if (!parentExists) {
       throw new Error(
         `Cannot start subtask "TASK-${topology.taskId}": Parent task branch "${topology.parentBranchName}" does not exist in local git branches. Create or checkout the parent task branch first per RULE-28.`,
       );
@@ -383,12 +384,12 @@ export async function startTaskBranch(
   }
 
   const baseBranch = options.base ?? topology.expectedBaseBranch;
-  const targetExists = await branchExists(topology.branchName, cwd);
+  const targetExists = await vcs.branchExists(topology.branchName, cwd);
 
   // 3. Checkout or create the target branch
   if (targetExists) {
     if (topology.currentBranch !== topology.branchName) {
-      await runGitCommand(["checkout", topology.branchName], cwd);
+      await vcs.checkout(topology.branchName, cwd);
     }
     return {
       taskId: topology.taskId,
@@ -402,7 +403,7 @@ export async function startTaskBranch(
   }
 
   // Create new branch from baseBranch
-  await runGitCommand(["checkout", "-b", topology.branchName, baseBranch], cwd);
+  await vcs.checkoutNewBranch(topology.branchName, baseBranch, cwd);
 
   return {
     taskId: topology.taskId,
@@ -416,17 +417,20 @@ export async function startTaskBranch(
 }
 
 /**
- * Merges a completed task branch back into its parent branch (subtask) or trunk (root task)
- * per RULE-28, guarding against merging into protected branches.
+ * Merges a completed task branch back into its parent branch or trunk per RULE-28.
+ * Validates branch hierarchy, verifies criteria satisfaction & artifact deletion,
+ * guards against protected branch violations, and performs atomic merge.
  */
 export async function mergeTaskBranch(
   taskIdentifier?: string,
   options: MergeTaskBranchOptions = {},
 ): Promise<MergeTaskBranchResult> {
   const cwd = options.cwd ?? process.cwd();
+  const vcs = options.vcs ?? defaultVcsAdapter;
   let targetId = taskIdentifier?.trim();
+
   if (!targetId) {
-    const currentBranch = await detectGitBranch(cwd);
+    const currentBranch = await vcs.detectCurrentBranch(cwd);
     const inferredId = parseTaskIdFromBranch(currentBranch);
     if (!inferredId) {
       const branchDisplay = currentBranch ? ` "${currentBranch}"` : "";
@@ -436,11 +440,11 @@ export async function mergeTaskBranch(
     }
     targetId = inferredId;
   }
-  const topology = await computeTaskBranchTopology(targetId, options);
+  const topology = await computeTaskBranchTopology(targetId, { ...options, vcs });
   const sourceBranch = topology.branchName;
 
   // 1. Verify source branch exists
-  const sourceExists = await branchExists(sourceBranch, cwd);
+  const sourceExists = await vcs.branchExists(sourceBranch, cwd);
   if (!sourceExists) {
     throw new Error(
       `Cannot merge task "TASK-${topology.taskId}": Task branch "${sourceBranch}" does not exist in local git branches.`,
@@ -452,6 +456,7 @@ export async function mergeTaskBranch(
     const filepath = await resolveTaskFile(taskIdentifier, {
       cwd,
       allowZombie: true,
+      vcs,
     });
     const content = await readFile(filepath, "utf8");
     const parsed = parseTaskMarkdown(content, filepath);
@@ -483,7 +488,7 @@ export async function mergeTaskBranch(
       throw error;
     }
     // File not found on disk: verify that it was completed/deleted in Git
-    const deleted = await inspectGitDeletedArtifacts(cwd, "TASK");
+    const deleted = await vcs.inspectDeletedArtifacts(cwd, "TASK");
     const isDeletedInGit = deleted.some(
       (d) => normalizeTaskId(d.id) === normalizeTaskId(topology.taskId),
     );
@@ -498,15 +503,10 @@ export async function mergeTaskBranch(
   let targetBranch: string;
 
   if (topology.isSubtask) {
-    targetBranch = options.target ?? topology.parentBranchName!;
+    targetBranch =
+      options.target ?? topology.parentBranchName ?? topology.expectedBaseBranch;
 
-    if (!targetBranch) {
-      throw new Error(
-        `Cannot merge subtask branch "${sourceBranch}": Parent task branch could not be determined. Specify --target explicitly.`,
-      );
-    }
-
-    // Prohibit subtasks from merging directly into trunk per RULE-28
+    // RULE-28: Subtasks must never be merged directly into trunk
     if (targetBranch === topology.trunkBranch && !options.force) {
       throw new Error(
         `Subtask branch "${sourceBranch}" cannot be merged directly into trunk branch "${targetBranch}" per RULE-28. Subtasks must merge back into their parent task branch ("${topology.parentBranchName}").`,
@@ -531,7 +531,7 @@ export async function mergeTaskBranch(
 
     // Verify all child subtasks have completed and merged per RULE-28
     const normId = normalizeTaskId(topology.taskId);
-    const subtaskBranchesOut = await runGit(
+    const subtaskBranchesOut = await vcs.run(
       ["branch", "--list", `task/${normId}-*`],
       cwd,
     );
@@ -553,7 +553,7 @@ export async function mergeTaskBranch(
   }
 
   // 4. Verify target branch exists in local git branches
-  const targetExists = await branchExists(targetBranch, cwd);
+  const targetExists = await vcs.branchExists(targetBranch, cwd);
   if (!targetExists) {
     throw new Error(
       `Cannot merge into target branch "${targetBranch}": Branch does not exist in local git repository.`,
@@ -566,6 +566,7 @@ export async function mergeTaskBranch(
       sourceBranch,
       targetBranch,
       cwd,
+      vcs,
     );
     if (collisions.length > 0) {
       const details = collisions
@@ -581,24 +582,17 @@ export async function mergeTaskBranch(
   }
 
   // 5. Execute checkout and merge
-  await runGitCommand(["checkout", targetBranch], cwd);
-  await runGitCommand(
-    [
-      "merge",
-      "--no-ff",
-      "-m",
-      `merge: ${sourceBranch} into ${targetBranch}`,
-      sourceBranch,
-    ],
+  const mergeHash = await vcs.merge(
+    sourceBranch,
+    targetBranch,
+    `merge: ${sourceBranch} into ${targetBranch}`,
     cwd,
   );
-
-  const mergeHash = await runGitCommand(["rev-parse", "--short", "HEAD"], cwd);
 
   // 6. Delete source branch unless keepBranch is specified
   const deleteSource = !Boolean(options.keepBranch);
   if (deleteSource) {
-    await runGitCommand(["branch", "-d", sourceBranch], cwd);
+    await vcs.deleteBranch(sourceBranch, cwd);
   }
 
   return {

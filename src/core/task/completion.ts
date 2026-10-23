@@ -15,6 +15,8 @@ import {
   runGitCommand,
 } from "../resolver/git-inspector.ts";
 import type { DiscoveredTask } from "../resolver/types.ts";
+import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
+import type { IVcsAdapter } from "../vcs/types.ts";
 import { parseAcceptanceCriteria } from "./checklist.ts";
 import { parseTaskMarkdown } from "./parser.ts";
 import type { TaskArtifact } from "./types.ts";
@@ -30,6 +32,11 @@ export interface ResolveTaskOptions {
    * Defaults to false per ADR-6 and RULE-21.
    */
   allowZombie?: boolean;
+
+  /**
+   * Optional VCS adapter (defaults to defaultVcsAdapter).
+   */
+  vcs?: IVcsAdapter;
 }
 
 export interface CheckTaskItemOptions {
@@ -84,6 +91,11 @@ export interface CompleteTaskOptions {
    * Whether to allow resolving zombie tasks without throwing an error.
    */
   allowZombie?: boolean;
+
+  /**
+   * Optional VCS adapter (defaults to defaultVcsAdapter).
+   */
+  vcs?: IVcsAdapter;
 }
 
 export interface CompleteTaskResult {
@@ -119,9 +131,10 @@ export function normalizeTaskId(raw: string): string {
  */
 export async function detectZombieTasks(
   cwd: string = process.cwd(),
+  vcs?: IVcsAdapter,
 ): Promise<DiscoveredTask[]> {
   const activeTasks = await scanActiveTasks(cwd);
-  const deletedIds = await inspectGitDeletedTaskIds(cwd);
+  const deletedIds = await inspectGitDeletedTaskIds(cwd, vcs);
   const deletedSet = new Set(deletedIds);
   return activeTasks.filter((t) => deletedSet.has(t.id));
 }
@@ -133,9 +146,10 @@ export async function detectZombieTasks(
 export async function assertNotZombieTask(
   taskId: string,
   cwd: string = process.cwd(),
+  vcs?: IVcsAdapter,
 ): Promise<void> {
   const normalized = normalizeTaskId(taskId);
-  const deletedIds = await inspectGitDeletedTaskIds(cwd);
+  const deletedIds = await inspectGitDeletedTaskIds(cwd, vcs);
   if (deletedIds.includes(normalized)) {
     throw new Error(
       `Zombie task detected: Task "TASK-${normalized}" was previously completed and deleted in Git history per RULE-21. Resurrecting completed tasks is prohibited (ADR-6, RULE-21).`,
@@ -155,7 +169,7 @@ export async function resolveTaskFile(
   let trimmed = taskIdentifier?.trim();
 
   if (!trimmed) {
-    const branch = await detectGitBranch(cwd);
+    const branch = await detectGitBranch(cwd, options.vcs);
     const inferredId = parseTaskIdFromBranch(branch);
     if (!inferredId) {
       const branchDisplay = branch ? ` "${branch}"` : "";
@@ -176,7 +190,7 @@ export async function resolveTaskFile(
       const parsedFilename = parseArtifactFilename(filename);
       if (parsedFilename && parsedFilename.subtype === "TASK" && !parsedFilename.isArchived) {
         if (!options.allowZombie) {
-          await assertNotZombieTask(parsedFilename.id, cwd);
+          await assertNotZombieTask(parsedFilename.id, cwd, options.vcs);
         }
         return candidatePath;
       }
@@ -203,7 +217,7 @@ export async function resolveTaskFile(
 
   if (matchById) {
     if (!options.allowZombie) {
-      await assertNotZombieTask(matchById.id, cwd);
+      await assertNotZombieTask(matchById.id, cwd, options.vcs);
     }
     return matchById.filepath;
   }
@@ -215,7 +229,7 @@ export async function resolveTaskFile(
 
   if (matchBySlug) {
     if (!options.allowZombie) {
-      await assertNotZombieTask(matchBySlug.id, cwd);
+      await assertNotZombieTask(matchBySlug.id, cwd, options.vcs);
     }
     return matchBySlug.filepath;
   }
@@ -229,7 +243,7 @@ export async function resolveTaskFile(
 
   if (partialMatches.length === 1 && partialMatches[0]) {
     if (!options.allowZombie) {
-      await assertNotZombieTask(partialMatches[0].id, cwd);
+      await assertNotZombieTask(partialMatches[0].id, cwd, options.vcs);
     }
     return partialMatches[0].filepath;
   }
@@ -442,6 +456,7 @@ export async function completeTask(
   options: CompleteTaskOptions = {},
 ): Promise<CompleteTaskResult> {
   const cwd = options.cwd ?? process.cwd();
+  const vcs = options.vcs ?? defaultVcsAdapter;
   const filepath = await resolveTaskFile(taskIdentifier, options);
   const content = await readFile(filepath, "utf8");
   const parsed = parseTaskMarkdown(content, filepath);
@@ -472,7 +487,7 @@ export async function completeTask(
   let commits: { phase1?: string; phase2?: string } | undefined;
 
   if (shouldCommit) {
-    const isRepo = await runGit(["rev-parse", "--is-inside-work-tree"], cwd);
+    const isRepo = await vcs.isInsideWorkTree(cwd);
     if (!isRepo) {
       throw new Error(
         "Cannot execute two-phase Git commit: directory is not a git repository.",
@@ -494,20 +509,18 @@ export async function completeTask(
     }
 
     // Inspect working tree status for pending implementation and criteria changes
-    const statusOutput = await runGit(["status", "--porcelain"], cwd);
-    const hasPendingChanges = Boolean(statusOutput && statusOutput.trim().length > 0);
+    const hasPendingChanges = await vcs.hasWorkingTreeChanges(cwd);
 
     let phase1Hash: string | undefined;
 
     if (hasPendingChanges) {
       // Phase 1: Stage all working tree changes and commit verified implementation/criteria state
-      await runGitCommand(["add", "-A"], cwd);
+      await vcs.stageAll(cwd);
 
-      const stagedDiff = await runGit(["diff", "--cached", "--name-only"], cwd);
-      if (stagedDiff && stagedDiff.trim().length > 0) {
+      const stagedFiles = await vcs.getStagedFiles(cwd);
+      if (stagedFiles.length > 0) {
         const phase1Msg = `feat(TASK-${parsed.id}): ${parsed.slug}`;
-        await runGitCommand(["commit", "-m", phase1Msg], cwd);
-        phase1Hash = (await runGitCommand(["rev-parse", "--short", "HEAD"], cwd)) || undefined;
+        phase1Hash = await vcs.commit(phase1Msg, cwd);
       }
     }
 
@@ -515,10 +528,9 @@ export async function completeTask(
     if (deleteArtifact) {
       // Phase 2: Commit artifact deletion
       await rm(filepath, { force: true });
-      await runGitCommand(["add", "-u", "--", relFilepath], cwd);
+      await vcs.stageFiles([relFilepath], cwd, { updateOnly: true });
       const phase2Msg = `chore(task): delete completed TASK-${parsed.id} artifact`;
-      await runGitCommand(["commit", "-m", phase2Msg, "--", relFilepath], cwd);
-      phase2Hash = (await runGitCommand(["rev-parse", "--short", "HEAD"], cwd)) || undefined;
+      phase2Hash = await vcs.commit(phase2Msg, cwd, [relFilepath]);
     }
 
     commits = {
