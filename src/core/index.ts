@@ -142,6 +142,10 @@ export {
   runGit,
   runGitCommand,
   detectGitBranch,
+  listGitBranches,
+  inspectGitTreeArtifacts,
+  inspectMultiBranchActiveArtifacts,
+  inspectMultiBranchActiveArtifactIds,
 } from "./resolver/git-inspector.ts";
 export {
   scanActiveArtifacts,

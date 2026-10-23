@@ -105,7 +105,7 @@ describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-
     let stdoutOutput = "";
     let stderrOutput = "";
 
-    const exitCode = await handleReferences(["RULE-25", "--by", "--governance-only"], {
+    const exitCode = await handleReferences(["ADR-1", "--by", "--governance-only"], {
       stdout: (msg) => {
         stdoutOutput += msg + "\n";
       },

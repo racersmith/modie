@@ -58,6 +58,11 @@ export interface WatermarkResolutionOptions {
   activeIds?: string[];
 
   /**
+   * Pre-provided active artifact IDs from other branches (used for isolated unit testing).
+   */
+  otherBranchActiveIds?: string[];
+
+  /**
    * Pre-provided deleted artifact IDs (used for isolated unit testing without git execution).
    */
   deletedIds?: string[];
@@ -70,6 +75,7 @@ export interface WatermarkDetails {
   subtype: IndexableSubtype;
   strategy: AllocationStrategy;
   activeIds: string[];
+  otherBranchActiveIds?: string[];
   deletedIds: string[];
   branch?: string;
   parentId?: string;

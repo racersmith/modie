@@ -3,7 +3,6 @@ links:
   - ADR-4
   - RULE-2
   - RULE-9
-  - RULE-24
 ---
 
 # Context
