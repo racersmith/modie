@@ -69,7 +69,7 @@ describe("Generic Declarative Artifact Pipeline (TASK-18, ADR-1, ADR-4, RULE-1, 
     expect(res.tag).toBe("SPEC-1");
     expect(res.filename).toBe("authentication-workflow.SPEC-1.md");
     expect(res.filepath).toBe(
-      join(tempDir, ".specs", "authentication-workflow.SPEC-1.md"),
+      join(tempDir, ".modie", "specs", "authentication-workflow.SPEC-1.md"),
     );
     expect(res.artifact.overview).toBe("Details the OAuth2 token grant ceremony.");
 

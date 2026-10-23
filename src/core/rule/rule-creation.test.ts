@@ -22,11 +22,22 @@ describe("Rule Creation - Scope & Directory Resolution (RULE-8)", () => {
       "/mock/root",
     );
     expect(normalizedScopeDir).toBe("/mock/root/src/interfaces");
-    expect(targetDir).toBe("/mock/root/src/interfaces/.rules");
+    expect(targetDir).toBe("/mock/root/src/interfaces/.modie/rules");
   });
 
   // @verifies RULE-8
-  it("[RULE-8] should strip .rules container when already present in input", () => {
+  it("[RULE-8] should strip .modie/rules container when already present in input", () => {
+    const { normalizedScopeDir, targetDir } = resolveRuleDirectories(
+      "src/interfaces/.modie/rules",
+      true,
+      "/mock/root",
+    );
+    expect(normalizedScopeDir).toBe("/mock/root/src/interfaces");
+    expect(targetDir).toBe("/mock/root/src/interfaces/.modie/rules");
+  });
+
+  // @verifies RULE-8
+  it("[RULE-8] should strip legacy .rules container when already present in input", () => {
     const { normalizedScopeDir, targetDir } = resolveRuleDirectories(
       "src/interfaces/.rules",
       true,
@@ -163,7 +174,7 @@ describe("Rule Creation - Execution & Disk Writing (RULE-1, RULE-3, RULE-8, RULE
     expect(result.id).toBe("1");
     expect(result.tag).toBe("RULE-1");
     expect(result.filename).toBe("first-invariant-rule.RULE-1.md");
-    expect(result.relativePath).toContain(".rules/first-invariant-rule.RULE-1.md");
+    expect(result.relativePath).toContain(".modie/rules/first-invariant-rule.RULE-1.md");
 
     const onDisk = await readFile(result.filepath, "utf8");
     expect(onDisk).toBe("All inputs must be strictly validated before parsing.\n");

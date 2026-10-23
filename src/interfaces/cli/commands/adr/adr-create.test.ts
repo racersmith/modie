@@ -50,7 +50,7 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
 
     expect(exitCode).toBe(0);
     // RULE-27: stdout strictly contains relative file path
-    expect(stdout.trim()).toBe(".adrs/architecture-decision-separation.ADR-1.md");
+    expect(stdout.trim()).toBe(".modie/adrs/architecture-decision-separation.ADR-1.md");
     // RULE-27: stderr strictly contains human status
     expect(stderr).toContain("✓ Created ADR ADR-1: architecture-decision-separation.ADR-1.md");
 
@@ -85,14 +85,14 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
     expect(parsed.tag).toBe("ADR-1");
     expect(parsed.slug).toBe("json-mode-adr");
     expect(parsed.filename).toBe("json-mode-adr.ADR-1.md");
-    expect(parsed.relativePath).toContain(".adrs/json-mode-adr.ADR-1.md");
+    expect(parsed.relativePath).toContain(".modie/adrs/json-mode-adr.ADR-1.md");
     expect(parsed.context).toBe("JSON payload must go to stdout.");
 
     await rm(tempDir, { recursive: true, force: true });
   });
 
   // @verifies RULE-8
-  it("[RULE-8] should support --flat flag to create file without .adrs directory", async () => {
+  it("[RULE-8] should support --flat flag to create file without .modie/adrs directory", async () => {
     const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-adr-flat-"));
     const { exitCode, stdout, stderr } = await captureCli(
       [
@@ -129,7 +129,7 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
     );
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe("src/subsystem/.adrs/scoped-subsystem-adr.ADR-1.md");
+    expect(stdout.trim()).toBe("src/subsystem/.modie/adrs/scoped-subsystem-adr.ADR-1.md");
     expect(stderr).toContain("✓ Created ADR ADR-1");
 
     const exists = await readFile(join(tempDir, stdout.trim()), "utf8");
@@ -299,7 +299,7 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
     );
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(".adrs/second-arch.ADR-2.md");
+    expect(stdout.trim()).toBe(".modie/adrs/second-arch.ADR-2.md");
     expect(stderr).toContain("✓ Created ADR ADR-2: second-arch.ADR-2.md (supersedes ADR-1)");
 
     const adr1Content = await readFile(adr1Path, "utf8");

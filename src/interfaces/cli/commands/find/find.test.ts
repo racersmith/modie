@@ -27,7 +27,7 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29)",
     const { exitCode, stdout, stderr } = await captureCli(["find", "RULE-1"]);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
-    expect(stdout.trim()).toBe("src/.rules/artifact-filename-structure.RULE-1.md");
+    expect(stdout.trim()).toBe("src/.modie/rules/artifact-filename-structure.RULE-1.md");
   });
 
   // @verifies RULE-25, RULE-27, RULE-29
@@ -58,7 +58,7 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29)",
     expect(parsed.id).toBe("1");
     expect(parsed.isArchived).toBe(false);
     expect(parsed.relativePath).toBe(
-      "src/.rules/artifact-filename-structure.RULE-1.md",
+      "src/.modie/rules/artifact-filename-structure.RULE-1.md",
     );
   });
 
@@ -126,6 +126,6 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29)",
       "RULE-1",
     ]);
     expect(stderr).toBe("");
-    expect(stdout.trim()).toBe("src/.rules/artifact-filename-structure.RULE-1.md");
+    expect(stdout.trim()).toBe("src/.modie/rules/artifact-filename-structure.RULE-1.md");
   });
 });

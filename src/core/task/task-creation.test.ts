@@ -15,10 +15,10 @@ import {
 
 describe("Task Creation Service - Scope Directory & Subtype Placement", () => {
   // @verifies RULE-8
-  it("[RULE-8] should resolve default placement inside .tasks container", () => {
+  it("[RULE-8] should resolve default placement inside .modie/tasks container", () => {
     const { normalizedScopeDir, targetDir } = resolveTaskDirectories("/app/src/core", true);
     expect(normalizedScopeDir).toBe("/app/src/core");
-    expect(targetDir).toBe("/app/src/core/.tasks");
+    expect(targetDir).toBe("/app/src/core/.modie/tasks");
   });
 
   // @verifies RULE-8
@@ -29,7 +29,14 @@ describe("Task Creation Service - Scope Directory & Subtype Placement", () => {
   });
 
   // @verifies RULE-8
-  it("[RULE-8] should normalize scope to parent when .tasks directory is explicitly passed", () => {
+  it("[RULE-8] should normalize scope to parent when .modie/tasks directory is explicitly passed", () => {
+    const { normalizedScopeDir, targetDir } = resolveTaskDirectories("/app/src/core/.modie/tasks", true);
+    expect(normalizedScopeDir).toBe("/app/src/core");
+    expect(targetDir).toBe("/app/src/core/.modie/tasks");
+  });
+
+  // @verifies RULE-8
+  it("[RULE-8] should normalize scope to parent when legacy .tasks directory is explicitly passed", () => {
     const { normalizedScopeDir, targetDir } = resolveTaskDirectories("/app/src/core/.tasks", true);
     expect(normalizedScopeDir).toBe("/app/src/core");
     expect(targetDir).toBe("/app/src/core/.tasks");
@@ -126,7 +133,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API", () =
       expect(typeof result.artifact.id).toBe("string");
       expect(Number(result.artifact.id)).toBeGreaterThanOrEqual(7);
       expect(result.filename).toBe(`task-service-integration-verification.TASK-${result.artifact.id}.md`);
-      expect(result.relativePath).toContain(".tasks");
+      expect(result.relativePath).toContain(".modie/tasks");
 
       // Verify file was written to disk and can be read
       const fileContents = await readFile(result.filepath, "utf8");

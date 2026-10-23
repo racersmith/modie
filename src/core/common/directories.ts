@@ -1,16 +1,32 @@
 /**
  * Subtype container and directory resolution utilities.
- * Complies with RULE-6, RULE-8, and RULE-12.
+ * Complies with RULE-6, RULE-8, RULE-12, and ADR-10.
  */
 
 import { basename, dirname, join, normalize, resolve } from "node:path";
 import type { IndexableSubtype } from "./types.ts";
 
 /**
- * Returns the standard dot-prefixed container directory name for an indexable subtype (RULE-8).
+ * Returns the standard container subdirectory name for an indexable subtype (RULE-8, ADR-10).
  * Convention: lowercase plural of subtype.
  */
 export function getSubtypeContainerName(subtype: IndexableSubtype): string {
+  switch (subtype.toUpperCase()) {
+    case "RULE":
+      return "rules";
+    case "ADR":
+      return "adrs";
+    case "TASK":
+      return "tasks";
+    default:
+      return `${subtype.toLowerCase()}s`;
+  }
+}
+
+/**
+ * Returns the legacy dot-prefixed container directory name for an indexable subtype (ADR-3).
+ */
+export function getLegacySubtypeContainerName(subtype: IndexableSubtype): string {
   switch (subtype.toUpperCase()) {
     case "RULE":
       return ".rules";
@@ -57,12 +73,17 @@ export function findDeepestCommonAncestor(
 }
 
 /**
- * Resolves normalized scope directory and target directory for an indexable artifact per RULE-8.
+ * Resolves normalized scope directory and target directory for an indexable artifact per RULE-8 and ADR-10.
  *
- * Normalizes architectural scope by stripping any recognized subtype container segment:
- * - `<dir>/.rules/` -> Scope: `<dir>`, Target: `<dir>/.rules`
- * - `<dir>/.adrs/`  -> Scope: `<dir>`, Target: `<dir>/.adrs`
- * - `<dir>/.tasks/` -> Scope: `<dir>`, Target: `<dir>/.tasks`
+ * Normalizes architectural scope by stripping recognized container segments:
+ * - `<dir>/.modie/rules/` -> Scope: `<dir>`, Target: `<dir>/.modie/rules`
+ * - `<dir>/.modie/adrs/`  -> Scope: `<dir>`, Target: `<dir>/.modie/adrs`
+ * - `<dir>/.modie/tasks/` -> Scope: `<dir>`, Target: `<dir>/.modie/tasks`
+ * - `<dir>/.modie/`       -> Scope: `<dir>`, Target: `<dir>/.modie/<subtype>`
+ * - `<dir>/.rules/`       -> Scope: `<dir>`, Target: `<dir>/.rules` (legacy ADR-3)
+ * - `<dir>/.adrs/`        -> Scope: `<dir>`, Target: `<dir>/.adrs` (legacy ADR-3)
+ * - `<dir>/.tasks/`       -> Scope: `<dir>`, Target: `<dir>/.tasks` (legacy ADR-3)
+ * - `<dir>/`              -> Scope: `<dir>`, Target: `<dir>/.modie/<subtype>` (default)
  *
  * @param subtype Subtype of the artifact (RULE, ADR, TASK).
  * @param scopeDirInput Explicit directory passed by user or caller.
@@ -79,17 +100,45 @@ export function resolveArtifactDirectories(
   const normalized = normalize(resolvedPath);
 
   const containerName = getSubtypeContainerName(subtype);
+  const legacyContainerName = getLegacySubtypeContainerName(subtype);
   const base = basename(normalized);
+  const parent = dirname(normalized);
+  const parentBase = basename(parent);
 
-  if (base === containerName) {
+  // 1. Path is `<dir>/.modie/<subtype-dir>`
+  if (parentBase === ".modie") {
+    const scopeDir = dirname(parent);
     return {
-      normalizedScopeDir: dirname(normalized),
+      normalizedScopeDir: scopeDir,
+      targetDir: base === containerName ? normalized : join(parent, containerName),
+    };
+  }
+
+  // 2. Path is `<dir>/.modie`
+  if (base === ".modie") {
+    const scopeDir = parent;
+    return {
+      normalizedScopeDir: scopeDir,
+      targetDir: join(normalized, containerName),
+    };
+  }
+
+  // 3. Path is legacy dot-container `<dir>/.<subtype>s` (ADR-3)
+  if (
+    base === legacyContainerName ||
+    base === ".rules" ||
+    base === ".adrs" ||
+    base === ".tasks"
+  ) {
+    return {
+      normalizedScopeDir: parent,
       targetDir: normalized,
     };
   }
 
+  // 4. Standard directory `<dir>`: place in `.modie/<subtype>` unless flat requested
   const targetDir = useSubtypeContainer
-    ? join(normalized, containerName)
+    ? join(normalized, ".modie", containerName)
     : normalized;
 
   return {
