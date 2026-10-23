@@ -30,9 +30,13 @@ export * as PipelinePrimitive from "./pipeline/index.ts";
 export * from "./pipeline/types.ts";
 export {
   createArtifact,
+  updateSupersededArtifactFrontmatter,
   ruleDefinition,
   adrDefinition,
   taskDefinition,
+} from "./pipeline/index.ts";
+export type {
+  UpdateSupersededFrontmatterOptions,
 } from "./pipeline/index.ts";
 
 // Task domain module

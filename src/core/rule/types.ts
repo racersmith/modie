@@ -30,6 +30,16 @@ export interface RuleArtifact {
   assertion: string;
 
   /**
+   * Target RULE tag(s) superseded by this rule.
+   */
+  supersedes?: string[];
+
+  /**
+   * Target RULE tag(s) that supersede this rule.
+   */
+  superseded_by?: string[];
+
+  /**
    * Absolute path to the rule file on disk.
    */
   filePath: string;
@@ -60,6 +70,16 @@ export interface RuleRenderOptions {
    * ADR links to include in frontmatter (RULE-13).
    */
   links?: string[];
+
+  /**
+   * Target RULE tag(s) superseded by this rule.
+   */
+  supersedes?: string[];
+
+  /**
+   * Target RULE tag(s) that supersede this rule.
+   */
+  superseded_by?: string[];
 
   /**
    * Invariant assertion claim text (RULE-3, RULE-11).
@@ -97,6 +117,11 @@ export interface CreateRuleOptions {
   links?: string[];
 
   /**
+   * Target RULE tag(s) superseded by this rule.
+   */
+  supersedes?: string | string[];
+
+  /**
    * Whether to place in a `.rules/` subtype container directory (RULE-8).
    * Defaults to true. If false (e.g. --flat), placed flat in target directory.
    */
@@ -116,4 +141,5 @@ export interface CreateRuleResult {
   markdown: string;
   id: string;
   tag: string;
+  supersedes?: string[];
 }

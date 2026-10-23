@@ -31,6 +31,13 @@ export const ruleCreateSchema = z.object({
     .optional()
     .default([])
     .describe("ADR link targets (repeat flag or use comma-separated list)"),
+  supersedes: z
+    .array(z.string())
+    .optional()
+    .default([])
+    .describe(
+      "Target RULE tag(s) superseded by this rule (repeat flag or use comma-separated list)",
+    ),
   flat: z
     .boolean()
     .default(false)
@@ -45,6 +52,7 @@ export interface RuleCreateFlags {
   assertion?: string;
   link?: string[];
   links?: string[];
+  supersedes?: string[];
   flat?: boolean;
 }
 
@@ -57,6 +65,7 @@ export interface RuleCreateResultPayload {
   relativePath: string;
   title: string;
   links: string[];
+  supersedes?: string[];
   assertion?: string;
 }
 
@@ -109,6 +118,15 @@ export const ruleCreateCommand: CliCommandDefinition<
       aliases: ["links"],
       property: "links",
     },
+    supersedes: {
+      type: "string",
+      short: "S",
+      multiple: true,
+      placeholder: "<targets>",
+      description:
+        "Target RULE tag(s) superseded by this rule (repeat flag or use comma-separated list)",
+      property: "supersedes",
+    },
     flat: {
       type: "boolean",
       description: "Create flat rule file without .rules container",
@@ -120,6 +138,7 @@ export const ruleCreateCommand: CliCommandDefinition<
       scopeDir: input.scope,
       context: input.context,
       links: input.links.length > 0 ? input.links : undefined,
+      supersedes: input.supersedes.length > 0 ? input.supersedes : undefined,
       useSubtypeContainer: !input.flat,
       cwd: context.cwd,
     };
@@ -135,16 +154,25 @@ export const ruleCreateCommand: CliCommandDefinition<
       relativePath: result.relativePath,
       title: result.artifact.title,
       links: result.artifact.links,
+      supersedes: result.artifact.supersedes,
       assertion: result.artifact.assertion,
     };
   },
   render: (result, context) => {
+    const supersedesNotice =
+      result.supersedes && result.supersedes.length > 0
+        ? ` (supersedes ${result.supersedes.join(", ")})`
+        : "";
     context.stdout(result.relativePath);
-    context.stderr(`✓ Created rule ${result.tag}: ${result.filename}`);
+    context.stderr(`✓ Created rule ${result.tag}: ${result.filename}${supersedesNotice}`);
   },
   renderJson: (result, context) => {
+    const supersedesNotice =
+      result.supersedes && result.supersedes.length > 0
+        ? ` (supersedes ${result.supersedes.join(", ")})`
+        : "";
     context.stdout(JSON.stringify(result, null, 2));
-    context.stderr(`✓ Created rule ${result.tag} (${result.relativePath})`);
+    context.stderr(`✓ Created rule ${result.tag} (${result.relativePath})${supersedesNotice}`);
   },
 });
 

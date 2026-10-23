@@ -28,6 +28,11 @@ export interface BaseCreateArtifactOptions {
    * Workspace root directory. Defaults to process.cwd().
    */
   cwd?: string;
+
+  /**
+   * Optional target artifact tag(s) superseded by this artifact.
+   */
+  supersedes?: string | string[];
 }
 
 export interface ArtifactValidationContext<TOptions = unknown> {
