@@ -129,6 +129,27 @@ export {
   resolveAdrDirectories,
   validateAdrScope,
 } from "./adr/creation.ts";
+export {
+  archiveAdr,
+} from "./adr/archive.ts";
+export type {
+  ArchiveAdrOptions,
+} from "./adr/archive.ts";
+
+// Archival domain module (RULE-31)
+export * as ArchivalPrimitive from "./archival/index.ts";
+export * from "./archival/types.ts";
+export {
+  archiveArtifact,
+} from "./archival/archive.ts";
+
+// Rule domain archive export
+export {
+  archiveRule,
+} from "./rule/archive.ts";
+export type {
+  ArchiveRuleOptions,
+} from "./rule/archive.ts";
 
 // Resolver & scan domain module
 export * as Resolver from "./resolver/index.ts";

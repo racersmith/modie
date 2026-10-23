@@ -48,6 +48,20 @@ export function renderAdrMarkdown(options: AdrRenderOptions): string {
     frontmatterLines.push("links: []");
   }
 
+  if (options.supersedes && options.supersedes.length > 0) {
+    frontmatterLines.push("supersedes:");
+    for (const sup of options.supersedes) {
+      frontmatterLines.push(`  - ${sup}`);
+    }
+  }
+
+  if (options.superseded_by && options.superseded_by.length > 0) {
+    frontmatterLines.push("superseded_by:");
+    for (const sup of options.superseded_by) {
+      frontmatterLines.push(`  - ${sup}`);
+    }
+  }
+
   frontmatterLines.push("---");
 
   const contextContent =

@@ -41,6 +41,13 @@ export const adrCreateSchema = z.object({
     .optional()
     .default([])
     .describe("ADR and RULE link targets (repeat flag or use comma-separated list)"),
+  supersedes: z
+    .array(z.string())
+    .optional()
+    .default([])
+    .describe(
+      "Target ADR tag(s) superseded by this decision (repeat flag or use comma-separated list)",
+    ),
   flat: z
     .boolean()
     .default(false)
@@ -56,6 +63,7 @@ export interface AdrCreateFlags {
   decision?: string;
   link?: string[];
   links?: string[];
+  supersedes?: string[];
   flat?: boolean;
 }
 
@@ -68,6 +76,7 @@ export interface AdrCreateResultPayload {
   relativePath: string;
   title: string;
   links: string[];
+  supersedes?: string[];
   context?: string;
   alternatives?: string;
   decision?: string;
@@ -134,6 +143,15 @@ export const adrCreateCommand: CliCommandDefinition<
       aliases: ["links"],
       property: "links",
     },
+    supersedes: {
+      type: "string",
+      short: "S",
+      multiple: true,
+      placeholder: "<targets>",
+      description:
+        "Target ADR tag(s) superseded by this decision (repeat flag or use comma-separated list)",
+      property: "supersedes",
+    },
     flat: {
       type: "boolean",
       description: "Create flat ADR file without .adrs container",
@@ -147,6 +165,7 @@ export const adrCreateCommand: CliCommandDefinition<
       alternatives: input.alternatives,
       decision: input.decision,
       links: input.links.length > 0 ? input.links : undefined,
+      supersedes: input.supersedes.length > 0 ? input.supersedes : undefined,
       useSubtypeContainer: !input.flat,
       cwd: context.cwd,
     };
@@ -162,18 +181,27 @@ export const adrCreateCommand: CliCommandDefinition<
       relativePath: result.relativePath,
       title: result.artifact.title,
       links: result.artifact.links,
+      supersedes: result.artifact.supersedes,
       context: result.artifact.context,
       alternatives: result.artifact.alternatives,
       decision: result.artifact.decision,
     };
   },
   render: (result, context) => {
+    const supersedesNotice =
+      result.supersedes && result.supersedes.length > 0
+        ? ` (supersedes ${result.supersedes.join(", ")})`
+        : "";
     context.stdout(result.relativePath);
-    context.stderr(`✓ Created ADR ${result.tag}: ${result.filename}`);
+    context.stderr(`✓ Created ADR ${result.tag}: ${result.filename}${supersedesNotice}`);
   },
   renderJson: (result, context) => {
+    const supersedesNotice =
+      result.supersedes && result.supersedes.length > 0
+        ? ` (supersedes ${result.supersedes.join(", ")})`
+        : "";
     context.stdout(JSON.stringify(result, null, 2));
-    context.stderr(`✓ Created ADR ${result.tag} (${result.relativePath})`);
+    context.stderr(`✓ Created ADR ${result.tag} (${result.relativePath})${supersedesNotice}`);
   },
 });
 

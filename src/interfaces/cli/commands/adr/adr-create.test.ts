@@ -274,6 +274,43 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
     expect(stderr).toContain('Error: Unknown flag "--unknown-flag"');
   });
 
+  // @verifies RULE-4, RULE-25, RULE-27
+  it("[RULE-4][RULE-25][RULE-27] should support --supersedes flag and update predecessor frontmatter", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-adr-supersedes-"));
+    const adrsDir = join(tempDir, ".adrs");
+    await mkdir(adrsDir, { recursive: true });
+
+    const adr1Path = join(adrsDir, "first-arch.ADR-1.md");
+    await writeFile(
+      adr1Path,
+      "---\nlinks: []\n---\n# Context\nFirst.",
+      "utf8",
+    );
+
+    const { exitCode, stdout, stderr } = await captureCli(
+      [
+        "adr",
+        "create",
+        "Second Arch",
+        "--supersedes",
+        "ADR-1",
+      ],
+      tempDir,
+    );
+
+    expect(exitCode).toBe(0);
+    expect(stdout.trim()).toBe(".adrs/second-arch.ADR-2.md");
+    expect(stderr).toContain("✓ Created ADR ADR-2: second-arch.ADR-2.md (supersedes ADR-1)");
+
+    const adr1Content = await readFile(adr1Path, "utf8");
+    expect(adr1Content).toContain("superseded_by:\n  - ADR-2");
+
+    const adr2Content = await readFile(join(tempDir, stdout.trim()), "utf8");
+    expect(adr2Content).toContain("supersedes:\n  - ADR-1");
+
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
   // @verifies RULE-25, RULE-27
   it("[RULE-25][RULE-27] should execute adr create via bin.ts subprocess", async () => {
     const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-adr-subproc-"));
@@ -292,3 +329,4 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
     await rm(tempDir, { recursive: true, force: true });
   });
 });
+

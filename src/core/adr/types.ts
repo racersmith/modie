@@ -5,7 +5,8 @@
 
 export interface AdrFrontmatter {
   links?: string[];
-  superseded_by?: string;
+  supersedes?: string[];
+  superseded_by?: string[] | string;
 }
 
 export interface AdrArtifact {
@@ -28,6 +29,16 @@ export interface AdrArtifact {
    * Frontmatter links (ADR or RULE tags) per RULE-14 and RULE-17.
    */
   links: string[];
+
+  /**
+   * Target predecessor ADR tags superseded by this ADR.
+   */
+  supersedes?: string[];
+
+  /**
+   * Successor ADR tags superseding this ADR.
+   */
+  superseded_by?: string[];
 
   /**
    * Context / problem statement (ADR-4).
@@ -75,6 +86,16 @@ export interface AdrRenderOptions {
    * Frontmatter link targets (ADR or RULE) per RULE-14.
    */
   links?: string[];
+
+  /**
+   * Predecessor ADR tags superseded by this decision.
+   */
+  supersedes?: string[];
+
+  /**
+   * Successor ADR tags superseding this decision.
+   */
+  superseded_by?: string[];
 
   /**
    * Context / problem statement (ADR-4).
@@ -125,6 +146,12 @@ export interface CreateAdrOptions {
    * Any referenced `RULE` must reside in the ADR's directory or a descendant subtree per RULE-17.
    */
   links?: string[];
+
+  /**
+   * Target predecessor ADR tags superseded by this decision per RULE-4.
+   * Writes bidirectional frontmatter links to both this ADR and the superseded ADR on disk.
+   */
+  supersedes?: string | string[];
 
   /**
    * Whether to place in a `.adrs/` subtype container directory (RULE-8).

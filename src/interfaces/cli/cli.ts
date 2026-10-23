@@ -6,8 +6,8 @@
 import { handleFind } from "./commands/find/find.ts";
 import { handleShow } from "./commands/show/show.ts";
 import { handleReferences } from "./commands/references/references.ts";
-import { handleRuleCreate } from "./commands/rule/create.ts";
-import { handleAdrCreate } from "./commands/adr/create.ts";
+import { handleRuleCreate, handleRuleArchive } from "./commands/rule/index.ts";
+import { handleAdrCreate, handleAdrArchive } from "./commands/adr/index.ts";
 import {
   handleTaskCheck,
   handleTaskComplete,
@@ -42,7 +42,9 @@ Commands:
   show <tag> [options]         Display artifact details or content
   references <tag> [options]   Display citations and declared outbound links (alias: refs)
   rule create <title>          Create a new RULE artifact
+  rule archive <tag>           Archive a RULE artifact (RULE-31)
   adr create <title>           Create a new ADR artifact
+  adr archive <tag>            Archive an ADR artifact (RULE-31)
   task create <title>          Create a new TASK artifact with automatic watermark resolution
   task start <id>              Create and checkout a hierarchical task branch
   task check <id> --item <n>   Check or uncheck an acceptance criteria item
@@ -79,6 +81,7 @@ export function printRuleNamespaceHelp(stderr: (msg: string) => void): void {
 
 Subcommands:
   create <title>               Create a new RULE artifact
+  archive <tag> [options]      Archive a RULE artifact (RULE-31)
 `);
 }
 
@@ -87,6 +90,7 @@ export function printAdrNamespaceHelp(stderr: (msg: string) => void): void {
 
 Subcommands:
   create <title>               Create a new ADR artifact
+  archive <tag> [options]      Archive an ADR artifact (RULE-31)
 `);
 }
 
@@ -119,12 +123,14 @@ const namespaces: Record<string, CommandNamespace> = {
     help: printRuleNamespaceHelp,
     commands: {
       create: handleRuleCreate,
+      archive: handleRuleArchive,
     },
   },
   adr: {
     help: printAdrNamespaceHelp,
     commands: {
       create: handleAdrCreate,
+      archive: handleAdrArchive,
     },
   },
 };
