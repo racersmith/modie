@@ -65,4 +65,29 @@ describe("CLI Harness - Global Commands & Stream Separation (RULE-27)", () => {
     expect(stdout).toBe("");
     expect(stderr).toContain('Error: Unknown rule subcommand "bogus"');
   });
+
+  // @verifies RULE-25, RULE-27
+  it("[RULE-25][RULE-27] should route top-level backlog command to task list", async () => {
+    const { exitCode, stdout, stderr } = await captureCli(["backlog"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toBe("");
+    expect(stderr).toContain("Active Task Queue");
+  });
+
+  // @verifies RULE-25, RULE-27
+  it("[RULE-25][RULE-27] should route task backlog subcommand alias to task list", async () => {
+    const { exitCode, stdout, stderr } = await captureCli(["task", "backlog"]);
+    expect(exitCode).toBe(0);
+    expect(stdout).toBe("");
+    expect(stderr).toContain("Active Task Queue");
+  });
+
+  // @verifies RULE-25, RULE-27
+  it("[RULE-25][RULE-27] should emit machine JSON array when backlog --json is passed", async () => {
+    const { exitCode, stdout } = await captureCli(["backlog", "--json"]);
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout);
+    expect(Array.isArray(parsed)).toBe(true);
+  });
 });
+

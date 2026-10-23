@@ -15,8 +15,8 @@ Allow modie task complete, modie task merge, and modie task check to automatical
 
 # Acceptance Criteria
 
-- [ ] Support omitting task ID in task complete when on a task branch
-- [ ] Support omitting task ID in task merge when on a task branch
-- [ ] Support omitting task ID in task check when on a task branch
-- [ ] Support top-level backlog command and task backlog subcommand alias for active task listing
-- [ ] Add unit and integration tests verifying current branch inference and backlog aliases
+- [x] Support omitting task ID in task complete when on a task branch
+- [x] Support omitting task ID in task merge when on a task branch
+- [x] Support omitting task ID in task check when on a task branch
+- [x] Support top-level backlog command and task backlog subcommand alias for active task listing
+- [x] Add unit and integration tests verifying current branch inference and backlog aliases

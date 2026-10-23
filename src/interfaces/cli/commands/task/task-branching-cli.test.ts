@@ -216,4 +216,71 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     expect(stdout).toBe("");
     expect(stderr).toContain('Subtask branch "task/204-1-sub" cannot be merged directly into trunk branch "dev" per RULE-28');
   });
+
+  // @verifies RULE-21, RULE-22, RULE-25, RULE-27, RULE-28
+  it("[RULE-21][RULE-22][RULE-25][RULE-27][RULE-28] should infer task ID from current branch for check, complete, and merge", async () => {
+    // 1. Author and commit task on dev
+    const taskPath = join(gitDir, "branch-infer.TASK-205.md");
+    await writeFile(
+      taskPath,
+      "---\ndepends_on: []\nlinks: []\n---\n# Context\nTesting branch inference.\n# Acceptance Criteria\n- [ ] First deliverable\n- [ ] Second deliverable\n",
+      "utf8",
+    );
+    await execFileAsync("git", ["add", "branch-infer.TASK-205.md"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "docs: task 205"], { cwd: gitDir });
+
+    // 2. Start task branch (checks out task/205-branch-infer)
+    const startRes = await captureCli(["task", "start", "TASK-205"], gitDir);
+    expect(startRes.exitCode).toBe(0);
+
+    // 3. Check item 1 omitting task ID
+    const checkRes1 = await captureCli(["task", "check", "--item", "1"], gitDir);
+    expect(checkRes1.exitCode).toBe(0);
+    expect(checkRes1.stderr).toContain("Checked item 1 on TASK-205");
+
+    // 4. Check item 2 omitting task ID
+    const checkRes2 = await captureCli(["task", "check", "--item", "2"], gitDir);
+    expect(checkRes2.exitCode).toBe(0);
+    expect(checkRes2.stderr).toContain("Checked item 2 on TASK-205");
+    expect(checkRes2.stderr).toContain("All acceptance criteria for TASK-205 are satisfied");
+
+    // Make an implementation commit on the task branch so working tree is clean
+    await writeFile(join(gitDir, "feature.ts"), "export const feat = true;\n", "utf8");
+    await execFileAsync("git", ["add", "feature.ts"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "feat: implement feature"], { cwd: gitDir });
+
+    // 5. Complete task omitting task ID
+    const completeRes = await captureCli(["task", "complete"], gitDir);
+    expect(completeRes.exitCode).toBe(0);
+    expect(completeRes.stderr).toContain("✓ Completed task TASK-205");
+
+    // 6. Merge task omitting task ID
+    const mergeRes = await captureCli(["task", "merge"], gitDir);
+    expect(mergeRes.exitCode).toBe(0);
+    expect(mergeRes.stdout.trim()).toBe("dev");
+    expect(mergeRes.stderr).toContain('✓ Merged task branch "task/205-branch-infer" into "dev"');
+
+    // Verify checked-out branch is now dev and source branch was deleted
+    const { stdout: currentBranch } = await execFileAsync("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd: gitDir });
+    expect(currentBranch.trim()).toBe("dev");
+    const { stdout: bList } = await execFileAsync("git", ["branch", "--list", "task/205-branch-infer"], { cwd: gitDir });
+    expect(bList.trim()).toBe("");
+  });
+
+  // @verifies RULE-27, RULE-28
+  it("[RULE-27][RULE-28] should report clear error when omitting task ID on non-task branch", async () => {
+    // Current branch is dev (not a task branch)
+    const checkRes = await captureCli(["task", "check", "--item", "1"], gitDir);
+    expect(checkRes.exitCode).toBe(1);
+    expect(checkRes.stderr).toContain("Error: Missing required task identifier and current git branch");
+
+    const completeRes = await captureCli(["task", "complete"], gitDir);
+    expect(completeRes.exitCode).toBe(1);
+    expect(completeRes.stderr).toContain("Error: Missing required task identifier and current git branch");
+
+    const mergeRes = await captureCli(["task", "merge"], gitDir);
+    expect(mergeRes.exitCode).toBe(1);
+    expect(mergeRes.stderr).toContain("Error: Missing required task identifier and current git branch");
+  });
 });
+

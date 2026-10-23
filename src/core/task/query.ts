@@ -8,9 +8,12 @@ import { relative } from "node:path";
 import { detectGitBranch } from "../resolver/git-inspector.ts";
 import { scanActiveTasks } from "../resolver/active-scanner.ts";
 import type { DiscoveredTask } from "../resolver/types.ts";
+import { parseTaskIdFromBranch } from "../common/index.ts";
 import { normalizeTaskId, resolveTaskFile } from "./completion.ts";
 import { parseTaskMarkdown } from "./parser.ts";
 import type { TaskAcceptanceCriteriaItem } from "./types.ts";
+
+export { parseTaskIdFromBranch };
 
 export type TaskReadiness = "READY" | "BLOCKED";
 
@@ -248,23 +251,6 @@ export async function queryTaskQueue(
   });
 }
 
-/**
- * Parses the canonical task ID from a git branch name per RULE-28.
- * Supports standard task branches (`task/22-slug`, `task/TASK-22-slug`),
- * subtask branches (`task/106-1-subtask-slug`), and prefixed tasks (`task/J101-slug`).
- * Returns null if the branch is not a task branch.
- */
-export function parseTaskIdFromBranch(branchName?: string | null): string | null {
-  if (!branchName) {
-    return null;
-  }
-  const trimmed = branchName.trim();
-  const match = trimmed.match(/^task\/(?:TASK-)?([A-Za-z0-9]+(?:-[0-9]+)?)(?:-.*)?$/i);
-  if (!match || !match[1]) {
-    return null;
-  }
-  return match[1];
-}
 
 /**
  * Resolves the active task for the currently checked-out git branch.

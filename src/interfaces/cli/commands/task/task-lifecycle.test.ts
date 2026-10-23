@@ -147,15 +147,15 @@ Uncheck test.
 
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr when task identifier is missing", async () => {
-    const { exitCode, stdout, stderr } = await captureCli([
-      "task",
-      "check",
-      "--item",
-      "1",
-    ]);
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-check-no-id-"));
+    const { exitCode, stdout, stderr } = await captureCli(
+      ["task", "check", "--item", "1"],
+      tempDir,
+    );
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("Error: Missing required task identifier");
+    await rm(tempDir, { recursive: true, force: true });
   });
 });
 

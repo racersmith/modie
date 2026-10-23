@@ -5,10 +5,11 @@
 
 import { readFile, rm, stat, writeFile } from "node:fs/promises";
 import { basename, isAbsolute, relative, resolve } from "node:path";
-import { parseArtifactFilename } from "../common/index.ts";
+import { parseArtifactFilename, parseTaskIdFromBranch } from "../common/index.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
 import { scanActiveArtifacts, scanActiveTasks } from "../resolver/active-scanner.ts";
 import {
+  detectGitBranch,
   inspectGitDeletedTaskIds,
   runGit,
   runGitCommand,
@@ -147,15 +148,24 @@ export async function assertNotZombieTask(
  * Throws a descriptive Error if the task file cannot be resolved.
  */
 export async function resolveTaskFile(
-  taskIdentifier: string,
+  taskIdentifier?: string,
   options: ResolveTaskOptions = {},
 ): Promise<string> {
   const cwd = options.cwd ?? process.cwd();
-  const trimmed = taskIdentifier.trim();
+  let trimmed = taskIdentifier?.trim();
 
   if (!trimmed) {
-    throw new Error("Task identifier must not be empty.");
+    const branch = await detectGitBranch(cwd);
+    const inferredId = parseTaskIdFromBranch(branch);
+    if (!inferredId) {
+      const branchDisplay = branch ? ` "${branch}"` : "";
+      throw new Error(
+        `No task identifier provided and current git branch${branchDisplay} is not a task branch (expected "task/<id>-<slug>").`,
+      );
+    }
+    trimmed = inferredId;
   }
+
 
   // 1. Direct path check (relative or absolute)
   const candidatePath = isAbsolute(trimmed) ? trimmed : resolve(cwd, trimmed);
@@ -240,7 +250,7 @@ export async function resolveTaskFile(
  * Loads and parses an active task document by ID, slug, or file path.
  */
 export async function getTask(
-  taskIdentifier: string,
+  taskIdentifier?: string,
   options: ResolveTaskOptions = {},
 ): Promise<TaskArtifact> {
   const filepath = await resolveTaskFile(taskIdentifier, options);
@@ -252,12 +262,12 @@ export async function getTask(
  * Checks or unchecks an acceptance criteria item in a TASK markdown artifact.
  * Follows RULE-22 and preserves all surrounding markdown formatting and frontmatter.
  *
- * @param taskIdentifier Task ID (e.g. "TASK-7-1", "7-1"), slug, or filepath.
+ * @param taskIdentifier Task ID (e.g. "TASK-7-1", "7-1"), slug, or filepath (optional when on a task branch).
  * @param itemIndex 1-based index of the acceptance criteria item (e.g. 1 for first item).
  * @param options Options including desired completed state (default: true).
  */
 export async function checkTaskItem(
-  taskIdentifier: string,
+  taskIdentifier: string | undefined,
   itemIndex: number,
   options: CheckTaskItemOptions = {},
 ): Promise<CheckTaskItemResult> {
@@ -428,7 +438,7 @@ export async function assertPlannedGovernanceSatisfied(
  * @param options Options controlling force completion, artifact deletion, and Git commits.
  */
 export async function completeTask(
-  taskIdentifier: string,
+  taskIdentifier?: string,
   options: CompleteTaskOptions = {},
 ): Promise<CompleteTaskResult> {
   const cwd = options.cwd ?? process.cwd();

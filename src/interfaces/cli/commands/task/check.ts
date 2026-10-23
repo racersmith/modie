@@ -4,7 +4,12 @@
  */
 
 import { z } from "zod";
-import { checkTaskItem, type CheckTaskItemResult } from "../../../../core/index.ts";
+import {
+  checkTaskItem,
+  detectGitBranch,
+  parseTaskIdFromBranch,
+  type CheckTaskItemResult,
+} from "../../../../core/index.ts";
 import {
   createCommandHandler,
   defineCommand,
@@ -16,8 +21,8 @@ import type { CliIoOptions } from "../../types.ts";
 export const taskCheckSchema = z.object({
   id: z
     .string()
-    .min(1, "Task identifier is required")
-    .describe("Task ID (e.g. TASK-7-1, 7-1), slug, or file path"),
+    .optional()
+    .describe("Task ID (e.g. TASK-7-1, 7-1), slug, or file path (optional when on a task branch)"),
   item: z.preprocess(
     (val) => {
       if (val === undefined || val === null || val === "") return undefined;
@@ -55,7 +60,7 @@ export const taskCheckCommand: CliCommandDefinition<
 > = defineCommand({
   id: "task_check",
   name: "check",
-  usage: "modie task check <id-or-path> [options]",
+  usage: "modie task check [id-or-path] --item <index> [options]",
   description: "Check or uncheck an acceptance criteria item",
   agentGuidance:
     "Call this tool to mark an acceptance criteria item as completed (or incomplete). All checklist items must be satisfied before completing a task.",
@@ -65,10 +70,8 @@ export const taskCheckCommand: CliCommandDefinition<
     {
       name: "id-or-path",
       property: "id",
-      description: "Task ID (e.g. TASK-7-1, 7-1), slug, or file path",
-      required: true,
-      missingError:
-        "Error: Missing required task identifier. Usage: modie task check <id-or-path> --item <index>",
+      description: "Task ID (e.g. TASK-7-1, 7-1), slug, or file path (optional when on a task branch)",
+      required: false,
     },
   ],
   flags: {
@@ -86,6 +89,18 @@ export const taskCheckCommand: CliCommandDefinition<
     },
   },
   execute: async (input, context) => {
+    const idToCheck = input.id?.trim();
+    if (!idToCheck) {
+      const branch = await detectGitBranch(context.cwd);
+      const inferredId = parseTaskIdFromBranch(branch);
+      if (!inferredId) {
+        const branchDisplay = branch ? ` "${branch}"` : "";
+        throw new Error(
+          `Error: Missing required task identifier and current git branch${branchDisplay} is not a task branch (expected "task/<id>-<slug>"). Usage: modie task check [id-or-path] --item <index>`,
+        );
+      }
+    }
+
     return checkTaskItem(input.id, input.item, {
       completed: !input.uncheck,
       cwd: context.cwd,

@@ -54,6 +54,7 @@ Commands:
   task merge <id>              Merge completed task branch back into parent or trunk
   task list [options]          List active tasks with DAG readiness and progress
   task status [id]             Inspect active queue or specific task status
+  backlog [options]            List active tasks with DAG readiness and progress (alias: task list)
   mcp                          Launch Model Context Protocol server over standard I/O
   help                         Show help for a command
   version                      Show Modie version
@@ -73,7 +74,7 @@ Subcommands:
   check <id> --item <n>        Check or uncheck an acceptance criteria item
   complete <id>                Verify criteria and delete completed task (alias: finish)
   merge <id> [options]         Merge completed task branch back into parent or trunk
-  list [options]               List active tasks with DAG readiness and progress
+  list [options]               List active tasks with DAG readiness and progress (alias: ls, backlog)
   status [id] [options]        Inspect active queue or specific task status
 `);
 }
@@ -102,6 +103,7 @@ const directCommands: Record<string, CommandHandler> = {
   references: handleReferences,
   refs: handleReferences,
   archive: handleArchive,
+  backlog: handleTaskList,
   mcp: handleMcp,
 };
 
@@ -120,6 +122,7 @@ const namespaces: Record<string, CommandNamespace> = {
     aliases: {
       ls: "list",
       finish: "complete",
+      backlog: "list",
     },
   },
   rule: {

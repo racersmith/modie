@@ -6,7 +6,9 @@
 
 import { z } from "zod";
 import {
+  detectGitBranch,
   mergeTaskBranch,
+  parseTaskIdFromBranch,
   type MergeTaskBranchResult,
 } from "../../../../core/index.ts";
 import {
@@ -20,8 +22,8 @@ import type { CliIoOptions } from "../../types.ts";
 export const taskMergeSchema = z.object({
   id: z
     .string()
-    .min(1, "Task identifier is required")
-    .describe("Task ID (e.g. TASK-11, 11-1), slug, or file path"),
+    .optional()
+    .describe("Task ID (e.g. TASK-11, 11-1), slug, or file path (optional when on a task branch)"),
   target: z
     .string()
     .optional()
@@ -61,7 +63,7 @@ export const taskMergeCommand: CliCommandDefinition<
 > = defineCommand({
   id: "task_merge",
   name: "merge",
-  usage: "modie task merge <id-or-path> [options]",
+  usage: "modie task merge [id-or-path] [options]",
   description: "Merge completed task branch back into parent or trunk",
   agentGuidance:
     "Call this tool to merge a completed task branch back into its parent branch or trunk according to hierarchical task branch topology.",
@@ -71,10 +73,8 @@ export const taskMergeCommand: CliCommandDefinition<
     {
       name: "id-or-path",
       property: "id",
-      description: "Task ID (e.g. TASK-11, 11-1), slug, or file path",
-      required: true,
-      missingError:
-        "Error: Missing required task identifier. Usage: modie task merge <id-or-path> [options]",
+      description: "Task ID (e.g. TASK-11, 11-1), slug, or file path (optional when on a task branch)",
+      required: false,
     },
   ],
   flags: {
@@ -99,6 +99,18 @@ export const taskMergeCommand: CliCommandDefinition<
     },
   },
   execute: async (input, context) => {
+    const idToMerge = input.id?.trim();
+    if (!idToMerge) {
+      const branch = await detectGitBranch(context.cwd);
+      const inferredId = parseTaskIdFromBranch(branch);
+      if (!inferredId) {
+        const branchDisplay = branch ? ` "${branch}"` : "";
+        throw new Error(
+          `Error: Missing required task identifier and current git branch${branchDisplay} is not a task branch (expected "task/<id>-<slug>"). Usage: modie task merge [id-or-path] [options]`,
+        );
+      }
+    }
+
     return mergeTaskBranch(input.id, {
       target: input.target,
       keepBranch: input.keepBranch,
