@@ -10,8 +10,18 @@ import {
   referencesCommandDefinition,
   handleReferences,
 } from "./references/index.ts";
-import { ruleCreateCommand, handleRuleCreate } from "./rule/index.ts";
-import { adrCreateCommand, handleAdrCreate } from "./adr/index.ts";
+import {
+  ruleCreateCommand,
+  handleRuleCreate,
+  ruleArchiveCommand,
+  handleRuleArchive,
+} from "./rule/index.ts";
+import {
+  adrCreateCommand,
+  handleAdrCreate,
+  adrArchiveCommand,
+  handleAdrArchive,
+} from "./adr/index.ts";
 import {
   taskCreateCommand,
   handleTaskCreate,
@@ -45,7 +55,9 @@ export const allCliCommands: CliCommandDefinition<any, any, any>[] = [
   showCommand,
   referencesCommandDefinition,
   ruleCreateCommand,
+  ruleArchiveCommand,
   adrCreateCommand,
+  adrArchiveCommand,
   taskCreateCommand,
   taskListCommand,
   taskStatusCommand,
@@ -54,3 +66,4 @@ export const allCliCommands: CliCommandDefinition<any, any, any>[] = [
   taskCompleteCommand,
   taskMergeCommand,
 ];
+

@@ -75,7 +75,9 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     expect(toolNames).toContain("show");
     expect(toolNames).toContain("references");
     expect(toolNames).toContain("rule_create");
+    expect(toolNames).toContain("rule_archive");
     expect(toolNames).toContain("adr_create");
+    expect(toolNames).toContain("adr_archive");
     expect(toolNames).toContain("task_create");
     expect(toolNames).toContain("task_list");
     expect(toolNames).toContain("task_status");
@@ -84,7 +86,7 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     expect(toolNames).toContain("task_complete");
     expect(toolNames).toContain("task_merge");
 
-    expect(toolNames.length).toBe(12);
+    expect(toolNames.length).toBe(14);
 
     // Verify tool metadata and input schemas
     const checkTool = response.tools.find((t) => t.name === "task_check");

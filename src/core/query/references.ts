@@ -213,25 +213,53 @@ export async function findArtifactReferences(
     }
   }
 
-  // Parse supersedes / superseded_by from raw content if present
-  const supersedesMatch = details.rawContent.match(/^supersedes:\s*([^\n]+)/m);
-  if (supersedesMatch && supersedesMatch[1]) {
-    const rawVal = supersedesMatch[1].trim();
-    if (rawVal.startsWith("[") && rawVal.endsWith("]")) {
-      const items = rawVal
-        .slice(1, -1)
-        .split(",")
-        .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
-        .filter(Boolean);
-      supersedes.push(...items);
-    } else if (rawVal) {
-      supersedes.push(rawVal.replace(/^['"]|['"]$/g, ""));
+function parseFrontmatterList(content: string, fieldName: string): string[] {
+  const lines = content.split("\n");
+  const items: string[] = [];
+  let inField = false;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (line === "---" && inField) break;
+
+    if (line.startsWith(`${fieldName}:`)) {
+      inField = true;
+      const inline = line.slice(fieldName.length + 1).trim();
+      if (inline.startsWith("[") && inline.endsWith("]")) {
+        const parsed = inline
+          .slice(1, -1)
+          .split(",")
+          .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
+          .filter(Boolean);
+        items.push(...parsed);
+        inField = false;
+      } else if (inline.length > 0) {
+        items.push(inline.replace(/^['"]|['"]$/g, ""));
+        inField = false;
+      }
+      continue;
+    }
+
+    if (inField) {
+      if (line.startsWith("- ")) {
+        const val = line.slice(2).trim().replace(/^['"]|['"]$/g, "");
+        if (val) items.push(val);
+      } else if (/^[a-zA-Z0-9_-]+:/.test(line)) {
+        inField = false;
+      }
     }
   }
 
-  const supersededByMatch = details.rawContent.match(/^superseded_by:\s*([^\n]+)/m);
-  if (supersededByMatch && supersededByMatch[1]) {
-    superseded_by = supersededByMatch[1].trim().replace(/^['"]|['"]$/g, "");
+  return items;
+}
+
+  // Parse supersedes / superseded_by from raw content if present
+  const supersedesItems = parseFrontmatterList(details.rawContent, "supersedes");
+  supersedes.push(...supersedesItems);
+
+  const supersededByItems = parseFrontmatterList(details.rawContent, "superseded_by");
+  if (supersededByItems.length > 0) {
+    superseded_by = supersededByItems[0];
   }
 
   const linksTo: ArtifactLinksTo = {
@@ -316,6 +344,8 @@ export async function findArtifactReferences(
         if (parsedArtifact) {
           // This file is an indexable governance artifact (ADR, RULE, TASK, etc.)
           const { linkLines, frontmatterEndLine } = parseFrontmatterLineMap(lines);
+          const candidateSupersedes = parseFrontmatterList(content, "supersedes").map((s) => s.toUpperCase());
+          const isSupersedingSuccessor = candidateSupersedes.includes(targetTag);
 
           for (let i = 0; i < lines.length; i++) {
             const lineNum = i + 1;
@@ -327,7 +357,7 @@ export async function findArtifactReferences(
               if (lineNum <= frontmatterEndLine && linkLines.has(lineNum)) {
                 const relationship = linkLines.get(lineNum)!;
                 const isArchived = parsedArtifact.isArchived;
-                const isBlocking = !isArchived;
+                const isBlocking = !isArchived && relationship !== "supersedes" && !isSupersedingSuccessor;
 
                 governanceLinks.push({
                   type: "governance-link",

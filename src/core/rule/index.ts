@@ -5,3 +5,4 @@
 export * from "./types.ts";
 export * from "./template.ts";
 export * from "./creation.ts";
+export * from "./archive.ts";
