@@ -148,3 +148,22 @@ export function isArtifactFilename(
   if (subtype && parsed.subtype !== subtype.toUpperCase()) return false;
   return true;
 }
+
+/**
+ * Parses the canonical task ID from a git branch name per RULE-28.
+ * Supports standard task branches (`task/22-slug`, `task/TASK-22-slug`),
+ * subtask branches (`task/106-1-subtask-slug`), and prefixed tasks (`task/J101-slug`).
+ * Returns null if the branch is not a task branch.
+ */
+export function parseTaskIdFromBranch(branchName?: string | null): string | null {
+  if (!branchName) {
+    return null;
+  }
+  const trimmed = branchName.trim();
+  const match = trimmed.match(/^task\/(?:TASK-)?([A-Za-z0-9]+(?:-[0-9]+)?)(?:-.*)?$/i);
+  if (!match || !match[1]) {
+    return null;
+  }
+  return match[1];
+}
+

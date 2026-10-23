@@ -7,6 +7,8 @@
 import { z } from "zod";
 import {
   completeTask,
+  detectGitBranch,
+  parseTaskIdFromBranch,
   runGit,
   type CompleteTaskResult,
 } from "../../../../core/index.ts";
@@ -21,8 +23,8 @@ import type { CliIoOptions } from "../../types.ts";
 export const taskCompleteSchema = z.object({
   id: z
     .string()
-    .min(1, "Task identifier is required")
-    .describe("Task ID (e.g. TASK-7-1, 7-1), slug, or file path"),
+    .optional()
+    .describe("Task ID (e.g. TASK-7-1, 7-1), slug, or file path (optional when on a task branch)"),
   commit: z
     .boolean()
     .optional()
@@ -68,7 +70,7 @@ export const taskCompleteCommand: CliCommandDefinition<
 > = defineCommand({
   id: "task_complete",
   name: "complete",
-  usage: "modie task complete <id-or-path> [options] (alias: finish)",
+  usage: "modie task complete [id-or-path] [options] (alias: finish)",
   description:
     "Verify criteria and delete completed task artifact (alias: finish)",
   agentGuidance:
@@ -80,10 +82,8 @@ export const taskCompleteCommand: CliCommandDefinition<
     {
       name: "id-or-path",
       property: "id",
-      description: "Task ID (e.g. TASK-7-1, 7-1), slug, or file path",
-      required: true,
-      missingError:
-        "Error: Missing required task identifier. Usage: modie task complete <id-or-path> [options]",
+      description: "Task ID (e.g. TASK-7-1, 7-1), slug, or file path (optional when on a task branch)",
+      required: false,
     },
   ],
   flags: {
@@ -122,6 +122,18 @@ export const taskCompleteCommand: CliCommandDefinition<
         ? input.commit
         : isGitRepo;
     const deleteArtifact = !input.keepFile;
+
+    const idToComplete = input.id?.trim();
+    if (!idToComplete) {
+      const branch = await detectGitBranch(context.cwd);
+      const inferredId = parseTaskIdFromBranch(branch);
+      if (!inferredId) {
+        const branchDisplay = branch ? ` "${branch}"` : "";
+        throw new Error(
+          `Error: Missing required task identifier and current git branch${branchDisplay} is not a task branch (expected "task/<id>-<slug>"). Usage: modie task complete [id-or-path] [options]`,
+        );
+      }
+    }
 
     return completeTask(input.id, {
       force: input.force,

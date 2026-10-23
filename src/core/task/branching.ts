@@ -13,6 +13,7 @@ import {
   runGitCommand,
 } from "../resolver/git-inspector.ts";
 import type { DiscoveredArtifact, IndexableSubtype } from "../common/types.ts";
+import { parseTaskIdFromBranch } from "../common/index.ts";
 import { normalizeTaskId, resolveTaskFile } from "./completion.ts";
 import { parseTaskMarkdown } from "./parser.ts";
 import { scanActiveTasks } from "../resolver/active-scanner.ts";
@@ -419,11 +420,23 @@ export async function startTaskBranch(
  * per RULE-28, guarding against merging into protected branches.
  */
 export async function mergeTaskBranch(
-  taskIdentifier: string,
+  taskIdentifier?: string,
   options: MergeTaskBranchOptions = {},
 ): Promise<MergeTaskBranchResult> {
   const cwd = options.cwd ?? process.cwd();
-  const topology = await computeTaskBranchTopology(taskIdentifier, options);
+  let targetId = taskIdentifier?.trim();
+  if (!targetId) {
+    const currentBranch = await detectGitBranch(cwd);
+    const inferredId = parseTaskIdFromBranch(currentBranch);
+    if (!inferredId) {
+      const branchDisplay = currentBranch ? ` "${currentBranch}"` : "";
+      throw new Error(
+        `No task identifier provided and current git branch${branchDisplay} is not a task branch (expected "task/<id>-<slug>").`,
+      );
+    }
+    targetId = inferredId;
+  }
+  const topology = await computeTaskBranchTopology(targetId, options);
   const sourceBranch = topology.branchName;
 
   // 1. Verify source branch exists
