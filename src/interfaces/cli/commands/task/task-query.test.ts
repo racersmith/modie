@@ -260,4 +260,81 @@ links: []
 
     await rm(tempDir, { recursive: true, force: true });
   });
+
+  // @verifies ADR-6, RULE-25, RULE-27, RULE-28
+  it("[ADR-6][RULE-25][RULE-27][RULE-28] should resolve current task on task branch for bare task status and --current", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-status-branch-"));
+
+    // Initialize git repo in tempDir
+    await Bun.$`git init -b dev`.cwd(tempDir).quiet();
+    await Bun.$`git config user.email "test@example.com"`.cwd(tempDir).quiet();
+    await Bun.$`git config user.name "Tester"`.cwd(tempDir).quiet();
+    await writeFile(join(tempDir, "README.md"), "# Init", "utf8");
+    await Bun.$`git add . && git commit -m "init"`.cwd(tempDir).quiet();
+
+    // Create task file
+    const taskPath = join(tempDir, "active-feature.TASK-701.md");
+    await writeFile(
+      taskPath,
+      `---
+depends_on: []
+links: []
+---
+
+# Context
+Active feature context.
+
+# Acceptance Criteria
+- [x] First item
+- [ ] Second item
+`,
+      "utf8",
+    );
+    await Bun.$`git add . && git commit -m "add task"`.cwd(tempDir).quiet();
+
+    // 1. On non-task branch (dev): bare status returns queue table, --current throws
+    const nonTaskStatus = await captureCli(["task", "status", "--json"], tempDir);
+    expect(nonTaskStatus.exitCode).toBe(0);
+    const queue = JSON.parse(nonTaskStatus.stdout.trim());
+    expect(Array.isArray(queue)).toBe(true);
+    expect(queue.length).toBe(1);
+    expect(queue[0].isCurrent).toBe(false);
+
+    const nonTaskCurrent = await captureCli(["task", "status", "--current"], tempDir);
+    expect(nonTaskCurrent.exitCode).toBe(1);
+    expect(nonTaskCurrent.stderr).toContain("Not on a task branch");
+
+    // 2. Checkout task branch: task/701-active-feature
+    await Bun.$`git checkout -b task/701-active-feature`.cwd(tempDir).quiet();
+
+    // Bare `task status` should now automatically resolve TASK-701
+    const branchStatus = await captureCli(["task", "status"], tempDir);
+    expect(branchStatus.exitCode).toBe(0);
+    expect(branchStatus.stderr).toContain("TASK-701: active-feature");
+    expect(branchStatus.stderr).toContain("Progress:    1/2 criteria satisfied");
+    expect(branchStatus.stderr).toContain("1. [x] First item");
+    expect(branchStatus.stderr).toContain("2. [ ] Second item");
+
+    // `task status --current` should also return TASK-701
+    const currentStatus = await captureCli(["task", "status", "-c", "--json"], tempDir);
+    expect(currentStatus.exitCode).toBe(0);
+    const parsedCurrent = JSON.parse(currentStatus.stdout.trim());
+    expect(parsedCurrent.id).toBe("701");
+    expect(parsedCurrent.fullTaskId).toBe("TASK-701");
+    expect(parsedCurrent.isCurrent).toBe(true);
+
+    // `task list` should display CURRENT in STATUS column
+    const listResult = await captureCli(["task", "list"], tempDir);
+    expect(listResult.exitCode).toBe(0);
+    expect(listResult.stderr).toContain("CURRENT");
+    expect(listResult.stderr).toContain("TASK-701");
+
+    // `task list --json` should have isCurrent: true
+    const listJson = await captureCli(["task", "list", "--json"], tempDir);
+    expect(listJson.exitCode).toBe(0);
+    const listItems = JSON.parse(listJson.stdout.trim());
+    expect(listItems[0].isCurrent).toBe(true);
+
+    await rm(tempDir, { recursive: true, force: true });
+  });
 });

@@ -7,6 +7,7 @@ import { z } from "zod";
 import {
   getTaskStatus,
   queryTaskQueue,
+  resolveCurrentTask,
   type TaskQueueItem,
   type TaskStatusDetails,
 } from "../../../../core/index.ts";
@@ -24,11 +25,16 @@ export const taskStatusSchema = z.object({
     .string()
     .optional()
     .describe("Task ID (e.g. TASK-9, 9), slug, or file path (optional)"),
+  current: z
+    .boolean()
+    .default(false)
+    .describe("Resolve and display current task from active git branch"),
 });
 
 export type TaskStatusInput = z.infer<typeof taskStatusSchema>;
 
 export interface TaskStatusFlags {
+  current?: boolean;
   json?: boolean;
 }
 
@@ -57,14 +63,38 @@ export const taskStatusCommand: CliCommandDefinition<
       required: false,
     },
   ],
-  flags: {},
+  flags: {
+    current: {
+      type: "boolean",
+      short: "c",
+      description: "Resolve and display current task from active git branch",
+    },
+  },
   execute: async (input, context) => {
-    // If no task identifier is passed, return active task queue
-    if (!input.id) {
-      return queryTaskQueue({ cwd: context.cwd });
+    // 1. If explicit task identifier provided, query that task
+    if (input.id) {
+      return getTaskStatus(input.id, { cwd: context.cwd });
     }
 
-    return getTaskStatus(input.id, { cwd: context.cwd });
+    // 2. If --current is explicitly passed, resolve current task or throw if outside task branch
+    if (input.current) {
+      const current = await resolveCurrentTask({ cwd: context.cwd });
+      if (!current) {
+        throw new Error(
+          "Not on a task branch: cannot resolve current task from git branch.",
+        );
+      }
+      return current;
+    }
+
+    // 3. If no ID and no --current, attempt to resolve current task from active git branch
+    const current = await resolveCurrentTask({ cwd: context.cwd });
+    if (current) {
+      return current;
+    }
+
+    // 4. Fallback to active task queue if not on a task branch
+    return queryTaskQueue({ cwd: context.cwd });
   },
   render: (status, context) => {
     if (!status || typeof status === "number") return;
