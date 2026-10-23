@@ -1,6 +1,6 @@
 /**
  * Hierarchical task branching automation and protected branch enforcement.
- * Complies with ADR-6, ADR-9, ADR-10, RULE-21, and RULE-28.
+ * Complies with ADR-6, ADR-9, ADR-10, RULE-21, RULE-28, and RULE-33.
  */
 
 import { readFile } from "node:fs/promises";
@@ -8,9 +8,11 @@ import { loadModieConfig } from "../config/loader.ts";
 import {
   detectGitBranch,
   inspectGitDeletedArtifacts,
+  inspectGitTreeArtifacts,
   runGit,
   runGitCommand,
 } from "../resolver/git-inspector.ts";
+import type { DiscoveredArtifact, IndexableSubtype } from "../common/types.ts";
 import { normalizeTaskId, resolveTaskFile } from "./completion.ts";
 import { parseTaskMarkdown } from "./parser.ts";
 import { scanActiveTasks } from "../resolver/active-scanner.ts";
@@ -60,6 +62,120 @@ export async function branchExists(
     cwd,
   );
   return output !== null;
+}
+
+export interface ArtifactCollision {
+  tag: string;
+  subtype: IndexableSubtype;
+  id: string;
+  sourceFilepath: string;
+  targetFilepath: string;
+  reason: "duplicate_tag" | "divergent_filepath" | "filepath_conflict";
+}
+
+/**
+ * Detects indexable artifact collisions between a source branch and a target branch prior to merge.
+ * Complies with RULE-1, ADR-6, ADR-9, and RULE-33.
+ */
+export async function detectArtifactCollisions(
+  sourceBranch: string,
+  targetBranch: string,
+  cwd: string = process.cwd(),
+): Promise<ArtifactCollision[]> {
+  const [sourceArtifacts, targetArtifacts] = await Promise.all([
+    inspectGitTreeArtifacts(sourceBranch, cwd),
+    inspectGitTreeArtifacts(targetBranch, cwd),
+  ]);
+
+  if (sourceArtifacts.length === 0 || targetArtifacts.length === 0) {
+    return [];
+  }
+
+  // Find common ancestor commit between target and source branches
+  const mergeBaseOut = await runGit(
+    ["merge-base", targetBranch, sourceBranch],
+    cwd,
+  );
+  const mergeBase = mergeBaseOut ? mergeBaseOut.trim() : null;
+
+  const baseArtifacts = mergeBase
+    ? await inspectGitTreeArtifacts(mergeBase, cwd)
+    : [];
+
+  const baseMap = new Map<string, DiscoveredArtifact>();
+  for (const art of baseArtifacts) {
+    baseMap.set(art.tag.toUpperCase(), art);
+  }
+
+  const targetTagMap = new Map<string, DiscoveredArtifact>();
+  const targetPathMap = new Map<string, DiscoveredArtifact>();
+  for (const art of targetArtifacts) {
+    targetTagMap.set(art.tag.toUpperCase(), art);
+    targetPathMap.set(art.filepath, art);
+  }
+
+  const collisions: ArtifactCollision[] = [];
+  const seenCollisions = new Set<string>();
+
+  for (const sourceArt of sourceArtifacts) {
+    const tagKey = sourceArt.tag.toUpperCase();
+    const targetArt = targetTagMap.get(tagKey);
+    const baseArt = baseMap.get(tagKey);
+
+    if (targetArt) {
+      if (!baseArt) {
+        // Tag was introduced independently on source branch after merge-base
+        const key = `${tagKey}:${sourceArt.filepath}:${targetArt.filepath}:duplicate_tag`;
+        if (!seenCollisions.has(key)) {
+          seenCollisions.add(key);
+          collisions.push({
+            tag: sourceArt.tag,
+            subtype: sourceArt.subtype,
+            id: sourceArt.id,
+            sourceFilepath: sourceArt.filepath,
+            targetFilepath: targetArt.filepath,
+            reason: "duplicate_tag",
+          });
+        }
+      } else if (sourceArt.filepath !== targetArt.filepath) {
+        // Artifact existed at base but filepaths diverged between branches
+        const key = `${tagKey}:${sourceArt.filepath}:${targetArt.filepath}:divergent_filepath`;
+        if (!seenCollisions.has(key)) {
+          seenCollisions.add(key);
+          collisions.push({
+            tag: sourceArt.tag,
+            subtype: sourceArt.subtype,
+            id: sourceArt.id,
+            sourceFilepath: sourceArt.filepath,
+            targetFilepath: targetArt.filepath,
+            reason: "divergent_filepath",
+          });
+        }
+      }
+    }
+
+    // Check for filepath collision with different tag
+    const targetArtSamePath = targetPathMap.get(sourceArt.filepath);
+    if (
+      targetArtSamePath &&
+      targetArtSamePath.tag.toUpperCase() !== sourceArt.tag.toUpperCase()
+    ) {
+      const key = `${sourceArt.filepath}:${sourceArt.tag}:${targetArtSamePath.tag}:filepath_conflict`;
+      if (!seenCollisions.has(key)) {
+        seenCollisions.add(key);
+        collisions.push({
+          tag: sourceArt.tag,
+          subtype: sourceArt.subtype,
+          id: sourceArt.id,
+          sourceFilepath: sourceArt.filepath,
+          targetFilepath: targetArtSamePath.filepath,
+          reason: "filepath_conflict",
+        });
+      }
+    }
+  }
+
+  return collisions;
 }
 
 /**
@@ -425,6 +541,26 @@ export async function mergeTaskBranch(
     throw new Error(
       `Cannot merge into target branch "${targetBranch}": Branch does not exist in local git repository.`,
     );
+  }
+
+  // Pre-merge artifact collision guard (RULE-33)
+  if (!options.force) {
+    const collisions = await detectArtifactCollisions(
+      sourceBranch,
+      targetBranch,
+      cwd,
+    );
+    if (collisions.length > 0) {
+      const details = collisions
+        .map(
+          (c) =>
+            `  - ${c.tag}: source "${c.sourceFilepath}" collides with target "${c.targetFilepath}" (${c.reason})`,
+        )
+        .join("\n");
+      throw new Error(
+        `Cannot merge task branch "${sourceBranch}" into "${targetBranch}": ${collisions.length} artifact collision(s) detected:\n${details}\nResolve collisions or pass --force to override.`,
+      );
+    }
   }
 
   // 5. Execute checkout and merge

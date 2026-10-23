@@ -4,14 +4,18 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import {
   scanActiveTaskIds,
   scanActiveTasks,
   inspectGitDeletedTaskIds,
   inspectGitDeletedTasks,
+  inspectMultiBranchActiveArtifacts,
+  inspectMultiBranchActiveArtifactIds,
   detectGitBranch,
   parseTaskBranch,
   resolveWatermark,
@@ -369,3 +373,95 @@ describe("Watermark Resolver - Multi-Subtype Monotonic Allocation (ADR-1, ADR-2,
     expect(adrDetails.tag).toBe(`ADR-${adrNum}`);
   });
 });
+
+describe("Watermark Resolver - Multi-Branch Collision Guard & Discovery (RULE-33)", () => {
+  const execFileAsync = promisify(execFile);
+
+  // @verifies RULE-33, ADR-6, ADR-9
+  it("[RULE-33][ADR-6][ADR-9] should incorporate active IDs from other branches during ID allocation", async () => {
+    // Current branch has TASK-1 and TASK-2 active; another branch has TASK-4 and TASK-5 active
+    const details = await resolveWatermark({
+      activeIds: ["1", "2"],
+      otherBranchActiveIds: ["4", "5"],
+      deletedIds: ["3"],
+      branch: "dev",
+    });
+
+    expect(details.strategy).toBe("trunk");
+    expect(details.nextId).toBe("6");
+    expect(details.fullTaskId).toBe("TASK-6");
+    expect(details.otherBranchActiveIds).toEqual(["4", "5"]);
+  });
+
+  // @verifies RULE-1, RULE-33, ADR-1, ADR-2
+  it("[RULE-1][RULE-33][ADR-1][ADR-2] should allocate monotonic RULE and ADR IDs skipping other branch IDs", async () => {
+    const ruleDetails = await resolveWatermark({
+      subtype: "RULE",
+      activeIds: ["1"],
+      otherBranchActiveIds: ["2", "5"],
+      deletedIds: [],
+    });
+
+    expect(ruleDetails.nextId).toBe("6");
+    expect(ruleDetails.tag).toBe("RULE-6");
+
+    const adrDetails = await resolveWatermark({
+      subtype: "ADR",
+      activeIds: ["1", "2"],
+      otherBranchActiveIds: ["3", "7"],
+      deletedIds: [],
+    });
+
+    expect(adrDetails.nextId).toBe("8");
+    expect(adrDetails.tag).toBe("ADR-8");
+  });
+
+  // @verifies RULE-33
+  it("[RULE-33] should discover active artifacts across git branches using git tree queries", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-multibranch-test-"));
+
+    try {
+      await execFileAsync("git", ["init", "-q", "-b", "main"], { cwd: tempDir });
+      await execFileAsync("git", ["config", "user.name", "Tester"], { cwd: tempDir });
+      await execFileAsync("git", ["config", "user.email", "tester@test.local"], { cwd: tempDir });
+
+      // Initial commit on main
+      await writeFile(join(tempDir, "README.md"), "# Multi-Branch Test\n");
+      await execFileAsync("git", ["add", "README.md"], { cwd: tempDir });
+      await execFileAsync("git", ["commit", "-m", "chore: init"], { cwd: tempDir });
+
+      // Create branch feature/new-rule
+      await execFileAsync("git", ["checkout", "-b", "feature/new-rule"], { cwd: tempDir });
+      await mkdir(join(tempDir, ".modie", "rules"), { recursive: true });
+      await writeFile(
+        join(tempDir, ".modie", "rules", "sample-rule.RULE-50.md"),
+        "# Sample Rule 50\n",
+      );
+      await execFileAsync("git", ["add", "-A"], { cwd: tempDir });
+      await execFileAsync("git", ["commit", "-m", "feat: add RULE-50"], { cwd: tempDir });
+
+      // Switch back to main
+      await execFileAsync("git", ["checkout", "main"], { cwd: tempDir });
+
+      // Inspect active artifacts across other branches
+      const artifacts = await inspectMultiBranchActiveArtifacts(
+        tempDir,
+        "RULE",
+        { excludeCurrent: true },
+      );
+      expect(artifacts.length).toBe(1);
+      expect(artifacts[0]?.tag).toBe("RULE-50");
+      expect(artifacts[0]?.id).toBe("50");
+
+      const activeIds = await inspectMultiBranchActiveArtifactIds(
+        tempDir,
+        "RULE",
+        { excludeCurrent: true },
+      );
+      expect(activeIds).toEqual(["50"]);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+

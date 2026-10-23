@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import {
   computeTaskBranchTopology,
+  detectArtifactCollisions,
   formatTaskBranchName,
   mergeTaskBranch,
   parseSubtaskId,
@@ -20,13 +21,19 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
   beforeEach(async () => {
     gitDir = await mkdtemp(join(tmpdir(), "modie-branching-test-"));
     await execFileAsync("git", ["init", "-q", "-b", "main"], { cwd: gitDir });
-    await execFileAsync("git", ["config", "user.name", "Branch Tester"], { cwd: gitDir });
-    await execFileAsync("git", ["config", "user.email", "branch@modie.dev"], { cwd: gitDir });
+    await execFileAsync("git", ["config", "user.name", "Branch Tester"], {
+      cwd: gitDir,
+    });
+    await execFileAsync("git", ["config", "user.email", "branch@modie.dev"], {
+      cwd: gitDir,
+    });
 
     // Initial commit on main
     await writeFile(join(gitDir, "README.md"), "# Branch Test\n", "utf8");
     await execFileAsync("git", ["add", "README.md"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "chore: initial commit"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "chore: initial commit"], {
+      cwd: gitDir,
+    });
 
     // Create dev trunk branch
     await execFileAsync("git", ["checkout", "-b", "dev"], { cwd: gitDir });
@@ -61,8 +68,14 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
 
   it("should parse subtask parent ID and sequence tokens per ADR-9", () => {
     expect(parseSubtaskId("2-1")).toEqual({ parentId: "2", sequence: "1" });
-    expect(parseSubtaskId("TASK-11-2")).toEqual({ parentId: "11", sequence: "2" });
-    expect(parseSubtaskId("TASK-J101-3")).toEqual({ parentId: "J101", sequence: "3" });
+    expect(parseSubtaskId("TASK-11-2")).toEqual({
+      parentId: "11",
+      sequence: "2",
+    });
+    expect(parseSubtaskId("TASK-J101-3")).toEqual({
+      parentId: "J101",
+      sequence: "3",
+    });
     expect(parseSubtaskId("11")).toBeNull();
     expect(parseSubtaskId("TASK-11")).toBeNull();
   });
@@ -116,9 +129,13 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     expect(res.created).toBe(true);
 
     // Verify current branch is now task/102-feat
-    const { stdout: current } = await execFileAsync("git", ["branch", "--show-current"], {
-      cwd: gitDir,
-    });
+    const { stdout: current } = await execFileAsync(
+      "git",
+      ["branch", "--show-current"],
+      {
+        cwd: gitDir,
+      },
+    );
     expect(current.trim()).toBe("task/102-feat");
   });
 
@@ -136,7 +153,9 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
       "utf8",
     );
 
-    await expect(startTaskBranch("TASK-102-1", { cwd: gitDir })).rejects.toThrow(
+    await expect(
+      startTaskBranch("TASK-102-1", { cwd: gitDir }),
+    ).rejects.toThrow(
       /Parent task branch "task\/102-feat" does not exist in local git branches.*RULE-28/,
     );
   });
@@ -149,7 +168,9 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
       "utf8",
     );
     await execFileAsync("git", ["add", "parent.TASK-103.md"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "docs: add parent task"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "docs: add parent task"], {
+      cwd: gitDir,
+    });
 
     // Start parent branch
     await startTaskBranch("TASK-103", { cwd: gitDir });
@@ -162,7 +183,9 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
       "utf8",
     );
     await execFileAsync("git", ["add", "sub.TASK-103-1.md"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "docs: add subtask"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "docs: add subtask"], {
+      cwd: gitDir,
+    });
 
     // Start subtask branch
     const res = await startTaskBranch("TASK-103-1", { cwd: gitDir });
@@ -170,29 +193,49 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     expect(res.baseBranch).toBe("task/103-parent");
     expect(res.isSubtask).toBe(true);
 
-    const { stdout: current } = await execFileAsync("git", ["branch", "--show-current"], {
-      cwd: gitDir,
-    });
+    const { stdout: current } = await execFileAsync(
+      "git",
+      ["branch", "--show-current"],
+      {
+        cwd: gitDir,
+      },
+    );
     expect(current.trim()).toBe("task/103-1-sub");
   });
 
   it("should reject merging a subtask directly into trunk dev per RULE-28", async () => {
     const parentPath = join(gitDir, "parent.TASK-104.md");
-    await writeFile(parentPath, "---\ndepends_on: []\nlinks: []\n---\n# Context\nParent\n# Acceptance Criteria\n- [ ] Item\n", "utf8");
+    await writeFile(
+      parentPath,
+      "---\ndepends_on: []\nlinks: []\n---\n# Context\nParent\n# Acceptance Criteria\n- [ ] Item\n",
+      "utf8",
+    );
     await execFileAsync("git", ["add", "parent.TASK-104.md"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "docs: parent"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "docs: parent"], {
+      cwd: gitDir,
+    });
     await startTaskBranch("TASK-104", { cwd: gitDir });
 
     const subPath = join(gitDir, "sub.TASK-104-1.md");
-    await writeFile(subPath, "---\ndepends_on: [TASK-104]\nlinks: []\n---\n# Context\nSub\n# Acceptance Criteria\n- [x] Item\n", "utf8");
+    await writeFile(
+      subPath,
+      "---\ndepends_on: [TASK-104]\nlinks: []\n---\n# Context\nSub\n# Acceptance Criteria\n- [x] Item\n",
+      "utf8",
+    );
     await execFileAsync("git", ["add", "sub.TASK-104-1.md"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "feat(TASK-104-1): sub"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "feat(TASK-104-1): sub"], {
+      cwd: gitDir,
+    });
     await startTaskBranch("TASK-104-1", { cwd: gitDir });
 
     // Mark completed in git
     await rm(subPath);
     await execFileAsync("git", ["add", "-u"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "chore(task): delete completed TASK-104-1 artifact"], { cwd: gitDir });
+    await execFileAsync(
+      "git",
+      ["commit", "-m", "chore(task): delete completed TASK-104-1 artifact"],
+      { cwd: gitDir },
+    );
 
     // Attempting to merge subtask into dev trunk must be rejected per RULE-28
     await expect(
@@ -204,44 +247,76 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
 
   it("should reject merging any task branch into a protected branch", async () => {
     const taskPath = join(gitDir, "root.TASK-105.md");
-    await writeFile(taskPath, "---\ndepends_on: []\nlinks: []\n---\n# Context\nRoot\n# Acceptance Criteria\n- [x] Item\n", "utf8");
+    await writeFile(
+      taskPath,
+      "---\ndepends_on: []\nlinks: []\n---\n# Context\nRoot\n# Acceptance Criteria\n- [x] Item\n",
+      "utf8",
+    );
     await execFileAsync("git", ["add", "root.TASK-105.md"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "feat(TASK-105): root"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "feat(TASK-105): root"], {
+      cwd: gitDir,
+    });
     await startTaskBranch("TASK-105", { cwd: gitDir });
 
     // Complete in git
     await rm(taskPath);
     await execFileAsync("git", ["add", "-u"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "chore(task): delete completed TASK-105 artifact"], { cwd: gitDir });
+    await execFileAsync(
+      "git",
+      ["commit", "-m", "chore(task): delete completed TASK-105 artifact"],
+      { cwd: gitDir },
+    );
 
     // Attempting to merge into protected branch "main" must be rejected
     await expect(
       mergeTaskBranch("TASK-105", { target: "main", cwd: gitDir }),
-    ).rejects.toThrow(/Cannot merge root task branch.*directly into protected branch "main"/);
+    ).rejects.toThrow(
+      /Cannot merge root task branch.*directly into protected branch "main"/,
+    );
   });
 
   it("should successfully merge a subtask back into its parent branch and delete the subtask branch", async () => {
     const parentPath = join(gitDir, "parent.TASK-106.md");
-    await writeFile(parentPath, "---\ndepends_on: []\nlinks: []\n---\n# Context\nParent\n# Acceptance Criteria\n- [ ] Item\n", "utf8");
+    await writeFile(
+      parentPath,
+      "---\ndepends_on: []\nlinks: []\n---\n# Context\nParent\n# Acceptance Criteria\n- [ ] Item\n",
+      "utf8",
+    );
     await execFileAsync("git", ["add", "parent.TASK-106.md"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "docs: parent"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "docs: parent"], {
+      cwd: gitDir,
+    });
     await startTaskBranch("TASK-106", { cwd: gitDir });
 
     const subPath = join(gitDir, "sub.TASK-106-1.md");
-    await writeFile(subPath, "---\ndepends_on: [TASK-106]\nlinks: []\n---\n# Context\nSub\n# Acceptance Criteria\n- [x] Item\n", "utf8");
+    await writeFile(
+      subPath,
+      "---\ndepends_on: [TASK-106]\nlinks: []\n---\n# Context\nSub\n# Acceptance Criteria\n- [x] Item\n",
+      "utf8",
+    );
     await execFileAsync("git", ["add", "sub.TASK-106-1.md"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "feat(TASK-106-1): sub"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "feat(TASK-106-1): sub"], {
+      cwd: gitDir,
+    });
     await startTaskBranch("TASK-106-1", { cwd: gitDir });
 
     // Code mutation on subtask branch
     await writeFile(join(gitDir, "subtask.txt"), "subtask code\n", "utf8");
     await execFileAsync("git", ["add", "subtask.txt"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "feat: subtask implementation"], { cwd: gitDir });
+    await execFileAsync(
+      "git",
+      ["commit", "-m", "feat: subtask implementation"],
+      { cwd: gitDir },
+    );
 
     // Complete subtask artifact per RULE-21
     await rm(subPath);
     await execFileAsync("git", ["add", "-u"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "chore(task): delete completed TASK-106-1 artifact"], { cwd: gitDir });
+    await execFileAsync(
+      "git",
+      ["commit", "-m", "chore(task): delete completed TASK-106-1 artifact"],
+      { cwd: gitDir },
+    );
 
     // Merge subtask branch back into parent
     const mergeRes = await mergeTaskBranch("TASK-106-1", { cwd: gitDir });
@@ -250,11 +325,121 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     expect(mergeRes.deletedSourceBranch).toBe(true);
 
     // Current branch should now be parent task branch
-    const { stdout: curBranch } = await execFileAsync("git", ["branch", "--show-current"], { cwd: gitDir });
+    const { stdout: curBranch } = await execFileAsync(
+      "git",
+      ["branch", "--show-current"],
+      { cwd: gitDir },
+    );
     expect(curBranch.trim()).toBe("task/106-parent");
 
     // Subtask branch should no longer exist locally
-    const { stdout: branchList } = await execFileAsync("git", ["branch", "--list", "task/106-1-sub"], { cwd: gitDir });
+    const { stdout: branchList } = await execFileAsync(
+      "git",
+      ["branch", "--list", "task/106-1-sub"],
+      { cwd: gitDir },
+    );
     expect(branchList.trim()).toBe("");
+  });
+
+  // @verifies RULE-33
+  it("[RULE-33] should detect artifact collisions when concurrent branches introduce the same artifact tag", async () => {
+    // On dev, create and commit RULE-99
+    await mkdir(join(gitDir, ".modie", "rules"), { recursive: true });
+    await writeFile(
+      join(gitDir, ".modie", "rules", "rule-a.RULE-99.md"),
+      "# Rule 99 on Dev\n",
+    );
+    await execFileAsync("git", ["add", "-A"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "feat: add RULE-99 on dev"], {
+      cwd: gitDir,
+    });
+
+    // Create branch feature/concurrent from HEAD~1
+    await execFileAsync(
+      "git",
+      ["checkout", "-b", "feature/concurrent", "HEAD~1"],
+      { cwd: gitDir },
+    );
+    await mkdir(join(gitDir, ".modie", "rules"), { recursive: true });
+    await writeFile(
+      join(gitDir, ".modie", "rules", "rule-b.RULE-99.md"),
+      "# Rule 99 on Feature\n",
+    );
+    await execFileAsync("git", ["add", "-A"], { cwd: gitDir });
+    await execFileAsync(
+      "git",
+      ["commit", "-m", "feat: add RULE-99 on feature"],
+      { cwd: gitDir },
+    );
+
+    const collisions = await detectArtifactCollisions(
+      "feature/concurrent",
+      "dev",
+      gitDir,
+    );
+    expect(collisions.length).toBe(1);
+    expect(collisions[0]?.tag).toBe("RULE-99");
+    expect(collisions[0]?.reason).toBe("duplicate_tag");
+  });
+
+  // @verifies RULE-28, RULE-33
+  it("[RULE-28][RULE-33] should reject task branch merge when artifact collision exists on target branch", async () => {
+    // 1. On dev, create and commit ADR-50
+    await mkdir(join(gitDir, ".modie", "adrs"), { recursive: true });
+    await writeFile(
+      join(gitDir, ".modie", "adrs", "adr-a.ADR-50.md"),
+      "# ADR 50 on Dev\n",
+    );
+    await execFileAsync("git", ["add", "-A"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "feat: add ADR-50 on dev"], {
+      cwd: gitDir,
+    });
+
+    // 2. Branch task/107-test from before ADR-50 was added
+    await execFileAsync("git", ["checkout", "-b", "task/107-test", "HEAD~1"], {
+      cwd: gitDir,
+    });
+
+    // Create completed task artifact so completion check passes
+    const taskPath = join(gitDir, "test.TASK-107.md");
+    await writeFile(
+      taskPath,
+      "---\ndepends_on: []\nlinks: []\n---\n# Context\nTest\n# Acceptance Criteria\n- [x] Item\n",
+    );
+    // And introduce conflicting ADR-50
+    await mkdir(join(gitDir, ".modie", "adrs"), { recursive: true });
+    await writeFile(
+      join(gitDir, ".modie", "adrs", "adr-b.ADR-50.md"),
+      "# ADR 50 on Task Branch\n",
+    );
+    await execFileAsync("git", ["add", "-A"], { cwd: gitDir });
+    await execFileAsync(
+      "git",
+      ["commit", "-m", "feat(TASK-107): task and conflicting ADR-50"],
+      { cwd: gitDir },
+    );
+
+    // Delete task artifact per RULE-21 completion record
+    await rm(taskPath);
+    await execFileAsync("git", ["add", "-u"], { cwd: gitDir });
+    await execFileAsync(
+      "git",
+      ["commit", "-m", "chore(task): delete completed TASK-107 artifact"],
+      { cwd: gitDir },
+    );
+
+    // 3. Merging task/107-test-task into dev must throw artifact collision error
+    await expect(
+      mergeTaskBranch("TASK-107", { target: "dev", cwd: gitDir }),
+    ).rejects.toThrow(/artifact collision\(s\) detected/);
+
+    // 4. Passing force should allow bypassing the collision guard
+    const result = await mergeTaskBranch("TASK-107", {
+      target: "dev",
+      force: true,
+      cwd: gitDir,
+    });
+    expect(result.sourceBranch).toBe("task/107-test");
+    expect(result.targetBranch).toBe("dev");
   });
 });

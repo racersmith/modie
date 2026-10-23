@@ -1,6 +1,6 @@
 /**
  * Monotonic watermark calculation and branch-aware ID allocation.
- * Complies with RULE-1, ADR-1, ADR-2, ADR-6, and ADR-9.
+ * Complies with RULE-1, RULE-33, ADR-1, ADR-2, ADR-6, and ADR-9.
  */
 
 import { registerArtifactSubtype } from "../common/filename.ts";
@@ -9,6 +9,7 @@ import {
   detectGitBranch,
   getGitConfigPrefix,
   inspectGitDeletedArtifactIds,
+  inspectMultiBranchActiveArtifactIds,
 } from "./git-inspector.ts";
 import type {
   AllocationStrategy,
@@ -68,14 +69,22 @@ export async function resolveWatermark(
       ? options.activeIds
       : await scanActiveArtifactIds(cwd, subtype);
 
-  // 2. Gather deleted IDs from Git history (or use provided overrides for testing)
+  // 2. Gather active IDs from other git branches (RULE-33)
+  const otherBranchActiveIds =
+    options.otherBranchActiveIds !== undefined
+      ? options.otherBranchActiveIds
+      : (options.activeIds !== undefined
+          ? []
+          : await inspectMultiBranchActiveArtifactIds(cwd, subtype, { excludeCurrent: true }));
+
+  // 3. Gather deleted IDs from Git history (or use provided overrides for testing)
   const deletedIds =
     options.deletedIds !== undefined
       ? options.deletedIds
       : await inspectGitDeletedArtifactIds(cwd, subtype);
 
-  // 3. Aggregate all known historical and active IDs
-  const allKnownIds = Array.from(new Set([...activeIds, ...deletedIds]));
+  // 4. Aggregate all known historical and active IDs (including active on other branches)
+  const allKnownIds = Array.from(new Set([...activeIds, ...otherBranchActiveIds, ...deletedIds]));
   const allKnownIdSet = new Set(allKnownIds);
 
   // 4. Resolve branch context
@@ -107,6 +116,7 @@ export async function resolveWatermark(
       subtype,
       strategy: "trunk",
       activeIds,
+      otherBranchActiveIds,
       deletedIds,
       branch: detectedBranch,
       sequence: candidateInt,
@@ -203,6 +213,7 @@ export async function resolveWatermark(
     subtype: "TASK",
     strategy,
     activeIds,
+    otherBranchActiveIds,
     deletedIds,
     branch: detectedBranch,
     parentId,
