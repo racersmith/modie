@@ -730,3 +730,149 @@ Zombie.
   });
 });
 
+describe("Task Completion - Planned Governance Enforcement (TASK-35)", () => {
+  let fixtureDir: string;
+
+  beforeEach(async () => {
+    fixtureDir = await mkdtemp(join(tmpdir(), "modie-planned-gov-test-"));
+  });
+
+  afterEach(async () => {
+    await rm(fixtureDir, { recursive: true, force: true });
+  });
+
+  // @verifies ADR-6, RULE-21, RULE-22
+  it("[ADR-6][RULE-21][RULE-22] should reject task completion if a planned rule is incomplete", async () => {
+    const taskPath = join(fixtureDir, "planned-gov.TASK-101.md");
+    await writeFile(
+      taskPath,
+      `---
+depends_on: []
+links: []
+---
+
+# Context
+Planned governance test.
+
+# Planned Governance
+
+## Rules
+- [ ] Multi-branch collision guard
+
+# Acceptance Criteria
+- [x] Feature implementation done
+`,
+      "utf8",
+    );
+
+    await expect(
+      completeTask("TASK-101", { cwd: fixtureDir, deleteArtifact: false }),
+    ).rejects.toThrow(/Planned rule "Multi-branch collision guard" is not marked completed/);
+  });
+
+  // @verifies ADR-6, RULE-21, RULE-22
+  it("[ADR-6][RULE-21][RULE-22] should reject task completion if planned rule is checked but does not exist on disk", async () => {
+    const taskPath = join(fixtureDir, "planned-gov.TASK-102.md");
+    await writeFile(
+      taskPath,
+      `---
+depends_on: []
+links: []
+---
+
+# Context
+Planned governance test.
+
+# Planned Governance
+
+## Rules
+- [x] Multi-branch collision guard
+
+# Acceptance Criteria
+- [x] Feature implementation done
+`,
+      "utf8",
+    );
+
+    await expect(
+      completeTask("TASK-102", { cwd: fixtureDir, deleteArtifact: false }),
+    ).rejects.toThrow(/Planned rule "Multi-branch collision guard" was not found on disk/);
+  });
+
+  // @verifies ADR-6, RULE-21, RULE-22
+  it("[ADR-6][RULE-21][RULE-22] should succeed when planned rule exists on disk and is checked", async () => {
+    const taskPath = join(fixtureDir, "planned-gov.TASK-103.md");
+    await writeFile(
+      taskPath,
+      `---
+depends_on: []
+links: []
+---
+
+# Context
+Planned governance test.
+
+# Planned Governance
+
+## Rules
+- [x] multi-branch-collision-guard.RULE-88.md
+
+# Acceptance Criteria
+- [x] Feature implementation done
+`,
+      "utf8",
+    );
+
+    // Create the planned rule on disk
+    const rulePath = join(fixtureDir, "multi-branch-collision-guard.RULE-88.md");
+    await writeFile(
+      rulePath,
+      `---
+links: []
+---
+
+A test rule invariant statement.
+`,
+      "utf8",
+    );
+
+    const result = await completeTask("TASK-103", {
+      cwd: fixtureDir,
+      deleteArtifact: false,
+    });
+    expect(result.taskId).toBe("103");
+  });
+
+  // @verifies ADR-6, RULE-21, RULE-22
+  it("[ADR-6][RULE-21][RULE-22] should bypass planned governance enforcement when --force is used", async () => {
+    const taskPath = join(fixtureDir, "planned-gov.TASK-104.md");
+    await writeFile(
+      taskPath,
+      `---
+depends_on: []
+links: []
+---
+
+# Context
+Planned governance test.
+
+# Planned Governance
+
+## Rules
+- [ ] Unfinished rule
+
+# Acceptance Criteria
+- [x] Feature implementation done
+`,
+      "utf8",
+    );
+
+    const result = await completeTask("TASK-104", {
+      cwd: fixtureDir,
+      force: true,
+      deleteArtifact: false,
+    });
+    expect(result.taskId).toBe("104");
+  });
+});
+

@@ -6,7 +6,8 @@
 import { readFile, rm, stat, writeFile } from "node:fs/promises";
 import { basename, isAbsolute, relative, resolve } from "node:path";
 import { parseArtifactFilename } from "../common/index.ts";
-import { scanActiveTasks } from "../resolver/active-scanner.ts";
+import { resolveArtifactByTag } from "../query/artifact-query.ts";
+import { scanActiveArtifacts, scanActiveTasks } from "../resolver/active-scanner.ts";
 import {
   inspectGitDeletedTaskIds,
   runGit,
@@ -337,6 +338,87 @@ export async function checkTaskItem(
 }
 
 /**
+ * Asserts that all planned governance declarations (rules and ADRs) in a task
+ * are marked completed and actually exist as active or archived artifacts on disk.
+ */
+export async function assertPlannedGovernanceSatisfied(
+  task: TaskArtifact,
+  cwd: string = process.cwd(),
+): Promise<void> {
+  if (!task.plannedGovernance) return;
+
+  const { rules = [], adrs = [] } = task.plannedGovernance;
+
+  // 1. Verify Planned Rules
+  if (rules.length > 0) {
+    const activeRules = await scanActiveArtifacts(cwd, "RULE");
+    for (const rule of rules) {
+      if (!rule.completed) {
+        throw new Error(
+          `Cannot complete task ${task.id || "unnamed"}: Planned rule "${rule.text}" is not marked completed. All planned governance items must be generated and satisfied before completing the task (or pass --force).`,
+        );
+      }
+
+      // Verify rule artifact exists on disk
+      let exists = false;
+      if (rule.tag) {
+        try {
+          await resolveArtifactByTag(rule.tag, { cwd });
+          exists = true;
+        } catch {
+          exists = false;
+        }
+      } else if (rule.slug) {
+        exists = activeRules.some(
+          (r) => r.slug === rule.slug || r.slug.includes(rule.slug!) || rule.slug!.includes(r.slug),
+        );
+      }
+
+      if (!exists) {
+        const tagHint = rule.tag ? ` (${rule.tag})` : "";
+        throw new Error(
+          `Cannot complete task ${task.id || "unnamed"}: Planned rule "${rule.text}"${tagHint} was not found on disk. Ensure the rule has been authored via 'modie rule create' before completing the task (or pass --force).`,
+        );
+      }
+    }
+  }
+
+  // 2. Verify Planned ADRs
+  if (adrs.length > 0) {
+    const activeAdrs = await scanActiveArtifacts(cwd, "ADR");
+    for (const adr of adrs) {
+      if (!adr.completed) {
+        throw new Error(
+          `Cannot complete task ${task.id || "unnamed"}: Planned ADR "${adr.text}" is not marked completed. All planned governance items must be generated and satisfied before completing the task (or pass --force).`,
+        );
+      }
+
+      // Verify ADR artifact exists on disk
+      let exists = false;
+      if (adr.tag) {
+        try {
+          await resolveArtifactByTag(adr.tag, { cwd });
+          exists = true;
+        } catch {
+          exists = false;
+        }
+      } else if (adr.slug) {
+        exists = activeAdrs.some(
+          (a) => a.slug === adr.slug || a.slug.includes(adr.slug!) || adr.slug!.includes(a.slug),
+        );
+      }
+
+      if (!exists) {
+        const tagHint = adr.tag ? ` (${adr.tag})` : "";
+        throw new Error(
+          `Cannot complete task ${task.id || "unnamed"}: Planned ADR "${adr.text}"${tagHint} was not found on disk. Ensure the ADR has been authored via 'modie adr create' before completing the task (or pass --force).`,
+        );
+      }
+    }
+  }
+}
+
+/**
  * Completes an active TASK artifact.
  * Verifies that all acceptance criteria are completed per RULE-22.
  * Deletes the ephemeral task file from the working tree per RULE-21.
@@ -371,6 +453,10 @@ export async function completeTask(
     throw new Error(
       `Cannot complete task ${parsed.id}: ${incomplete.length} acceptance criteria remain unchecked.\n${list}\nPer RULE-21 and RULE-22, all acceptance criteria must be satisfied before completing a task (or pass --force).`,
     );
+  }
+
+  if (!force) {
+    await assertPlannedGovernanceSatisfied(parsed, cwd);
   }
 
   let commits: { phase1?: string; phase2?: string } | undefined;

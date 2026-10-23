@@ -91,6 +91,7 @@ export const taskDefinition: ArtifactDefinition<CreateTaskOptions, TaskArtifact>
       context: options.context ?? "",
       depends_on: options.depends_on ?? [],
       links: options.links ?? [],
+      plannedGovernance: options.plannedGovernance,
       acceptanceCriteria: normalizedCriteria,
     };
 
@@ -103,6 +104,16 @@ export const taskDefinition: ArtifactDefinition<CreateTaskOptions, TaskArtifact>
       depends_on: options.depends_on ?? [],
       links: options.links ?? [],
       context: options.context ?? "",
+      plannedGovernance: options.plannedGovernance
+        ? {
+            rules: (options.plannedGovernance.rules ?? []).map((r) =>
+              typeof r === "string" ? { text: r, completed: false } : r,
+            ),
+            adrs: (options.plannedGovernance.adrs ?? []).map((a) =>
+              typeof a === "string" ? { text: a, completed: false } : a,
+            ),
+          }
+        : undefined,
       acceptanceCriteria: normalizedCriteria,
       rawContent: markdown,
       filePath: filepath,

@@ -12,6 +12,23 @@ export interface TaskAcceptanceCriteriaItem {
   completed: boolean;
 }
 
+export interface PlannedGovernanceItem {
+  text: string;
+  completed: boolean;
+  tag?: string;
+  slug?: string;
+}
+
+export interface PlannedGovernanceDeclaration {
+  rules?: Array<string | PlannedGovernanceItem>;
+  adrs?: Array<string | PlannedGovernanceItem>;
+}
+
+export interface ParsedPlannedGovernance {
+  rules: PlannedGovernanceItem[];
+  adrs: PlannedGovernanceItem[];
+}
+
 export interface TaskArtifact {
   id: string;
   slug: string;
@@ -19,6 +36,7 @@ export interface TaskArtifact {
   depends_on: string[];
   links: string[];
   context?: string;
+  plannedGovernance?: ParsedPlannedGovernance;
   acceptanceCriteria: TaskAcceptanceCriteriaItem[];
   rawContent?: string;
   filePath?: string;
@@ -31,6 +49,7 @@ export interface TaskRenderOptions {
   depends_on?: string[];
   links?: string[];
   context?: string;
+  plannedGovernance?: PlannedGovernanceDeclaration;
   acceptanceCriteria?: (string | TaskAcceptanceCriteriaItem)[];
 }
 
@@ -115,6 +134,11 @@ export interface CreateTaskOptions {
    * Can be strings or { text, completed } items.
    */
   acceptanceCriteria?: Array<string | TaskAcceptanceCriteriaItem>;
+
+  /**
+   * Planned governance declarations (rules and ADRs to author during task execution).
+   */
+  plannedGovernance?: PlannedGovernanceDeclaration;
 
   /**
    * Whether to place in a `.tasks/` subtype container directory (RULE-8).

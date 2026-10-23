@@ -4,7 +4,7 @@
  */
 
 import { renderAcceptanceCriteria } from "./checklist.ts";
-import type { TaskRenderOptions } from "./types.ts";
+import type { PlannedGovernanceDeclaration, TaskRenderOptions } from "./types.ts";
 
 const ADR_RULE_LINK_REGEX = /^(?:ADR|RULE)-[A-Za-z0-9_-]+$/;
 const TASK_DEPENDENCY_REGEX = /^TASK-[A-Za-z0-9_.-]+$/;
@@ -36,7 +36,53 @@ export function validateTaskDependencies(dependsOn: string[] = []): void {
 }
 
 /**
- * Renders a canonical TASK markdown document with YAML frontmatter, Context, and Acceptance Criteria.
+ * Renders the optional Planned Governance markdown section.
+ */
+export function renderPlannedGovernance(planned?: PlannedGovernanceDeclaration): string {
+  if (!planned) return "";
+  const lines: string[] = [];
+  const rules = planned.rules ?? [];
+  const adrs = planned.adrs ?? [];
+
+  if (rules.length === 0 && adrs.length === 0) {
+    return "";
+  }
+
+  lines.push("# Planned Governance", "");
+
+  if (adrs.length > 0) {
+    lines.push("## ADRs");
+    for (const item of adrs) {
+      if (typeof item === "string") {
+        lines.push(`- [ ] ${item.trim()}`);
+      } else {
+        const box = item.completed ? "[x]" : "[ ]";
+        const prefix = item.tag ? `${item.tag}: ` : "";
+        lines.push(`- ${box} ${prefix}${item.text.trim()}`);
+      }
+    }
+    lines.push("");
+  }
+
+  if (rules.length > 0) {
+    lines.push("## Rules");
+    for (const item of rules) {
+      if (typeof item === "string") {
+        lines.push(`- [ ] ${item.trim()}`);
+      } else {
+        const box = item.completed ? "[x]" : "[ ]";
+        const prefix = item.tag ? `${item.tag}: ` : "";
+        lines.push(`- ${box} ${prefix}${item.text.trim()}`);
+      }
+    }
+    lines.push("");
+  }
+
+  return lines.join("\n").trim();
+}
+
+/**
+ * Renders a canonical TASK markdown document with YAML frontmatter, Context, Planned Governance, and Acceptance Criteria.
  */
 export function renderTaskMarkdown(options: TaskRenderOptions): string {
   const {
@@ -44,6 +90,7 @@ export function renderTaskMarkdown(options: TaskRenderOptions): string {
     context,
     depends_on = [],
     links = [],
+    plannedGovernance,
     acceptanceCriteria = [],
   } = options;
 
@@ -76,6 +123,7 @@ export function renderTaskMarkdown(options: TaskRenderOptions): string {
   frontmatterLines.push("---");
 
   const contextContent = context?.trim() || (title ? `Implement ${title}.` : "Execution plan description.");
+  const plannedGovContent = renderPlannedGovernance(plannedGovernance);
 
   const sections: string[] = [
     frontmatterLines.join("\n"),
@@ -84,9 +132,13 @@ export function renderTaskMarkdown(options: TaskRenderOptions): string {
     "",
     contextContent,
     "",
-    renderAcceptanceCriteria(acceptanceCriteria).trim(),
-    "",
   ];
+
+  if (plannedGovContent) {
+    sections.push(plannedGovContent, "");
+  }
+
+  sections.push(renderAcceptanceCriteria(acceptanceCriteria).trim(), "");
 
   return sections.join("\n");
 }

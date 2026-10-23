@@ -53,6 +53,20 @@ export const taskCreateSchema = z.object({
     .string()
     .optional()
     .describe("Git branch override for ID allocation"),
+  plan_rules: z
+    .array(z.string())
+    .optional()
+    .default([])
+    .describe(
+      "Planned RULE artifacts to author before completing this task (repeat flag or use comma-separated list)",
+    ),
+  plan_adrs: z
+    .array(z.string())
+    .optional()
+    .default([])
+    .describe(
+      "Planned ADR artifacts to author before completing this task (repeat flag or use comma-separated list)",
+    ),
   flat: z
     .boolean()
     .default(false)
@@ -79,6 +93,12 @@ export interface TaskCreateFlags {
   criterion?: string[];
   criteria?: string[];
   "acceptance-criteria"?: string[];
+  "plan-rule"?: string[];
+  "planned-rule"?: string[];
+  "plan-rules"?: string[];
+  "plan-adr"?: string[];
+  "planned-adr"?: string[];
+  "plan-adrs"?: string[];
   prefix?: string;
   branch?: string;
   flat?: boolean;
@@ -96,6 +116,7 @@ export interface TaskCreateResultPayload {
   depends_on: string[];
   links: string[];
   acceptanceCriteria: any[];
+  plannedGovernance: any;
   watermark: any;
 }
 
@@ -112,7 +133,12 @@ export const taskCreateCommand: CliCommandDefinition<
   usage: "modie task create <title> [options]",
   description: "Create a new TASK artifact",
   agentGuidance:
-    "Call this tool to generate a new TASK artifact with automatic sequence watermark resolution, link validation, and least-scope directory placement.",
+    "Call this tool to generate a new TASK artifact with automatic sequence watermark resolution, link validation, and least-scope directory placement.\n\n" +
+    "TASK AUTHORING BEST PRACTICES & INVARIANTS:\n" +
+    "1. Contract-Based Acceptance Criteria (RULE-30): Define deliverables in terms of component roles, behavioral contracts, and testable outcomes rather than concrete filesystem paths that rot during refactorings.\n" +
+    "2. Ephemeral Task Decoupling: ANTI-PATTERN WARNING: Never reference ephemeral TASK IDs (e.g. `[TASK-XX]`, `@verifies TASK-XX`) in tests or code implementation comments. Tasks are ephemeral and deleted upon completion (ADR-6, RULE-21). Tests and code must ONLY reference durable `RULE-` and `ADR-` artifacts. If you find yourself wanting to cite a TASK in code or tests, STOP and author a new `RULE` or `ADR` instead.\n" +
+    "3. Upfront Planned Governance: Front-load candidate rules and architectural decisions in `--plan-rule` and `--plan-adr` before starting implementation. All planned governance artifacts must be authored and satisfied before the task can be completed.\n" +
+    "4. Atomic Scope & Blast Radius (RULE-6, RULE-12): Tasks must represent a single, cohesive unit of work scoped at the deepest common ancestor.",
   helpUsage: "modie task create --help",
   schema: taskCreateSchema,
   positionals: [
@@ -197,6 +223,40 @@ export const taskCreateCommand: CliCommandDefinition<
       property: "criteria",
       splitCommas: true,
     },
+    "plan-rule": {
+      type: "string",
+      multiple: true,
+      aliases: ["planned-rule"],
+      property: "plan_rules",
+      splitCommas: false,
+      placeholder: "<rule-title>",
+      description: "Planned RULE artifact to author before completing this task",
+    },
+    "plan-rules": {
+      type: "string",
+      multiple: true,
+      property: "plan_rules",
+      splitCommas: true,
+      placeholder: "<rule-titles>",
+      description: "Planned RULE artifacts (comma-separated list)",
+    },
+    "plan-adr": {
+      type: "string",
+      multiple: true,
+      aliases: ["planned-adr"],
+      property: "plan_adrs",
+      splitCommas: false,
+      placeholder: "<adr-title>",
+      description: "Planned ADR artifact to author before completing this task",
+    },
+    "plan-adrs": {
+      type: "string",
+      multiple: true,
+      property: "plan_adrs",
+      splitCommas: true,
+      placeholder: "<adr-titles>",
+      description: "Planned ADR artifacts (comma-separated list)",
+    },
     prefix: {
       type: "string",
       short: "p",
@@ -233,6 +293,14 @@ export const taskCreateCommand: CliCommandDefinition<
       links: input.links.length > 0 ? input.links : undefined,
       acceptanceCriteria:
         input.criteria.length > 0 ? input.criteria : undefined,
+      plannedGovernance:
+        (input.plan_rules && input.plan_rules.length > 0) ||
+        (input.plan_adrs && input.plan_adrs.length > 0)
+          ? {
+              rules: input.plan_rules,
+              adrs: input.plan_adrs,
+            }
+          : undefined,
       useSubtypeContainer: !input.flat,
       prefix: input.prefix,
       branch: input.branch,
@@ -253,6 +321,7 @@ export const taskCreateCommand: CliCommandDefinition<
       depends_on: result.artifact.depends_on,
       links: result.artifact.links,
       acceptanceCriteria: result.artifact.acceptanceCriteria,
+      plannedGovernance: result.artifact.plannedGovernance,
       watermark: result.watermark,
     };
   },

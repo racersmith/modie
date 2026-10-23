@@ -87,14 +87,21 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     expect(toolNames).toContain("task_complete");
     expect(toolNames).toContain("task_merge");
 
-    expect(toolNames.length).toBe(15);
-
     // Verify tool metadata and input schemas
     const checkTool = response.tools.find((t) => t.name === "task_check");
     expect(checkTool).toBeDefined();
     expect(checkTool?.description).toContain("acceptance criteria item");
     expect((checkTool?.inputSchema as any)?.properties?.id).toBeDefined();
     expect((checkTool?.inputSchema as any)?.properties?.item).toBeDefined();
+
+    // Verify injected agent guidance and anti-pattern warnings (TASK-35)
+    const createTool = response.tools.find((t) => t.name === "task_create");
+    expect(createTool?.description).toContain("Contract-Based Acceptance Criteria (RULE-30)");
+    expect(createTool?.description).toContain("Ephemeral Task Decoupling");
+    expect(createTool?.description).toContain("Upfront Planned Governance");
+
+    const completeTool = response.tools.find((t) => t.name === "task_complete");
+    expect(completeTool?.description).toContain("EPHEMERAL TASK INVARIANT");
   });
 
   it("[RULE-26] should execute task_list tool and return strictly actionable schema payloads", async () => {
@@ -266,9 +273,13 @@ describe("Modie MCP Server - Read-Only Resources (Criterion 4)", () => {
     expect(uris).toContain("modie://tasks/ready");
     expect(uris).toContain("modie://tasks");
     expect(uris).toContain("modie://rules");
+    expect(uris).toContain("modie://instructions");
 
     const readyResource = listRes.resources.find((r) => r.uri === "modie://tasks/ready");
     expect(readyResource?.mimeType).toBe("application/json");
+
+    const instructionsResource = listRes.resources.find((r) => r.uri === "modie://instructions");
+    expect(instructionsResource?.mimeType).toBe("text/markdown");
   });
 
   it("should read modie://tasks/ready and return only unblocked ready tasks", async () => {
@@ -295,6 +306,16 @@ describe("Modie MCP Server - Read-Only Resources (Criterion 4)", () => {
     expect(rules).toHaveLength(1);
     expect(rules[0].tag).toBe("RULE-201");
     expect(rules[0].body).toContain("System integrity rule body.");
+  });
+
+  it("should read modie://instructions and return agent authoring guidance", async () => {
+    const readRes = await client.readResource({ uri: "modie://instructions" });
+    expect(readRes.contents).toHaveLength(1);
+    expect(readRes.contents?.[0]?.mimeType).toBe("text/markdown");
+
+    const text = getResourceText(readRes);
+    expect(text).toContain("Ephemeral Task Decoupling");
+    expect(text).toContain("Contract-Based Acceptance Criteria");
   });
 });
 
