@@ -4,20 +4,16 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { findArtifactReferences } from "./references.ts";
 
-describe("Artifact References Query Engine (RULE-25, RULE-31)", () => {
+describe("Artifact References Query Engine (RULE-25, RULE-31, RULE-34)", () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = join(
-      process.cwd(),
-      "scratch",
-      `refs-test-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    );
-    await mkdir(tempDir, { recursive: true });
+    tempDir = await mkdtemp(join(tmpdir(), "modie-core-refs-"));
   });
 
   afterEach(async () => {
@@ -169,7 +165,12 @@ Follow ADR-1 for architectural guidelines.
     expect(result.archivalGuard.canArchive).toBe(false);
     expect(result.archivalGuard.blockingCount).toBe(2);
     expect(result.archivalGuard.blockingReasons.length).toBe(2);
-    expect(result.archivalGuard.blockingReasons[0]).toContain("RULE-1");
+    expect(
+      result.archivalGuard.blockingReasons.some((r) => r.includes("RULE-1")),
+    ).toBe(true);
+    expect(
+      result.archivalGuard.blockingReasons.some((r) => r.includes("TASK-1")),
+    ).toBe(true);
   });
 
   it("should permit archival when all citing governance artifacts are archived or absent", async () => {
@@ -221,12 +222,30 @@ links:
     ).rejects.toThrow('Artifact "ADR-9999" was not found');
   });
 
-  it("should execute findArtifactReferences against active repository artifacts", async () => {
-    const result = await findArtifactReferences("RULE-25", { cwd: process.cwd() });
+  // @verifies RULE-34
+  it("[RULE-34] should execute findArtifactReferences against isolated fixture workspace artifacts", async () => {
+    const ruleFile = join(tempDir, "interface-core-decoupling.RULE-25.md");
+    await writeFile(
+      ruleFile,
+      `---
+links: []
+---
+
+# Invariant
+Interfaces must remain decoupled from core.
+`,
+      "utf8",
+    );
+
+    const sourceFile = join(tempDir, "sample.ts");
+    await writeFile(sourceFile, "// Implements RULE-25 contract\n", "utf8");
+
+    const result = await findArtifactReferences("RULE-25", { cwd: tempDir });
 
     expect(result.target.tag).toBe("RULE-25");
     expect(result.target.slug).toBe("interface-core-decoupling");
-    expect(result.foundIn.code.length).toBeGreaterThan(0);
-    expect(result.foundIn.total).toBeGreaterThan(0);
+    expect(result.foundIn.code.length).toBe(1);
+    expect(result.foundIn.total).toBe(1);
   });
 });
+
