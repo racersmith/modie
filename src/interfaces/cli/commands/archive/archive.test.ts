@@ -19,7 +19,10 @@ const execFileAsync = promisify(execFile);
 describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31)", () => {
   // @verifies RULE-27
   it("[RULE-27] should emit archive command help to stderr with exit code 0", async () => {
-    const { exitCode, stdout, stderr } = await captureCli(["archive", "--help"]);
+    const { exitCode, stdout, stderr } = await captureCli([
+      "archive",
+      "--help",
+    ]);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Usage: modie archive <tag-or-path>");
@@ -122,7 +125,9 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
-    expect(stderr).toContain("Cannot archive ADR-1: 1 active incoming reference(s) exist (RULE-31)");
+    expect(stderr).toContain(
+      "Cannot archive ADR-1: 1 active incoming reference(s) exist",
+    );
     expect(stderr).toContain("Use --force to bypass this guard");
 
     await rm(tempDir, { recursive: true, force: true });
@@ -208,7 +213,9 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
 
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe(".adrs/alias-test.ADR-3.ARCHIVED.md");
-    expect(stderr).toContain("✓ Archived ADR ADR-3: alias-test.ADR-3.ARCHIVED.md");
+    expect(stderr).toContain(
+      "✓ Archived ADR ADR-3: alias-test.ADR-3.ARCHIVED.md",
+    );
 
     await rm(tempDir, { recursive: true, force: true });
   });
@@ -232,7 +239,9 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
 
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe(".rules/alias-rule.RULE-7.ARCHIVED.md");
-    expect(stderr).toContain("✓ Archived RULE RULE-7: alias-rule.RULE-7.ARCHIVED.md");
+    expect(stderr).toContain(
+      "✓ Archived RULE RULE-7: alias-rule.RULE-7.ARCHIVED.md",
+    );
 
     await rm(tempDir, { recursive: true, force: true });
   });

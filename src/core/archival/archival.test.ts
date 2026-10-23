@@ -38,8 +38,12 @@ Initial context.
     expect(result.tag).toBe("ADR-1");
     expect(result.canArchive).toBe(true);
     expect(result.forced).toBe(false);
-    expect(result.archivedFilename).toBe("initial-architecture.ADR-1.ARCHIVED.md");
-    expect(result.archivedRelativePath).toBe(".adrs/initial-architecture.ADR-1.ARCHIVED.md");
+    expect(result.archivedFilename).toBe(
+      "initial-architecture.ADR-1.ARCHIVED.md",
+    );
+    expect(result.archivedRelativePath).toBe(
+      ".adrs/initial-architecture.ADR-1.ARCHIVED.md",
+    );
 
     // Check that old file is gone and new file exists
     const archivedContent = await readFile(result.archivedFilepath, "utf8");
@@ -76,7 +80,9 @@ Rule description.
 
   // @verifies RULE-31
   it("[RULE-31] should strictly reject archiving when active incoming references exist", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-archival-reject-test-"));
+    const tempDir = await mkdtemp(
+      join(tmpdir(), "modie-archival-reject-test-"),
+    );
     const adrsDir = join(tempDir, ".adrs");
     const rulesDir = join(tempDir, ".rules");
     await mkdir(adrsDir, { recursive: true });
@@ -116,7 +122,7 @@ Must follow ADR-1.
         tag: "ADR-1",
         cwd: tempDir,
       }),
-    ).rejects.toThrow("active incoming reference(s) exist (RULE-31)");
+    ).rejects.toThrow("active incoming reference(s) exist");
 
     await rm(tempDir, { recursive: true, force: true });
   });
@@ -169,7 +175,9 @@ Dependent rule.
 
   // @verifies RULE-31
   it("[RULE-31] should reject archiving an artifact that is already archived", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-archival-already-test-"));
+    const tempDir = await mkdtemp(
+      join(tmpdir(), "modie-archival-already-test-"),
+    );
     const adrsDir = join(tempDir, ".adrs");
     await mkdir(adrsDir, { recursive: true });
 
@@ -198,7 +206,9 @@ Already archived.
 
   // @verifies RULE-31
   it("[RULE-31] should reject when subtype constraint does not match target artifact", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-archival-subtype-mismatch-"));
+    const tempDir = await mkdtemp(
+      join(tmpdir(), "modie-archival-subtype-mismatch-"),
+    );
     const adrsDir = join(tempDir, ".adrs");
     await mkdir(adrsDir, { recursive: true });
 

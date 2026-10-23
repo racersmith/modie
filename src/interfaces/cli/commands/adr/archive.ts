@@ -5,7 +5,10 @@
  */
 
 import { z } from "zod";
-import { archiveArtifact, type ArchiveArtifactResult } from "../../../../core/index.ts";
+import {
+  archiveArtifact,
+  type ArchiveArtifactResult,
+} from "../../../../core/index.ts";
 import {
   createCommandHandler,
   defineCommand,
@@ -36,7 +39,7 @@ export const adrArchiveCommand: CliCommandDefinition<
   name: "archive",
   usage: "modie adr archive <tag-or-path> [options]",
   description:
-    "Archive an ADR artifact enforcing zero active incoming references (RULE-31) (alias for 'modie archive')",
+    "Archive an ADR artifact enforcing zero active incoming references (alias for 'modie archive')",
   agentGuidance:
     "Call this tool to archive a superseded ADR. Verifies that zero active artifacts reference it before renaming to *.ARCHIVED.md.",
   helpUsage: "modie adr archive --help",

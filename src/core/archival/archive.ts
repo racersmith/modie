@@ -43,7 +43,10 @@ export async function archiveArtifact(
   }
 
   // 3. Validate subtype if caller provided subtype constraint
-  if (options.subtype && artifact.subtype.toUpperCase() !== options.subtype.toUpperCase()) {
+  if (
+    options.subtype &&
+    artifact.subtype.toUpperCase() !== options.subtype.toUpperCase()
+  ) {
     throw new Error(
       `Artifact "${artifact.tag}" is of subtype "${artifact.subtype}", expected "${options.subtype}".`,
     );
@@ -51,13 +54,14 @@ export async function archiveArtifact(
 
   // 4. Query citations across the workspace to evaluate archival safety (RULE-31)
   const refResult = await findArtifactReferences(artifact.tag, { cwd });
-  const { canArchive, blockingReasons, blockingCount } = refResult.archivalGuard;
+  const { canArchive, blockingReasons, blockingCount } =
+    refResult.archivalGuard;
 
   // 5. Strict rejection if active references exist and --force is omitted
   if (!canArchive && !options.force) {
     const reasonsList = blockingReasons.map((r) => `  - ${r}`).join("\n");
     throw new Error(
-      `Cannot archive ${artifact.tag}: ${blockingCount} active incoming reference(s) exist (RULE-31).\n${reasonsList}\nUse --force to bypass this guard.`,
+      `Cannot archive ${artifact.tag}: ${blockingCount} active incoming reference(s) exist.\n${reasonsList}\nUse --force to bypass this guard.`,
     );
   }
 

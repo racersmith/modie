@@ -16,10 +16,16 @@ const execFileAsync = promisify(execFile);
 describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31)", () => {
   // @verifies RULE-27
   it("[RULE-27] should emit rule archive subcommand help to stderr with exit code 0", async () => {
-    const { exitCode, stdout, stderr } = await captureCli(["rule", "archive", "--help"]);
+    const { exitCode, stdout, stderr } = await captureCli([
+      "rule",
+      "archive",
+      "--help",
+    ]);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
-    expect(stderr).toContain("Usage: modie rule archive <tag-or-path> [options]");
+    expect(stderr).toContain(
+      "Usage: modie rule archive <tag-or-path> [options]",
+    );
   });
 
   // @verifies RULE-27
@@ -54,7 +60,9 @@ Rule description.
 
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe(".rules/single-purpose.RULE-1.ARCHIVED.md");
-    expect(stderr).toContain("✓ Archived RULE RULE-1: single-purpose.RULE-1.ARCHIVED.md");
+    expect(stderr).toContain(
+      "✓ Archived RULE RULE-1: single-purpose.RULE-1.ARCHIVED.md",
+    );
 
     const archivedContent = await readFile(
       join(tempDir, stdout.trim()),
@@ -91,8 +99,12 @@ Rule description.
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
-    expect(stderr).toContain("Error: Cannot archive RULE-1: 1 active incoming reference(s) exist (RULE-31).");
-    expect(stderr).toContain("Active artifact TASK-1 (links) maintains link to RULE-1");
+    expect(stderr).toContain(
+      "Error: Cannot archive RULE-1: 1 active incoming reference(s) exist.",
+    );
+    expect(stderr).toContain(
+      "Active artifact TASK-1 (links) maintains link to RULE-1",
+    );
 
     await rm(tempDir, { recursive: true, force: true });
   });
@@ -123,7 +135,9 @@ Rule description.
 
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe(".rules/forced-rule.RULE-1.ARCHIVED.md");
-    expect(stderr).toContain("✓ Archived RULE RULE-1: forced-rule.RULE-1.ARCHIVED.md (forced with active references)");
+    expect(stderr).toContain(
+      "✓ Archived RULE RULE-1: forced-rule.RULE-1.ARCHIVED.md (forced with active references)",
+    );
 
     await rm(tempDir, { recursive: true, force: true });
   });
@@ -176,7 +190,9 @@ Rule description.
     );
 
     expect(stdout.trim()).toBe(".rules/sub-rule.RULE-1.ARCHIVED.md");
-    expect(stderr).toContain("✓ Archived RULE RULE-1: sub-rule.RULE-1.ARCHIVED.md");
+    expect(stderr).toContain(
+      "✓ Archived RULE RULE-1: sub-rule.RULE-1.ARCHIVED.md",
+    );
 
     await rm(tempDir, { recursive: true, force: true });
   });

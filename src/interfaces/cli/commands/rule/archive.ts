@@ -5,7 +5,10 @@
  */
 
 import { z } from "zod";
-import { archiveArtifact, type ArchiveArtifactResult } from "../../../../core/index.ts";
+import {
+  archiveArtifact,
+  type ArchiveArtifactResult,
+} from "../../../../core/index.ts";
 import {
   createCommandHandler,
   defineCommand,
@@ -36,7 +39,7 @@ export const ruleArchiveCommand: CliCommandDefinition<
   name: "archive",
   usage: "modie rule archive <tag-or-path> [options]",
   description:
-    "Archive a RULE artifact enforcing zero active incoming references (RULE-31) (alias for 'modie archive')",
+    "Archive a RULE artifact enforcing zero active incoming references (alias for 'modie archive')",
   agentGuidance:
     "Call this tool to archive an invariant RULE. Verifies that zero active artifacts reference it before renaming to *.ARCHIVED.md.",
   helpUsage: "modie rule archive --help",

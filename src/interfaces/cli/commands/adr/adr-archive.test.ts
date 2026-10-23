@@ -16,10 +16,16 @@ const execFileAsync = promisify(execFile);
 describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31)", () => {
   // @verifies RULE-27
   it("[RULE-27] should emit adr archive subcommand help to stderr with exit code 0", async () => {
-    const { exitCode, stdout, stderr } = await captureCli(["adr", "archive", "--help"]);
+    const { exitCode, stdout, stderr } = await captureCli([
+      "adr",
+      "archive",
+      "--help",
+    ]);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
-    expect(stderr).toContain("Usage: modie adr archive <tag-or-path> [options]");
+    expect(stderr).toContain(
+      "Usage: modie adr archive <tag-or-path> [options]",
+    );
   });
 
   // @verifies RULE-27
@@ -55,7 +61,9 @@ Single database.
 
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe(".adrs/single-database.ADR-1.ARCHIVED.md");
-    expect(stderr).toContain("✓ Archived ADR ADR-1: single-database.ADR-1.ARCHIVED.md");
+    expect(stderr).toContain(
+      "✓ Archived ADR ADR-1: single-database.ADR-1.ARCHIVED.md",
+    );
 
     const archivedContent = await readFile(
       join(tempDir, stdout.trim()),
@@ -92,8 +100,12 @@ Single database.
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
-    expect(stderr).toContain("Error: Cannot archive ADR-1: 1 active incoming reference(s) exist (RULE-31).");
-    expect(stderr).toContain("Active artifact RULE-1 (links) maintains link to ADR-1");
+    expect(stderr).toContain(
+      "Error: Cannot archive ADR-1: 1 active incoming reference(s) exist.",
+    );
+    expect(stderr).toContain(
+      "Active artifact RULE-1 (links) maintains link to ADR-1",
+    );
 
     await rm(tempDir, { recursive: true, force: true });
   });
@@ -124,7 +136,9 @@ Single database.
 
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe(".adrs/forced-decision.ADR-1.ARCHIVED.md");
-    expect(stderr).toContain("✓ Archived ADR ADR-1: forced-decision.ADR-1.ARCHIVED.md (forced with active references)");
+    expect(stderr).toContain(
+      "✓ Archived ADR ADR-1: forced-decision.ADR-1.ARCHIVED.md (forced with active references)",
+    );
 
     await rm(tempDir, { recursive: true, force: true });
   });
@@ -177,7 +191,9 @@ Single database.
     );
 
     expect(stdout.trim()).toBe(".adrs/sub-decision.ADR-1.ARCHIVED.md");
-    expect(stderr).toContain("✓ Archived ADR ADR-1: sub-decision.ADR-1.ARCHIVED.md");
+    expect(stderr).toContain(
+      "✓ Archived ADR ADR-1: sub-decision.ADR-1.ARCHIVED.md",
+    );
 
     await rm(tempDir, { recursive: true, force: true });
   });

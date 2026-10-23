@@ -42,11 +42,11 @@ Commands:
   find <tag> [options]         Find the file path of an artifact by tag
   show <tag> [options]         Display artifact details or content
   references <tag> [options]   Display citations and declared outbound links (alias: refs)
-  archive <tag> [options]      Archive a governance artifact (RULE, ADR) (RULE-31)
+  archive <tag> [options]      Archive a governance artifact (RULE, ADR)
   rule create <title>          Create a new RULE artifact
-  rule archive <tag>           Archive a RULE artifact (RULE-31)
+  rule archive <tag>           Archive a RULE artifact
   adr create <title>           Create a new ADR artifact
-  adr archive <tag>            Archive an ADR artifact (RULE-31)
+  adr archive <tag>            Archive an ADR artifact
   task create <title>          Create a new TASK artifact with automatic watermark resolution
   task start <id>              Create and checkout a hierarchical task branch
   task check <id> --item <n>   Check or uncheck an acceptance criteria item
@@ -83,7 +83,7 @@ export function printRuleNamespaceHelp(stderr: (msg: string) => void): void {
 
 Subcommands:
   create <title>               Create a new RULE artifact
-  archive <tag> [options]      Archive a RULE artifact (RULE-31)
+  archive <tag> [options]      Archive a RULE artifact
 `);
 }
 
@@ -92,7 +92,7 @@ export function printAdrNamespaceHelp(stderr: (msg: string) => void): void {
 
 Subcommands:
   create <title>               Create a new ADR artifact
-  archive <tag> [options]      Archive an ADR artifact (RULE-31)
+  archive <tag> [options]      Archive an ADR artifact
 `);
 }
 
