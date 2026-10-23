@@ -68,10 +68,13 @@ export interface TaskBranchTopology {
   protectedBranches: string[];
 }
 
+import type { IVcsAdapter } from "../vcs/types.ts";
+
 export interface StartTaskBranchOptions {
   base?: string;
   force?: boolean;
   cwd?: string;
+  vcs?: IVcsAdapter;
 }
 
 export interface StartTaskBranchResult {
@@ -89,6 +92,7 @@ export interface MergeTaskBranchOptions {
   keepBranch?: boolean;
   force?: boolean;
   cwd?: string;
+  vcs?: IVcsAdapter;
 }
 
 export interface MergeTaskBranchResult {

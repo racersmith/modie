@@ -13,7 +13,7 @@ Decouple direct execFile git command execution from task and branching domain lo
 
 # Acceptance Criteria
 
-- [ ] Define IVcsAdapter interface covering branch detection, tree inspection, commit, checkout, and merge
-- [ ] Implement GitCliAdapter and wire into task completion, branching, and watermark resolution
-- [ ] Support injecting mock VCS adapters into core functions for fast, hermetic unit tests
-- [ ] Update existing tests and verify zero regressions
+- [x] Define IVcsAdapter interface covering branch detection, tree inspection, commit, checkout, and merge
+- [x] Implement GitCliAdapter and wire into task completion, branching, and watermark resolution
+- [x] Support injecting mock VCS adapters into core functions for fast, hermetic unit tests
+- [x] Update existing tests and verify zero regressions

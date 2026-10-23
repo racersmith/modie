@@ -161,3 +161,13 @@ export {
   findModieConfigFile,
   loadModieConfig,
 } from "./config/loader.ts";
+
+// VCS domain module
+export * as Vcs from "./vcs/index.ts";
+export * from "./vcs/types.ts";
+export {
+  GitCliAdapter,
+  defaultVcsAdapter,
+  MockVcsAdapter,
+} from "./vcs/index.ts";
+export type { MockVcsOptions } from "./vcs/index.ts";

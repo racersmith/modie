@@ -11,6 +11,7 @@ import {
   inspectGitDeletedArtifactIds,
   inspectMultiBranchActiveArtifactIds,
 } from "./git-inspector.ts";
+import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
 import type {
   AllocationStrategy,
   IndexableSubtype,
@@ -60,6 +61,7 @@ export async function resolveWatermark(
   options: WatermarkResolutionOptions = {},
 ): Promise<WatermarkDetails> {
   const cwd = options.cwd ?? process.cwd();
+  const vcs = options.vcs ?? defaultVcsAdapter;
   const subtype: IndexableSubtype = (options.subtype?.toUpperCase() as IndexableSubtype) ?? "TASK";
   registerArtifactSubtype(subtype);
 
@@ -75,13 +77,13 @@ export async function resolveWatermark(
       ? options.otherBranchActiveIds
       : (options.activeIds !== undefined
           ? []
-          : await inspectMultiBranchActiveArtifactIds(cwd, subtype, { excludeCurrent: true }));
+          : await inspectMultiBranchActiveArtifactIds(cwd, subtype, { excludeCurrent: true }, vcs));
 
   // 3. Gather deleted IDs from Git history (or use provided overrides for testing)
   const deletedIds =
     options.deletedIds !== undefined
       ? options.deletedIds
-      : await inspectGitDeletedArtifactIds(cwd, subtype);
+      : await inspectGitDeletedArtifactIds(cwd, subtype, vcs);
 
   // 4. Aggregate all known historical and active IDs (including active on other branches)
   const allKnownIds = Array.from(new Set([...activeIds, ...otherBranchActiveIds, ...deletedIds]));
@@ -91,7 +93,7 @@ export async function resolveWatermark(
   const detectedBranch =
     options.branch !== undefined
       ? options.branch
-      : (await detectGitBranch(cwd)) ?? "dev";
+      : (await detectGitBranch(cwd, vcs)) ?? "dev";
 
   // 5. Allocation Strategy: Non-TASK subtypes always follow pure monotonic progression (RULE-1)
   if (subtype !== "TASK") {
@@ -129,7 +131,7 @@ export async function resolveWatermark(
     resolvedPrefix = options.gitConfigPrefix;
   }
   if (!resolvedPrefix && !options.prefix) {
-    const gitPrefix = await getGitConfigPrefix(cwd);
+    const gitPrefix = await getGitConfigPrefix(cwd, vcs);
     if (gitPrefix) {
       resolvedPrefix = gitPrefix;
     }

@@ -7,9 +7,9 @@
 import { z } from "zod";
 import {
   completeTask,
+  defaultVcsAdapter,
   detectGitBranch,
   parseTaskIdFromBranch,
-  runGit,
   type CompleteTaskResult,
 } from "../../../../core/index.ts";
 import {
@@ -113,9 +113,7 @@ export const taskCompleteCommand: CliCommandDefinition<
     },
   },
   execute: async (input, context) => {
-    const isGitRepo =
-      (await runGit(["rev-parse", "--is-inside-work-tree"], context.cwd)) ===
-      "true";
+    const isGitRepo = await defaultVcsAdapter.isInsideWorkTree(context.cwd);
     const commit = input.noCommit
       ? false
       : input.commit !== undefined

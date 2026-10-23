@@ -6,7 +6,8 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
-import { runGit } from "../resolver/git-inspector.ts";
+import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
+import type { IVcsAdapter } from "../vcs/types.ts";
 import type { ModieConfig, ResolvedModieConfig } from "./types.ts";
 
 export const DEFAULT_PROTECTED_BRANCHES = ["main", "master"];
@@ -44,12 +45,12 @@ export function findModieConfigFile(startDir: string = process.cwd()): string | 
  * Resolves the default trunk branch by inspecting existing local git branches.
  * If "dev" exists, returns "dev"; otherwise falls back to "main".
  */
-async function resolveDefaultTrunk(cwd: string): Promise<string> {
-  const branchesOutput = await runGit(["branch", "--list"], cwd);
-  if (branchesOutput) {
-    const branches = branchesOutput
-      .split("\n")
-      .map((b) => b.replace(/^\*?\s+/, "").trim());
+async function resolveDefaultTrunk(
+  cwd: string,
+  vcs: IVcsAdapter = defaultVcsAdapter,
+): Promise<string> {
+  const branches = await vcs.listBranches(cwd);
+  if (branches.length > 0) {
     if (branches.includes("dev")) {
       return "dev";
     }
@@ -70,6 +71,7 @@ async function resolveDefaultTrunk(cwd: string): Promise<string> {
  */
 export async function loadModieConfig(
   cwd: string = process.cwd(),
+  vcs: IVcsAdapter = defaultVcsAdapter,
 ): Promise<ResolvedModieConfig> {
   const configPath = findModieConfigFile(cwd);
   let fileConfig: ModieConfig = {};
@@ -85,9 +87,9 @@ export async function loadModieConfig(
   }
 
   // 1. Inspect Git config overrides
-  const gitConfigTrunk = await runGit(["config", "modie.trunk"], cwd);
-  const gitConfigProtected = await runGit(["config", "modie.protectedBranches"], cwd);
-  const gitConfigPrefix = await runGit(["config", "modie.prefix"], cwd);
+  const gitConfigTrunk = await vcs.getConfig("modie.trunk", cwd);
+  const gitConfigProtected = await vcs.getConfig("modie.protectedBranches", cwd);
+  const gitConfigPrefix = await vcs.getConfig("modie.prefix", cwd);
 
   // 2. Resolve trunk branch
   let trunk: string;
@@ -98,7 +100,7 @@ export async function loadModieConfig(
   } else if (fileConfig.trunk) {
     trunk = fileConfig.trunk.trim();
   } else {
-    trunk = await resolveDefaultTrunk(cwd);
+    trunk = await resolveDefaultTrunk(cwd, vcs);
   }
 
   // 3. Resolve protected branches
