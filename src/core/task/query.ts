@@ -5,6 +5,7 @@
 
 import { readFile } from "node:fs/promises";
 import { relative } from "node:path";
+import { detectGitBranch } from "../resolver/git-inspector.ts";
 import { scanActiveTasks } from "../resolver/active-scanner.ts";
 import type { DiscoveredTask } from "../resolver/types.ts";
 import { normalizeTaskId, resolveTaskFile } from "./completion.ts";
@@ -30,6 +31,11 @@ export interface TaskQueueItem {
   acceptanceCriteria: TaskAcceptanceCriteriaItem[];
   allCriteriaSatisfied: boolean;
   context?: string;
+
+  /**
+   * Whether this task corresponds to the active checked-out git branch.
+   */
+  isCurrent?: boolean;
 }
 
 export interface TaskQueueQueryOptions {
@@ -62,6 +68,16 @@ export interface TaskQueueQueryOptions {
    * Pre-provided active task metadata (useful for isolated unit testing).
    */
   activeTasks?: DiscoveredTask[];
+
+  /**
+   * Optional git branch name override for resolving the current active task.
+   */
+  currentBranch?: string;
+
+  /**
+   * Explicit current task ID override.
+   */
+  currentTaskId?: string;
 }
 
 export interface TaskStatusDetails extends TaskQueueItem {
@@ -140,7 +156,17 @@ export async function queryTaskQueue(
     activeTaskMap.set(canonicalId.toLowerCase(), canonicalId);
   }
 
-  // 4. Compute DAG dependency readiness and checklist progress for each task
+  // 4. Resolve current task ID from active git branch topology or options
+  const currentBranch =
+    options.currentBranch ?? (await detectGitBranch(cwd));
+  const currentTaskId =
+    options.currentTaskId ??
+    (currentBranch ? parseTaskIdFromBranch(currentBranch) : null);
+  const normCurrentId = currentTaskId
+    ? normalizeTaskId(currentTaskId).toLowerCase()
+    : null;
+
+  // 5. Compute DAG dependency readiness and checklist progress for each task
   const items: TaskQueueItem[] = [];
 
   for (const { discovered: disc, parsed, relativePath } of rawTasks) {
@@ -172,6 +198,9 @@ export async function queryTaskQueue(
 
     const fullTaskId = `TASK-${disc.id}`;
     const title = disc.slug.replace(/-/g, " ");
+    const isCurrent = Boolean(
+      normCurrentId && normalizeTaskId(disc.id).toLowerCase() === normCurrentId,
+    );
 
     items.push({
       id: disc.id,
@@ -190,13 +219,14 @@ export async function queryTaskQueue(
       acceptanceCriteria: criteria,
       allCriteriaSatisfied,
       context: parsed.context,
+      isCurrent,
     });
   }
 
-  // 5. Sort tasks deterministically
+  // 6. Sort tasks deterministically
   items.sort((a, b) => compareTaskIds(a.id, b.id));
 
-  // 6. Apply filtering
+  // 7. Apply filtering
   const isReadyOnly = options.readyOnly || options.filter === "ready";
   const isBlockedOnly = options.blockedOnly || options.filter === "blocked";
 
@@ -216,6 +246,50 @@ export async function queryTaskQueue(
     }
     return true;
   });
+}
+
+/**
+ * Parses the canonical task ID from a git branch name per RULE-28.
+ * Supports standard task branches (`task/22-slug`, `task/TASK-22-slug`),
+ * subtask branches (`task/106-1-subtask-slug`), and prefixed tasks (`task/J101-slug`).
+ * Returns null if the branch is not a task branch.
+ */
+export function parseTaskIdFromBranch(branchName?: string | null): string | null {
+  if (!branchName) {
+    return null;
+  }
+  const trimmed = branchName.trim();
+  const match = trimmed.match(/^task\/(?:TASK-)?([A-Za-z0-9]+(?:-[0-9]+)?)(?:-.*)?$/i);
+  if (!match || !match[1]) {
+    return null;
+  }
+  return match[1];
+}
+
+/**
+ * Resolves the active task for the currently checked-out git branch.
+ * Returns null if not on a task branch or if the corresponding task file
+ * does not exist on disk.
+ */
+export async function resolveCurrentTask(
+  options: { cwd?: string; branch?: string } = {},
+): Promise<TaskStatusDetails | null> {
+  const cwd = options.cwd ?? process.cwd();
+  const branch = options.branch ?? (await detectGitBranch(cwd));
+  if (!branch) {
+    return null;
+  }
+
+  const taskId = parseTaskIdFromBranch(branch);
+  if (!taskId) {
+    return null;
+  }
+
+  try {
+    return await getTaskStatus(taskId, { cwd });
+  } catch {
+    return null;
+  }
 }
 
 /**

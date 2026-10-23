@@ -1,6 +1,6 @@
 /**
  * Unit tests for active task queue querying and DAG dependency readiness evaluation.
- * @verifies ADR-6, RULE-18, RULE-22, RULE-25
+ * @verifies ADR-6, RULE-18, RULE-22, RULE-25, RULE-28
  */
 
 import { describe, expect, it } from "bun:test";
@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import {
   compareTaskIds,
   getTaskStatus,
+  parseTaskIdFromBranch,
   queryTaskQueue,
 } from "./index.ts";
 
@@ -340,5 +341,39 @@ Detailed inspection test.
       /was not found among active tasks on disk/,
     );
     await rm(tempDir, { recursive: true, force: true });
+  });
+});
+
+describe("Task Branch Parsing Service - parseTaskIdFromBranch (RULE-28)", () => {
+  // @verifies RULE-28
+  it("[RULE-28] should parse monotonic integer task ID from branch name", () => {
+    expect(parseTaskIdFromBranch("task/30-resolve-current-task")).toBe("30");
+    expect(parseTaskIdFromBranch("task/1-setup")).toBe("1");
+  });
+
+  // @verifies RULE-28
+  it("[RULE-28] should parse subtask ID from branch name", () => {
+    expect(parseTaskIdFromBranch("task/7-1-subtask-feature")).toBe("7-1");
+  });
+
+  // @verifies RULE-28
+  it("[RULE-28] should parse branch with explicit TASK- prefix", () => {
+    expect(parseTaskIdFromBranch("task/TASK-30-resolve-current-task")).toBe("30");
+  });
+
+  // @verifies RULE-28
+  it("[RULE-28] should parse alphanumeric / prefixed task ID from branch name", () => {
+    expect(parseTaskIdFromBranch("task/J101-jira-task")).toBe("J101");
+  });
+
+  // @verifies RULE-28
+  it("[RULE-28] should return null for trunk, protected, or non-task branches", () => {
+    expect(parseTaskIdFromBranch("dev")).toBeNull();
+    expect(parseTaskIdFromBranch("main")).toBeNull();
+    expect(parseTaskIdFromBranch("feature/some-feature")).toBeNull();
+    expect(parseTaskIdFromBranch("fix/some-fix")).toBeNull();
+    expect(parseTaskIdFromBranch("")).toBeNull();
+    expect(parseTaskIdFromBranch(null)).toBeNull();
+    expect(parseTaskIdFromBranch(undefined)).toBeNull();
   });
 });

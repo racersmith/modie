@@ -45,11 +45,21 @@ export function renderTaskQueueTable(tasks: TaskQueueItem[]): string {
     return "";
   }
 
+  const formatStatus = (t: TaskQueueItem): string => {
+    if (t.isCurrent) {
+      return t.readiness === "BLOCKED" ? "CURRENT (BLOCKED)" : "CURRENT";
+    }
+    return t.readiness;
+  };
+
   const idColWidth = Math.max(
     8,
     ...tasks.map((t) => t.fullTaskId.length),
   );
-  const statusColWidth = 9; // "BLOCKED" is 7
+  const statusColWidth = Math.max(
+    9,
+    ...tasks.map((t) => formatStatus(t).length),
+  );
   const progressColWidth = Math.max(
     10,
     ...tasks.map((t) => t.criteriaProgress.length),
@@ -64,7 +74,7 @@ export function renderTaskQueueTable(tasks: TaskQueueItem[]): string {
 
   const rows = tasks.map((t) => {
     const id = t.fullTaskId.padEnd(idColWidth);
-    const status = t.readiness.padEnd(statusColWidth);
+    const status = formatStatus(t).padEnd(statusColWidth);
     const progressText = t.allCriteriaSatisfied
       ? `${t.criteriaProgress} ✓`
       : t.criteriaProgress;

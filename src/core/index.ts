@@ -59,7 +59,13 @@ export type {
   CompleteTaskResult,
   ResolveTaskOptions,
 } from "./task/completion.ts";
-export { compareTaskIds, getTaskStatus, queryTaskQueue } from "./task/query.ts";
+export {
+  compareTaskIds,
+  getTaskStatus,
+  parseTaskIdFromBranch,
+  queryTaskQueue,
+  resolveCurrentTask,
+} from "./task/query.ts";
 export type {
   TaskQueueItem,
   TaskQueueQueryOptions,
