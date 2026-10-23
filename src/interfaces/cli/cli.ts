@@ -6,6 +6,7 @@
 import { handleFind } from "./commands/find/find.ts";
 import { handleShow } from "./commands/show/show.ts";
 import { handleReferences } from "./commands/references/references.ts";
+import { handleArchive } from "./commands/archive/archive.ts";
 import { handleRuleCreate, handleRuleArchive } from "./commands/rule/index.ts";
 import { handleAdrCreate, handleAdrArchive } from "./commands/adr/index.ts";
 import {
@@ -41,6 +42,7 @@ Commands:
   find <tag> [options]         Find the file path of an artifact by tag
   show <tag> [options]         Display artifact details or content
   references <tag> [options]   Display citations and declared outbound links (alias: refs)
+  archive <tag> [options]      Archive a governance artifact (RULE, ADR) (RULE-31)
   rule create <title>          Create a new RULE artifact
   rule archive <tag>           Archive a RULE artifact (RULE-31)
   adr create <title>           Create a new ADR artifact
@@ -99,6 +101,7 @@ const directCommands: Record<string, CommandHandler> = {
   show: handleShow,
   references: handleReferences,
   refs: handleReferences,
+  archive: handleArchive,
   mcp: handleMcp,
 };
 

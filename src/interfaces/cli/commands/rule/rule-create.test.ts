@@ -173,6 +173,91 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
     expect(stderr).toContain('Error: Unknown flag "--bogus"');
   });
 
+  // @verifies RULE-4, RULE-25, RULE-27
+  it("[RULE-4][RULE-25][RULE-27] should create a rule with --supersedes and update predecessor", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-rule-supersedes-"));
+    const rulesDir = join(tempDir, ".rules");
+    await mkdir(rulesDir, { recursive: true });
+
+    // Seed RULE-1
+    const rule1Path = join(rulesDir, "old-rule.RULE-1.md");
+    await writeFile(rule1Path, "Old rule assertion.\n", "utf8");
+
+    const { exitCode, stdout, stderr } = await captureCli(
+      [
+        "rule",
+        "create",
+        "New Rule",
+        "--context",
+        "New rule assertion.",
+        "--supersedes",
+        "RULE-1",
+      ],
+      tempDir,
+    );
+
+    expect(exitCode).toBe(0);
+    expect(stdout.trim()).toBe(".rules/new-rule.RULE-2.md");
+    expect(stderr).toContain("✓ Created rule RULE-2: new-rule.RULE-2.md (supersedes RULE-1)");
+
+    const rule1Content = await readFile(rule1Path, "utf8");
+    expect(rule1Content).toContain("superseded_by:\n  - RULE-2");
+
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  // @verifies RULE-4, RULE-27
+  it("[RULE-4][RULE-27] should emit supersedes in JSON output when --supersedes and --json are passed", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-rule-sup-json-"));
+    const rulesDir = join(tempDir, ".rules");
+    await mkdir(rulesDir, { recursive: true });
+
+    // Seed RULE-1
+    await writeFile(join(rulesDir, "old-rule.RULE-1.md"), "Old assertion.\n", "utf8");
+
+    const { exitCode, stdout, stderr } = await captureCli(
+      [
+        "rule",
+        "create",
+        "Superseding JSON Rule",
+        "-S",
+        "RULE-1",
+        "--json",
+      ],
+      tempDir,
+    );
+
+    expect(exitCode).toBe(0);
+    expect(stderr).toContain("✓ Created rule RULE-2 (.rules/superseding-json-rule.RULE-2.md) (supersedes RULE-1)");
+
+    const parsed = JSON.parse(stdout.trim());
+    expect(parsed.tag).toBe("RULE-2");
+    expect(parsed.supersedes).toEqual(["RULE-1"]);
+
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  // @verifies RULE-13, RULE-27
+  it("[RULE-13][RULE-27] should reject invalid --supersedes target with error to stderr", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-rule-sup-err-"));
+    const { exitCode, stdout, stderr } = await captureCli(
+      [
+        "rule",
+        "create",
+        "Invalid Target Rule",
+        "--supersedes",
+        "ADR-1",
+      ],
+      tempDir,
+    );
+
+    expect(exitCode).toBe(1);
+    expect(stdout).toBe("");
+    expect(stderr).toContain('Invalid supersedes target: "ADR-1"');
+
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
   // @verifies RULE-25, RULE-27
   it("[RULE-25][RULE-27] should execute rule create via bin.ts subprocess", async () => {
     const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-rule-subproc-"));

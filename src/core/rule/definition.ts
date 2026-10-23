@@ -62,6 +62,12 @@ export const ruleDefinition: ArtifactDefinition<CreateRuleOptions, RuleArtifact>
   },
   render: ({ id, slug, title, options, filepath }) => {
     const links = options.links ?? [];
+    const supersedes = options.supersedes
+      ? Array.isArray(options.supersedes)
+        ? options.supersedes.map((s) => s.trim().toUpperCase()).filter(Boolean)
+        : [options.supersedes.trim().toUpperCase()].filter(Boolean)
+      : undefined;
+
     const assertionText =
       options.assertion?.trim() ||
       options.context?.trim() ||
@@ -72,6 +78,7 @@ export const ruleDefinition: ArtifactDefinition<CreateRuleOptions, RuleArtifact>
       slug,
       title,
       links,
+      supersedes,
       assertion: assertionText,
     });
 
@@ -80,6 +87,7 @@ export const ruleDefinition: ArtifactDefinition<CreateRuleOptions, RuleArtifact>
       slug,
       title,
       links,
+      supersedes,
       assertion: assertionText,
       filePath: filepath,
       rawContent: markdown,

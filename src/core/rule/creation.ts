@@ -40,5 +40,6 @@ export async function createRule(
     markdown: result.markdown,
     id: result.id,
     tag: result.tag,
+    supersedes: result.artifact.supersedes,
   };
 }

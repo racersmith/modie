@@ -65,28 +65,6 @@ export const adrDefinition: ArtifactDefinition<CreateAdrOptions, AdrArtifact> = 
   validate: async ({ normalizedScopeDir, options, cwd }) => {
     const links = options.links ?? [];
     await validateAdrScope(normalizedScopeDir, links, cwd);
-
-    if (options.supersedes) {
-      const supersedesRaw = Array.isArray(options.supersedes)
-        ? options.supersedes
-        : [options.supersedes];
-      const supersedesList = supersedesRaw
-        .map((s) => s.trim().toUpperCase())
-        .filter(Boolean);
-
-      for (const sup of supersedesList) {
-        if (!/^ADR-[A-Za-z0-9_-]+$/i.test(sup)) {
-          throw new Error(
-            `Invalid supersedes target: "${sup}". An ADR can only supersede other ADR artifacts.`,
-          );
-        }
-        await resolveArtifactByTag(sup, {
-          cwd,
-          subtype: "ADR",
-          includeArchived: true,
-        });
-      }
-    }
   },
   render: ({ id, slug, title, options, filepath }) => {
     const links = options.links ?? [];

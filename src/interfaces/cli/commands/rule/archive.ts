@@ -1,11 +1,11 @@
 /**
  * Declarative CLI command definition for `modie rule archive <tag> [options]`.
- * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
- * Enforces RULE-4 and RULE-31.
+ * Transparent alias delegating to unified `modie archive` command.
+ * Enforces RULE-4, RULE-25, RULE-27, and RULE-31.
  */
 
 import { z } from "zod";
-import { archiveRule, type ArchiveArtifactResult } from "../../../../core/index.ts";
+import { archiveArtifact, type ArchiveArtifactResult } from "../../../../core/index.ts";
 import {
   createCommandHandler,
   defineCommand,
@@ -13,19 +13,9 @@ import {
   type CliCommandDefinition,
 } from "../../framework/index.ts";
 import type { CliIoOptions } from "../../types.ts";
+import { archiveCommand, archiveSchema } from "../archive/archive.ts";
 
-export const ruleArchiveSchema = z.object({
-  tag: z
-    .string()
-    .min(1, "RULE identifier is required")
-    .describe("RULE tag (e.g. RULE-5), slug, or file path"),
-  force: z
-    .boolean()
-    .default(false)
-    .describe(
-      "Force archival bypassing active incoming reference checks (RULE-31 override)",
-    ),
-});
+export const ruleArchiveSchema = archiveSchema;
 
 export type RuleArchiveInput = z.infer<typeof ruleArchiveSchema>;
 
@@ -35,7 +25,7 @@ export interface RuleArchiveFlags {
 }
 
 /**
- * Declarative definition for the `modie rule archive` command.
+ * Declarative definition for the `modie rule archive` command alias.
  */
 export const ruleArchiveCommand: CliCommandDefinition<
   RuleArchiveFlags,
@@ -46,7 +36,7 @@ export const ruleArchiveCommand: CliCommandDefinition<
   name: "archive",
   usage: "modie rule archive <tag-or-path> [options]",
   description:
-    "Archive a RULE artifact enforcing zero active incoming references (RULE-31)",
+    "Archive a RULE artifact enforcing zero active incoming references (RULE-31) (alias for 'modie archive')",
   agentGuidance:
     "Call this tool to archive an invariant RULE. Verifies that zero active artifacts reference it before renaming to *.ARCHIVED.md.",
   helpUsage: "modie rule archive --help",
@@ -61,36 +51,16 @@ export const ruleArchiveCommand: CliCommandDefinition<
         "Error: Missing required RULE identifier. Usage: modie rule archive <tag-or-path> [options]",
     },
   ],
-  flags: {
-    force: {
-      type: "boolean",
-      short: "f",
-      description:
-        "Force archival bypassing active incoming reference checks (RULE-31 override)",
-    },
-  },
+  flags: archiveCommand.flags,
   execute: async (input, context) => {
-    return archiveRule(input.tag, {
+    return archiveArtifact({
+      tag: input.tag,
       force: input.force,
       cwd: context.cwd,
     });
   },
-  render: (result, context) => {
-    context.stdout(result.archivedRelativePath);
-
-    const forceNotice = result.forced ? " (forced with active references)" : "";
-    context.stderr(
-      `✓ Archived RULE ${result.tag}: ${result.archivedFilename}${forceNotice}`,
-    );
-  },
-  renderJson: (result, context) => {
-    context.stdout(JSON.stringify(result, null, 2));
-
-    const forceNotice = result.forced ? " (forced)" : "";
-    context.stderr(
-      `✓ Archived RULE ${result.tag} (${result.archivedRelativePath})${forceNotice}`,
-    );
-  },
+  render: archiveCommand.render,
+  renderJson: archiveCommand.renderJson,
 });
 
 /**

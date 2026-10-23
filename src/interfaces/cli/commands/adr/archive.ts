@@ -1,11 +1,11 @@
 /**
  * Declarative CLI command definition for `modie adr archive <tag> [options]`.
- * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
- * Enforces RULE-4 and RULE-31.
+ * Transparent alias delegating to unified `modie archive` command.
+ * Enforces RULE-4, RULE-25, RULE-27, and RULE-31.
  */
 
 import { z } from "zod";
-import { archiveAdr, type ArchiveArtifactResult } from "../../../../core/index.ts";
+import { archiveArtifact, type ArchiveArtifactResult } from "../../../../core/index.ts";
 import {
   createCommandHandler,
   defineCommand,
@@ -13,19 +13,9 @@ import {
   type CliCommandDefinition,
 } from "../../framework/index.ts";
 import type { CliIoOptions } from "../../types.ts";
+import { archiveCommand, archiveSchema } from "../archive/archive.ts";
 
-export const adrArchiveSchema = z.object({
-  tag: z
-    .string()
-    .min(1, "ADR identifier is required")
-    .describe("ADR tag (e.g. ADR-3), slug, or file path"),
-  force: z
-    .boolean()
-    .default(false)
-    .describe(
-      "Force archival bypassing active incoming reference checks (RULE-31 override)",
-    ),
-});
+export const adrArchiveSchema = archiveSchema;
 
 export type AdrArchiveInput = z.infer<typeof adrArchiveSchema>;
 
@@ -35,7 +25,7 @@ export interface AdrArchiveFlags {
 }
 
 /**
- * Declarative definition for the `modie adr archive` command.
+ * Declarative definition for the `modie adr archive` command alias.
  */
 export const adrArchiveCommand: CliCommandDefinition<
   AdrArchiveFlags,
@@ -46,7 +36,7 @@ export const adrArchiveCommand: CliCommandDefinition<
   name: "archive",
   usage: "modie adr archive <tag-or-path> [options]",
   description:
-    "Archive an ADR artifact enforcing zero active incoming references (RULE-31)",
+    "Archive an ADR artifact enforcing zero active incoming references (RULE-31) (alias for 'modie archive')",
   agentGuidance:
     "Call this tool to archive a superseded ADR. Verifies that zero active artifacts reference it before renaming to *.ARCHIVED.md.",
   helpUsage: "modie adr archive --help",
@@ -61,36 +51,16 @@ export const adrArchiveCommand: CliCommandDefinition<
         "Error: Missing required ADR identifier. Usage: modie adr archive <tag-or-path> [options]",
     },
   ],
-  flags: {
-    force: {
-      type: "boolean",
-      short: "f",
-      description:
-        "Force archival bypassing active incoming reference checks (RULE-31 override)",
-    },
-  },
+  flags: archiveCommand.flags,
   execute: async (input, context) => {
-    return archiveAdr(input.tag, {
+    return archiveArtifact({
+      tag: input.tag,
       force: input.force,
       cwd: context.cwd,
     });
   },
-  render: (result, context) => {
-    context.stdout(result.archivedRelativePath);
-
-    const forceNotice = result.forced ? " (forced with active references)" : "";
-    context.stderr(
-      `✓ Archived ADR ${result.tag}: ${result.archivedFilename}${forceNotice}`,
-    );
-  },
-  renderJson: (result, context) => {
-    context.stdout(JSON.stringify(result, null, 2));
-
-    const forceNotice = result.forced ? " (forced)" : "";
-    context.stderr(
-      `✓ Archived ADR ${result.tag} (${result.archivedRelativePath})${forceNotice}`,
-    );
-  },
+  render: archiveCommand.render,
+  renderJson: archiveCommand.renderJson,
 });
 
 /**

@@ -14,7 +14,9 @@ import {
   resolveArtifactDirectories,
 } from "../common/index.ts";
 import type { IndexableSubtype } from "../common/types.ts";
+import { parseCanonicalTag, resolveArtifactByTag } from "../query/artifact-query.ts";
 import { resolveNextArtifactId } from "../resolver/watermark.ts";
+import { updateSupersededArtifactFrontmatter } from "./supersession.ts";
 import type {
   ArtifactDefinition,
   BaseCreateArtifactOptions,
@@ -68,6 +70,33 @@ export async function createArtifact<
     });
   }
 
+  // 3.5 Validate supersedes targets and ensure same-subtype constraint
+  if (options.supersedes) {
+    const supersedesRaw = Array.isArray(options.supersedes)
+      ? options.supersedes
+      : [options.supersedes];
+    const supersedesList = supersedesRaw
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean);
+
+    const subtypeDisplay = (definition.subtype as string).toUpperCase();
+    const article = subtypeDisplay === "ADR" ? "An" : "A";
+
+    for (const sup of supersedesList) {
+      const tagInfo = parseCanonicalTag(sup);
+      if (!tagInfo || tagInfo.subtype.toUpperCase() !== subtypeDisplay) {
+        throw new Error(
+          `Invalid supersedes target: "${sup}". ${article} ${subtypeDisplay} can only supersede other ${subtypeDisplay} artifacts.`,
+        );
+      }
+      await resolveArtifactByTag(sup, {
+        cwd,
+        subtype: definition.subtype as IndexableSubtype,
+        includeArchived: true,
+      });
+    }
+  }
+
   // 4. Allocate monotonic artifact ID
   let id: string;
   let watermark = undefined;
@@ -112,6 +141,23 @@ export async function createArtifact<
   await writeFile(filepath, markdown, "utf8");
 
   const tag = `${definition.subtype.toUpperCase()}-${id}`;
+
+  // 8. Update frontmatter of superseded artifacts
+  if (options.supersedes) {
+    const supersedesRaw = Array.isArray(options.supersedes)
+      ? options.supersedes
+      : [options.supersedes];
+    const supersedesList = supersedesRaw
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean);
+
+    for (const sup of supersedesList) {
+      await updateSupersededArtifactFrontmatter(sup, tag, {
+        cwd,
+        expectedSubtype: definition.subtype,
+      });
+    }
+  }
 
   return {
     artifact,
