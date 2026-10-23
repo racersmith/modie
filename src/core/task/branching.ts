@@ -137,8 +137,12 @@ export async function detectArtifactCollisions(
             reason: "duplicate_tag",
           });
         }
-      } else if (sourceArt.filepath !== targetArt.filepath) {
-        // Artifact existed at base but filepaths diverged between branches
+      } else if (
+        sourceArt.filepath !== targetArt.filepath &&
+        sourceArt.filepath !== baseArt.filepath &&
+        targetArt.filepath !== baseArt.filepath
+      ) {
+        // Artifact existed at base but filepaths diverged on both branches independently
         const key = `${tagKey}:${sourceArt.filepath}:${targetArt.filepath}:divergent_filepath`;
         if (!seenCollisions.has(key)) {
           seenCollisions.add(key);

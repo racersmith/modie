@@ -442,4 +442,72 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     expect(result.sourceBranch).toBe("task/107-test");
     expect(result.targetBranch).toBe("dev");
   });
+
+  // @verifies RULE-33
+  it("[RULE-33] should allow merge when task branch archives an artifact without target branch conflict", async () => {
+    // 1. Commit active RULE-24 on dev before branching
+    await mkdir(join(gitDir, ".modie", "rules"), { recursive: true });
+    await writeFile(
+      join(gitDir, ".modie", "rules", "explore.RULE-24.md"),
+      "# Active Rule 24\n",
+    );
+    await execFileAsync("git", ["add", "-A"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "feat: add RULE-24 on dev"], { cwd: gitDir });
+
+    // 2. Create task branch task/108-archive from dev
+    await execFileAsync("git", ["checkout", "-b", "task/108-archive"], { cwd: gitDir });
+
+    // Create completed task artifact
+    const taskPath = join(gitDir, "archive.TASK-108.md");
+    await writeFile(
+      taskPath,
+      "---\ndepends_on: []\nlinks: []\n---\n# Context\nArchive test\n# Acceptance Criteria\n- [x] Item\n",
+    );
+    // Archive RULE-24 on task branch
+    await execFileAsync("git", ["mv", ".modie/rules/explore.RULE-24.md", ".modie/rules/explore.RULE-24.ARCHIVED.md"], { cwd: gitDir });
+    await execFileAsync("git", ["add", "-A"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "refactor: archive RULE-24"], { cwd: gitDir });
+
+    // Complete task artifact
+    await rm(taskPath);
+    await execFileAsync("git", ["add", "-u"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "chore(task): delete completed TASK-108 artifact"], { cwd: gitDir });
+
+    // 3. Merging should succeed without collision because dev did not rename RULE-24
+    const collisions = await detectArtifactCollisions("task/108-archive", "dev", gitDir);
+    expect(collisions.length).toBe(0);
+
+    const mergeResult = await mergeTaskBranch("TASK-108", { target: "dev", cwd: gitDir });
+    expect(mergeResult.sourceBranch).toBe("task/108-archive");
+    expect(mergeResult.targetBranch).toBe("dev");
+  });
+
+  // @verifies RULE-33
+  it("[RULE-33] should detect divergent_filepath collision when both branches rename the same artifact to different paths", async () => {
+    // 1. Commit active RULE-30 at base
+    await mkdir(join(gitDir, ".modie", "rules"), { recursive: true });
+    await writeFile(
+      join(gitDir, ".modie", "rules", "rule.RULE-30.md"),
+      "# Base Rule 30\n",
+    );
+    await execFileAsync("git", ["add", "-A"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "feat: add RULE-30 at base"], { cwd: gitDir });
+
+    // 2. On dev, rename RULE-30 to dev-location
+    await execFileAsync("git", ["mv", ".modie/rules/rule.RULE-30.md", ".modie/rules/rule-dev.RULE-30.md"], { cwd: gitDir });
+    await execFileAsync("git", ["add", "-A"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "refactor: move RULE-30 on dev"], { cwd: gitDir });
+
+    // 3. Branch from HEAD~1 (base) and rename to feature-location
+    await execFileAsync("git", ["checkout", "-b", "feature/divergent", "HEAD~1"], { cwd: gitDir });
+    await execFileAsync("git", ["mv", ".modie/rules/rule.RULE-30.md", ".modie/rules/rule-feature.RULE-30.md"], { cwd: gitDir });
+    await execFileAsync("git", ["add", "-A"], { cwd: gitDir });
+    await execFileAsync("git", ["commit", "-m", "refactor: move RULE-30 on feature"], { cwd: gitDir });
+
+    // 4. Collision guard should detect divergent_filepath
+    const collisions = await detectArtifactCollisions("feature/divergent", "dev", gitDir);
+    expect(collisions.length).toBe(1);
+    expect(collisions[0]?.tag).toBe("RULE-30");
+    expect(collisions[0]?.reason).toBe("divergent_filepath");
+  });
 });
