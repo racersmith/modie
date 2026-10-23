@@ -175,12 +175,14 @@ export function mapContextToSchemaInput(
     if (definition.flags) {
       for (const [fname, fdef] of Object.entries(definition.flags)) {
         if (fdef.property === propName || candidates.includes(fname)) {
-          explicitFlagDef = fdef;
-          explicitFlagName = fname;
+          if (!explicitFlagDef) {
+            explicitFlagDef = fdef;
+            explicitFlagName = fname;
+          }
+          candidates.push(fname);
           if (fdef.aliases) {
             candidates.push(...fdef.aliases);
           }
-          break;
         }
       }
     }
@@ -192,6 +194,10 @@ export function mapContextToSchemaInput(
       candidates.push("link", "links");
     } else if (propName === "criteria") {
       candidates.push("criterion", "criteria", "acceptance-criteria");
+    } else if (propName === "plan_rules") {
+      candidates.push("plan-rule", "plan-rules", "planned-rule", "planned-rules");
+    } else if (propName === "plan_adrs") {
+      candidates.push("plan-adr", "plan-adrs", "planned-adr", "planned-adrs");
     } else if (propName === "context") {
       candidates.push("assertion");
     } else if (propName === "keepFile") {

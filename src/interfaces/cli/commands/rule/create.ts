@@ -81,6 +81,9 @@ export const ruleCreateCommand: CliCommandDefinition<
   name: "create",
   usage: "modie rule create <title> [options]",
   description: "Create a new RULE artifact",
+  agentGuidance:
+    "Call this tool to establish a new architectural, interface, or workflow rule with monotonic ID allocation.\n\n" +
+    "BEST PRACTICE: Author rules to capture durable invariants and conventions. Test assertions and code annotations must reference RULE IDs (e.g. `[RULE-XX]` or `@verifies RULE-XX`) rather than ephemeral TASK IDs.",
   helpUsage: "modie rule create --help",
   schema: ruleCreateSchema,
   positionals: [

@@ -5,6 +5,8 @@
  * and strictly enforces RULE-25 (interface-core decoupling) and RULE-26 (token economy).
  */
 
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { McpServer, type McpServerOptions } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   getArtifactDetails,
@@ -232,6 +234,55 @@ export function createModieMcpServer(
             uri: uri.href,
             mimeType: "application/json",
             text: JSON.stringify(rules, null, 2),
+          },
+        ],
+      };
+    },
+  );
+
+  // Agent Instructions & Governance Best Practices Resource
+  server.registerResource(
+    "instructions",
+    "modie://instructions",
+    {
+      title: "Agent Instructions & Governance Best Practices",
+      description:
+        "Comprehensive guidelines on ephemeral task decoupling, contract-based criteria (RULE-30), planned governance, and task lifecycle",
+      mimeType: "text/markdown",
+    },
+    async (uri) => {
+      let text = "";
+      const candidates = [
+        join(cwd, ".agents", "plugins", "modie", "instructions.md"),
+        join(import.meta.dir, "..", "..", "..", ".agents", "plugins", "modie", "instructions.md"),
+      ];
+
+      for (const path of candidates) {
+        try {
+          text = await readFile(path, "utf8");
+          if (text) break;
+        } catch {
+          // try next candidate
+        }
+      }
+
+      if (!text) {
+        text =
+          "# Modie Agent Instructions & Authoring Best Practices\n\n" +
+          "## 1. Ephemeral Task Decoupling (Critical Anti-Pattern)\n\n" +
+          "Never reference ephemeral `TASK-XX` IDs in test headers (`[TASK-XX]`) or code comments (`@verifies TASK-XX`). Tasks are ephemeral and deleted upon completion per ADR-6 and RULE-21. Instead, author and cite durable `RULE-` and `ADR-` artifacts.\n\n" +
+          "## 2. Contract-Based Acceptance Criteria (RULE-30)\n\n" +
+          "Define deliverables in terms of component roles, behavioral contracts, or testable capabilities rather than concrete filesystem paths.\n\n" +
+          "## 3. Front-Loaded Planned Governance\n\n" +
+          "Declare planned rules and ADRs upfront during task creation (`--plan-rule`, `--plan-adr`). All planned governance items must be generated before task completion.";
+      }
+
+      return {
+        contents: [
+          {
+            uri: uri.href,
+            mimeType: "text/markdown",
+            text,
           },
         ],
       };

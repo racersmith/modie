@@ -23,8 +23,8 @@ Inject distilled task authoring best practices, anti-pattern warnings, and workf
 
 # Acceptance Criteria
 
-- [ ] Add optional Planned Governance section to task template and task create flags
-- [ ] Enforce planned governance artifacts are generated before task completion
-- [ ] Inject distilled task-authoring guidance and anti-pattern warnings (ephemeral task decoupling, contract-based criteria) into MCP tool descriptions and server documentation
-- [ ] Add unit and integration tests verifying planned governance validation and MCP guidance
+- [x] Add optional Planned Governance section to task template and task create flags
+- [x] Enforce planned governance artifacts are generated before task completion
+- [x] Inject distilled task-authoring guidance and anti-pattern warnings (ephemeral task decoupling, contract-based criteria) into MCP tool descriptions and server documentation
+- [x] Add unit and integration tests verifying planned governance validation and MCP guidance
 

@@ -112,4 +112,35 @@ describe("TASK Primitive - Template Rendering and Parser Roundtrip", () => {
     expect(parsed.acceptanceCriteria[0]).toEqual({ text: "Define TaskArtifact", completed: false });
     expect(parsed.acceptanceCriteria[1]).toEqual({ text: "Add unit tests", completed: true });
   });
+
+  // @verifies RULE-22
+  it("[RULE-22] should render and parse optional Planned Governance section", () => {
+    const rendered = renderTaskMarkdown({
+      id: "35",
+      title: "Planned Governance Test",
+      context: "Context with planned governance.",
+      plannedGovernance: {
+        rules: ["Multi-branch collision guard", { text: "Ephemeral Task Decoupling", completed: true, tag: "RULE-33" }],
+        adrs: ["Branch aware task allocation"],
+      },
+      acceptanceCriteria: ["Deliverable 1"],
+    });
+
+    expect(rendered).toContain("# Planned Governance");
+    expect(rendered).toContain("## ADRs\n- [ ] Branch aware task allocation");
+    expect(rendered).toContain("## Rules\n- [ ] Multi-branch collision guard\n- [x] RULE-33: Ephemeral Task Decoupling");
+
+    const parsed = parseTaskMarkdown(rendered, "planned-gov.TASK-35.md");
+    expect(parsed.plannedGovernance).toBeDefined();
+    expect(parsed.plannedGovernance?.adrs).toHaveLength(1);
+    expect(parsed.plannedGovernance?.adrs[0]?.text).toBe("Branch aware task allocation");
+    expect(parsed.plannedGovernance?.adrs[0]?.completed).toBe(false);
+
+    expect(parsed.plannedGovernance?.rules).toHaveLength(2);
+    expect(parsed.plannedGovernance?.rules[0]?.text).toBe("Multi-branch collision guard");
+    expect(parsed.plannedGovernance?.rules[0]?.completed).toBe(false);
+    expect(parsed.plannedGovernance?.rules[1]?.text).toBe("RULE-33: Ephemeral Task Decoupling");
+    expect(parsed.plannedGovernance?.rules[1]?.completed).toBe(true);
+    expect(parsed.plannedGovernance?.rules[1]?.tag).toBe("RULE-33");
+  });
 });

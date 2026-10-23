@@ -94,6 +94,9 @@ export const adrCreateCommand: CliCommandDefinition<
   name: "create",
   usage: "modie adr create <title> [options]",
   description: "Create a new ADR artifact",
+  agentGuidance:
+    "Call this tool to document significant architectural decisions, trade-offs, and design rationale.\n\n" +
+    "BEST PRACTICE: Author ADRs upfront when introducing major design choices, subsystem abstractions, or structural conventions. Derived invariants should be codified as linked RULE artifacts.",
   helpUsage: "modie adr create --help",
   schema: adrCreateSchema,
   positionals: [
