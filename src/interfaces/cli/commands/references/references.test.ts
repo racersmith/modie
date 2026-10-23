@@ -1,18 +1,102 @@
 /**
  * Integration tests for declarative CLI references command and stream separation.
- * Enforces RULE-25 (interface core decoupling), RULE-27 (stream separation), and RULE-31 (archival guard).
+ * Enforces RULE-25 (interface core decoupling), RULE-27 (stream separation), RULE-31 (archival guard), and RULE-34 (fixture-based test isolation).
  */
 
-import { describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { execFile } from "node:child_process";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 import { runCli } from "../../cli.ts";
 import { handleReferences } from "./references.ts";
 
 const execFileAsync = promisify(execFile);
 
-describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-27, RULE-31)", () => {
-  it("[RULE-25][RULE-27] should emit human formatted output to stderr and exit code 0", async () => {
+describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-27, RULE-31, RULE-34)", () => {
+  let tempDir: string;
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "modie-cli-refs-"));
+
+    // 1. Target and related ADRs
+    await writeFile(
+      join(tempDir, "architecture.ADR-1.md"),
+      `---
+links:
+  - ADR-4
+---
+
+# Context
+ADR defining upward linking.
+`,
+      "utf8",
+    );
+
+    await writeFile(
+      join(tempDir, "foundation.ADR-4.md"),
+      `---
+links: []
+---
+
+# Context
+Foundational ADR.
+`,
+      "utf8",
+    );
+
+    // 2. Rules linking to ADR-4
+    await writeFile(
+      join(tempDir, "interface-core-decoupling.RULE-25.md"),
+      `---
+links:
+  - ADR-4
+---
+
+# Invariant
+Decouple interfaces from core logic.
+`,
+      "utf8",
+    );
+
+    await writeFile(
+      join(tempDir, "archival-guard.RULE-31.md"),
+      `---
+links:
+  - ADR-4
+---
+
+# Invariant
+Archival reference invariance.
+`,
+      "utf8",
+    );
+
+    // 3. Source and test code citing RULE-25 and ADR-1
+    await writeFile(
+      join(tempDir, "component.ts"),
+      `// Implements RULE-25 and references ADR-1
+export function run() {
+  return "RULE-25";
+}
+`,
+      "utf8",
+    );
+
+    await writeFile(
+      join(tempDir, "component.test.ts"),
+      `// Tests RULE-25
+`,
+      "utf8",
+    );
+  });
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  it("[RULE-25][RULE-27][RULE-34] should emit human formatted output to stderr and exit code 0", async () => {
     let stdoutOutput = "";
     let stderrOutput = "";
 
@@ -23,7 +107,7 @@ describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-
       stderr: (msg) => {
         stderrOutput += msg + "\n";
       },
-      cwd: process.cwd(),
+      cwd: tempDir,
     });
 
     expect(exitCode).toBe(0);
@@ -36,7 +120,7 @@ describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-
     expect(stderrOutput).toContain("[Archival Safety Check]");
   });
 
-  it("[RULE-27] should emit machine-parsable JSON to stdout when --json is passed", async () => {
+  it("[RULE-27][RULE-34] should emit machine-parsable JSON to stdout when --json is passed", async () => {
     let stdoutOutput = "";
     let stderrOutput = "";
 
@@ -47,7 +131,7 @@ describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-
       stderr: (msg) => {
         stderrOutput += msg + "\n";
       },
-      cwd: process.cwd(),
+      cwd: tempDir,
     });
 
     expect(exitCode).toBe(0);
@@ -62,7 +146,7 @@ describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-
     expect(typeof parsed.archivalGuard.canArchive).toBe("boolean");
   });
 
-  it("should support the refs alias via CLI entrypoint", async () => {
+  it("[RULE-34] should support the refs alias via CLI entrypoint in fixture workspace", async () => {
     let stdoutOutput = "";
     let stderrOutput = "";
 
@@ -73,7 +157,7 @@ describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-
       stderr: (msg) => {
         stderrOutput += msg + "\n";
       },
-      cwd: process.cwd(),
+      cwd: tempDir,
     });
 
     expect(exitCode).toBe(0);
@@ -81,7 +165,7 @@ describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-
     expect(stderrOutput).toContain("[Found In]");
   });
 
-  it("should support --to flag to show only outbound declared links", async () => {
+  it("[RULE-34] should support --to flag to show only outbound declared links in fixture workspace", async () => {
     let stdoutOutput = "";
     let stderrOutput = "";
 
@@ -92,27 +176,27 @@ describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-
       stderr: (msg) => {
         stderrOutput += msg + "\n";
       },
-      cwd: process.cwd(),
+      cwd: tempDir,
     });
 
     expect(exitCode).toBe(0);
     expect(stderrOutput).toContain("[Links To]");
-    expect(stderrOutput).not.toContain("[Found In]");
     expect(stderrOutput).toContain("ADR-4");
+    expect(stderrOutput).not.toContain("[Found In]");
   });
 
-  it("should support --by flag to show only citations found across workspace", async () => {
+  it("[RULE-34] should support --by flag to show only citations found across workspace", async () => {
     let stdoutOutput = "";
     let stderrOutput = "";
 
-    const exitCode = await handleReferences(["ADR-1", "--by", "--governance-only"], {
+    const exitCode = await handleReferences(["ADR-4", "--by", "--governance-only"], {
       stdout: (msg) => {
         stdoutOutput += msg + "\n";
       },
       stderr: (msg) => {
         stderrOutput += msg + "\n";
       },
-      cwd: process.cwd(),
+      cwd: tempDir,
     });
 
     expect(exitCode).toBe(0);
@@ -132,6 +216,7 @@ describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-
       stderr: (msg) => {
         stderrOutput += msg + "\n";
       },
+      cwd: tempDir,
     });
 
     expect(exitCode).toBe(0);
@@ -152,6 +237,7 @@ describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-
       stderr: (msg) => {
         stderrOutput += msg + "\n";
       },
+      cwd: tempDir,
     });
 
     expect(exitCode).toBe(1);
@@ -170,6 +256,7 @@ describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-
       stderr: (msg) => {
         stderrOutput += msg + "\n";
       },
+      cwd: tempDir,
     });
 
     expect(exitCode).toBe(1);
@@ -177,13 +264,13 @@ describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-
     expect(stderrOutput).toContain('Artifact "RULE-9999" was not found');
   });
 
-  it("[RULE-25][RULE-27] should execute references via bin.ts subprocess", async () => {
-    const { stdout, stderr } = await execFileAsync(process.execPath, [
-      "./src/interfaces/cli/bin.ts",
-      "references",
-      "RULE-25",
-      "--json",
-    ]);
+  it("[RULE-25][RULE-27][RULE-34] should execute references via bin.ts subprocess against fixture workspace", async () => {
+    const binPath = join(process.cwd(), "src/interfaces/cli/bin.ts");
+    const { stdout, stderr } = await execFileAsync(
+      process.execPath,
+      [binPath, "references", "RULE-25", "--json"],
+      { cwd: tempDir },
+    );
 
     expect(stderr).toBe("");
     const parsed = JSON.parse(stdout);
@@ -191,3 +278,4 @@ describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-
     expect(parsed.foundIn.total).toBeGreaterThan(0);
   });
 });
+

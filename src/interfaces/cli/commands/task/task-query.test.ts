@@ -154,25 +154,34 @@ links:
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  // @verifies RULE-25, RULE-27
-  it("[RULE-25][RULE-27] should execute task list via bin.ts subprocess", async () => {
-    const binPath = "./src/interfaces/cli/bin.ts";
-    const { stdout, stderr } = await execFileAsync(process.execPath, [
-      binPath,
-      "task",
-      "list",
-      "--json",
-    ]);
+  // @verifies RULE-25, RULE-27, RULE-34
+  it("[RULE-25][RULE-27][RULE-34] should execute task list via bin.ts subprocess against fixture workspace", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-bin-list-"));
+    const taskPath = join(tempDir, "bin-task.TASK-505.md");
+    await writeFile(
+      taskPath,
+      "---\ndepends_on: []\nlinks: []\n---\n# Acceptance Criteria\n- [ ] Item\n",
+      "utf8",
+    );
+
+    const binPath = join(process.cwd(), "src/interfaces/cli/bin.ts");
+    const { stdout, stderr } = await execFileAsync(
+      process.execPath,
+      [binPath, "task", "list", "--json"],
+      { cwd: tempDir },
+    );
 
     expect(stderr).toBe("");
     const parsed = JSON.parse(stdout.trim());
     expect(Array.isArray(parsed)).toBe(true);
-    if (parsed.length > 0) {
-      expect(parsed[0].id).toBeDefined();
-      expect(parsed[0].readiness).toBeDefined();
-    }
+    expect(parsed.length).toBe(1);
+    expect(parsed[0].id).toBe("505");
+    expect(parsed[0].readiness).toBe("READY");
+
+    await rm(tempDir, { recursive: true, force: true });
   });
 });
+
 
 describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-25, RULE-27)", () => {
   // @verifies RULE-22, RULE-25, RULE-27
