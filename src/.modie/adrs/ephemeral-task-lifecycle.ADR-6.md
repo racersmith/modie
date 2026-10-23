@@ -101,7 +101,7 @@ We adopt the **Git-Backed Ephemeral Task Lifecycle** with **Monotonic Unscoped I
    - A dependency `TASK-XXXX` is evaluated cleanly via active queue inspection:
      - If `TASK-XXXX` exists on disk $\rightarrow$ **Blocked** (prerequisite task is still pending).
      - If `TASK-XXXX` does not exist on disk $\rightarrow$ **Satisfied** (prerequisite task is complete).
-   - This eliminates complex Git log queries during runtime, ensuring instant evaluation that functions seamlessly in shallow CI clones (`--depth=1`) and gitless environments.
+   - This eliminates complex Git log queries during runtime, ensuring instant evaluation that functions seamlessly in shallow CI clones (`--depth=1`).
    - Soft linter warnings flag any dependency that has never been registered in project history to guard against typos.
 
 4. **Standardized Acceptance Criteria & Programmatic Progress:**
