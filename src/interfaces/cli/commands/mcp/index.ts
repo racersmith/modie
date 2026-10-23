@@ -42,7 +42,7 @@ export const mcpCommand: CliCommandDefinition<
   flags: {},
   execute: async (_input, context) => {
     const server = createModieMcpServer({
-      cwd: context.cwd,
+      cwd: process.env.MODIE_CWD ?? context.cwd,
       stderr: context.stderr,
     });
     const transport = new StdioServerTransport();

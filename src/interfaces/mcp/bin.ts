@@ -7,7 +7,9 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createModieMcpServer } from "./server.ts";
 
-export async function runMcpServer(cwd: string = process.cwd()): Promise<void> {
+export async function runMcpServer(
+  cwd: string = process.env.MODIE_CWD ?? process.cwd(),
+): Promise<void> {
   const server = createModieMcpServer({ cwd });
   const transport = new StdioServerTransport();
   await server.connect(transport);

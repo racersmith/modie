@@ -66,7 +66,7 @@ export function sanitizePayloadForRule26(
 export function createModieMcpServer(
   options: ModieMcpServerOptions = {},
 ): McpServer {
-  const cwd = options.cwd ?? process.cwd();
+  const cwd = options.cwd ?? process.env.MODIE_CWD ?? process.cwd();
   const stderr = options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
 
   const server = new McpServer(

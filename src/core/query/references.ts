@@ -25,6 +25,17 @@ const DEFAULT_IGNORED_DIRECTORIES = new Set([
   ".gemini",
   ".turbo",
   ".next",
+  ".local",
+  ".Trash",
+  "Trash",
+  ".cargo",
+  ".rustup",
+  ".npm",
+  ".bun",
+  ".yarn",
+  ".venv",
+  "venv",
+  "target",
 ]);
 
 const BINARY_EXTENSIONS = new Set([
