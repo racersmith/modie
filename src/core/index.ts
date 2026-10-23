@@ -18,6 +18,7 @@ export {
 export { generateSlug, isValidSlug } from "./common/slug.ts";
 export {
   findDeepestCommonAncestor,
+  getLegacySubtypeContainerName,
   getSubtypeContainerName,
   resolveArtifactDirectories,
 } from "./common/directories.ts";

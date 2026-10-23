@@ -1,6 +1,5 @@
 ---
 links:
-  - ADR-3
   - ADR-4
   - RULE-8
   - RULE-20

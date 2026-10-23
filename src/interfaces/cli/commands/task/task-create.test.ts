@@ -35,7 +35,7 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-25, RULE-27)",
     expect(exitCode).toBe(0);
 
     // RULE-27: stdout must strictly contain the machine-parsable relative file path
-    expect(stdout).toContain(".tasks/cli-stream-verification-task.TASK-");
+    expect(stdout).toContain(".modie/tasks/cli-stream-verification-task.TASK-");
     expect(stdout).not.toContain("✓");
 
     // RULE-27: stderr must strictly contain human status and diagnostics
@@ -64,7 +64,7 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-25, RULE-27)",
     const parsed = JSON.parse(stdout);
     expect(parsed.slug).toBe("json-output-mode-task");
     expect(parsed.filename).toContain("json-output-mode-task.TASK-");
-    expect(parsed.relativePath).toContain(".tasks");
+    expect(parsed.relativePath).toContain(".modie/tasks");
 
     // Status diagnostics emitted to stderr
     expect(stderr).toContain("✓ Created task");

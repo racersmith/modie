@@ -32,7 +32,7 @@ describe("CLI Show - Execution & Stream Separation (RULE-25, RULE-26, RULE-27, R
     expect(stderr).toContain("RULE-1: artifact-filename-structure");
     expect(stderr).toContain("Subtype:     RULE");
     expect(stderr).toContain("ID:          1");
-    expect(stderr).toContain("Path:        src/.rules/artifact-filename-structure.RULE-1.md");
+    expect(stderr).toContain("Path:        src/.modie/rules/artifact-filename-structure.RULE-1.md");
     expect(stderr).toContain("Status:      Active");
   });
 
@@ -52,7 +52,7 @@ describe("CLI Show - Execution & Stream Separation (RULE-25, RULE-26, RULE-27, R
     expect(parsed.id).toBe("1");
     expect(parsed.slug).toBe("artifact-filename-structure");
     expect(parsed.relativePath).toBe(
-      "src/.rules/artifact-filename-structure.RULE-1.md",
+      "src/.modie/rules/artifact-filename-structure.RULE-1.md",
     );
     expect(parsed.isArchived).toBe(false);
     expect(Array.isArray(parsed.links)).toBe(true);

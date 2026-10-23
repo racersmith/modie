@@ -22,11 +22,22 @@ describe("ADR Creation - Scope & Directory Resolution (RULE-8)", () => {
       "/mock/root",
     );
     expect(normalizedScopeDir).toBe("/mock/root/src/core");
-    expect(targetDir).toBe("/mock/root/src/core/.adrs");
+    expect(targetDir).toBe("/mock/root/src/core/.modie/adrs");
   });
 
   // @verifies RULE-8
-  it("[RULE-8] should strip .adrs container when already present in input", () => {
+  it("[RULE-8] should strip .modie/adrs container when already present in input", () => {
+    const { normalizedScopeDir, targetDir } = resolveAdrDirectories(
+      "src/core/.modie/adrs",
+      true,
+      "/mock/root",
+    );
+    expect(normalizedScopeDir).toBe("/mock/root/src/core");
+    expect(targetDir).toBe("/mock/root/src/core/.modie/adrs");
+  });
+
+  // @verifies RULE-8
+  it("[RULE-8] should strip legacy .adrs container when already present in input", () => {
     const { normalizedScopeDir, targetDir } = resolveAdrDirectories(
       "src/core/.adrs",
       true,
@@ -179,7 +190,7 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
     expect(result.id).toBe("1");
     expect(result.tag).toBe("ADR-1");
     expect(result.filename).toBe("first-architecture-decision.ADR-1.md");
-    expect(result.relativePath).toContain(".adrs/first-architecture-decision.ADR-1.md");
+    expect(result.relativePath).toContain(".modie/adrs/first-architecture-decision.ADR-1.md");
 
     const onDisk = await readFile(result.filepath, "utf8");
     expect(onDisk).toContain("# Context\n\nContext description of the architecture choice.");

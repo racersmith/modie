@@ -1,6 +1,6 @@
 /**
  * Unit tests for common artifact primitives.
- * @verifies RULE-1, RULE-6, RULE-8, RULE-12, ADR-1, ADR-2, ADR-3, ADR-4
+ * @verifies RULE-1, RULE-6, RULE-8, RULE-12, ADR-1, ADR-2, ADR-4, ADR-10
  */
 
 import { describe, expect, it } from "bun:test";
@@ -146,32 +146,32 @@ describe("Common Primitives - Filename Formatting & Parsing (RULE-1, ADR-1, ADR-
   });
 });
 
-describe("Common Primitives - Subtype Directory Resolution (RULE-8, ADR-3)", () => {
-  // @verifies RULE-8, ADR-3
-  it("[RULE-8][ADR-3] should map subtypes to their recognized container directory names", () => {
-    expect(getSubtypeContainerName("RULE")).toBe(".rules");
-    expect(getSubtypeContainerName("ADR")).toBe(".adrs");
-    expect(getSubtypeContainerName("TASK")).toBe(".tasks");
+describe("Common Primitives - Subtype Directory Resolution (RULE-8, ADR-10)", () => {
+  // @verifies RULE-8, ADR-10
+  it("[RULE-8][ADR-10] should map subtypes to their recognized container directory names", () => {
+    expect(getSubtypeContainerName("RULE")).toBe("rules");
+    expect(getSubtypeContainerName("ADR")).toBe("adrs");
+    expect(getSubtypeContainerName("TASK")).toBe("tasks");
   });
 
-  // @verifies RULE-8
-  it("[RULE-8] should resolve target container and normalized scope for RULE, ADR, and TASK", () => {
+  // @verifies RULE-8, ADR-10
+  it("[RULE-8][ADR-10] should resolve target container and normalized scope for RULE, ADR, and TASK", () => {
     const cwd = "/workspace";
 
     // RULE resolution
     const ruleRes = resolveArtifactDirectories("RULE", "src/interfaces", true, cwd);
     expect(ruleRes.normalizedScopeDir).toBe("/workspace/src/interfaces");
-    expect(ruleRes.targetDir).toBe("/workspace/src/interfaces/.rules");
+    expect(ruleRes.targetDir).toBe("/workspace/src/interfaces/.modie/rules");
 
     // ADR resolution
     const adrRes = resolveArtifactDirectories("ADR", "src", true, cwd);
     expect(adrRes.normalizedScopeDir).toBe("/workspace/src");
-    expect(adrRes.targetDir).toBe("/workspace/src/.adrs");
+    expect(adrRes.targetDir).toBe("/workspace/src/.modie/adrs");
 
     // TASK resolution
     const taskRes = resolveArtifactDirectories("TASK", "src", true, cwd);
     expect(taskRes.normalizedScopeDir).toBe("/workspace/src");
-    expect(taskRes.targetDir).toBe("/workspace/src/.tasks");
+    expect(taskRes.targetDir).toBe("/workspace/src/.modie/tasks");
 
     // Flat placement (--flat / useSubtypeContainer: false)
     const flatRes = resolveArtifactDirectories("RULE", "src", false, cwd);
@@ -179,21 +179,40 @@ describe("Common Primitives - Subtype Directory Resolution (RULE-8, ADR-3)", () 
     expect(flatRes.targetDir).toBe("/workspace/src");
   });
 
-  // @verifies RULE-8
-  it("[RULE-8] should strip container segment when scope input explicitly points to container", () => {
+  // @verifies RULE-8, ADR-10
+  it("[RULE-8][ADR-10] should strip container segment when scope input explicitly points to container", () => {
     const cwd = "/workspace";
 
-    const ruleRes = resolveArtifactDirectories("RULE", "src/.rules", true, cwd);
-    expect(ruleRes.normalizedScopeDir).toBe("/workspace/src");
-    expect(ruleRes.targetDir).toBe("/workspace/src/.rules");
+    // .modie/<subtype> container input
+    const ruleModieRes = resolveArtifactDirectories("RULE", "src/.modie/rules", true, cwd);
+    expect(ruleModieRes.normalizedScopeDir).toBe("/workspace/src");
+    expect(ruleModieRes.targetDir).toBe("/workspace/src/.modie/rules");
 
-    const adrRes = resolveArtifactDirectories("ADR", "src/.adrs", true, cwd);
-    expect(adrRes.normalizedScopeDir).toBe("/workspace/src");
-    expect(adrRes.targetDir).toBe("/workspace/src/.adrs");
+    const adrModieRes = resolveArtifactDirectories("ADR", "src/.modie/adrs", true, cwd);
+    expect(adrModieRes.normalizedScopeDir).toBe("/workspace/src");
+    expect(adrModieRes.targetDir).toBe("/workspace/src/.modie/adrs");
 
-    const taskRes = resolveArtifactDirectories("TASK", "src/.tasks", true, cwd);
-    expect(taskRes.normalizedScopeDir).toBe("/workspace/src");
-    expect(taskRes.targetDir).toBe("/workspace/src/.tasks");
+    const taskModieRes = resolveArtifactDirectories("TASK", "src/.modie/tasks", true, cwd);
+    expect(taskModieRes.normalizedScopeDir).toBe("/workspace/src");
+    expect(taskModieRes.targetDir).toBe("/workspace/src/.modie/tasks");
+
+    // .modie root container input
+    const rootModieRes = resolveArtifactDirectories("RULE", "src/.modie", true, cwd);
+    expect(rootModieRes.normalizedScopeDir).toBe("/workspace/src");
+    expect(rootModieRes.targetDir).toBe("/workspace/src/.modie/rules");
+
+    // Legacy dot-container inputs (ADR-3)
+    const ruleLegacyRes = resolveArtifactDirectories("RULE", "src/.rules", true, cwd);
+    expect(ruleLegacyRes.normalizedScopeDir).toBe("/workspace/src");
+    expect(ruleLegacyRes.targetDir).toBe("/workspace/src/.rules");
+
+    const adrLegacyRes = resolveArtifactDirectories("ADR", "src/.adrs", true, cwd);
+    expect(adrLegacyRes.normalizedScopeDir).toBe("/workspace/src");
+    expect(adrLegacyRes.targetDir).toBe("/workspace/src/.adrs");
+
+    const taskLegacyRes = resolveArtifactDirectories("TASK", "src/.tasks", true, cwd);
+    expect(taskLegacyRes.normalizedScopeDir).toBe("/workspace/src");
+    expect(taskLegacyRes.targetDir).toBe("/workspace/src/.tasks");
   });
 });
 

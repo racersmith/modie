@@ -38,7 +38,7 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
     expect(exitCode).toBe(0);
     // RULE-27: stdout strictly contains relative file path
-    expect(stdout.trim()).toBe(".rules/cli-stream-verification-rule.RULE-1.md");
+    expect(stdout.trim()).toBe(".modie/rules/cli-stream-verification-rule.RULE-1.md");
     // RULE-27: stderr strictly contains human status
     expect(stderr).toContain("✓ Created rule RULE-1: cli-stream-verification-rule.RULE-1.md");
 
@@ -71,14 +71,14 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
     expect(parsed.tag).toBe("RULE-1");
     expect(parsed.slug).toBe("json-mode-rule");
     expect(parsed.filename).toBe("json-mode-rule.RULE-1.md");
-    expect(parsed.relativePath).toContain(".rules/json-mode-rule.RULE-1.md");
+    expect(parsed.relativePath).toContain(".modie/rules/json-mode-rule.RULE-1.md");
     expect(parsed.assertion).toBe("JSON payload must go to stdout.");
 
     await rm(tempDir, { recursive: true, force: true });
   });
 
   // @verifies RULE-8
-  it("[RULE-8] should support --flat flag to create file without .rules directory", async () => {
+  it("[RULE-8] should support --flat flag to create file without .modie/rules directory", async () => {
     const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-rule-flat-"));
     const { exitCode, stdout, stderr } = await captureCli(
       [
@@ -197,7 +197,7 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
     );
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(".rules/new-rule.RULE-2.md");
+    expect(stdout.trim()).toBe(".modie/rules/new-rule.RULE-2.md");
     expect(stderr).toContain("✓ Created rule RULE-2: new-rule.RULE-2.md (supersedes RULE-1)");
 
     const rule1Content = await readFile(rule1Path, "utf8");
@@ -228,7 +228,7 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
     );
 
     expect(exitCode).toBe(0);
-    expect(stderr).toContain("✓ Created rule RULE-2 (.rules/superseding-json-rule.RULE-2.md) (supersedes RULE-1)");
+    expect(stderr).toContain("✓ Created rule RULE-2 (.modie/rules/superseding-json-rule.RULE-2.md) (supersedes RULE-1)");
 
     const parsed = JSON.parse(stdout.trim());
     expect(parsed.tag).toBe("RULE-2");
