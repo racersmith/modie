@@ -31,6 +31,10 @@ export interface CreateTaskOptions {
   criteria?: TaskCriterionItem[];
   depends_on?: string[];
   links?: string[];
+  plannedGovernance?: {
+    rules?: TaskCriterionItem[];
+    adrs?: TaskCriterionItem[];
+  };
   subDir?: string;
   rawContent?: string;
 }
@@ -73,6 +77,10 @@ export interface CreateFixtureArtifactOptions {
   context?: string;
   body?: string;
   acceptanceCriteria?: TaskCriterionItem[];
+  plannedGovernance?: {
+    rules?: TaskCriterionItem[];
+    adrs?: TaskCriterionItem[];
+  };
   isArchived?: boolean;
   rawContent?: string;
   subDir?: string;
@@ -155,10 +163,14 @@ export async function createFixtureWorkspace(
       let content = options.rawContent;
       if (content === undefined) {
         const frontmatterLines: string[] = ["---"];
-        if (options.depends_on && options.depends_on.length > 0) {
-          frontmatterLines.push("depends_on:");
-          for (const d of options.depends_on) {
-            frontmatterLines.push(`  - ${d}`);
+        if (options.depends_on !== undefined) {
+          if (options.depends_on.length > 0) {
+            frontmatterLines.push("depends_on:");
+            for (const d of options.depends_on) {
+              frontmatterLines.push(`  - ${d}`);
+            }
+          } else {
+            frontmatterLines.push("depends_on: []");
           }
         }
         if (options.links && options.links.length > 0) {
@@ -177,7 +189,29 @@ export async function createFixtureWorkspace(
 
         const bodySections: string[] = [];
         if (options.context) {
-          bodySections.push(`# Context\n${options.context}`);
+          bodySections.push(`# Context\n\n${options.context}`);
+        }
+        if (options.plannedGovernance) {
+          const govLines: string[] = ["# Planned Governance\n"];
+          if (options.plannedGovernance.rules && options.plannedGovernance.rules.length > 0) {
+            govLines.push("## Rules\n");
+            for (const r of options.plannedGovernance.rules) {
+              const text = typeof r === "string" ? r : r.text;
+              const box = typeof r === "object" && r.completed ? "x" : " ";
+              govLines.push(`- [${box}] ${text}`);
+            }
+            govLines.push("");
+          }
+          if (options.plannedGovernance.adrs && options.plannedGovernance.adrs.length > 0) {
+            govLines.push("## ADRs\n");
+            for (const a of options.plannedGovernance.adrs) {
+              const text = typeof a === "string" ? a : a.text;
+              const box = typeof a === "object" && a.completed ? "x" : " ";
+              govLines.push(`- [${box}] ${text}`);
+            }
+            govLines.push("");
+          }
+          bodySections.push(govLines.join("\n").trim());
         }
         if (options.acceptanceCriteria && options.acceptanceCriteria.length > 0) {
           const criteriaLines = options.acceptanceCriteria.map((c) => {
@@ -218,6 +252,7 @@ export async function createFixtureWorkspace(
         slug: options.slug ?? (options.title ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : undefined),
         context: options.context ?? (options.title ? `Context for ${options.title}` : undefined),
         acceptanceCriteria: options.criteria,
+        plannedGovernance: options.plannedGovernance,
         depends_on: options.depends_on,
         links: options.links,
         subDir: options.subDir,
