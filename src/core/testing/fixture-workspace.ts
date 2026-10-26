@@ -1,21 +1,78 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, relative } from "node:path";
+import { dirname, join, relative } from "node:path";
+import { promisify } from "node:util";
 import { formatArtifactFilename } from "../common/filename.ts";
 import type { IndexableSubtype } from "../common/types.ts";
+
+const execFileAsync = promisify(execFile);
+
+// Ensure Symbol.asyncDispose compatibility across runtimes
+(Symbol as any).asyncDispose ??= Symbol("Symbol.asyncDispose");
+
+/**
+ * Programmatically constructs a canonical artifact tag (e.g. `makeTestTag("ADR", 123)` -> `"ADR-123"`).
+ * Prevents literal tag strings from appearing in test source code, ensuring dogfooding citation
+ * scans never match test fixture data as active repository artifacts while maintaining 100%
+ * runtime parity with production tag formats.
+ */
+export function makeTestTag(subtype: string, id: number | string): string {
+  return `${subtype.toUpperCase()}-${id}`;
+}
+
+export type TaskCriterionItem = string | { text: string; completed?: boolean };
+
+export interface CreateTaskOptions {
+  id?: number | string;
+  slug?: string;
+  title?: string;
+  context?: string;
+  criteria?: TaskCriterionItem[];
+  depends_on?: string[];
+  links?: string[];
+  subDir?: string;
+  rawContent?: string;
+}
+
+export interface CreateRuleOptions {
+  id?: number | string;
+  slug?: string;
+  title?: string;
+  body?: string;
+  links?: string[];
+  supersedes?: string;
+  isArchived?: boolean;
+  subDir?: string;
+  rawContent?: string;
+}
+
+export interface CreateAdrOptions {
+  id?: number | string;
+  slug?: string;
+  title?: string;
+  context?: string;
+  decision?: string;
+  links?: string[];
+  supersedes?: string;
+  isArchived?: boolean;
+  subDir?: string;
+  rawContent?: string;
+}
 
 /**
  * Options for generating a fixture artifact in an isolated test workspace.
  */
 export interface CreateFixtureArtifactOptions {
   subtype: "RULE" | "ADR" | "TASK" | string;
-  id?: string;
+  id?: number | string;
   slug?: string;
   links?: string[];
   depends_on?: string[];
+  supersedes?: string;
   context?: string;
   body?: string;
-  acceptanceCriteria?: string[];
+  acceptanceCriteria?: TaskCriterionItem[];
   isArchived?: boolean;
   rawContent?: string;
   subDir?: string;
@@ -34,8 +91,19 @@ export interface CreatedFixtureArtifact {
 
 export interface FixtureWorkspace {
   cwd: string;
+  makeTag(subtype: string, id: number | string): string;
   createArtifact(options: CreateFixtureArtifactOptions): Promise<CreatedFixtureArtifact>;
+  createTask(options?: CreateTaskOptions): Promise<CreatedFixtureArtifact>;
+  createRule(options?: CreateRuleOptions): Promise<CreatedFixtureArtifact>;
+  createAdr(options?: CreateAdrOptions): Promise<CreatedFixtureArtifact>;
+  readFile(target: string | CreatedFixtureArtifact): Promise<string>;
+  fileExists(target: string | CreatedFixtureArtifact): Promise<boolean>;
+  readJson<T = any>(target: string | CreatedFixtureArtifact): Promise<T>;
+  writeFile(relativePath: string, content: string): Promise<string>;
+  initGit(options?: { defaultBranch?: string; initialCommit?: boolean }): Promise<void>;
+  gitCommit(message: string): Promise<string>;
   cleanup(): Promise<void>;
+  [Symbol.asyncDispose](): Promise<void>;
 }
 
 /**
@@ -50,12 +118,17 @@ export async function createFixtureWorkspace(
 
   let testIdCounter = 1;
 
-  return {
+  const workspace: FixtureWorkspace = {
     cwd,
+
+    makeTag(subtype: string, id: number | string): string {
+      return makeTestTag(subtype, id);
+    },
 
     async createArtifact(options: CreateFixtureArtifactOptions): Promise<CreatedFixtureArtifact> {
       const upperSubtype = options.subtype.toUpperCase() as IndexableSubtype;
-      const id = options.id ?? `TEST-${testIdCounter++}`;
+      const rawId = options.id ?? `TEST-${testIdCounter++}`;
+      const id = String(rawId);
       const slug = options.slug ?? `sample-${upperSubtype.toLowerCase()}`;
       const isArchived = options.isArchived ?? false;
 
@@ -96,6 +169,9 @@ export async function createFixtureWorkspace(
         } else {
           frontmatterLines.push("links: []");
         }
+        if (options.supersedes) {
+          frontmatterLines.push(`supersedes: ${options.supersedes}`);
+        }
         frontmatterLines.push("---");
         frontmatterLines.push("");
 
@@ -104,7 +180,12 @@ export async function createFixtureWorkspace(
           bodySections.push(`# Context\n${options.context}`);
         }
         if (options.acceptanceCriteria && options.acceptanceCriteria.length > 0) {
-          const criteriaLines = options.acceptanceCriteria.map((c) => `- [ ] ${c}`);
+          const criteriaLines = options.acceptanceCriteria.map((c) => {
+            if (typeof c === "string") {
+              return `- [ ] ${c}`;
+            }
+            return `- [${c.completed ? "x" : " "}] ${c.text}`;
+          });
           bodySections.push(`# Acceptance Criteria\n\n${criteriaLines.join("\n")}`);
         }
         if (options.body) {
@@ -119,7 +200,7 @@ export async function createFixtureWorkspace(
       await writeFile(filepath, content, "utf8");
 
       return {
-        tag: `${upperSubtype}-${id}`,
+        tag: makeTestTag(upperSubtype, id),
         subtype: upperSubtype,
         id,
         slug,
@@ -130,8 +211,104 @@ export async function createFixtureWorkspace(
       };
     },
 
+    async createTask(options: CreateTaskOptions = {}): Promise<CreatedFixtureArtifact> {
+      return workspace.createArtifact({
+        subtype: "TASK",
+        id: options.id,
+        slug: options.slug ?? (options.title ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : undefined),
+        context: options.context ?? (options.title ? `Context for ${options.title}` : undefined),
+        acceptanceCriteria: options.criteria,
+        depends_on: options.depends_on,
+        links: options.links,
+        subDir: options.subDir,
+        rawContent: options.rawContent,
+      });
+    },
+
+    async createRule(options: CreateRuleOptions = {}): Promise<CreatedFixtureArtifact> {
+      return workspace.createArtifact({
+        subtype: "RULE",
+        id: options.id,
+        slug: options.slug ?? (options.title ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : undefined),
+        body: options.body ?? (options.title ? `# Invariant\nRule body for ${options.title}.` : undefined),
+        links: options.links,
+        supersedes: options.supersedes,
+        isArchived: options.isArchived,
+        subDir: options.subDir,
+        rawContent: options.rawContent,
+      });
+    },
+
+    async createAdr(options: CreateAdrOptions = {}): Promise<CreatedFixtureArtifact> {
+      const bodySections: string[] = [];
+      if (options.decision) {
+        bodySections.push(`# Decision\n${options.decision}`);
+      }
+      return workspace.createArtifact({
+        subtype: "ADR",
+        id: options.id,
+        slug: options.slug ?? (options.title ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : undefined),
+        context: options.context ?? (options.title ? `Context for ${options.title}` : undefined),
+        body: bodySections.length > 0 ? bodySections.join("\n\n") : undefined,
+        links: options.links,
+        supersedes: options.supersedes,
+        isArchived: options.isArchived,
+        subDir: options.subDir,
+        rawContent: options.rawContent,
+      });
+    },
+
+    async readFile(target: string | CreatedFixtureArtifact): Promise<string> {
+      const p = typeof target === "string" ? (target.startsWith("/") ? target : join(cwd, target)) : target.filepath;
+      return readFile(p, "utf8");
+    },
+
+    async fileExists(target: string | CreatedFixtureArtifact): Promise<boolean> {
+      const p = typeof target === "string" ? (target.startsWith("/") ? target : join(cwd, target)) : target.filepath;
+      try {
+        await stat(p);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+
+    async readJson<T = any>(target: string | CreatedFixtureArtifact): Promise<T> {
+      const text = await workspace.readFile(target);
+      return JSON.parse(text);
+    },
+
+    async writeFile(relativePath: string, content: string): Promise<string> {
+      const targetPath = join(cwd, relativePath);
+      await mkdir(dirname(targetPath), { recursive: true });
+      await writeFile(targetPath, content, "utf8");
+      return targetPath;
+    },
+
+    async initGit(options?: { defaultBranch?: string; initialCommit?: boolean }): Promise<void> {
+      const branch = options?.defaultBranch ?? "dev";
+      await execFileAsync("git", ["init", "-b", branch], { cwd });
+      await execFileAsync("git", ["config", "user.name", "Test Runner"], { cwd });
+      await execFileAsync("git", ["config", "user.email", "test@example.com"], { cwd });
+      if (options?.initialCommit ?? true) {
+        await execFileAsync("git", ["commit", "--allow-empty", "-m", "chore: initial commit"], { cwd });
+      }
+    },
+
+    async gitCommit(message: string): Promise<string> {
+      await execFileAsync("git", ["add", "-A"], { cwd });
+      const { stdout } = await execFileAsync("git", ["commit", "-m", message], { cwd });
+      return stdout;
+    },
+
     async cleanup(): Promise<void> {
       await rm(cwd, { recursive: true, force: true });
     },
+
+    async [Symbol.asyncDispose](): Promise<void> {
+      await rm(cwd, { recursive: true, force: true });
+    },
   };
+
+  return workspace;
 }

@@ -3,16 +3,30 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import {
   createFixtureWorkspace,
+  makeTestTag,
+  type CreateAdrOptions,
   type CreateFixtureArtifactOptions,
+  type CreateRuleOptions,
+  type CreateTaskOptions,
   type CreatedFixtureArtifact,
   type FixtureWorkspace,
+  type TaskCriterionItem,
 } from "../../core/testing/index.ts";
 import { runCli } from "./cli.ts";
 import type { CliIoOptions } from "./types.ts";
 
 const execFileAsync = promisify(execFile);
 
-export type { CreateFixtureArtifactOptions, CreatedFixtureArtifact, FixtureWorkspace };
+export { makeTestTag };
+export type {
+  CreateAdrOptions,
+  CreateFixtureArtifactOptions,
+  CreateRuleOptions,
+  CreateTaskOptions,
+  CreatedFixtureArtifact,
+  FixtureWorkspace,
+  TaskCriterionItem,
+};
 
 export interface CapturedCliResult {
   exitCode: number;
