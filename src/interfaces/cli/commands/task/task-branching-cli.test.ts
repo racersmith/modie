@@ -1,153 +1,114 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { promisify } from "node:util";
-import { runCli } from "../../cli.ts";
-
-const execFileAsync = promisify(execFile);
-
-async function captureCli(
-  args: string[],
-  cwd: string,
-): Promise<{ exitCode: number; stdout: string; stderr: string }> {
-  let stdout = "";
-  let stderr = "";
-
-  const exitCode = await runCli(args, {
-    stdout: (msg) => {
-      stdout += msg + "\n";
-    },
-    stderr: (msg) => {
-      stderr += msg + "\n";
-    },
-    cwd,
-  });
-
-  return { exitCode, stdout, stderr };
-}
+import { rm } from "node:fs/promises";
+import { createTestWorkspace, makeTestTag, type TestWorkspace } from "../../test-utils.ts";
 
 describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-27, RULE-28)", () => {
-  let gitDir: string;
+  let workspace: TestWorkspace;
 
   beforeEach(async () => {
-    gitDir = await mkdtemp(join(tmpdir(), "modie-cli-branch-"));
-    await execFileAsync("git", ["init", "-q", "-b", "main"], { cwd: gitDir });
-    await execFileAsync("git", ["config", "user.name", "CLI Tester"], { cwd: gitDir });
-    await execFileAsync("git", ["config", "user.email", "tester@modie.dev"], { cwd: gitDir });
-
-    // Initial commit on main
-    await writeFile(join(gitDir, "README.md"), "# Branch CLI\n", "utf8");
-    await execFileAsync("git", ["add", "README.md"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "chore: initial commit"], { cwd: gitDir });
+    workspace = await createTestWorkspace("modie-cli-branch-");
+    await workspace.initGit({ defaultBranch: "main", initialCommit: true });
 
     // Create dev trunk branch
-    await execFileAsync("git", ["checkout", "-b", "dev"], { cwd: gitDir });
+    await Bun.$`git checkout -b dev`.cwd(workspace.cwd).quiet();
 
     // Create .modie/config.json with protected: ["main"], trunk: "dev"
-    const modieDir = join(gitDir, ".modie");
-    await mkdir(modieDir, { recursive: true });
-    await writeFile(
-      join(modieDir, "config.json"),
+    await workspace.writeFile(
+      ".modie/config.json",
       JSON.stringify({
         git: {
           trunk: "dev",
           protectedBranches: ["main"],
         },
       }),
-      "utf8",
     );
   });
 
   afterEach(async () => {
-    await rm(gitDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
   it("[RULE-27] should emit help for task start and task merge to stderr with exitCode 0", async () => {
-    const startHelp = await captureCli(["task", "start", "--help"], gitDir);
+    const startHelp = await workspace.captureCli(["task", "start", "--help"]);
     expect(startHelp.exitCode).toBe(0);
     expect(startHelp.stdout).toBe("");
     expect(startHelp.stderr).toContain("Usage: modie task start");
 
-    const mergeHelp = await captureCli(["task", "merge", "--help"], gitDir);
+    const mergeHelp = await workspace.captureCli(["task", "merge", "--help"]);
     expect(mergeHelp.exitCode).toBe(0);
     expect(mergeHelp.stdout).toBe("");
     expect(mergeHelp.stderr).toContain("Usage: modie task merge");
   });
 
   it("[RULE-27] should report error to stderr when identifier argument is missing", async () => {
-    const startRes = await captureCli(["task", "start"], gitDir);
+    const startRes = await workspace.captureCli(["task", "start"]);
     expect(startRes.exitCode).toBe(1);
     expect(startRes.stdout).toBe("");
     expect(startRes.stderr).toContain("Error: Missing required task identifier");
 
-    const mergeRes = await captureCli(["task", "merge"], gitDir);
+    const mergeRes = await workspace.captureCli(["task", "merge"]);
     expect(mergeRes.exitCode).toBe(1);
     expect(mergeRes.stdout).toBe("");
     expect(mergeRes.stderr).toContain("Error: Missing required task identifier");
   });
 
   it("[RULE-25][RULE-27][RULE-28] should start task branch with machine name to stdout and status to stderr", async () => {
-    const taskPath = join(gitDir, "cli-feat.TASK-200.md");
-    await writeFile(
-      taskPath,
-      "---\ndepends_on: []\nlinks: []\n---\n# Context\nTest\n# Acceptance Criteria\n- [ ] Item\n",
-      "utf8",
-    );
+    const task = await workspace.createTask({
+      id: 200,
+      slug: "cli-feat",
+      criteria: ["Item"],
+    });
 
-    const { exitCode, stdout, stderr } = await captureCli(
-      ["task", "start", "TASK-200"],
-      gitDir,
-    );
+    const { exitCode, stdout, stderr } = await workspace.captureCli(["task", "start", task.tag]);
 
+    const expectedBranch = `task/200-${task.slug}`;
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe("task/200-cli-feat");
-    expect(stderr).toContain('✓ Switched to branch "task/200-cli-feat"');
+    expect(stdout.trim()).toBe(expectedBranch);
+    expect(stderr).toContain(`✓ Switched to branch "${expectedBranch}"`);
 
     // Verify git branch is currently task/200-cli-feat
-    const { stdout: curBranch } = await execFileAsync("git", ["branch", "--show-current"], {
-      cwd: gitDir,
-    });
-    expect(curBranch.trim()).toBe("task/200-cli-feat");
+    const curBranch = await Bun.$`git branch --show-current`.cwd(workspace.cwd).text();
+    expect(curBranch.trim()).toBe(expectedBranch);
   });
 
   it("[RULE-27] should emit machine JSON to stdout when --json is passed to task start", async () => {
-    const taskPath = join(gitDir, "json-feat.TASK-201.md");
-    await writeFile(
-      taskPath,
-      "---\ndepends_on: []\nlinks: []\n---\n# Context\nJSON\n# Acceptance Criteria\n- [ ] Item\n",
-      "utf8",
-    );
+    const task = await workspace.createTask({
+      id: 201,
+      slug: "json-feat",
+      criteria: ["Item"],
+    });
 
-    const { exitCode, stdout, stderr } = await captureCli(
-      ["task", "start", "TASK-201", "--json"],
-      gitDir,
-    );
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "task",
+      "start",
+      task.tag,
+      "--json",
+    ]);
 
+    const expectedBranch = `task/201-${task.slug}`;
     expect(exitCode).toBe(0);
-    expect(stderr).toContain('✓ Switched to branch "task/201-json-feat"');
+    expect(stderr).toContain(`✓ Switched to branch "${expectedBranch}"`);
     const parsed = JSON.parse(stdout.trim());
-    expect(parsed.branchName).toBe("task/201-json-feat");
+    expect(parsed.branchName).toBe(expectedBranch);
     expect(parsed.baseBranch).toBe("dev");
     expect(parsed.created).toBe(true);
   });
 
   it("[RULE-28] should reject starting a task from a protected branch", async () => {
-    const taskPath = join(gitDir, "prot.TASK-202.md");
-    await writeFile(
-      taskPath,
-      "---\ndepends_on: []\nlinks: []\n---\n# Context\nProt\n# Acceptance Criteria\n- [ ] Item\n",
-      "utf8",
-    );
+    const task = await workspace.createTask({
+      id: 202,
+      slug: "prot",
+      criteria: ["Item"],
+    });
 
     // Switch to main (protected)
-    await execFileAsync("git", ["checkout", "main"], { cwd: gitDir });
+    await Bun.$`git checkout main`.cwd(workspace.cwd).quiet();
 
-    const { exitCode, stdout, stderr } = await captureCli(
-      ["task", "start", "TASK-202"],
-      gitDir,
-    );
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "task",
+      "start",
+      task.tag,
+    ]);
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
@@ -155,132 +116,150 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
   });
 
   it("[RULE-25][RULE-27][RULE-28] should merge a completed subtask back into parent branch", async () => {
-    const parentPath = join(gitDir, "parent.TASK-203.md");
-    await writeFile(parentPath, "---\ndepends_on: []\nlinks: []\n---\n# Context\nP\n# Acceptance Criteria\n- [ ] Item\n", "utf8");
-    await execFileAsync("git", ["add", "parent.TASK-203.md"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "docs: parent"], { cwd: gitDir });
-    await captureCli(["task", "start", "TASK-203"], gitDir);
+    const parentTask = await workspace.createTask({
+      id: 203,
+      slug: "parent",
+      criteria: ["Item"],
+    });
+    await workspace.gitCommit("docs: parent");
+    await workspace.captureCli(["task", "start", parentTask.tag]);
 
-    const subPath = join(gitDir, "sub.TASK-203-1.md");
-    await writeFile(subPath, "---\ndepends_on: [TASK-203]\nlinks: []\n---\n# Context\nS\n# Acceptance Criteria\n- [x] Item\n", "utf8");
-    await execFileAsync("git", ["add", "sub.TASK-203-1.md"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "feat(TASK-203-1): sub"], { cwd: gitDir });
-    await captureCli(["task", "start", "TASK-203-1"], gitDir);
+    const subTaskTag = makeTestTag("TASK", "203-1");
+    const subTask = await workspace.createTask({
+      id: "203-1",
+      slug: "sub",
+      depends_on: [parentTask.tag],
+      criteria: [{ text: "Item", completed: true }],
+    });
+    await workspace.gitCommit(`feat(${subTaskTag}): sub`);
+    await workspace.captureCli(["task", "start", subTaskTag]);
 
     // Code mutation and artifact deletion on subtask branch
-    await writeFile(join(gitDir, "code.txt"), "hello world\n", "utf8");
-    await execFileAsync("git", ["add", "code.txt"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "feat: code"], { cwd: gitDir });
-    await rm(subPath);
-    await execFileAsync("git", ["add", "-u"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "chore(task): delete completed TASK-203-1 artifact"], { cwd: gitDir });
+    await workspace.writeFile("code.txt", "hello world\n");
+    await Bun.$`git add code.txt`.cwd(workspace.cwd).quiet();
+    await workspace.gitCommit("feat: code");
+    await rm(subTask.filepath);
+    await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+    await workspace.gitCommit(`chore(task): delete completed ${subTaskTag} artifact`);
 
     // Execute CLI task merge
-    const { exitCode, stdout, stderr } = await captureCli(
-      ["task", "merge", "TASK-203-1"],
-      gitDir,
-    );
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "task",
+      "merge",
+      subTaskTag,
+    ]);
 
+    const expectedParentBranch = `task/203-${parentTask.slug}`;
+    const expectedSubBranch = `task/203-1-${subTask.slug}`;
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe("task/203-parent");
-    expect(stderr).toContain('✓ Merged task branch "task/203-1-sub" into "task/203-parent"');
+    expect(stdout.trim()).toBe(expectedParentBranch);
+    expect(stderr).toContain(`✓ Merged task branch "${expectedSubBranch}" into "${expectedParentBranch}"`);
 
     // Subtask branch deleted
-    const { stdout: bList } = await execFileAsync("git", ["branch", "--list", "task/203-1-sub"], { cwd: gitDir });
+    const bList = await Bun.$`git branch --list ${expectedSubBranch}`.cwd(workspace.cwd).text();
     expect(bList.trim()).toBe("");
   });
 
   it("[RULE-28] should reject merging subtask directly into trunk dev via CLI", async () => {
-    const parentPath = join(gitDir, "parent.TASK-204.md");
-    await writeFile(parentPath, "---\ndepends_on: []\nlinks: []\n---\n# Context\nP\n# Acceptance Criteria\n- [ ] Item\n", "utf8");
-    await execFileAsync("git", ["add", "parent.TASK-204.md"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "docs: parent"], { cwd: gitDir });
-    await captureCli(["task", "start", "TASK-204"], gitDir);
+    const parentTask = await workspace.createTask({
+      id: 204,
+      slug: "parent",
+      criteria: ["Item"],
+    });
+    await workspace.gitCommit("docs: parent");
+    await workspace.captureCli(["task", "start", parentTask.tag]);
 
-    const subPath = join(gitDir, "sub.TASK-204-1.md");
-    await writeFile(subPath, "---\ndepends_on: [TASK-204]\nlinks: []\n---\n# Context\nS\n# Acceptance Criteria\n- [x] Item\n", "utf8");
-    await execFileAsync("git", ["add", "sub.TASK-204-1.md"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "feat(TASK-204-1): sub"], { cwd: gitDir });
-    await captureCli(["task", "start", "TASK-204-1"], gitDir);
+    const subTaskTag = makeTestTag("TASK", "204-1");
+    const subTask = await workspace.createTask({
+      id: "204-1",
+      slug: "sub",
+      depends_on: [parentTask.tag],
+      criteria: [{ text: "Item", completed: true }],
+    });
+    await workspace.gitCommit(`feat(${subTaskTag}): sub`);
+    await workspace.captureCli(["task", "start", subTaskTag]);
 
-    await rm(subPath);
-    await execFileAsync("git", ["add", "-u"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "chore(task): delete completed TASK-204-1 artifact"], { cwd: gitDir });
+    await rm(subTask.filepath);
+    await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+    await workspace.gitCommit(`chore(task): delete completed ${subTaskTag} artifact`);
 
-    const { exitCode, stdout, stderr } = await captureCli(
-      ["task", "merge", "TASK-204-1", "--target", "dev"],
-      gitDir,
-    );
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "task",
+      "merge",
+      subTaskTag,
+      "--target",
+      "dev",
+    ]);
 
+    const expectedSubBranch = `task/204-1-${subTask.slug}`;
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
-    expect(stderr).toContain('Subtask branch "task/204-1-sub" cannot be merged directly into trunk branch "dev" per RULE-28');
+    expect(stderr).toContain(`Subtask branch "${expectedSubBranch}" cannot be merged directly into trunk branch "dev" per RULE-28`);
   });
 
   // @verifies RULE-21, RULE-22, RULE-25, RULE-27, RULE-28
   it("[RULE-21][RULE-22][RULE-25][RULE-27][RULE-28] should infer task ID from current branch for check, complete, and merge", async () => {
     // 1. Author and commit task on dev
-    const taskPath = join(gitDir, "branch-infer.TASK-205.md");
-    await writeFile(
-      taskPath,
-      "---\ndepends_on: []\nlinks: []\n---\n# Context\nTesting branch inference.\n# Acceptance Criteria\n- [ ] First deliverable\n- [ ] Second deliverable\n",
-      "utf8",
-    );
-    await execFileAsync("git", ["add", "branch-infer.TASK-205.md"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "docs: task 205"], { cwd: gitDir });
+    const task = await workspace.createTask({
+      id: 205,
+      slug: "branch-infer",
+      context: "Testing branch inference.",
+      criteria: ["First deliverable", "Second deliverable"],
+    });
+    await workspace.gitCommit(`docs: task ${task.id}`);
 
     // 2. Start task branch (checks out task/205-branch-infer)
-    const startRes = await captureCli(["task", "start", "TASK-205"], gitDir);
+    const startRes = await workspace.captureCli(["task", "start", task.tag]);
     expect(startRes.exitCode).toBe(0);
 
     // 3. Check item 1 omitting task ID
-    const checkRes1 = await captureCli(["task", "check", "--item", "1"], gitDir);
+    const checkRes1 = await workspace.captureCli(["task", "check", "--item", "1"]);
     expect(checkRes1.exitCode).toBe(0);
-    expect(checkRes1.stderr).toContain("Checked item 1 on TASK-205");
+    expect(checkRes1.stderr).toContain(`Checked item 1 on ${task.tag}`);
 
     // 4. Check item 2 omitting task ID
-    const checkRes2 = await captureCli(["task", "check", "--item", "2"], gitDir);
+    const checkRes2 = await workspace.captureCli(["task", "check", "--item", "2"]);
     expect(checkRes2.exitCode).toBe(0);
-    expect(checkRes2.stderr).toContain("Checked item 2 on TASK-205");
-    expect(checkRes2.stderr).toContain("All acceptance criteria for TASK-205 are satisfied");
+    expect(checkRes2.stderr).toContain(`Checked item 2 on ${task.tag}`);
+    expect(checkRes2.stderr).toContain(`All acceptance criteria for ${task.tag} are satisfied`);
 
     // Make an implementation commit on the task branch so working tree is clean
-    await writeFile(join(gitDir, "feature.ts"), "export const feat = true;\n", "utf8");
-    await execFileAsync("git", ["add", "feature.ts"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "feat: implement feature"], { cwd: gitDir });
+    await workspace.writeFile("feature.ts", "export const feat = true;\n");
+    await Bun.$`git add feature.ts`.cwd(workspace.cwd).quiet();
+    await workspace.gitCommit("feat: implement feature");
 
     // 5. Complete task omitting task ID
-    const completeRes = await captureCli(["task", "complete"], gitDir);
+    const completeRes = await workspace.captureCli(["task", "complete"]);
     expect(completeRes.exitCode).toBe(0);
-    expect(completeRes.stderr).toContain("✓ Completed task TASK-205");
+    expect(completeRes.stderr).toContain(`✓ Completed task ${task.tag}`);
 
     // 6. Merge task omitting task ID
-    const mergeRes = await captureCli(["task", "merge"], gitDir);
+    const mergeRes = await workspace.captureCli(["task", "merge"]);
+    const expectedBranch = `task/205-${task.slug}`;
     expect(mergeRes.exitCode).toBe(0);
     expect(mergeRes.stdout.trim()).toBe("dev");
-    expect(mergeRes.stderr).toContain('✓ Merged task branch "task/205-branch-infer" into "dev"');
+    expect(mergeRes.stderr).toContain(`✓ Merged task branch "${expectedBranch}" into "dev"`);
 
     // Verify checked-out branch is now dev and source branch was deleted
-    const { stdout: currentBranch } = await execFileAsync("git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd: gitDir });
+    const currentBranch = await Bun.$`git rev-parse --abbrev-ref HEAD`.cwd(workspace.cwd).text();
     expect(currentBranch.trim()).toBe("dev");
-    const { stdout: bList } = await execFileAsync("git", ["branch", "--list", "task/205-branch-infer"], { cwd: gitDir });
+    const bList = await Bun.$`git branch --list ${expectedBranch}`.cwd(workspace.cwd).text();
     expect(bList.trim()).toBe("");
   });
 
   // @verifies RULE-27, RULE-28
   it("[RULE-27][RULE-28] should report clear error when omitting task ID on non-task branch", async () => {
     // Current branch is dev (not a task branch)
-    const checkRes = await captureCli(["task", "check", "--item", "1"], gitDir);
+    const checkRes = await workspace.captureCli(["task", "check", "--item", "1"]);
     expect(checkRes.exitCode).toBe(1);
     expect(checkRes.stderr).toContain("Error: Missing required task identifier and current git branch");
 
-    const completeRes = await captureCli(["task", "complete"], gitDir);
+    const completeRes = await workspace.captureCli(["task", "complete"]);
     expect(completeRes.exitCode).toBe(1);
     expect(completeRes.stderr).toContain("Error: Missing required task identifier and current git branch");
 
-    const mergeRes = await captureCli(["task", "merge"], gitDir);
+    const mergeRes = await workspace.captureCli(["task", "merge"]);
     expect(mergeRes.exitCode).toBe(1);
     expect(mergeRes.stderr).toContain("Error: Missing required task identifier and current git branch");
   });
 });
-
