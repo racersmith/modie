@@ -4,12 +4,10 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { createFixtureWorkspace, makeTestTag, type FixtureWorkspace } from "../../core/testing/index.ts";
 import { createModieMcpServer } from "./server.ts";
 
 function getTextContent(result: any): string {
@@ -23,37 +21,43 @@ function getResourceText(readRes: any): string {
 }
 
 describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RULE-26)", () => {
-  let tempDir: string;
+  let workspace: FixtureWorkspace;
   let server: ReturnType<typeof createModieMcpServer>;
   let client: Client;
+  const ruleTag = makeTestTag("RULE", 101);
+  const task101Tag = makeTestTag("TASK", 101);
+  const task102Tag = makeTestTag("TASK", 102);
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "modie-mcp-test-"));
+    workspace = await createFixtureWorkspace("modie-mcp-test-");
 
-    // Set up a sample rule in tempDir
-    const rulesDir = join(tempDir, "src", ".rules");
-    await Bun.$`mkdir -p ${rulesDir}`.quiet();
-    await writeFile(
-      join(rulesDir, "sample-rule.RULE-101.md"),
-      `---\nlinks: []\n---\n# Sample Rule\nAll code must be tested.\n`,
-      "utf8",
-    );
+    // Set up a sample rule in workspace
+    await workspace.createRule({
+      id: 101,
+      slug: "sample-rule",
+      title: "Sample Rule",
+      body: "All code must be tested.",
+    });
 
-    // Set up sample tasks in tempDir
-    const tasksDir = join(tempDir, "src", ".tasks");
-    await Bun.$`mkdir -p ${tasksDir}`.quiet();
-    await writeFile(
-      join(tasksDir, "sample-ready.TASK-101.md"),
-      `---\ndepends_on: []\nlinks:\n  - RULE-101\n---\n# Context\nReady task context.\n# Acceptance Criteria\n- [ ] First criterion\n- [ ] Second criterion\n`,
-      "utf8",
-    );
-    await writeFile(
-      join(tasksDir, "sample-blocked.TASK-102.md"),
-      `---\ndepends_on:\n  - TASK-101\nlinks: []\n---\n# Context\nBlocked task context.\n# Acceptance Criteria\n- [ ] Dependent item\n`,
-      "utf8",
-    );
+    // Set up sample tasks in workspace
+    await workspace.createTask({
+      id: 101,
+      slug: "sample-ready",
+      title: "Sample Ready",
+      context: "Ready task context.",
+      criteria: ["First criterion", "Second criterion"],
+      links: [ruleTag],
+    });
+    await workspace.createTask({
+      id: 102,
+      slug: "sample-blocked",
+      title: "Sample Blocked",
+      context: "Blocked task context.",
+      criteria: ["Dependent item"],
+      depends_on: [task101Tag],
+    });
 
-    server = createModieMcpServer({ cwd: tempDir });
+    server = createModieMcpServer({ cwd: workspace.cwd });
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     await server.connect(serverTransport);
 
@@ -64,7 +68,7 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
   afterEach(async () => {
     await client.close();
     await server.close();
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
   it("[RULE-25] should register all 12 core CLI commands as typed MCP tools", async () => {
@@ -118,7 +122,7 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     expect(Array.isArray(parsed)).toBe(true);
     expect(parsed).toHaveLength(2);
 
-    const task101 = parsed.find((t: any) => t.fullTaskId === "TASK-101");
+    const task101 = parsed.find((t: any) => t.fullTaskId === task101Tag);
     expect(task101).toBeDefined();
     expect(task101.readiness).toBe("READY");
     expect(task101.criteriaProgress).toBe("0/2");
@@ -131,12 +135,12 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
   it("[RULE-26] should execute task_status for a specific task and inspect progress", async () => {
     const result = await client.callTool({
       name: "task_status",
-      arguments: { id: "TASK-101" },
+      arguments: { id: task101Tag },
     });
 
     expect(result.isError).toBeFalsy();
     const status = JSON.parse(getTextContent(result));
-    expect(status.fullTaskId).toBe("TASK-101");
+    expect(status.fullTaskId).toBe(task101Tag);
     expect(status.readiness).toBe("READY");
     expect(status.acceptanceCriteria).toHaveLength(2);
     expect(status.acceptanceCriteria[0].completed).toBe(false);
@@ -145,7 +149,7 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
   it("[RULE-26] should check task criteria item via task_check tool", async () => {
     const checkResult = await client.callTool({
       name: "task_check",
-      arguments: { id: "TASK-101", item: 1 },
+      arguments: { id: task101Tag, item: 1 },
     });
 
     expect(checkResult.isError).toBeFalsy();
@@ -156,7 +160,7 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     // Verify task status reflects updated item
     const statusResult = await client.callTool({
       name: "task_status",
-      arguments: { id: "TASK-101" },
+      arguments: { id: task101Tag },
     });
     const status = JSON.parse(getTextContent(statusResult));
     expect(status.acceptanceCriteria[0].completed).toBe(true);
@@ -167,19 +171,19 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     // 1. Without raw flag: rawContent must be omitted
     const normalShow = await client.callTool({
       name: "show",
-      arguments: { tag: "TASK-101" },
+      arguments: { tag: task101Tag },
     });
 
     expect(normalShow.isError).toBeFalsy();
     const normalData = JSON.parse(getTextContent(normalShow));
-    expect(normalData.tag).toBe("TASK-101");
+    expect(normalData.tag).toBe(task101Tag);
     expect(normalData.slug).toBe("sample-ready");
     expect(normalData.rawContent).toBeUndefined(); // Token economy enforced!
 
     // 2. With raw flag: rawContent is solicited, therefore returned
     const rawShow = await client.callTool({
       name: "show",
-      arguments: { tag: "TASK-101", raw: true },
+      arguments: { tag: task101Tag, raw: true },
     });
 
     expect(rawShow.isError).toBeFalsy();
@@ -192,17 +196,18 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     // Missing required field or invalid index
     const invalidCall = await client.callTool({
       name: "task_check",
-      arguments: { id: "TASK-101", item: -5 },
+      arguments: { id: task101Tag, item: -5 },
     });
     expect(invalidCall.isError).toBe(true);
 
     // Unknown artifact tag
+    const notFoundTag = makeTestTag("TASK", 99999);
     const notFoundCall = await client.callTool({
       name: "find",
-      arguments: { tag: "TASK-99999" },
+      arguments: { tag: notFoundTag },
     });
     expect(notFoundCall.isError).toBe(true);
-    expect(getTextContent(notFoundCall)).toContain("TASK-99999");
+    expect(getTextContent(notFoundCall)).toContain(notFoundTag);
   });
 
   it("[RULE-25] should create a new task via task_create tool", async () => {
@@ -211,7 +216,7 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
       arguments: {
         title: "Agent Created Task",
         criteria: ["Item A", "Item B"],
-        links: ["RULE-101"],
+        links: [ruleTag],
       },
     });
 
@@ -224,35 +229,38 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
 });
 
 describe("Modie MCP Server - Read-Only Resources (Criterion 4)", () => {
-  let tempDir: string;
+  let workspace: FixtureWorkspace;
   let server: ReturnType<typeof createModieMcpServer>;
   let client: Client;
+  const rule201Tag = makeTestTag("RULE", 201);
+  const task201Tag = makeTestTag("TASK", 201);
+  const task202Tag = makeTestTag("TASK", 202);
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "modie-mcp-resources-"));
+    workspace = await createFixtureWorkspace("modie-mcp-resources-");
 
-    const rulesDir = join(tempDir, "src", ".rules");
-    await Bun.$`mkdir -p ${rulesDir}`.quiet();
-    await writeFile(
-      join(rulesDir, "governance-rule.RULE-201.md"),
-      `---\nlinks: []\n---\n# Governance Rule\nSystem integrity rule body.\n`,
-      "utf8",
-    );
+    await workspace.createRule({
+      id: 201,
+      slug: "governance-rule",
+      title: "Governance Rule",
+      body: "System integrity rule body.",
+    });
 
-    const tasksDir = join(tempDir, "src", ".tasks");
-    await Bun.$`mkdir -p ${tasksDir}`.quiet();
-    await writeFile(
-      join(tasksDir, "ready-task.TASK-201.md"),
-      `---\ndepends_on: []\nlinks: []\n---\n# Acceptance Criteria\n- [ ] Task item\n`,
-      "utf8",
-    );
-    await writeFile(
-      join(tasksDir, "blocked-task.TASK-202.md"),
-      `---\ndepends_on:\n  - TASK-201\nlinks: []\n---\n# Acceptance Criteria\n- [ ] Waiting\n`,
-      "utf8",
-    );
+    await workspace.createTask({
+      id: 201,
+      slug: "ready-task",
+      title: "Ready Task",
+      criteria: ["Task item"],
+    });
+    await workspace.createTask({
+      id: 202,
+      slug: "blocked-task",
+      title: "Blocked Task",
+      criteria: ["Waiting"],
+      depends_on: [task201Tag],
+    });
 
-    server = createModieMcpServer({ cwd: tempDir });
+    server = createModieMcpServer({ cwd: workspace.cwd });
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     await server.connect(serverTransport);
 
@@ -263,7 +271,7 @@ describe("Modie MCP Server - Read-Only Resources (Criterion 4)", () => {
   afterEach(async () => {
     await client.close();
     await server.close();
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
   it("should list ready tasks, all tasks, and active rules resources", async () => {
@@ -291,7 +299,7 @@ describe("Modie MCP Server - Read-Only Resources (Criterion 4)", () => {
     const tasks = JSON.parse(text);
     expect(Array.isArray(tasks)).toBe(true);
     expect(tasks).toHaveLength(1);
-    expect(tasks[0].fullTaskId).toBe("TASK-201");
+    expect(tasks[0].fullTaskId).toBe(task201Tag);
     expect(tasks[0].readiness).toBe("READY");
   });
 
@@ -304,7 +312,7 @@ describe("Modie MCP Server - Read-Only Resources (Criterion 4)", () => {
     const rules = JSON.parse(text);
     expect(Array.isArray(rules)).toBe(true);
     expect(rules).toHaveLength(1);
-    expect(rules[0].tag).toBe("RULE-201");
+    expect(rules[0].tag).toBe(rule201Tag);
     expect(rules[0].body).toContain("System integrity rule body.");
   });
 

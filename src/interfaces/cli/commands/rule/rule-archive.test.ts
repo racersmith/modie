@@ -1,19 +1,15 @@
 /**
  * Integration and unit tests for `modie rule archive`.
  * Tagged per ADR-7 and RULE-23 for universal rule verification.
+ * @verifies RULE-4, RULE-25, RULE-27, RULE-31, RULE-34
  */
 
 import { describe, expect, it } from "bun:test";
-import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { promisify } from "node:util";
-import { captureCli } from "../../test-utils.ts";
+import { captureCli, createTestWorkspace } from "../../test-utils.ts";
 
-const execFileAsync = promisify(execFile);
-
-describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31)", () => {
+describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31, RULE-34)", () => {
   // @verifies RULE-27
   it("[RULE-27] should emit rule archive subcommand help to stderr with exit code 0", async () => {
     const { exitCode, stdout, stderr } = await captureCli([
@@ -36,164 +32,160 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
     expect(stderr).toContain("Error: Missing required RULE identifier.");
   });
 
-  // @verifies RULE-25, RULE-27, RULE-31
-  it("[RULE-25][RULE-27][RULE-31] should archive an unreferenced RULE with relative path to stdout and status to stderr", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-rule-archive-"));
-    const rulesDir = join(tempDir, ".rules");
-    await mkdir(rulesDir, { recursive: true });
+  // @verifies RULE-25, RULE-27, RULE-31, RULE-34
+  it("[RULE-25][RULE-27][RULE-31][RULE-34] should archive an unreferenced RULE with relative path to stdout and status to stderr", async () => {
+    const workspace = await createTestWorkspace("cli-rule-archive-");
+    const rule = await workspace.createArtifact({
+      subtype: "RULE",
+      id: "TEST-1",
+      slug: "single-purpose",
+      body: "Rule description.\n",
+    });
 
-    await writeFile(
-      join(rulesDir, "single-purpose.RULE-1.md"),
-      `---
-links: []
----
-
-Rule description.
-`,
-      "utf8",
-    );
-
-    const { exitCode, stdout, stderr } = await captureCli(
-      ["rule", "archive", "RULE-1"],
-      tempDir,
-    );
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "rule",
+      "archive",
+      rule.tag,
+    ]);
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(".rules/single-purpose.RULE-1.ARCHIVED.md");
+    expect(stdout.trim()).toBe(".modie/rules/single-purpose.RULE-TEST-1.ARCHIVED.md");
     expect(stderr).toContain(
-      "✓ Archived RULE RULE-1: single-purpose.RULE-1.ARCHIVED.md",
+      "✓ Archived RULE RULE-TEST-1: single-purpose.RULE-TEST-1.ARCHIVED.md",
     );
 
     const archivedContent = await readFile(
-      join(tempDir, stdout.trim()),
+      join(workspace.cwd, stdout.trim()),
       "utf8",
     );
     expect(archivedContent).toContain("Rule description.");
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-27, RULE-31
-  it("[RULE-27][RULE-31] should reject archiving when active references exist", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-rule-reject-"));
-    const rulesDir = join(tempDir, ".rules");
-    const tasksDir = join(tempDir, ".tasks");
-    await mkdir(rulesDir, { recursive: true });
-    await mkdir(tasksDir, { recursive: true });
+  // @verifies RULE-27, RULE-31, RULE-34
+  it("[RULE-27][RULE-31][RULE-34] should reject archiving when active references exist", async () => {
+    const workspace = await createTestWorkspace("cli-rule-reject-");
 
-    await writeFile(
-      join(rulesDir, "target-rule.RULE-1.md"),
-      "---\nlinks: []\n---\nTarget rule.",
-      "utf8",
-    );
-    await writeFile(
-      join(tasksDir, "dependent-task.TASK-1.md"),
-      "---\nlinks:\n  - RULE-1\n---\n# Context\nDependent task.",
-      "utf8",
-    );
+    const rule = await workspace.createArtifact({
+      subtype: "RULE",
+      id: "TEST-1",
+      slug: "target-rule",
+      body: "Target rule.",
+    });
 
-    const { exitCode, stdout, stderr } = await captureCli(
-      ["rule", "archive", "RULE-1"],
-      tempDir,
-    );
+    await workspace.createArtifact({
+      subtype: "TASK",
+      id: "TEST-1",
+      slug: "dependent-task",
+      links: [rule.tag],
+      context: "Dependent task.",
+    });
+
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "rule",
+      "archive",
+      rule.tag,
+    ]);
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain(
-      "Error: Cannot archive RULE-1: 1 active incoming reference(s) exist.",
+      `Error: Cannot archive ${rule.tag}: 1 active incoming reference(s) exist.`,
     );
     expect(stderr).toContain(
-      "Active artifact TASK-1 (links) maintains link to RULE-1",
+      `Active artifact TASK-TEST-1 (links) maintains link to ${rule.tag}`,
     );
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-25, RULE-27, RULE-31
-  it("[RULE-25][RULE-27][RULE-31] should bypass active references guard with --force", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-rule-force-"));
-    const rulesDir = join(tempDir, ".rules");
-    const tasksDir = join(tempDir, ".tasks");
-    await mkdir(rulesDir, { recursive: true });
-    await mkdir(tasksDir, { recursive: true });
+  // @verifies RULE-25, RULE-27, RULE-31, RULE-34
+  it("[RULE-25][RULE-27][RULE-31][RULE-34] should bypass active references guard with --force", async () => {
+    const workspace = await createTestWorkspace("cli-rule-force-");
 
-    await writeFile(
-      join(rulesDir, "forced-rule.RULE-1.md"),
-      "---\nlinks: []\n---\nForced rule.",
-      "utf8",
-    );
-    await writeFile(
-      join(tasksDir, "dependent-task.TASK-1.md"),
-      "---\nlinks:\n  - RULE-1\n---\n# Context\nDependent task.",
-      "utf8",
-    );
+    const rule = await workspace.createArtifact({
+      subtype: "RULE",
+      id: "TEST-1",
+      slug: "forced-rule",
+      body: "Forced rule.",
+    });
 
-    const { exitCode, stdout, stderr } = await captureCli(
-      ["rule", "archive", "RULE-1", "--force"],
-      tempDir,
-    );
+    await workspace.createArtifact({
+      subtype: "TASK",
+      id: "TEST-1",
+      slug: "dependent-task",
+      links: [rule.tag],
+      context: "Dependent task.",
+    });
+
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "rule",
+      "archive",
+      rule.tag,
+      "--force",
+    ]);
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(".rules/forced-rule.RULE-1.ARCHIVED.md");
+    expect(stdout.trim()).toBe(".modie/rules/forced-rule.RULE-TEST-1.ARCHIVED.md");
     expect(stderr).toContain(
-      "✓ Archived RULE RULE-1: forced-rule.RULE-1.ARCHIVED.md (forced with active references)",
+      "✓ Archived RULE RULE-TEST-1: forced-rule.RULE-TEST-1.ARCHIVED.md (forced with active references)",
     );
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-27
-  it("[RULE-27] should emit machine JSON to stdout when --json is passed", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-rule-json-"));
-    const rulesDir = join(tempDir, ".rules");
-    await mkdir(rulesDir, { recursive: true });
+  // @verifies RULE-27, RULE-34
+  it("[RULE-27][RULE-34] should emit machine JSON to stdout when --json is passed", async () => {
+    const workspace = await createTestWorkspace("cli-rule-json-");
 
-    await writeFile(
-      join(rulesDir, "json-rule.RULE-1.md"),
-      "---\nlinks: []\n---\nJson rule.",
-      "utf8",
-    );
+    const rule = await workspace.createArtifact({
+      subtype: "RULE",
+      id: "TEST-1",
+      slug: "json-rule",
+      body: "Json rule.",
+    });
 
-    const { exitCode, stdout, stderr } = await captureCli(
-      ["rule", "archive", "RULE-1", "--json"],
-      tempDir,
-    );
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "rule",
+      "archive",
+      rule.tag,
+      "--json",
+    ]);
 
     expect(exitCode).toBe(0);
-    expect(stderr).toContain("✓ Archived RULE RULE-1");
+    expect(stderr).toContain("✓ Archived RULE RULE-TEST-1");
 
     const parsed = JSON.parse(stdout);
-    expect(parsed.tag).toBe("RULE-1");
-    expect(parsed.archivedFilename).toBe("json-rule.RULE-1.ARCHIVED.md");
+    expect(parsed.tag).toBe("RULE-TEST-1");
+    expect(parsed.archivedFilename).toBe("json-rule.RULE-TEST-1.ARCHIVED.md");
     expect(parsed.canArchive).toBe(true);
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-25, RULE-27
-  it("[RULE-25][RULE-27] should execute rule archive via bin.ts subprocess", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-rule-subprocess-"));
-    const rulesDir = join(tempDir, ".rules");
-    await mkdir(rulesDir, { recursive: true });
+  // @verifies RULE-25, RULE-27, RULE-34
+  it("[RULE-25][RULE-27][RULE-34] should execute rule archive via bin.ts subprocess", async () => {
+    const workspace = await createTestWorkspace("cli-rule-subprocess-");
 
-    await writeFile(
-      join(rulesDir, "sub-rule.RULE-1.md"),
-      "---\nlinks: []\n---\nSubprocess rule.",
-      "utf8",
-    );
+    const rule = await workspace.createArtifact({
+      subtype: "RULE",
+      id: "TEST-1",
+      slug: "sub-rule",
+      body: "Subprocess rule.",
+    });
 
-    const binPath = join(process.cwd(), "src/interfaces/cli/bin.ts");
-    const { stdout, stderr } = await execFileAsync(
-      "bun",
-      ["run", binPath, "rule", "archive", "RULE-1"],
-      { cwd: tempDir },
-    );
+    const { stdout, stderr } = await workspace.execBin([
+      "rule",
+      "archive",
+      rule.tag,
+    ]);
 
-    expect(stdout.trim()).toBe(".rules/sub-rule.RULE-1.ARCHIVED.md");
+    expect(stdout.trim()).toBe(".modie/rules/sub-rule.RULE-TEST-1.ARCHIVED.md");
     expect(stderr).toContain(
-      "✓ Archived RULE RULE-1: sub-rule.RULE-1.ARCHIVED.md",
+      "✓ Archived RULE RULE-TEST-1: sub-rule.RULE-TEST-1.ARCHIVED.md",
     );
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 });

@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { captureCli } from "./test-utils.ts";
+import { captureCli, createTestWorkspace } from "./test-utils.ts";
 
 describe("CLI Harness - Global Commands & Stream Separation (RULE-27)", () => {
   // @verifies RULE-27
@@ -66,28 +66,59 @@ describe("CLI Harness - Global Commands & Stream Separation (RULE-27)", () => {
     expect(stderr).toContain('Error: Unknown rule subcommand "bogus"');
   });
 
-  // @verifies RULE-25, RULE-27
-  it("[RULE-25][RULE-27] should route top-level backlog command to task list", async () => {
-    const { exitCode, stdout, stderr } = await captureCli(["backlog"]);
+  // @verifies RULE-25, RULE-27, RULE-34
+  it("[RULE-25][RULE-27][RULE-34] should route top-level backlog command to task list in fixture workspace", async () => {
+    const workspace = await createTestWorkspace("modie-cli-backlog-");
+    await workspace.createArtifact({
+      subtype: "TASK",
+      id: "TEST-1",
+      slug: "fixture-backlog-item",
+    });
+
+    const { exitCode, stdout, stderr } = await workspace.captureCli(["backlog"]);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Active Task Queue");
+    expect(stderr).toContain("TASK-TEST-1");
+
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-25, RULE-27
-  it("[RULE-25][RULE-27] should route task backlog subcommand alias to task list", async () => {
-    const { exitCode, stdout, stderr } = await captureCli(["task", "backlog"]);
+  // @verifies RULE-25, RULE-27, RULE-34
+  it("[RULE-25][RULE-27][RULE-34] should route task backlog subcommand alias to task list in fixture workspace", async () => {
+    const workspace = await createTestWorkspace("modie-cli-backlog-alias-");
+    await workspace.createArtifact({
+      subtype: "TASK",
+      id: "TEST-1",
+      slug: "fixture-backlog-item",
+    });
+
+    const { exitCode, stdout, stderr } = await workspace.captureCli(["task", "backlog"]);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Active Task Queue");
+    expect(stderr).toContain("TASK-TEST-1");
+
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-25, RULE-27
-  it("[RULE-25][RULE-27] should emit machine JSON array when backlog --json is passed", async () => {
-    const { exitCode, stdout } = await captureCli(["backlog", "--json"]);
+  // @verifies RULE-25, RULE-27, RULE-34
+  it("[RULE-25][RULE-27][RULE-34] should emit machine JSON array when backlog --json is passed in fixture workspace", async () => {
+    const workspace = await createTestWorkspace("modie-cli-backlog-json-");
+    await workspace.createArtifact({
+      subtype: "TASK",
+      id: "TEST-1",
+      slug: "fixture-backlog-item",
+    });
+
+    const { exitCode, stdout } = await workspace.captureCli(["backlog", "--json"]);
     expect(exitCode).toBe(0);
     const parsed = JSON.parse(stdout);
     expect(Array.isArray(parsed)).toBe(true);
+    expect(parsed.length).toBe(1);
+    expect(parsed[0].fullTaskId).toBe("TASK-TEST-1");
+
+    await workspace.cleanup();
   });
 });
 

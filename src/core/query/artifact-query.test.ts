@@ -1,12 +1,10 @@
 /**
  * Unit tests for artifact resolution and inspection query services.
- * @verifies ADR-1, ADR-2, RULE-1, RULE-25, RULE-26, RULE-29
+ * @verifies ADR-1, ADR-2, RULE-1, RULE-25, RULE-26, RULE-29, RULE-34
  */
 
 import { describe, expect, it } from "bun:test";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { createFixtureWorkspace } from "../testing/index.ts";
 import {
   getArtifactDetails,
   parseCanonicalTag,
@@ -68,145 +66,188 @@ describe("Artifact Query Service - Canonical Tag Parsing (RULE-1, RULE-29)", () 
   });
 });
 
-describe("Artifact Query Service - Resolution by Tag (RULE-25, RULE-29)", () => {
-  // @verifies RULE-25, RULE-29, ADR-1, ADR-2
-  it("[RULE-25][RULE-29][ADR-1][ADR-2] should resolve active RULE, ADR, and TASK artifacts by tag in test fixture", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-resolve-tag-"));
-    const rulePath = join(tempDir, "sample-rule.RULE-50.md");
-    const adrPath = join(tempDir, "sample-decision.ADR-50.md");
-    const taskPath = join(tempDir, "sample-task.TASK-50.md");
+describe("Artifact Query Service - Resolution by Tag (RULE-25, RULE-29, RULE-34)", () => {
+  // @verifies RULE-25, RULE-29, RULE-34, ADR-1, ADR-2
+  it("[RULE-25][RULE-29][RULE-34][ADR-1][ADR-2] should resolve active RULE, ADR, and TASK artifacts by tag in test fixture", async () => {
+    const workspace = await createFixtureWorkspace("modie-resolve-tag-");
+    const rule = await workspace.createArtifact({
+      subtype: "RULE",
+      id: "50",
+      slug: "sample-rule",
+      body: "Rule body",
+    });
+    const adr = await workspace.createArtifact({
+      subtype: "ADR",
+      id: "50",
+      slug: "sample-decision",
+      context: "ADR body",
+    });
+    const task = await workspace.createArtifact({
+      subtype: "TASK",
+      id: "50",
+      slug: "sample-task",
+      context: "Task body",
+    });
 
-    await writeFile(rulePath, "---\nlinks: []\n---\nRule body", "utf8");
-    await writeFile(adrPath, "---\nlinks: []\n---\n# Context\nADR body", "utf8");
-    await writeFile(taskPath, "---\ndepends_on: []\nlinks: []\n---\n# Context\nTask body", "utf8");
-
-    const resolvedRule = await resolveArtifactByTag("RULE-50", { cwd: tempDir });
+    const resolvedRule = await resolveArtifactByTag("RULE-50", { cwd: workspace.cwd });
     expect(resolvedRule.tag).toBe("RULE-50");
     expect(resolvedRule.subtype).toBe("RULE");
     expect(resolvedRule.id).toBe("50");
     expect(resolvedRule.slug).toBe("sample-rule");
-    expect(resolvedRule.filepath).toBe(rulePath);
+    expect(resolvedRule.filepath).toBe(rule.filepath);
     expect(resolvedRule.isArchived).toBe(false);
 
-    const resolvedAdr = await resolveArtifactByTag("adr-50", { cwd: tempDir });
+    const resolvedAdr = await resolveArtifactByTag("adr-50", { cwd: workspace.cwd });
     expect(resolvedAdr.tag).toBe("ADR-50");
     expect(resolvedAdr.subtype).toBe("ADR");
-    expect(resolvedAdr.filepath).toBe(adrPath);
+    expect(resolvedAdr.filepath).toBe(adr.filepath);
 
-    const resolvedTask = await resolveArtifactByTag("TASK-50", { cwd: tempDir });
+    const resolvedTask = await resolveArtifactByTag("TASK-50", { cwd: workspace.cwd });
     expect(resolvedTask.tag).toBe("TASK-50");
     expect(resolvedTask.subtype).toBe("TASK");
-    expect(resolvedTask.filepath).toBe(taskPath);
+    expect(resolvedTask.filepath).toBe(task.filepath);
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-1, RULE-29
-  it("[RULE-1][RULE-29] should resolve archived artifacts when requested", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-resolve-archived-"));
-    const archivedAdrPath = join(tempDir, "legacy-decision.ADR-88.ARCHIVED.md");
-    await writeFile(archivedAdrPath, "---\nlinks: []\n---\nArchived decision", "utf8");
+  // @verifies RULE-1, RULE-29, RULE-34
+  it("[RULE-1][RULE-29][RULE-34] should resolve archived artifacts when requested", async () => {
+    const workspace = await createFixtureWorkspace("modie-resolve-archived-");
+    const archivedAdr = await workspace.createArtifact({
+      subtype: "ADR",
+      id: "88",
+      slug: "legacy-decision",
+      isArchived: true,
+      context: "Archived decision",
+    });
 
-    const resolved = await resolveArtifactByTag("ADR-88", { cwd: tempDir });
+    const resolved = await resolveArtifactByTag("ADR-88", { cwd: workspace.cwd });
     expect(resolved.tag).toBe("ADR-88");
     expect(resolved.id).toBe("88");
     expect(resolved.isArchived).toBe(true);
-    expect(resolved.filepath).toBe(archivedAdrPath);
+    expect(resolved.filepath).toBe(archivedAdr.filepath);
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-29
-  it("[RULE-29] should prefer active artifact over archived artifact when both exist", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-resolve-conflict-"));
-    const activePath = join(tempDir, "active-rule.RULE-77.md");
-    const archivedPath = join(tempDir, "archived-rule.RULE-77.ARCHIVED.md");
+  // @verifies RULE-29, RULE-34
+  it("[RULE-29][RULE-34] should prefer active artifact over archived artifact when both exist", async () => {
+    const workspace = await createFixtureWorkspace("modie-resolve-conflict-");
+    const activeRule = await workspace.createArtifact({
+      subtype: "RULE",
+      id: "77",
+      slug: "active-rule",
+      isArchived: false,
+      body: "Active rule",
+    });
+    await workspace.createArtifact({
+      subtype: "RULE",
+      id: "77",
+      slug: "archived-rule",
+      isArchived: true,
+      body: "Archived rule",
+    });
 
-    await writeFile(activePath, "Active rule", "utf8");
-    await writeFile(archivedPath, "Archived rule", "utf8");
-
-    const resolved = await resolveArtifactByTag("RULE-77", { cwd: tempDir });
+    const resolved = await resolveArtifactByTag("RULE-77", { cwd: workspace.cwd });
     expect(resolved.isArchived).toBe(false);
-    expect(resolved.filepath).toBe(activePath);
+    expect(resolved.filepath).toBe(activeRule.filepath);
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  it("should throw descriptive error when tag is not found", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-resolve-missing-"));
-    await expect(resolveArtifactByTag("RULE-9999", { cwd: tempDir })).rejects.toThrow(
+  // @verifies RULE-34
+  it("[RULE-34] should throw descriptive error when tag is not found", async () => {
+    const workspace = await createFixtureWorkspace("modie-resolve-missing-");
+    await expect(resolveArtifactByTag("RULE-9999", { cwd: workspace.cwd })).rejects.toThrow(
       /Artifact "RULE-9999" was not found/,
     );
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-29
-  it("[RULE-29] should resolve real live artifacts in the modie repository", async () => {
-    const rule1 = await resolveArtifactByTag("RULE-1");
-    expect(rule1.tag).toBe("RULE-1");
-    expect(rule1.subtype).toBe("RULE");
-    expect(rule1.filepath).toContain("artifact-filename-structure.RULE-1.md");
+  // @verifies RULE-29, RULE-34
+  it("[RULE-29][RULE-34] should resolve active artifacts across workspace subdirectories", async () => {
+    const workspace = await createFixtureWorkspace("modie-resolve-workspace-");
+    const rule1 = await workspace.createArtifact({
+      subtype: "RULE",
+      id: "TEST-1",
+      slug: "artifact-structure",
+      subDir: "custom/rules",
+      body: "Rule content",
+    });
+    const rule29 = await workspace.createArtifact({
+      subtype: "RULE",
+      id: "TEST-29",
+      slug: "tag-resolution",
+      subDir: "deep/nested/rules",
+      body: "Tag resolution content",
+    });
+    const adr6 = await workspace.createArtifact({
+      subtype: "ADR",
+      id: "TEST-6",
+      slug: "task-lifecycle",
+      subDir: "docs/adrs",
+      context: "Lifecycle content",
+    });
 
-    const rule29 = await resolveArtifactByTag("RULE-29");
-    expect(rule29.tag).toBe("RULE-29");
-    expect(rule29.subtype).toBe("RULE");
-    expect(rule29.filepath).toContain("artifact-tag-resolution.RULE-29.md");
+    const resolvedRule1 = await resolveArtifactByTag("RULE-TEST-1", { cwd: workspace.cwd });
+    expect(resolvedRule1.tag).toBe("RULE-TEST-1");
+    expect(resolvedRule1.subtype).toBe("RULE");
+    expect(resolvedRule1.filepath).toBe(rule1.filepath);
 
-    const adr6 = await resolveArtifactByTag("ADR-6");
-    expect(adr6.tag).toBe("ADR-6");
-    expect(adr6.subtype).toBe("ADR");
-    expect(adr6.filepath).toContain("ephemeral-task-lifecycle.ADR-6.md");
+    const resolvedRule29 = await resolveArtifactByTag("RULE-TEST-29", { cwd: workspace.cwd });
+    expect(resolvedRule29.tag).toBe("RULE-TEST-29");
+    expect(resolvedRule29.subtype).toBe("RULE");
+    expect(resolvedRule29.filepath).toBe(rule29.filepath);
+
+    const resolvedAdr6 = await resolveArtifactByTag("ADR-TEST-6", { cwd: workspace.cwd });
+    expect(resolvedAdr6.tag).toBe("ADR-TEST-6");
+    expect(resolvedAdr6.subtype).toBe("ADR");
+    expect(resolvedAdr6.filepath).toBe(adr6.filepath);
+
+    await workspace.cleanup();
   });
 });
 
-describe("Artifact Query Service - Deep Inspection (RULE-26, RULE-29)", () => {
-  // @verifies RULE-26, RULE-29
-  it("[RULE-26][RULE-29] should extract structured details, links, and sections from artifact", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-inspect-details-"));
-    const adrPath = join(tempDir, "test-adr.ADR-60.md");
-    await writeFile(
-      adrPath,
-      `---
-links:
-  - RULE-1
-  - ADR-2
----
+describe("Artifact Query Service - Deep Inspection (RULE-26, RULE-29, RULE-34)", () => {
+  // @verifies RULE-26, RULE-29, RULE-34
+  it("[RULE-26][RULE-29][RULE-34] should extract structured details, links, and sections from artifact", async () => {
+    const workspace = await createFixtureWorkspace("modie-inspect-details-");
+    await workspace.createArtifact({
+      subtype: "ADR",
+      id: "TEST-60",
+      slug: "test-adr",
+      links: ["RULE-TEST-1", "ADR-TEST-2"],
+      context: "Context explanation text.",
+      body: "# Alternatives Considered\nAlternative A and Alternative B.\n\n# Decision\nWe decided on solution X.",
+    });
 
-# Context
-Context explanation text.
-
-# Alternatives Considered
-Alternative A and Alternative B.
-
-# Decision
-We decided on solution X.
-`,
-      "utf8",
-    );
-
-    const details = await getArtifactDetails("ADR-60", { cwd: tempDir });
-    expect(details.tag).toBe("ADR-60");
+    const details = await getArtifactDetails("ADR-TEST-60", { cwd: workspace.cwd });
+    expect(details.tag).toBe("ADR-TEST-60");
     expect(details.subtype).toBe("ADR");
-    expect(details.links).toEqual(["RULE-1", "ADR-2"]);
+    expect(details.links).toEqual(["RULE-TEST-1", "ADR-TEST-2"]);
     expect(details.context).toBe("Context explanation text.");
     expect(details.sections["Context"]).toBe("Context explanation text.");
     expect(details.sections["Alternatives Considered"]).toBe("Alternative A and Alternative B.");
     expect(details.sections["Decision"]).toBe("We decided on solution X.");
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-22, RULE-26, RULE-29
-  it("[RULE-22][RULE-26][RULE-29] should extract acceptance criteria and depends_on for TASK artifacts", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-inspect-task-"));
-    const taskPath = join(tempDir, "test-task.TASK-61.md");
-    await writeFile(
-      taskPath,
-      `---
+  // @verifies RULE-22, RULE-26, RULE-29, RULE-34
+  it("[RULE-22][RULE-26][RULE-29][RULE-34] should extract acceptance criteria and depends_on for TASK artifacts", async () => {
+    const workspace = await createFixtureWorkspace("modie-inspect-task-");
+    await workspace.createArtifact({
+      subtype: "TASK",
+      id: "TEST-61",
+      slug: "test-task",
+      depends_on: ["TASK-TEST-10"],
+      links: ["RULE-TEST-29"],
+      context: "Task context description.",
+      rawContent: `---
 depends_on:
-  - TASK-10
+  - TASK-TEST-10
 links:
-  - RULE-29
+  - RULE-TEST-29
 ---
 
 # Context
@@ -216,18 +257,17 @@ Task context description.
 - [x] First item checked
 - [ ] Second item pending
 `,
-      "utf8",
-    );
+    });
 
-    const details = await getArtifactDetails("TASK-61", { cwd: tempDir });
-    expect(details.tag).toBe("TASK-61");
+    const details = await getArtifactDetails("TASK-TEST-61", { cwd: workspace.cwd });
+    expect(details.tag).toBe("TASK-TEST-61");
     expect(details.subtype).toBe("TASK");
-    expect(details.depends_on).toEqual(["TASK-10"]);
-    expect(details.links).toEqual(["RULE-29"]);
+    expect(details.depends_on).toEqual(["TASK-TEST-10"]);
+    expect(details.links).toEqual(["RULE-TEST-29"]);
     expect(details.acceptanceCriteria?.length).toBe(2);
     expect(details.acceptanceCriteria?.[0]?.completed).toBe(true);
     expect(details.acceptanceCriteria?.[1]?.completed).toBe(false);
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 });

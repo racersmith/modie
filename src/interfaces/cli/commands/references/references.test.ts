@@ -4,141 +4,93 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { execFile } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { promisify } from "node:util";
-import { runCli } from "../../cli.ts";
-import { handleReferences } from "./references.ts";
-
-const execFileAsync = promisify(execFile);
+import { createTestWorkspace, makeTestTag, type TestWorkspace } from "../../test-utils.ts";
 
 describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-27, RULE-31, RULE-34)", () => {
-  let tempDir: string;
+  let workspace: TestWorkspace;
+  const adr1Tag = makeTestTag("ADR", 1);
+  const adr4Tag = makeTestTag("ADR", 4);
+  const rule25Tag = makeTestTag("RULE", 25);
+  const rule31Tag = makeTestTag("RULE", 31);
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "modie-cli-refs-"));
+    workspace = await createTestWorkspace("modie-cli-refs-");
 
     // 1. Target and related ADRs
-    await writeFile(
-      join(tempDir, "architecture.ADR-1.md"),
-      `---
-links:
-  - ADR-4
----
+    await workspace.createAdr({
+      id: 1,
+      slug: "architecture",
+      links: [adr4Tag],
+      context: "ADR defining upward linking.",
+    });
 
-# Context
-ADR defining upward linking.
-`,
-      "utf8",
-    );
-
-    await writeFile(
-      join(tempDir, "foundation.ADR-4.md"),
-      `---
-links: []
----
-
-# Context
-Foundational ADR.
-`,
-      "utf8",
-    );
+    await workspace.createAdr({
+      id: 4,
+      slug: "foundation",
+      context: "Foundational ADR.",
+    });
 
     // 2. Rules linking to ADR-4
-    await writeFile(
-      join(tempDir, "interface-core-decoupling.RULE-25.md"),
-      `---
-links:
-  - ADR-4
----
+    await workspace.createRule({
+      id: 25,
+      slug: "interface-core-decoupling",
+      links: [adr4Tag],
+      body: "Decouple interfaces from core logic.",
+    });
 
-# Invariant
-Decouple interfaces from core logic.
-`,
-      "utf8",
-    );
+    await workspace.createRule({
+      id: 31,
+      slug: "archival-guard",
+      links: [adr4Tag],
+      body: "Archival reference invariance.",
+    });
 
-    await writeFile(
-      join(tempDir, "archival-guard.RULE-31.md"),
-      `---
-links:
-  - ADR-4
----
-
-# Invariant
-Archival reference invariance.
-`,
-      "utf8",
-    );
-
-    // 3. Source and test code citing RULE-25 and ADR-1
-    await writeFile(
-      join(tempDir, "component.ts"),
-      `// Implements RULE-25 and references ADR-1
+    // 3. Source and test code citing rule25Tag and adr1Tag
+    await workspace.writeFile(
+      "component.ts",
+      `// Implements ${rule25Tag} and references ${adr1Tag}
 export function run() {
-  return "RULE-25";
+  return "${rule25Tag}";
 }
 `,
-      "utf8",
     );
 
-    await writeFile(
-      join(tempDir, "component.test.ts"),
-      `// Tests RULE-25
+    await workspace.writeFile(
+      "component.test.ts",
+      `// @verifies ${rule25Tag}
 `,
-      "utf8",
     );
   });
 
   afterEach(async () => {
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
   it("[RULE-25][RULE-27][RULE-34] should emit human formatted output to stderr and exit code 0", async () => {
-    let stdoutOutput = "";
-    let stderrOutput = "";
-
-    const exitCode = await handleReferences(["RULE-25"], {
-      stdout: (msg) => {
-        stdoutOutput += msg + "\n";
-      },
-      stderr: (msg) => {
-        stderrOutput += msg + "\n";
-      },
-      cwd: tempDir,
-    });
+    const { exitCode, stdout, stderr } = await workspace.captureCli(["references", rule25Tag]);
 
     expect(exitCode).toBe(0);
     // RULE-27: stdout strictly empty for human command output
-    expect(stdoutOutput).toBe("");
+    expect(stdout).toBe("");
     // Human output on stderr
-    expect(stderrOutput).toContain("Target: RULE-25");
-    expect(stderrOutput).toContain("[Found In]");
-    expect(stderrOutput).toContain("[Links To]");
-    expect(stderrOutput).toContain("[Archival Safety Check]");
+    expect(stderr).toContain(`Target: ${rule25Tag}`);
+    expect(stderr).toContain("[Found In]");
+    expect(stderr).toContain("[Links To]");
+    expect(stderr).toContain("[Archival Safety Check]");
   });
 
   it("[RULE-27][RULE-34] should emit machine-parsable JSON to stdout when --json is passed", async () => {
-    let stdoutOutput = "";
-    let stderrOutput = "";
-
-    const exitCode = await handleReferences(["RULE-25", "--json"], {
-      stdout: (msg) => {
-        stdoutOutput += msg + "\n";
-      },
-      stderr: (msg) => {
-        stderrOutput += msg + "\n";
-      },
-      cwd: tempDir,
-    });
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "references",
+      rule25Tag,
+      "--json",
+    ]);
 
     expect(exitCode).toBe(0);
-    expect(stderrOutput).toBe("");
+    expect(stderr).toBe("");
 
-    const parsed = JSON.parse(stdoutOutput);
-    expect(parsed.target.tag).toBe("RULE-25");
+    const parsed = JSON.parse(stdout);
+    expect(parsed.target.tag).toBe(rule25Tag);
     expect(parsed.target.slug).toBe("interface-core-decoupling");
     expect(parsed.foundIn).toBeDefined();
     expect(parsed.linksTo).toBeDefined();
@@ -147,135 +99,73 @@ export function run() {
   });
 
   it("[RULE-34] should support the refs alias via CLI entrypoint in fixture workspace", async () => {
-    let stdoutOutput = "";
-    let stderrOutput = "";
-
-    const exitCode = await runCli(["refs", "RULE-25"], {
-      stdout: (msg) => {
-        stdoutOutput += msg + "\n";
-      },
-      stderr: (msg) => {
-        stderrOutput += msg + "\n";
-      },
-      cwd: tempDir,
-    });
+    const { exitCode, stderr } = await workspace.captureCli(["refs", rule25Tag]);
 
     expect(exitCode).toBe(0);
-    expect(stderrOutput).toContain("Target: RULE-25");
-    expect(stderrOutput).toContain("[Found In]");
+    expect(stderr).toContain(`Target: ${rule25Tag}`);
+    expect(stderr).toContain("[Found In]");
   });
 
   it("[RULE-34] should support --to flag to show only outbound declared links in fixture workspace", async () => {
-    let stdoutOutput = "";
-    let stderrOutput = "";
-
-    const exitCode = await handleReferences(["RULE-31", "--to"], {
-      stdout: (msg) => {
-        stdoutOutput += msg + "\n";
-      },
-      stderr: (msg) => {
-        stderrOutput += msg + "\n";
-      },
-      cwd: tempDir,
-    });
+    const { exitCode, stderr } = await workspace.captureCli(["references", rule31Tag, "--to"]);
 
     expect(exitCode).toBe(0);
-    expect(stderrOutput).toContain("[Links To]");
-    expect(stderrOutput).toContain("ADR-4");
-    expect(stderrOutput).not.toContain("[Found In]");
+    expect(stderr).toContain("[Links To]");
+    expect(stderr).toContain(adr4Tag);
+    expect(stderr).not.toContain("[Found In]");
   });
 
   it("[RULE-34] should support --by flag to show only citations found across workspace", async () => {
-    let stdoutOutput = "";
-    let stderrOutput = "";
-
-    const exitCode = await handleReferences(["ADR-4", "--by", "--governance-only"], {
-      stdout: (msg) => {
-        stdoutOutput += msg + "\n";
-      },
-      stderr: (msg) => {
-        stderrOutput += msg + "\n";
-      },
-      cwd: tempDir,
-    });
+    const { exitCode, stderr } = await workspace.captureCli([
+      "references",
+      adr4Tag,
+      "--by",
+      "--governance-only",
+    ]);
 
     expect(exitCode).toBe(0);
-    expect(stderrOutput).toContain("[Found In]");
-    expect(stderrOutput).toContain("Governance Links");
-    expect(stderrOutput).not.toContain("[Links To]");
+    expect(stderr).toContain("[Found In]");
+    expect(stderr).toContain("Governance Links");
+    expect(stderr).not.toContain("[Links To]");
   });
 
   it("[RULE-27] should emit help to stderr with exit code 0 when --help is passed", async () => {
-    let stdoutOutput = "";
-    let stderrOutput = "";
-
-    const exitCode = await handleReferences(["--help"], {
-      stdout: (msg) => {
-        stdoutOutput += msg + "\n";
-      },
-      stderr: (msg) => {
-        stderrOutput += msg + "\n";
-      },
-      cwd: tempDir,
-    });
+    const { exitCode, stdout, stderr } = await workspace.captureCli(["references", "--help"]);
 
     expect(exitCode).toBe(0);
-    expect(stdoutOutput).toBe("");
-    expect(stderrOutput).toContain("Usage: modie references <tag> [options]");
-    expect(stderrOutput).toContain("--by, --found-in");
-    expect(stderrOutput).toContain("--to, --links-to");
+    expect(stdout).toBe("");
+    expect(stderr).toContain("Usage: modie references <tag> [options]");
+    expect(stderr).toContain("--by, --found-in");
+    expect(stderr).toContain("--to, --links-to");
   });
 
   it("[RULE-27] should report error to stderr when required tag argument is missing", async () => {
-    let stdoutOutput = "";
-    let stderrOutput = "";
-
-    const exitCode = await handleReferences([], {
-      stdout: (msg) => {
-        stdoutOutput += msg + "\n";
-      },
-      stderr: (msg) => {
-        stderrOutput += msg + "\n";
-      },
-      cwd: tempDir,
-    });
+    const { exitCode, stdout, stderr } = await workspace.captureCli(["references"]);
 
     expect(exitCode).toBe(1);
-    expect(stdoutOutput).toBe("");
-    expect(stderrOutput).toContain("Missing required artifact identifier.");
+    expect(stdout).toBe("");
+    expect(stderr).toContain("Missing required artifact identifier.");
   });
 
   it("[RULE-27] should report error to stderr when querying non-existent artifact", async () => {
-    let stdoutOutput = "";
-    let stderrOutput = "";
-
-    const exitCode = await handleReferences(["RULE-9999"], {
-      stdout: (msg) => {
-        stdoutOutput += msg + "\n";
-      },
-      stderr: (msg) => {
-        stderrOutput += msg + "\n";
-      },
-      cwd: tempDir,
-    });
+    const nonExistent = makeTestTag("RULE", 9999);
+    const { exitCode, stdout, stderr } = await workspace.captureCli(["references", nonExistent]);
 
     expect(exitCode).toBe(1);
-    expect(stdoutOutput).toBe("");
-    expect(stderrOutput).toContain('Artifact "RULE-9999" was not found');
+    expect(stdout).toBe("");
+    expect(stderr).toContain(`Artifact "${nonExistent}" was not found`);
   });
 
   it("[RULE-25][RULE-27][RULE-34] should execute references via bin.ts subprocess against fixture workspace", async () => {
-    const binPath = join(process.cwd(), "src/interfaces/cli/bin.ts");
-    const { stdout, stderr } = await execFileAsync(
-      process.execPath,
-      [binPath, "references", "RULE-25", "--json"],
-      { cwd: tempDir },
-    );
+    const { stdout, stderr } = await workspace.execBin([
+      "references",
+      rule25Tag,
+      "--json",
+    ]);
 
     expect(stderr).toBe("");
     const parsed = JSON.parse(stdout);
-    expect(parsed.target.tag).toBe("RULE-25");
+    expect(parsed.target.tag).toBe(rule25Tag);
     expect(parsed.foundIn.total).toBeGreaterThan(0);
   });
 });
-

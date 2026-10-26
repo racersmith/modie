@@ -4,9 +4,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { rm } from "node:fs/promises";
 import { join } from "node:path";
+import { createFixtureWorkspace, makeTestTag, type FixtureWorkspace } from "../testing/index.ts";
 import { GitCliAdapter } from "./git-cli-adapter.ts";
 import { MockVcsAdapter } from "./mock-adapter.ts";
 import { completeTask } from "../task/completion.ts";
@@ -14,86 +14,89 @@ import { startTaskBranch, mergeTaskBranch } from "../task/branching.ts";
 import { resolveWatermark } from "../resolver/watermark.ts";
 
 describe("GitCliAdapter - Real Subprocess Fixture Tests", () => {
-  let tempDir: string;
+  let workspace: FixtureWorkspace;
   let adapter: GitCliAdapter;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "modie-vcs-test-"));
+    workspace = await createFixtureWorkspace("modie-vcs-test-");
     adapter = new GitCliAdapter();
   });
 
   afterEach(async () => {
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
   it("should detect whether directory is inside a git work tree", async () => {
-    expect(await adapter.isInsideWorkTree(tempDir)).toBe(false);
+    expect(await adapter.isInsideWorkTree(workspace.cwd)).toBe(false);
 
-    await adapter.runCommand(["init", "-q", "-b", "main"], tempDir);
-    expect(await adapter.isInsideWorkTree(tempDir)).toBe(true);
+    await adapter.runCommand(["init", "-q", "-b", "main"], workspace.cwd);
+    expect(await adapter.isInsideWorkTree(workspace.cwd)).toBe(true);
   });
 
   it("should manage branches, commits, and detect active branch", async () => {
-    await adapter.runCommand(["init", "-q", "-b", "main"], tempDir);
-    await adapter.runCommand(["config", "user.name", "Tester"], tempDir);
-    await adapter.runCommand(["config", "user.email", "test@modie.dev"], tempDir);
+    await adapter.runCommand(["init", "-q", "-b", "main"], workspace.cwd);
+    await adapter.runCommand(["config", "user.name", "Tester"], workspace.cwd);
+    await adapter.runCommand(["config", "user.email", "test@modie.dev"], workspace.cwd);
 
-    expect(await adapter.detectCurrentBranch(tempDir)).toBe("main");
-    expect(await adapter.branchExists("dev", tempDir)).toBe(false);
+    expect(await adapter.detectCurrentBranch(workspace.cwd)).toBe("main");
+    expect(await adapter.branchExists("dev", workspace.cwd)).toBe(false);
 
     // Create an initial commit
-    await writeFile(join(tempDir, "README.md"), "# Modie VCS Test", "utf8");
-    expect(await adapter.hasWorkingTreeChanges(tempDir)).toBe(true);
+    await workspace.writeFile("README.md", "# Modie VCS Test");
+    expect(await adapter.hasWorkingTreeChanges(workspace.cwd)).toBe(true);
 
-    await adapter.stageAll(tempDir);
-    const staged = await adapter.getStagedFiles(tempDir);
+    await adapter.stageAll(workspace.cwd);
+    const staged = await adapter.getStagedFiles(workspace.cwd);
     expect(staged).toContain("README.md");
 
-    const commitHash = await adapter.commit("chore: init", tempDir);
+    const commitHash = await adapter.commit("chore: init", workspace.cwd);
     expect(commitHash).toBeTruthy();
-    expect(await adapter.hasWorkingTreeChanges(tempDir)).toBe(false);
-    expect(await adapter.branchExists("main", tempDir)).toBe(true);
+    expect(await adapter.hasWorkingTreeChanges(workspace.cwd)).toBe(false);
+    expect(await adapter.branchExists("main", workspace.cwd)).toBe(true);
 
     // Create a new branch
-    await adapter.checkoutNewBranch("feature/vcs", "main", tempDir);
-    expect(await adapter.detectCurrentBranch(tempDir)).toBe("feature/vcs");
-    expect(await adapter.branchExists("feature/vcs", tempDir)).toBe(true);
+    await adapter.checkoutNewBranch("feature/vcs", "main", workspace.cwd);
+    expect(await adapter.detectCurrentBranch(workspace.cwd)).toBe("feature/vcs");
+    expect(await adapter.branchExists("feature/vcs", workspace.cwd)).toBe(true);
 
-    const branches = await adapter.listBranches(tempDir);
+    const branches = await adapter.listBranches(workspace.cwd);
     expect(branches).toContain("main");
     expect(branches).toContain("feature/vcs");
 
     // Checkout main and delete feature branch
-    await adapter.checkout("main", tempDir);
-    expect(await adapter.detectCurrentBranch(tempDir)).toBe("main");
+    await adapter.checkout("main", workspace.cwd);
+    expect(await adapter.detectCurrentBranch(workspace.cwd)).toBe("main");
 
-    await adapter.deleteBranch("feature/vcs", tempDir);
-    expect(await adapter.branchExists("feature/vcs", tempDir)).toBe(false);
+    await adapter.deleteBranch("feature/vcs", workspace.cwd);
+    expect(await adapter.branchExists("feature/vcs", workspace.cwd)).toBe(false);
   });
 
   it("should inspect tracked tree artifacts and git configs", async () => {
-    await adapter.runCommand(["init", "-q", "-b", "main"], tempDir);
-    await adapter.runCommand(["config", "user.name", "Tester"], tempDir);
-    await adapter.runCommand(["config", "user.email", "test@modie.dev"], tempDir);
-    await adapter.runCommand(["config", "modie.prefix", "MYPREFIX"], tempDir);
+    await adapter.runCommand(["init", "-q", "-b", "main"], workspace.cwd);
+    await adapter.runCommand(["config", "user.name", "Tester"], workspace.cwd);
+    await adapter.runCommand(["config", "user.email", "test@modie.dev"], workspace.cwd);
+    await adapter.runCommand(["config", "modie.prefix", "MYPREFIX"], workspace.cwd);
 
-    expect(await adapter.getConfig("modie.prefix", tempDir)).toBe("MYPREFIX");
-    expect(await adapter.getConfig("non.existent", tempDir)).toBeNull();
+    expect(await adapter.getConfig("modie.prefix", workspace.cwd)).toBe("MYPREFIX");
+    expect(await adapter.getConfig("non.existent", workspace.cwd)).toBeNull();
 
     // Create and commit a rule artifact
-    await writeFile(
-      join(tempDir, "sample-rule.RULE-10.md"),
-      "---\nlinks: []\n---\nRule test",
-      "utf8",
-    );
-    await adapter.stageAll(tempDir);
-    await adapter.commit("feat: add rule 10", tempDir);
+    const rule10Tag = makeTestTag("RULE", 10);
+    await workspace.createRule({
+      id: 10,
+      slug: "sample-rule",
+      title: "Sample Rule",
+      body: "Rule test",
+      subDir: "",
+    });
+    await adapter.stageAll(workspace.cwd);
+    await adapter.commit("feat: add rule 10", workspace.cwd);
 
-    const treeArts = await adapter.inspectTreeArtifacts("main", tempDir);
+    const treeArts = await adapter.inspectTreeArtifacts("main", workspace.cwd);
     expect(treeArts.length).toBe(1);
     expect(treeArts[0]?.id).toBe("10");
     expect(treeArts[0]?.subtype).toBe("RULE");
-    expect(treeArts[0]?.tag).toBe("RULE-10");
+    expect(treeArts[0]?.tag).toBe(rule10Tag);
   });
 });
 
@@ -164,34 +167,27 @@ describe("MockVcsAdapter - In-Memory Unit Tests", () => {
 });
 
 describe("Hermetic Core Domain Injections with MockVcsAdapter", () => {
-  let tempDir: string;
+  let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "modie-hermetic-"));
+    workspace = await createFixtureWorkspace("modie-hermetic-");
   });
 
   afterEach(async () => {
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
   it("should execute completeTask two-phase commit hermetically via MockVcsAdapter", async () => {
-    const taskPath = join(tempDir, "sample-task.TASK-200.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links: []
----
-
-# Context
-Hermetic completion test.
-
-# Acceptance Criteria
-- [x] Done item 1
-- [x] Done item 2
-`,
-      "utf8",
-    );
+    const task200Tag = makeTestTag("TASK", 200);
+    const task = await workspace.createTask({
+      id: 200,
+      slug: "sample-task",
+      context: "Hermetic completion test.",
+      criteria: [
+        { text: "Done item 1", completed: true },
+        { text: "Done item 2", completed: true },
+      ],
+    });
 
     const mockVcs = new MockVcsAdapter({
       insideWorkTree: true,
@@ -199,8 +195,8 @@ Hermetic completion test.
       stagedFiles: ["code.ts"],
     });
 
-    const result = await completeTask(taskPath, {
-      cwd: tempDir,
+    const result = await completeTask(task.filepath, {
+      cwd: workspace.cwd,
       commit: true,
       vcs: mockVcs,
     });
@@ -214,29 +210,20 @@ Hermetic completion test.
     // Verify MockVcs recorded the exact two-phase lifecycle
     expect(mockVcs.history.stagedAllCount).toBe(1);
     expect(mockVcs.history.commits.length).toBe(2);
-    expect(mockVcs.history.commits[0]?.message).toBe("feat(TASK-200): sample-task");
+    expect(mockVcs.history.commits[0]?.message).toBe(`feat(${task200Tag}): sample-task`);
     expect(mockVcs.history.commits[1]?.message).toBe(
-      "chore(task): delete completed TASK-200 artifact",
+      `chore(task): delete completed ${task200Tag} artifact`,
     );
   });
 
   it("should execute startTaskBranch and mergeTaskBranch hermetically via MockVcsAdapter", async () => {
-    const taskPath = join(tempDir, "branch-feature.TASK-201.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links: []
----
-
-# Context
-Hermetic branching test.
-
-# Acceptance Criteria
-- [x] Requirement
-`,
-      "utf8",
-    );
+    const task201Tag = makeTestTag("TASK", 201);
+    const task = await workspace.createTask({
+      id: 201,
+      slug: "branch-feature",
+      context: "Hermetic branching test.",
+      criteria: [{ text: "Requirement", completed: true }],
+    });
 
     const mockVcs = new MockVcsAdapter({
       insideWorkTree: true,
@@ -246,47 +233,50 @@ Hermetic branching test.
     });
 
     // 1. Start task branch
-    const startResult = await startTaskBranch("TASK-201", {
-      cwd: tempDir,
+    const startResult = await startTaskBranch(task.tag, {
+      cwd: workspace.cwd,
       vcs: mockVcs,
     });
 
-    expect(startResult.branchName).toBe("task/201-branch-feature");
+    expect(startResult.branchName).toBe(`task/201-${task.slug}`);
     expect(startResult.created).toBe(true);
     expect(mockVcs.history.checkoutNewBranches).toEqual([
-      { branch: "task/201-branch-feature", base: "dev" },
+      { branch: `task/201-${task.slug}`, base: "dev" },
     ]);
-    expect(mockVcs.branches.has("task/201-branch-feature")).toBe(true);
+    expect(mockVcs.branches.has(`task/201-${task.slug}`)).toBe(true);
 
     // 2. Complete task (delete file in mock)
-    await rm(taskPath);
+    await rm(task.filepath);
     mockVcs.deletedArtifacts.push({
       id: "201",
       subtype: "TASK",
-      tag: "TASK-201",
-      slug: "branch-feature",
-      filename: "branch-feature.TASK-201.md",
-      filepath: "branch-feature.TASK-201.md",
+      tag: task201Tag,
+      slug: task.slug,
+      filename: task.filename,
+      filepath: task.filename,
       isArchived: false,
       status: "deleted",
     });
 
     // 3. Merge task branch
-    const mergeResult = await mergeTaskBranch("TASK-201", {
-      cwd: tempDir,
+    const mergeResult = await mergeTaskBranch(task.tag, {
+      cwd: workspace.cwd,
       vcs: mockVcs,
     });
 
     expect(mergeResult.targetBranch).toBe("dev");
-    expect(mergeResult.sourceBranch).toBe("task/201-branch-feature");
+    expect(mergeResult.sourceBranch).toBe(`task/201-${task.slug}`);
     expect(mergeResult.deletedSourceBranch).toBe(true);
-    expect(mockVcs.branches.has("task/201-branch-feature")).toBe(false);
+    expect(mockVcs.branches.has(`task/201-${task.slug}`)).toBe(false);
     expect(mockVcs.history.merges.length).toBe(1);
-    expect(mockVcs.history.merges[0]?.source).toBe("task/201-branch-feature");
+    expect(mockVcs.history.merges[0]?.source).toBe(`task/201-${task.slug}`);
     expect(mockVcs.history.merges[0]?.target).toBe("dev");
   });
 
   it("should resolve watermark with MockVcsAdapter for deleted and other branch IDs", async () => {
+    const task250_1Tag = makeTestTag("TASK", "250-1");
+    const rule77Tag = makeTestTag("RULE", 77);
+
     const mockVcs = new MockVcsAdapter({
       insideWorkTree: true,
       currentBranch: "task/250-parent-feature",
@@ -295,10 +285,10 @@ Hermetic branching test.
         {
           id: "250-1",
           subtype: "TASK",
-          tag: "TASK-250-1",
+          tag: task250_1Tag,
           slug: "first-subtask",
-          filename: "first-subtask.TASK-250-1.md",
-          filepath: "first-subtask.TASK-250-1.md",
+          filename: `first-subtask.${task250_1Tag}.md`,
+          filepath: `first-subtask.${task250_1Tag}.md`,
           isArchived: false,
           status: "deleted",
         },
@@ -308,7 +298,7 @@ Hermetic branching test.
     // Subtask watermark should detect existing 250-1 in mock deleted history and allocate 250-2
     const wmTask = await resolveWatermark({
       subtype: "TASK",
-      cwd: tempDir,
+      cwd: workspace.cwd,
       vcs: mockVcs,
     });
 
@@ -321,17 +311,17 @@ Hermetic branching test.
     mockVcs.deletedArtifacts.push({
       id: "77",
       subtype: "RULE",
-      tag: "RULE-77",
+      tag: rule77Tag,
       slug: "sample-rule",
-      filename: "sample-rule.RULE-77.md",
-      filepath: "sample-rule.RULE-77.md",
+      filename: `sample-rule.${rule77Tag}.md`,
+      filepath: `sample-rule.${rule77Tag}.md`,
       isArchived: false,
       status: "deleted",
     });
 
     const wmRule = await resolveWatermark({
       subtype: "RULE",
-      cwd: tempDir,
+      cwd: workspace.cwd,
       vcs: mockVcs,
     });
 

@@ -1,105 +1,120 @@
 /**
  * Integration and unit tests for `modie find`.
  * Tagged per ADR-7 and RULE-23 for universal rule verification.
+ * Enforces RULE-25, RULE-27, RULE-29, and RULE-34 (fixture-based test isolation).
  */
 
-import { describe, expect, it } from "bun:test";
-import { execFile } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { promisify } from "node:util";
-import { captureCli } from "../../test-utils.ts";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { createTestWorkspace, type TestWorkspace } from "../../test-utils.ts";
 
-const execFileAsync = promisify(execFile);
+describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, RULE-34)", () => {
+  let workspace: TestWorkspace;
 
-describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29)", () => {
+  beforeEach(async () => {
+    workspace = await createTestWorkspace("modie-cli-find-");
+  });
+
+  afterEach(async () => {
+    await workspace.cleanup();
+  });
+
   // @verifies RULE-27
   it("[RULE-27] should emit find help to stderr with exit code 0", async () => {
-    const { exitCode, stdout, stderr } = await captureCli(["find", "--help"]);
+    const { exitCode, stdout, stderr } = await workspace.captureCli(["find", "--help"]);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Usage: modie find");
   });
 
-  // @verifies RULE-25, RULE-27, RULE-29
-  it("[RULE-25][RULE-27][RULE-29] should find active RULE artifact and emit relative path to stdout", async () => {
-    const { exitCode, stdout, stderr } = await captureCli(["find", "RULE-1"]);
+  // @verifies RULE-25, RULE-27, RULE-29, RULE-34
+  it("[RULE-25][RULE-27][RULE-29][RULE-34] should find active RULE artifact and emit relative path to stdout", async () => {
+    const rule = await workspace.createArtifact({
+      subtype: "RULE",
+      id: "TEST-1",
+      slug: "artifact-filename-structure",
+    });
+
+    const { exitCode, stdout, stderr } = await workspace.captureCli(["find", rule.tag]);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
-    expect(stdout.trim()).toBe("src/.modie/rules/artifact-filename-structure.RULE-1.md");
+    expect(stdout.trim()).toBe(rule.relativePath);
   });
 
-  // @verifies RULE-25, RULE-27, RULE-29
-  it("[RULE-25][RULE-27][RULE-29] should emit absolute path to stdout when --absolute is passed", async () => {
-    const { exitCode, stdout, stderr } = await captureCli([
+  // @verifies RULE-25, RULE-27, RULE-29, RULE-34
+  it("[RULE-25][RULE-27][RULE-29][RULE-34] should emit absolute path to stdout when --absolute is passed", async () => {
+    const adr = await workspace.createArtifact({
+      subtype: "ADR",
+      id: "TEST-1",
+      slug: "self-indexing-filenames",
+    });
+
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
       "find",
-      "ADR-1",
+      adr.tag,
       "--absolute",
     ]);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
-    expect(stdout.trim()).toContain("self-indexing-filenames.ADR-1.md");
+    expect(stdout.trim()).toBe(adr.filepath);
     expect(stdout.trim().startsWith("/")).toBe(true);
   });
 
-  // @verifies RULE-25, RULE-27, RULE-29
-  it("[RULE-25][RULE-27][RULE-29] should emit JSON payload to stdout when --json is passed", async () => {
-    const { exitCode, stdout, stderr } = await captureCli([
+  // @verifies RULE-25, RULE-27, RULE-29, RULE-34
+  it("[RULE-25][RULE-27][RULE-29][RULE-34] should emit JSON payload to stdout when --json is passed", async () => {
+    const rule = await workspace.createArtifact({
+      subtype: "RULE",
+      id: "TEST-1",
+      slug: "artifact-filename-structure",
+    });
+
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
       "find",
-      "RULE-1",
+      rule.tag,
       "--json",
     ]);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
     const parsed = JSON.parse(stdout.trim());
-    expect(parsed.tag).toBe("RULE-1");
+    expect(parsed.tag).toBe(rule.tag);
     expect(parsed.subtype).toBe("RULE");
-    expect(parsed.id).toBe("1");
+    expect(parsed.id).toBe(rule.id);
     expect(parsed.isArchived).toBe(false);
-    expect(parsed.relativePath).toBe(
-      "src/.modie/rules/artifact-filename-structure.RULE-1.md",
-    );
+    expect(parsed.relativePath).toBe(rule.relativePath);
   });
 
-  // @verifies RULE-29
-  it("[RULE-29] should find archived artifact in custom directory", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-find-archived-"));
-    const archivedPath = join(tempDir, "legacy-decision.ADR-99.ARCHIVED.md");
-    await writeFile(
-      archivedPath,
-      "---\nlinks: []\n---\n# Archived ADR\n",
-      "utf8",
-    );
+  // @verifies RULE-29, RULE-34
+  it("[RULE-29][RULE-34] should find archived artifact in custom directory", async () => {
+    const archived = await workspace.createArtifact({
+      subtype: "ADR",
+      id: "TEST-99",
+      slug: "legacy-decision",
+      isArchived: true,
+      rawContent: "---\nlinks: []\n---\n# Archived ADR\n",
+    });
 
-    const { exitCode, stdout, stderr } = await captureCli(
-      ["find", "ADR-99"],
-      tempDir,
-    );
+    const { exitCode, stdout, stderr } = await workspace.captureCli(["find", archived.tag]);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
-    expect(stdout.trim()).toBe("legacy-decision.ADR-99.ARCHIVED.md");
+    expect(stdout.trim()).toBe(archived.relativePath);
 
-    const jsonResult = await captureCli(["find", "ADR-99", "--json"], tempDir);
+    const jsonResult = await workspace.captureCli(["find", archived.tag, "--json"]);
     expect(jsonResult.exitCode).toBe(0);
     const parsed = JSON.parse(jsonResult.stdout.trim());
     expect(parsed.isArchived).toBe(true);
-    expect(parsed.tag).toBe("ADR-99");
-
-    await rm(tempDir, { recursive: true, force: true });
+    expect(parsed.tag).toBe(archived.tag);
   });
 
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr when artifact tag is not found", async () => {
-    const { exitCode, stdout, stderr } = await captureCli(["find", "RULE-9999"]);
+    const { exitCode, stdout, stderr } = await workspace.captureCli(["find", "RULE-TEST-9999"]);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
-    expect(stderr).toContain('Error: Artifact "RULE-9999" was not found');
+    expect(stderr).toContain('Error: Artifact "RULE-TEST-9999" was not found');
   });
 
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr when tag argument is missing", async () => {
-    const { exitCode, stdout, stderr } = await captureCli(["find"]);
+    const { exitCode, stdout, stderr } = await workspace.captureCli(["find"]);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("Error: Missing required artifact identifier");
@@ -107,9 +122,15 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29)",
 
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr on unknown flag", async () => {
-    const { exitCode, stdout, stderr } = await captureCli([
+    const rule = await workspace.createArtifact({
+      subtype: "RULE",
+      id: "TEST-1",
+      slug: "artifact-filename-structure",
+    });
+
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
       "find",
-      "RULE-1",
+      rule.tag,
       "--bogus",
     ]);
     expect(exitCode).toBe(1);
@@ -117,15 +138,17 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29)",
     expect(stderr).toContain('Error: Unknown flag "--bogus"');
   });
 
-  // @verifies RULE-25, RULE-27, RULE-29
-  it("[RULE-25][RULE-27][RULE-29] should execute find via bin.ts subprocess", async () => {
-    const binPath = "./src/interfaces/cli/bin.ts";
-    const { stdout, stderr } = await execFileAsync(process.execPath, [
-      binPath,
-      "find",
-      "RULE-1",
-    ]);
+  // @verifies RULE-25, RULE-27, RULE-29, RULE-34
+  it("[RULE-25][RULE-27][RULE-29][RULE-34] should execute find via bin.ts subprocess", async () => {
+    const rule = await workspace.createArtifact({
+      subtype: "RULE",
+      id: "TEST-1",
+      slug: "artifact-filename-structure",
+    });
+
+    const { stdout, stderr } = await workspace.execBin(["find", rule.tag]);
     expect(stderr).toBe("");
-    expect(stdout.trim()).toBe("src/.modie/rules/artifact-filename-structure.RULE-1.md");
+    expect(stdout.trim()).toBe(rule.relativePath);
   });
 });
+

@@ -7,7 +7,10 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { findArtifactReferences } from "./references.ts";
+import {
+  findArtifactReferences,
+  isTestVerificationCitation,
+} from "./references.ts";
 
 describe("Artifact References Query Engine (RULE-25, RULE-31, RULE-34)", () => {
   let tempDir: string;
@@ -95,13 +98,14 @@ export function getResolution() {
       "utf8",
     );
 
-    // 6. Test file citing ADR-1
+    // 6. Test file citing ADR-1 (both formal header and incidental body data)
     const testFile = join(tempDir, "service.test.ts");
     await writeFile(
       testFile,
       `import { it, expect } from "bun:test";
 it("[ADR-1] should test resolution", () => {
-  expect(true).toBe(true);
+  const dummy = "ADR-1";
+  expect(dummy).toBe("ADR-1");
 });
 `,
       "utf8",
@@ -248,4 +252,75 @@ Interfaces must remain decoupled from core.
     expect(result.foundIn.total).toBe(1);
   });
 });
+
+describe("isTestVerificationCitation - Rule Verification Tag Disambiguation (ADR-7, RULE-23)", () => {
+  // @verifies RULE-23, ADR-7
+  it("[RULE-23][ADR-7] should recognize comment annotations as verification tags", () => {
+    expect(isTestVerificationCitation("// @verifies RULE-25", "RULE-25")).toBe(true);
+    expect(isTestVerificationCitation("// @verifies RULE-25, RULE-27", "RULE-27")).toBe(true);
+    expect(isTestVerificationCitation("/* @satisfies RULE-1 */", "RULE-1")).toBe(true);
+    expect(isTestVerificationCitation("# @verifies ADR-4", "ADR-4")).toBe(true);
+    expect(isTestVerificationCitation(" * @verifies RULE-34", "RULE-34")).toBe(true);
+  });
+
+  // @verifies RULE-23, ADR-7
+  it("[RULE-23][ADR-7] should recognize standardized bracket test headers", () => {
+    expect(
+      isTestVerificationCitation('it("[RULE-25] should execute find", async () => {', "RULE-25"),
+    ).toBe(true);
+    expect(
+      isTestVerificationCitation('test("[RULE-25][RULE-27] should separate streams", () => {', "RULE-27"),
+    ).toBe(true);
+    expect(
+      isTestVerificationCitation("it('[ADR-1] should test resolution', () => {", "ADR-1"),
+    ).toBe(true);
+  });
+
+  // @verifies RULE-23, ADR-7
+  it("[RULE-23][ADR-7] should recognize describe/suite parenthetical tags", () => {
+    expect(
+      isTestVerificationCitation(
+        'describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29)", () => {',
+        "RULE-25",
+      ),
+    ).toBe(true);
+    expect(
+      isTestVerificationCitation(
+        'describe("Artifact References Query Engine (RULE-25, RULE-31, RULE-34)", () => {',
+        "RULE-31",
+      ),
+    ).toBe(true);
+  });
+
+  // @verifies RULE-23, ADR-7
+  it("[RULE-23][ADR-7] should reject test fixture data, invocations, and raw assertions", () => {
+    // Array literals inside CLI calls or helpers
+    expect(
+      isTestVerificationCitation('const { exitCode } = await captureCli(["find", "RULE-1"]);', "RULE-1"),
+    ).toBe(false);
+    expect(
+      isTestVerificationCitation('const { stdout } = await execFileAsync(binPath, ["find", "RULE-1"]);', "RULE-1"),
+    ).toBe(false);
+    expect(
+      isTestVerificationCitation('expect(() => validateRuleLinks(["RULE-1"])).toThrow();', "RULE-1"),
+    ).toBe(false);
+
+    // Equality assertions
+    expect(
+      isTestVerificationCitation('expect(stdout.trim()).toBe("src/.modie/rules/artifact-filename-structure.RULE-1.md");', "RULE-1"),
+    ).toBe(false);
+    expect(
+      isTestVerificationCitation('expect(parsed.tag).toBe("RULE-1");', "RULE-1"),
+    ).toBe(false);
+
+    // File creation lines
+    expect(
+      isTestVerificationCitation('const rulePath = join(tempDir, "sample-rule.RULE-1.md");', "RULE-1"),
+    ).toBe(false);
+    expect(
+      isTestVerificationCitation('await writeFile(join(rulesDir, "single-purpose.RULE-1.md"), content);', "RULE-1"),
+    ).toBe(false);
+  });
+});
+
 

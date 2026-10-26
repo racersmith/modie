@@ -1,228 +1,157 @@
 /**
  * Unit tests for Guarded Artifact Archival core service.
  * Tagged per ADR-7 and RULE-23 for universal rule verification.
- * @verifies RULE-4, RULE-25, RULE-31
+ * @verifies RULE-4, RULE-25, RULE-31, RULE-34
  */
 
 import { describe, expect, it } from "bun:test";
-import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
 import { archiveArtifact, archiveAdr, archiveRule } from "./index.ts";
 
-describe("Core Artifact Archival - Guarded Archival & Reference Invariance (RULE-4, RULE-25, RULE-31)", () => {
-  // @verifies RULE-4, RULE-31
-  it("[RULE-4][RULE-31] should successfully archive an unreferenced ADR and rename to .ARCHIVED.md", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-archival-test-"));
-    const adrsDir = join(tempDir, ".adrs");
-    await mkdir(adrsDir, { recursive: true });
+describe("Core Artifact Archival - Guarded Archival & Reference Invariance (RULE-4, RULE-25, RULE-31, RULE-34)", () => {
+  // @verifies RULE-4, RULE-31, RULE-34
+  it("[RULE-4][RULE-31][RULE-34] should successfully archive an unreferenced ADR and rename to .ARCHIVED.md", async () => {
+    const workspace = await createFixtureWorkspace("archival-adr-");
 
-    const adrPath = join(adrsDir, "initial-architecture.ADR-1.md");
-    await writeFile(
-      adrPath,
-      `---
-links: []
----
-
-# Context
-Initial context.
-`,
-      "utf8",
-    );
-
-    const result = await archiveArtifact({
-      tag: "ADR-1",
-      cwd: tempDir,
+    const adr = await workspace.createAdr({
+      id: 1,
+      slug: "initial-architecture",
+      context: "Initial context.",
     });
 
-    expect(result.tag).toBe("ADR-1");
+    const result = await archiveArtifact({
+      tag: adr.tag,
+      cwd: workspace.cwd,
+    });
+
+    expect(result.tag).toBe(adr.tag);
     expect(result.canArchive).toBe(true);
     expect(result.forced).toBe(false);
-    expect(result.archivedFilename).toBe(
-      "initial-architecture.ADR-1.ARCHIVED.md",
-    );
-    expect(result.archivedRelativePath).toBe(
-      ".adrs/initial-architecture.ADR-1.ARCHIVED.md",
-    );
+    expect(result.archivedFilename).toBe(`initial-architecture.${adr.tag}.ARCHIVED.md`);
+    expect(result.archivedRelativePath).toBe(`.modie/adrs/initial-architecture.${adr.tag}.ARCHIVED.md`);
 
     // Check that old file is gone and new file exists
-    const archivedContent = await readFile(result.archivedFilepath, "utf8");
-    expect(archivedContent).toContain("# Context\nInitial context.");
+    const archivedContent = await workspace.readFile(result.archivedFilepath);
+    expect(archivedContent).toContain("# Context\n\nInitial context.");
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-4, RULE-31
-  it("[RULE-4][RULE-31] should successfully archive an unreferenced RULE via archiveRule", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-archival-rule-test-"));
-    const rulesDir = join(tempDir, ".rules");
-    await mkdir(rulesDir, { recursive: true });
+  // @verifies RULE-4, RULE-31, RULE-34
+  it("[RULE-4][RULE-31][RULE-34] should successfully archive an unreferenced RULE via archiveRule", async () => {
+    const workspace = await createFixtureWorkspace("archival-rule-");
 
-    const rulePath = join(rulesDir, "single-purpose.RULE-1.md");
-    await writeFile(
-      rulePath,
-      `---
-links: []
----
+    const rule = await workspace.createRule({
+      id: 1,
+      slug: "single-purpose",
+      body: "Rule description.",
+    });
 
-Rule description.
-`,
-      "utf8",
-    );
+    const result = await archiveRule(rule.tag, { cwd: workspace.cwd });
 
-    const result = await archiveRule("RULE-1", { cwd: tempDir });
+    expect(result.tag).toBe(rule.tag);
+    expect(result.archivedFilename).toBe(`single-purpose.${rule.tag}.ARCHIVED.md`);
 
-    expect(result.tag).toBe("RULE-1");
-    expect(result.archivedFilename).toBe("single-purpose.RULE-1.ARCHIVED.md");
-
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-31
-  it("[RULE-31] should strictly reject archiving when active incoming references exist", async () => {
-    const tempDir = await mkdtemp(
-      join(tmpdir(), "modie-archival-reject-test-"),
-    );
-    const adrsDir = join(tempDir, ".adrs");
-    const rulesDir = join(tempDir, ".rules");
-    await mkdir(adrsDir, { recursive: true });
-    await mkdir(rulesDir, { recursive: true });
+  // @verifies RULE-31, RULE-34
+  it("[RULE-31][RULE-34] should strictly reject archiving when active incoming references exist", async () => {
+    const workspace = await createFixtureWorkspace("archival-reject-");
 
     // Target ADR
-    const adrPath = join(adrsDir, "old-decision.ADR-1.md");
-    await writeFile(
-      adrPath,
-      `---
-links: []
----
-
-# Context
-Old decision.
-`,
-      "utf8",
-    );
+    const adr = await workspace.createAdr({
+      id: 1,
+      slug: "old-decision",
+      context: "Old decision.",
+    });
 
     // Active RULE referencing target ADR
-    const rulePath = join(rulesDir, "dependent-rule.RULE-1.md");
-    await writeFile(
-      rulePath,
-      `---
-links:
-  - ADR-1
----
-
-Must follow ADR-1.
-`,
-      "utf8",
-    );
+    await workspace.createRule({
+      id: 1,
+      slug: "dependent-rule",
+      links: [adr.tag],
+      body: `Must follow ${adr.tag}.`,
+    });
 
     // Archiving should throw due to active incoming reference
     expect(
       archiveArtifact({
-        tag: "ADR-1",
-        cwd: tempDir,
+        tag: adr.tag,
+        cwd: workspace.cwd,
       }),
     ).rejects.toThrow("active incoming reference(s) exist");
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-31
-  it("[RULE-31] should bypass active references guard when --force is provided", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-archival-force-test-"));
-    const adrsDir = join(tempDir, ".adrs");
-    const rulesDir = join(tempDir, ".rules");
-    await mkdir(adrsDir, { recursive: true });
-    await mkdir(rulesDir, { recursive: true });
+  // @verifies RULE-31, RULE-34
+  it("[RULE-31][RULE-34] should bypass active references guard when --force is provided", async () => {
+    const workspace = await createFixtureWorkspace("archival-force-");
 
-    const adrPath = join(adrsDir, "old-decision.ADR-1.md");
-    await writeFile(
-      adrPath,
-      `---
-links: []
----
+    const adr = await workspace.createAdr({
+      id: 1,
+      slug: "old-decision",
+      context: "Old decision.",
+    });
 
-# Context
-Old decision.
-`,
-      "utf8",
-    );
+    await workspace.createRule({
+      id: 1,
+      slug: "dependent-rule",
+      links: [adr.tag],
+      body: "Dependent rule.",
+    });
 
-    const rulePath = join(rulesDir, "dependent-rule.RULE-1.md");
-    await writeFile(
-      rulePath,
-      `---
-links:
-  - ADR-1
----
-
-Dependent rule.
-`,
-      "utf8",
-    );
-
-    const result = await archiveAdr("ADR-1", {
+    const result = await archiveAdr(adr.tag, {
       force: true,
-      cwd: tempDir,
+      cwd: workspace.cwd,
     });
 
     expect(result.canArchive).toBe(false);
     expect(result.forced).toBe(true);
-    expect(result.archivedFilename).toBe("old-decision.ADR-1.ARCHIVED.md");
+    expect(result.archivedFilename).toBe(`old-decision.${adr.tag}.ARCHIVED.md`);
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-31
-  it("[RULE-31] should reject archiving an artifact that is already archived", async () => {
-    const tempDir = await mkdtemp(
-      join(tmpdir(), "modie-archival-already-test-"),
-    );
-    const adrsDir = join(tempDir, ".adrs");
-    await mkdir(adrsDir, { recursive: true });
+  // @verifies RULE-31, RULE-34
+  it("[RULE-31][RULE-34] should reject archiving an artifact that is already archived", async () => {
+    const workspace = await createFixtureWorkspace("archival-already-");
 
-    const adrPath = join(adrsDir, "old-decision.ADR-1.ARCHIVED.md");
-    await writeFile(
-      adrPath,
-      `---
-links: []
----
-
-# Context
-Already archived.
-`,
-      "utf8",
-    );
+    const adr = await workspace.createAdr({
+      id: 1,
+      slug: "old-decision",
+      isArchived: true,
+      context: "Already archived.",
+    });
 
     expect(
       archiveArtifact({
-        tag: "ADR-1",
-        cwd: tempDir,
+        tag: adr.tag,
+        cwd: workspace.cwd,
       }),
     ).rejects.toThrow("is already archived");
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-31
-  it("[RULE-31] should reject when subtype constraint does not match target artifact", async () => {
-    const tempDir = await mkdtemp(
-      join(tmpdir(), "modie-archival-subtype-mismatch-"),
-    );
-    const adrsDir = join(tempDir, ".adrs");
-    await mkdir(adrsDir, { recursive: true });
+  // @verifies RULE-31, RULE-34
+  it("[RULE-31][RULE-34] should reject when subtype constraint does not match target artifact", async () => {
+    const workspace = await createFixtureWorkspace("archival-subtype-mismatch-");
 
-    const adrPath = join(adrsDir, "my-decision.ADR-1.md");
-    await writeFile(adrPath, "---\nlinks: []\n---\n", "utf8");
+    const adr = await workspace.createAdr({
+      id: 1,
+      slug: "my-decision",
+    });
 
     expect(
       archiveArtifact({
-        tag: "ADR-1",
+        tag: adr.tag,
         subtype: "RULE",
-        cwd: tempDir,
+        cwd: workspace.cwd,
       }),
     ).rejects.toThrow();
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 });
