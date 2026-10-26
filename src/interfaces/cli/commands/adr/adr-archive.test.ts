@@ -1,19 +1,15 @@
 /**
  * Integration and unit tests for `modie adr archive`.
  * Tagged per ADR-7 and RULE-23 for universal rule verification.
+ * @verifies RULE-4, RULE-25, RULE-27, RULE-31, RULE-34
  */
 
 import { describe, expect, it } from "bun:test";
-import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { promisify } from "node:util";
-import { captureCli } from "../../test-utils.ts";
+import { captureCli, createTestWorkspace } from "../../test-utils.ts";
 
-const execFileAsync = promisify(execFile);
-
-describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31)", () => {
+describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31, RULE-34)", () => {
   // @verifies RULE-27
   it("[RULE-27] should emit adr archive subcommand help to stderr with exit code 0", async () => {
     const { exitCode, stdout, stderr } = await captureCli([
@@ -36,165 +32,160 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
     expect(stderr).toContain("Error: Missing required ADR identifier.");
   });
 
-  // @verifies RULE-25, RULE-27, RULE-31
-  it("[RULE-25][RULE-27][RULE-31] should archive an unreferenced ADR with relative path to stdout and status to stderr", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-adr-archive-"));
-    const adrsDir = join(tempDir, ".adrs");
-    await mkdir(adrsDir, { recursive: true });
+  // @verifies RULE-25, RULE-27, RULE-31, RULE-34
+  it("[RULE-25][RULE-27][RULE-31][RULE-34] should archive an unreferenced ADR with relative path to stdout and status to stderr", async () => {
+    const workspace = await createTestWorkspace("cli-adr-archive-");
+    const adr = await workspace.createArtifact({
+      subtype: "ADR",
+      id: "TEST-1",
+      slug: "single-database",
+      context: "Single database.",
+    });
 
-    await writeFile(
-      join(adrsDir, "single-database.ADR-1.md"),
-      `---
-links: []
----
-
-# Context
-Single database.
-`,
-      "utf8",
-    );
-
-    const { exitCode, stdout, stderr } = await captureCli(
-      ["adr", "archive", "ADR-1"],
-      tempDir,
-    );
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "adr",
+      "archive",
+      adr.tag,
+    ]);
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(".adrs/single-database.ADR-1.ARCHIVED.md");
+    expect(stdout.trim()).toBe(".modie/adrs/single-database.ADR-TEST-1.ARCHIVED.md");
     expect(stderr).toContain(
-      "✓ Archived ADR ADR-1: single-database.ADR-1.ARCHIVED.md",
+      "✓ Archived ADR ADR-TEST-1: single-database.ADR-TEST-1.ARCHIVED.md",
     );
 
     const archivedContent = await readFile(
-      join(tempDir, stdout.trim()),
+      join(workspace.cwd, stdout.trim()),
       "utf8",
     );
     expect(archivedContent).toContain("# Context\nSingle database.");
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-27, RULE-31
-  it("[RULE-27][RULE-31] should reject archiving when active references exist", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-adr-reject-"));
-    const adrsDir = join(tempDir, ".adrs");
-    const rulesDir = join(tempDir, ".rules");
-    await mkdir(adrsDir, { recursive: true });
-    await mkdir(rulesDir, { recursive: true });
+  // @verifies RULE-27, RULE-31, RULE-34
+  it("[RULE-27][RULE-31][RULE-34] should reject archiving when active references exist", async () => {
+    const workspace = await createTestWorkspace("cli-adr-reject-");
 
-    await writeFile(
-      join(adrsDir, "target-decision.ADR-1.md"),
-      "---\nlinks: []\n---\n# Context\nTarget.",
-      "utf8",
-    );
-    await writeFile(
-      join(rulesDir, "dependent.RULE-1.md"),
-      "---\nlinks:\n  - ADR-1\n---\nDependent rule.",
-      "utf8",
-    );
+    const adr = await workspace.createArtifact({
+      subtype: "ADR",
+      id: "TEST-1",
+      slug: "target-decision",
+      context: "Target.",
+    });
 
-    const { exitCode, stdout, stderr } = await captureCli(
-      ["adr", "archive", "ADR-1"],
-      tempDir,
-    );
+    await workspace.createArtifact({
+      subtype: "RULE",
+      id: "TEST-1",
+      slug: "dependent",
+      links: [adr.tag],
+      body: "Dependent rule.",
+    });
+
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "adr",
+      "archive",
+      adr.tag,
+    ]);
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain(
-      "Error: Cannot archive ADR-1: 1 active incoming reference(s) exist.",
+      `Error: Cannot archive ${adr.tag}: 1 active incoming reference(s) exist.`,
     );
     expect(stderr).toContain(
-      "Active artifact RULE-1 (links) maintains link to ADR-1",
+      `Active artifact RULE-TEST-1 (links) maintains link to ${adr.tag}`,
     );
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-25, RULE-27, RULE-31
-  it("[RULE-25][RULE-27][RULE-31] should bypass active references guard with --force", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-adr-force-"));
-    const adrsDir = join(tempDir, ".adrs");
-    const rulesDir = join(tempDir, ".rules");
-    await mkdir(adrsDir, { recursive: true });
-    await mkdir(rulesDir, { recursive: true });
+  // @verifies RULE-25, RULE-27, RULE-31, RULE-34
+  it("[RULE-25][RULE-27][RULE-31][RULE-34] should bypass active references guard with --force", async () => {
+    const workspace = await createTestWorkspace("cli-adr-force-");
 
-    await writeFile(
-      join(adrsDir, "forced-decision.ADR-1.md"),
-      "---\nlinks: []\n---\n# Context\nForced.",
-      "utf8",
-    );
-    await writeFile(
-      join(rulesDir, "dependent.RULE-1.md"),
-      "---\nlinks:\n  - ADR-1\n---\nDependent.",
-      "utf8",
-    );
+    const adr = await workspace.createArtifact({
+      subtype: "ADR",
+      id: "TEST-1",
+      slug: "forced-decision",
+      context: "Forced.",
+    });
 
-    const { exitCode, stdout, stderr } = await captureCli(
-      ["adr", "archive", "ADR-1", "--force"],
-      tempDir,
-    );
+    await workspace.createArtifact({
+      subtype: "RULE",
+      id: "TEST-1",
+      slug: "dependent",
+      links: [adr.tag],
+      body: "Dependent.",
+    });
+
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "adr",
+      "archive",
+      adr.tag,
+      "--force",
+    ]);
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(".adrs/forced-decision.ADR-1.ARCHIVED.md");
+    expect(stdout.trim()).toBe(".modie/adrs/forced-decision.ADR-TEST-1.ARCHIVED.md");
     expect(stderr).toContain(
-      "✓ Archived ADR ADR-1: forced-decision.ADR-1.ARCHIVED.md (forced with active references)",
+      "✓ Archived ADR ADR-TEST-1: forced-decision.ADR-TEST-1.ARCHIVED.md (forced with active references)",
     );
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-27
-  it("[RULE-27] should emit machine JSON to stdout when --json is passed", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-adr-json-"));
-    const adrsDir = join(tempDir, ".adrs");
-    await mkdir(adrsDir, { recursive: true });
+  // @verifies RULE-27, RULE-34
+  it("[RULE-27][RULE-34] should emit machine JSON to stdout when --json is passed", async () => {
+    const workspace = await createTestWorkspace("cli-adr-json-");
 
-    await writeFile(
-      join(adrsDir, "json-decision.ADR-1.md"),
-      "---\nlinks: []\n---\n# Context\nJson.",
-      "utf8",
-    );
+    const adr = await workspace.createArtifact({
+      subtype: "ADR",
+      id: "TEST-1",
+      slug: "json-decision",
+      context: "Json.",
+    });
 
-    const { exitCode, stdout, stderr } = await captureCli(
-      ["adr", "archive", "ADR-1", "--json"],
-      tempDir,
-    );
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "adr",
+      "archive",
+      adr.tag,
+      "--json",
+    ]);
 
     expect(exitCode).toBe(0);
-    expect(stderr).toContain("✓ Archived ADR ADR-1");
+    expect(stderr).toContain("✓ Archived ADR ADR-TEST-1");
 
     const parsed = JSON.parse(stdout);
-    expect(parsed.tag).toBe("ADR-1");
-    expect(parsed.archivedFilename).toBe("json-decision.ADR-1.ARCHIVED.md");
+    expect(parsed.tag).toBe("ADR-TEST-1");
+    expect(parsed.archivedFilename).toBe("json-decision.ADR-TEST-1.ARCHIVED.md");
     expect(parsed.canArchive).toBe(true);
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-25, RULE-27
-  it("[RULE-25][RULE-27] should execute adr archive via bin.ts subprocess", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-cli-adr-subprocess-"));
-    const adrsDir = join(tempDir, ".adrs");
-    await mkdir(adrsDir, { recursive: true });
+  // @verifies RULE-25, RULE-27, RULE-34
+  it("[RULE-25][RULE-27][RULE-34] should execute adr archive via bin.ts subprocess", async () => {
+    const workspace = await createTestWorkspace("cli-adr-subprocess-");
 
-    await writeFile(
-      join(adrsDir, "sub-decision.ADR-1.md"),
-      "---\nlinks: []\n---\n# Context\nSubprocess.",
-      "utf8",
-    );
+    const adr = await workspace.createArtifact({
+      subtype: "ADR",
+      id: "TEST-1",
+      slug: "sub-decision",
+      context: "Subprocess.",
+    });
 
-    const binPath = join(process.cwd(), "src/interfaces/cli/bin.ts");
-    const { stdout, stderr } = await execFileAsync(
-      "bun",
-      ["run", binPath, "adr", "archive", "ADR-1"],
-      { cwd: tempDir },
-    );
+    const { stdout, stderr } = await workspace.execBin([
+      "adr",
+      "archive",
+      adr.tag,
+    ]);
 
-    expect(stdout.trim()).toBe(".adrs/sub-decision.ADR-1.ARCHIVED.md");
+    expect(stdout.trim()).toBe(".modie/adrs/sub-decision.ADR-TEST-1.ARCHIVED.md");
     expect(stderr).toContain(
-      "✓ Archived ADR ADR-1: sub-decision.ADR-1.ARCHIVED.md",
+      "✓ Archived ADR ADR-TEST-1: sub-decision.ADR-TEST-1.ARCHIVED.md",
     );
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 });

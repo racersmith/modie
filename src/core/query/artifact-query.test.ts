@@ -140,36 +140,47 @@ describe("Artifact Query Service - Resolution by Tag (RULE-25, RULE-29)", () => 
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  // @verifies RULE-29
-  it("[RULE-29] should resolve real live artifacts in the modie repository", async () => {
-    const rule1 = await resolveArtifactByTag("RULE-1");
-    expect(rule1.tag).toBe("RULE-1");
+  // @verifies RULE-29, RULE-34
+  it("[RULE-29][RULE-34] should resolve active artifacts across workspace subdirectories", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "modie-resolve-workspace-"));
+    const rulePath = join(tempDir, "artifact-structure.RULE-TEST-1.md");
+    const tagRulePath = join(tempDir, "tag-resolution.RULE-TEST-29.md");
+    const adrPath = join(tempDir, "task-lifecycle.ADR-TEST-6.md");
+
+    await writeFile(rulePath, "Rule content", "utf8");
+    await writeFile(tagRulePath, "Tag resolution content", "utf8");
+    await writeFile(adrPath, "Lifecycle content", "utf8");
+
+    const rule1 = await resolveArtifactByTag("RULE-TEST-1", { cwd: tempDir });
+    expect(rule1.tag).toBe("RULE-TEST-1");
     expect(rule1.subtype).toBe("RULE");
-    expect(rule1.filepath).toContain("artifact-filename-structure.RULE-1.md");
+    expect(rule1.filepath).toBe(rulePath);
 
-    const rule29 = await resolveArtifactByTag("RULE-29");
-    expect(rule29.tag).toBe("RULE-29");
+    const rule29 = await resolveArtifactByTag("RULE-TEST-29", { cwd: tempDir });
+    expect(rule29.tag).toBe("RULE-TEST-29");
     expect(rule29.subtype).toBe("RULE");
-    expect(rule29.filepath).toContain("artifact-tag-resolution.RULE-29.md");
+    expect(rule29.filepath).toBe(tagRulePath);
 
-    const adr6 = await resolveArtifactByTag("ADR-6");
-    expect(adr6.tag).toBe("ADR-6");
+    const adr6 = await resolveArtifactByTag("ADR-TEST-6", { cwd: tempDir });
+    expect(adr6.tag).toBe("ADR-TEST-6");
     expect(adr6.subtype).toBe("ADR");
-    expect(adr6.filepath).toContain("ephemeral-task-lifecycle.ADR-6.md");
+    expect(adr6.filepath).toBe(adrPath);
+
+    await rm(tempDir, { recursive: true, force: true });
   });
 });
 
-describe("Artifact Query Service - Deep Inspection (RULE-26, RULE-29)", () => {
-  // @verifies RULE-26, RULE-29
-  it("[RULE-26][RULE-29] should extract structured details, links, and sections from artifact", async () => {
+describe("Artifact Query Service - Deep Inspection (RULE-26, RULE-29, RULE-34)", () => {
+  // @verifies RULE-26, RULE-29, RULE-34
+  it("[RULE-26][RULE-29][RULE-34] should extract structured details, links, and sections from artifact", async () => {
     const tempDir = await mkdtemp(join(tmpdir(), "modie-inspect-details-"));
-    const adrPath = join(tempDir, "test-adr.ADR-60.md");
+    const adrPath = join(tempDir, "test-adr.ADR-TEST-60.md");
     await writeFile(
       adrPath,
       `---
 links:
-  - RULE-1
-  - ADR-2
+  - RULE-TEST-1
+  - ADR-TEST-2
 ---
 
 # Context
@@ -184,10 +195,10 @@ We decided on solution X.
       "utf8",
     );
 
-    const details = await getArtifactDetails("ADR-60", { cwd: tempDir });
-    expect(details.tag).toBe("ADR-60");
+    const details = await getArtifactDetails("ADR-TEST-60", { cwd: tempDir });
+    expect(details.tag).toBe("ADR-TEST-60");
     expect(details.subtype).toBe("ADR");
-    expect(details.links).toEqual(["RULE-1", "ADR-2"]);
+    expect(details.links).toEqual(["RULE-TEST-1", "ADR-TEST-2"]);
     expect(details.context).toBe("Context explanation text.");
     expect(details.sections["Context"]).toBe("Context explanation text.");
     expect(details.sections["Alternatives Considered"]).toBe("Alternative A and Alternative B.");
@@ -196,17 +207,17 @@ We decided on solution X.
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  // @verifies RULE-22, RULE-26, RULE-29
-  it("[RULE-22][RULE-26][RULE-29] should extract acceptance criteria and depends_on for TASK artifacts", async () => {
+  // @verifies RULE-22, RULE-26, RULE-29, RULE-34
+  it("[RULE-22][RULE-26][RULE-29][RULE-34] should extract acceptance criteria and depends_on for TASK artifacts", async () => {
     const tempDir = await mkdtemp(join(tmpdir(), "modie-inspect-task-"));
-    const taskPath = join(tempDir, "test-task.TASK-61.md");
+    const taskPath = join(tempDir, "test-task.TASK-TEST-61.md");
     await writeFile(
       taskPath,
       `---
 depends_on:
-  - TASK-10
+  - TASK-TEST-10
 links:
-  - RULE-29
+  - RULE-TEST-29
 ---
 
 # Context
@@ -219,11 +230,11 @@ Task context description.
       "utf8",
     );
 
-    const details = await getArtifactDetails("TASK-61", { cwd: tempDir });
-    expect(details.tag).toBe("TASK-61");
+    const details = await getArtifactDetails("TASK-TEST-61", { cwd: tempDir });
+    expect(details.tag).toBe("TASK-TEST-61");
     expect(details.subtype).toBe("TASK");
-    expect(details.depends_on).toEqual(["TASK-10"]);
-    expect(details.links).toEqual(["RULE-29"]);
+    expect(details.depends_on).toEqual(["TASK-TEST-10"]);
+    expect(details.links).toEqual(["RULE-TEST-29"]);
     expect(details.acceptanceCriteria?.length).toBe(2);
     expect(details.acceptanceCriteria?.[0]?.completed).toBe(true);
     expect(details.acceptanceCriteria?.[1]?.completed).toBe(false);

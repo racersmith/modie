@@ -91,6 +91,59 @@ function escapeRegex(str: string): string {
 }
 
 /**
+ * Evaluates whether a line within a test file represents a formal verification declaration
+ * per ADR-7 and RULE-23.
+ *
+ * Recognized formats:
+ * 1. Comment annotations: `@verifies ...TAG...` or `@satisfies ...TAG...`
+ * 2. Bracketed test headers inside string quotes: `"[...TAG...]"` or `'[...TAG...]'`
+ * 3. Suite/test block declaration headers: `describe("...(TAG)...")`, `it("...(TAG)...")`
+ * 4. Idiomatic test functions: `test_<tag>`, `def test_<tag>`, `fn test_<tag>`
+ */
+export function isTestVerificationCitation(line: string, targetTag: string): boolean {
+  const escaped = escapeRegex(targetTag);
+
+  // 1. Comment annotations: @verifies or @satisfies containing the tag
+  const annotationRegex = new RegExp(
+    `@(?:verifies|satisfies)\\b[^\\n]*?\\b${escaped}\\b`,
+    "i",
+  );
+  if (annotationRegex.test(line)) {
+    return true;
+  }
+
+  // 2. Bracketed test header inside string quotes: "[RULE-1]..." or '[RULE-1]...'
+  const bracketRegex = new RegExp(
+    `['"\`][^'"\`\\n]*?\\[[^\\]\\n]*?\\b${escaped}\\b[^\\]\\n]*?\\]`,
+    "i",
+  );
+  if (bracketRegex.test(line)) {
+    return true;
+  }
+
+  // 3. Parenthetical or quoted tag within test block declarations (describe/suite/context/it/test)
+  const suiteRegex = new RegExp(
+    `(?:describe|suite|context|it|test)\\s*\\(\\s*['"\`][^'"\`\\n]*?\\b${escaped}\\b`,
+    "i",
+  );
+  if (suiteRegex.test(line)) {
+    return true;
+  }
+
+  // 4. Idiomatic function declaration: test_rule_1, def test_rule_1, fn test_rule_1
+  const normalizedTag = escaped.replace(/[-.]/g, "_");
+  const fnRegex = new RegExp(
+    `(?:def|fn|function|test)\\s+test[a-zA-Z0-9_]*?_${normalizedTag}\\b`,
+    "i",
+  );
+  if (fnRegex.test(line)) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Parses frontmatter metadata lines to identify which lines are link declarations.
  */
 interface ParsedFrontmatterLinkLines {
@@ -403,6 +456,10 @@ function parseFrontmatterList(content: string, fieldName: string): string[] {
             const line = lines[i]!;
 
             if (tagRegex.test(line)) {
+              if (category === "test" && !isTestVerificationCitation(line, targetTag)) {
+                continue;
+              }
+
               const item: FoundInItem = {
                 type: category,
                 filepath: fullPath,

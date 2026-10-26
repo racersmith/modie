@@ -86,7 +86,7 @@ export function run() {
 
     await writeFile(
       join(tempDir, "component.test.ts"),
-      `// Tests RULE-25
+      `// @verifies RULE-25
 `,
       "utf8",
     );
