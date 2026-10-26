@@ -4,11 +4,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { promisify } from "node:util";
+import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
 import {
   scanActiveTaskIds,
   scanActiveTasks,
@@ -23,52 +19,44 @@ import {
 } from "./index.ts";
 
 describe("Watermark Resolver - Active Task Scanner", () => {
-  // @verifies RULE-1, ADR-6
-  it("[RULE-1][ADR-6] should recursively scan and detect active task files on disk", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-active-scan-"));
+  // @verifies RULE-1, ADR-6, RULE-34
+  it("[RULE-1][ADR-6][RULE-34] should recursively scan and detect active task files on disk", async () => {
+    const workspace = await createFixtureWorkspace("active-scan-");
 
-    try {
-      // Create nested directory structure including .tasks/
-      await mkdir(join(tempDir, "src", ".tasks"), { recursive: true });
-      await mkdir(join(tempDir, "src", "core", ".tasks"), { recursive: true });
-      await mkdir(join(tempDir, "node_modules", "pkg"), { recursive: true });
+    // Create valid task files
+    await workspace.createTask({
+      id: 1,
+      slug: "create-task-cli",
+      subDir: "src/.tasks",
+    });
+    await workspace.createTask({
+      id: 4,
+      slug: "watermark-resolver",
+      subDir: "src/core/.tasks",
+    });
 
-      // Create valid task files
-      await writeFile(
-        join(tempDir, "src", ".tasks", "create-task-cli.TASK-1.md"),
-        "# Task 1",
-      );
-      await writeFile(
-        join(tempDir, "src", "core", ".tasks", "watermark-resolver.TASK-4.md"),
-        "# Task 4",
-      );
+    // Create non-task files and files in ignored directories
+    await workspace.writeFile("src/README.md", "# Readme");
+    await workspace.writeFile(
+      "node_modules/pkg/ignored.TASK-999.md",
+      "# Ignored",
+    );
 
-      // Create non-task files and files in ignored directories
-      await writeFile(join(tempDir, "src", "README.md"), "# Readme");
-      await writeFile(
-        join(tempDir, "node_modules", "pkg", "ignored.TASK-999.md"),
-        "# Ignored",
-      );
+    const tasks = await scanActiveTasks(workspace.cwd);
+    expect(tasks.length).toBe(2);
 
-      const tasks = await scanActiveTasks(tempDir);
-      expect(tasks.length).toBe(2);
+    const taskIds = await scanActiveTaskIds(workspace.cwd);
+    expect(taskIds.sort()).toEqual(["1", "4"]);
 
-      const taskIds = await scanActiveTaskIds(tempDir);
-      expect(taskIds.sort()).toEqual(["1", "4"]);
-    } finally {
-      await rm(tempDir, { recursive: true, force: true });
-    }
+    await workspace.cleanup();
   });
 
-  // @verifies ADR-6
-  it("[ADR-6] should return empty array when no active tasks exist on disk", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-empty-scan-"));
-    try {
-      const taskIds = await scanActiveTaskIds(tempDir);
-      expect(taskIds).toEqual([]);
-    } finally {
-      await rm(tempDir, { recursive: true, force: true });
-    }
+  // @verifies ADR-6, RULE-34
+  it("[ADR-6][RULE-34] should return empty array when no active tasks exist on disk", async () => {
+    const workspace = await createFixtureWorkspace("empty-scan-");
+    const taskIds = await scanActiveTaskIds(workspace.cwd);
+    expect(taskIds).toEqual([]);
+    await workspace.cleanup();
   });
 });
 
@@ -374,9 +362,7 @@ describe("Watermark Resolver - Multi-Subtype Monotonic Allocation (ADR-1, ADR-2,
   });
 });
 
-describe("Watermark Resolver - Multi-Branch Collision Guard & Discovery (RULE-33)", () => {
-  const execFileAsync = promisify(execFile);
-
+describe("Watermark Resolver - Multi-Branch Collision Guard & Discovery (RULE-33, RULE-34)", () => {
   // @verifies RULE-33, ADR-6, ADR-9
   it("[RULE-33][ADR-6][ADR-9] should incorporate active IDs from other branches during ID allocation", async () => {
     // Current branch has TASK-1 and TASK-2 active; another branch has TASK-4 and TASK-5 active
@@ -416,52 +402,44 @@ describe("Watermark Resolver - Multi-Branch Collision Guard & Discovery (RULE-33
     expect(adrDetails.tag).toBe("ADR-8");
   });
 
-  // @verifies RULE-33
-  it("[RULE-33] should discover active artifacts across git branches using git tree queries", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-multibranch-test-"));
+  // @verifies RULE-33, RULE-34
+  it("[RULE-33][RULE-34] should discover active artifacts across git branches using git tree queries", async () => {
+    const workspace = await createFixtureWorkspace("multibranch-");
 
-    try {
-      await execFileAsync("git", ["init", "-q", "-b", "main"], { cwd: tempDir });
-      await execFileAsync("git", ["config", "user.name", "Tester"], { cwd: tempDir });
-      await execFileAsync("git", ["config", "user.email", "tester@test.local"], { cwd: tempDir });
+    await workspace.initGit({ defaultBranch: "main", initialCommit: true });
+    await workspace.writeFile("README.md", "# Multi-Branch Test\n");
+    await workspace.gitCommit("chore: init");
 
-      // Initial commit on main
-      await writeFile(join(tempDir, "README.md"), "# Multi-Branch Test\n");
-      await execFileAsync("git", ["add", "README.md"], { cwd: tempDir });
-      await execFileAsync("git", ["commit", "-m", "chore: init"], { cwd: tempDir });
+    // Create branch feature/new-rule
+    await workspace.gitCheckout("feature/new-rule", { create: true });
+    const rule = await workspace.createRule({
+      id: 50,
+      slug: "sample-rule",
+      body: "# Sample Rule 50\n",
+    });
+    await workspace.gitCommit("feat: add RULE-50");
 
-      // Create branch feature/new-rule
-      await execFileAsync("git", ["checkout", "-b", "feature/new-rule"], { cwd: tempDir });
-      await mkdir(join(tempDir, ".modie", "rules"), { recursive: true });
-      await writeFile(
-        join(tempDir, ".modie", "rules", "sample-rule.RULE-50.md"),
-        "# Sample Rule 50\n",
-      );
-      await execFileAsync("git", ["add", "-A"], { cwd: tempDir });
-      await execFileAsync("git", ["commit", "-m", "feat: add RULE-50"], { cwd: tempDir });
+    // Switch back to main
+    await workspace.gitCheckout("main");
 
-      // Switch back to main
-      await execFileAsync("git", ["checkout", "main"], { cwd: tempDir });
+    // Inspect active artifacts across other branches
+    const artifacts = await inspectMultiBranchActiveArtifacts(
+      workspace.cwd,
+      "RULE",
+      { excludeCurrent: true },
+    );
+    expect(artifacts.length).toBe(1);
+    expect(artifacts[0]?.tag).toBe(rule.tag);
+    expect(artifacts[0]?.id).toBe("50");
 
-      // Inspect active artifacts across other branches
-      const artifacts = await inspectMultiBranchActiveArtifacts(
-        tempDir,
-        "RULE",
-        { excludeCurrent: true },
-      );
-      expect(artifacts.length).toBe(1);
-      expect(artifacts[0]?.tag).toBe("RULE-50");
-      expect(artifacts[0]?.id).toBe("50");
+    const activeIds = await inspectMultiBranchActiveArtifactIds(
+      workspace.cwd,
+      "RULE",
+      { excludeCurrent: true },
+    );
+    expect(activeIds).toEqual(["50"]);
 
-      const activeIds = await inspectMultiBranchActiveArtifactIds(
-        tempDir,
-        "RULE",
-        { excludeCurrent: true },
-      );
-      expect(activeIds).toEqual(["50"]);
-    } finally {
-      await rm(tempDir, { recursive: true, force: true });
-    }
+    await workspace.cleanup();
   });
 });
 

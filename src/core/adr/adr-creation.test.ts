@@ -1,12 +1,13 @@
 /**
  * Unit tests for Core ADR Creation Service.
  * Tagged per ADR-7 and RULE-23 for universal rule verification.
+ * @verifies ADR-1, ADR-2, ADR-4, ADR-7, RULE-1, RULE-8, RULE-14, RULE-17, RULE-23, RULE-34
  */
 
 import { describe, expect, it } from "bun:test";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
 import {
   createAdr,
   resolveAdrDirectories,
@@ -59,140 +60,137 @@ describe("ADR Creation - Scope & Directory Resolution (RULE-8)", () => {
   });
 });
 
-describe("ADR Creation - Frontmatter Validation & Rule Scope (RULE-14, RULE-17)", () => {
+describe("ADR Creation - Frontmatter Validation & Rule Scope (RULE-14, RULE-17, RULE-34)", () => {
   // @verifies RULE-14
   it("[RULE-14] should reject non-ADR and non-RULE links with RULE-14 error", async () => {
+    const taskTag = makeTestTag("TASK", 10);
+    const motiveTag = makeTestTag("MOTIVE", 1);
+
     await expect(
-      validateAdrScope("/mock/dir", ["TASK-10"], process.cwd()),
+      validateAdrScope("/mock/dir", [taskTag], process.cwd()),
     ).rejects.toThrow("RULE-14");
     await expect(
-      validateAdrScope("/mock/dir", ["MOTIVE-1"], process.cwd()),
+      validateAdrScope("/mock/dir", [motiveTag], process.cwd()),
     ).rejects.toThrow("RULE-14");
   });
 
-  // @verifies RULE-17
-  it("[RULE-17] should succeed when referencing a RULE in the same directory", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-adr-scope-same-"));
-    const ruleDir = join(tempDir, ".rules");
-    await mkdir(ruleDir, { recursive: true });
-    await writeFile(
-      join(ruleDir, "local-invariant.RULE-201.md"),
-      "Invariant claim\n",
-      "utf8",
-    );
+  // @verifies RULE-17, RULE-34
+  it("[RULE-17][RULE-34] should succeed when referencing a RULE in the same directory", async () => {
+    const workspace = await createFixtureWorkspace("adr-scope-same-");
+    const rule = await workspace.createRule({
+      id: 201,
+      slug: "local-invariant",
+      body: "Invariant claim\n",
+    });
 
-    // ADR scoped in tempDir (same scope as RULE)
+    // ADR scoped in workspace.cwd (same scope as RULE)
     await expect(
-      validateAdrScope(tempDir, ["RULE-201"], tempDir),
+      validateAdrScope(workspace.cwd, [rule.tag], workspace.cwd),
     ).resolves.toBeUndefined();
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-17
-  it("[RULE-17] should succeed when referencing a RULE in a descendant subtree", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-adr-scope-descendant-"));
-    const subRuleDir = join(tempDir, "submodule", ".rules");
-    await mkdir(subRuleDir, { recursive: true });
-    await writeFile(
-      join(subRuleDir, "sub-invariant.RULE-202.md"),
-      "Sub invariant claim\n",
-      "utf8",
-    );
+  // @verifies RULE-17, RULE-34
+  it("[RULE-17][RULE-34] should succeed when referencing a RULE in a descendant subtree", async () => {
+    const workspace = await createFixtureWorkspace("adr-scope-descendant-");
+    const rule = await workspace.createRule({
+      id: 202,
+      slug: "sub-invariant",
+      body: "Sub invariant claim\n",
+      subDir: "submodule/.rules",
+    });
 
-    // ADR scoped in tempDir (ancestor of submodule where RULE resides)
+    // ADR scoped in workspace.cwd (ancestor of submodule where RULE resides)
     await expect(
-      validateAdrScope(tempDir, ["RULE-202"], tempDir),
+      validateAdrScope(workspace.cwd, [rule.tag], workspace.cwd),
     ).resolves.toBeUndefined();
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-17
-  it("[RULE-17] should reject referencing an ancestor RULE with RULE-17 error", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-adr-scope-ancestor-"));
-    const rootRuleDir = join(tempDir, ".rules");
-    await mkdir(rootRuleDir, { recursive: true });
-    await writeFile(
-      join(rootRuleDir, "root-invariant.RULE-203.md"),
-      "Root invariant claim\n",
-      "utf8",
-    );
+  // @verifies RULE-17, RULE-34
+  it("[RULE-17][RULE-34] should reject referencing an ancestor RULE with RULE-17 error", async () => {
+    const workspace = await createFixtureWorkspace("adr-scope-ancestor-");
+    const rule = await workspace.createRule({
+      id: 203,
+      slug: "root-invariant",
+      body: "Root invariant claim\n",
+    });
 
-    // ADR scoped in tempDir/src/nested (descendant of root where RULE resides)
-    const nestedAdrScope = join(tempDir, "src", "nested");
+    // ADR scoped in workspace.cwd/src/nested (descendant of root where RULE resides)
+    const nestedAdrScope = join(workspace.cwd, "src", "nested");
     await mkdir(nestedAdrScope, { recursive: true });
 
     await expect(
-      validateAdrScope(nestedAdrScope, ["RULE-203"], tempDir),
+      validateAdrScope(nestedAdrScope, [rule.tag], workspace.cwd),
     ).rejects.toThrow("RULE-17");
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-17
-  it("[RULE-17] should reject referencing a sibling RULE with RULE-17 error", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-adr-scope-sibling-"));
-    const siblingRuleDir = join(tempDir, "sibling-module", ".rules");
-    await mkdir(siblingRuleDir, { recursive: true });
-    await writeFile(
-      join(siblingRuleDir, "sibling-invariant.RULE-204.md"),
-      "Sibling invariant claim\n",
-      "utf8",
-    );
+  // @verifies RULE-17, RULE-34
+  it("[RULE-17][RULE-34] should reject referencing a sibling RULE with RULE-17 error", async () => {
+    const workspace = await createFixtureWorkspace("adr-scope-sibling-");
+    const rule = await workspace.createRule({
+      id: 204,
+      slug: "sibling-invariant",
+      body: "Sibling invariant claim\n",
+      subDir: "sibling-module/.rules",
+    });
 
-    // ADR scoped in tempDir/target-module
-    const targetAdrScope = join(tempDir, "target-module");
+    // ADR scoped in workspace.cwd/target-module
+    const targetAdrScope = join(workspace.cwd, "target-module");
     await mkdir(targetAdrScope, { recursive: true });
 
     await expect(
-      validateAdrScope(targetAdrScope, ["RULE-204"], tempDir),
+      validateAdrScope(targetAdrScope, [rule.tag], workspace.cwd),
     ).rejects.toThrow("RULE-17");
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-14
-  it("[RULE-14] should allow referencing another ADR anywhere without RULE-17 restriction", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-adr-to-adr-"));
-    const otherAdrDir = join(tempDir, "other", ".adrs");
-    await mkdir(otherAdrDir, { recursive: true });
-    await writeFile(
-      join(otherAdrDir, "prior-decision.ADR-205.md"),
-      "---\nlinks: []\n---\n# Context\nPrior decision\n",
-      "utf8",
-    );
+  // @verifies RULE-14, RULE-34
+  it("[RULE-14][RULE-34] should allow referencing another ADR anywhere without RULE-17 restriction", async () => {
+    const workspace = await createFixtureWorkspace("adr-to-adr-");
+    const adr = await workspace.createAdr({
+      id: 205,
+      slug: "prior-decision",
+      context: "Prior decision",
+      subDir: "other/.adrs",
+    });
 
-    const localScope = join(tempDir, "local");
+    const localScope = join(workspace.cwd, "local");
     await mkdir(localScope, { recursive: true });
 
     await expect(
-      validateAdrScope(localScope, ["ADR-205"], tempDir),
+      validateAdrScope(localScope, [adr.tag], workspace.cwd),
     ).resolves.toBeUndefined();
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 });
 
-describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, RULE-8)", () => {
-  // @verifies ADR-1, ADR-2, ADR-4, RULE-1, RULE-8
-  it("[ADR-1][ADR-2][ADR-4][RULE-1][RULE-8] should create an ADR artifact on disk with sequential monotonic ID", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-adr-create-"));
+describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, RULE-8, RULE-34)", () => {
+  // @verifies ADR-1, ADR-2, ADR-4, RULE-1, RULE-8, RULE-34
+  it("[ADR-1][ADR-2][ADR-4][RULE-1][RULE-8][RULE-34] should create an ADR artifact on disk with sequential monotonic ID", async () => {
+    const workspace = await createFixtureWorkspace("adr-create-");
 
     const result = await createAdr({
       title: "First Architecture Decision",
       context: "Context description of the architecture choice.",
       alternatives: "- Alternative 1\n- Alternative 2",
       decision: "We adopt Solution A.",
-      cwd: tempDir,
+      cwd: workspace.cwd,
     });
 
+    const expectedAdr1Tag = makeTestTag("ADR", 1);
     expect(result.id).toBe("1");
-    expect(result.tag).toBe("ADR-1");
-    expect(result.filename).toBe("first-architecture-decision.ADR-1.md");
-    expect(result.relativePath).toContain(".modie/adrs/first-architecture-decision.ADR-1.md");
+    expect(result.tag).toBe(expectedAdr1Tag);
+    expect(result.filename).toBe(`first-architecture-decision.${expectedAdr1Tag}.md`);
+    expect(result.relativePath).toContain(`.modie/adrs/first-architecture-decision.${expectedAdr1Tag}.md`);
 
-    const onDisk = await readFile(result.filepath, "utf8");
+    const onDisk = await workspace.readFile(result.filepath);
     expect(onDisk).toContain("# Context\n\nContext description of the architecture choice.");
     expect(onDisk).toContain("# Alternatives Considered\n\n- Alternative 1\n- Alternative 2");
     expect(onDisk).toContain("# Decision\n\nWe adopt Solution A.");
@@ -201,33 +199,35 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
     const result2 = await createAdr({
       title: "Second Architecture Decision",
       context: "Another decision context.",
-      cwd: tempDir,
+      cwd: workspace.cwd,
     });
 
+    const expectedAdr2Tag = makeTestTag("ADR", 2);
     expect(result2.id).toBe("2");
-    expect(result2.tag).toBe("ADR-2");
-    expect(result2.filename).toBe("second-architecture-decision.ADR-2.md");
+    expect(result2.tag).toBe(expectedAdr2Tag);
+    expect(result2.filename).toBe(`second-architecture-decision.${expectedAdr2Tag}.md`);
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-8
-  it("[RULE-8] should create flat ADR file when useSubtypeContainer is false", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-adr-flat-"));
+  // @verifies RULE-8, RULE-34
+  it("[RULE-8][RULE-34] should create flat ADR file when useSubtypeContainer is false", async () => {
+    const workspace = await createFixtureWorkspace("adr-flat-");
+    const expectedAdr1Tag = makeTestTag("ADR", 1);
 
     const result = await createAdr({
       title: "Flat Decision Record",
       useSubtypeContainer: false,
-      cwd: tempDir,
+      cwd: workspace.cwd,
     });
 
-    expect(result.relativePath).toBe("flat-decision-record.ADR-1.md");
-    expect(result.filepath).toBe(join(tempDir, "flat-decision-record.ADR-1.md"));
+    expect(result.relativePath).toBe(`flat-decision-record.${expectedAdr1Tag}.md`);
+    expect(result.filepath).toBe(join(workspace.cwd, `flat-decision-record.${expectedAdr1Tag}.md`));
 
-    const onDisk = await readFile(result.filepath, "utf8");
+    const onDisk = await workspace.readFile(result.filepath);
     expect(onDisk).toContain("# Context");
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
   it("should reject creation with empty title", async () => {

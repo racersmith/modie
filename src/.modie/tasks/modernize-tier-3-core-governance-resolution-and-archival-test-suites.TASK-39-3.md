@@ -25,8 +25,8 @@ Refactor Tier 3 core governance resolution, supersession, and archival test suit
 
 # Acceptance Criteria
 
-- [ ] Migrate src/core/rule/rule-supersession.test.ts and src/core/adr/adr-supersession.test.ts to createFixtureWorkspace and typed supersession helpers
-- [ ] Migrate src/core/rule/rule-creation.test.ts and src/core/adr/adr-creation.test.ts to createFixtureWorkspace, replacing manual filesystem scaffolding
-- [ ] Migrate src/core/archival/archival.test.ts to createFixtureWorkspace with typed fixture links
-- [ ] Migrate src/core/resolver/watermark.test.ts active scan and multibranch tests to hermetic fixture workspaces
-- [ ] Verify all Tier 3 test suites pass with zero false-positive citations during reference queries
+- [x] Migrate src/core/rule/rule-supersession.test.ts and src/core/adr/adr-supersession.test.ts to createFixtureWorkspace and typed supersession helpers
+- [x] Migrate src/core/rule/rule-creation.test.ts and src/core/adr/adr-creation.test.ts to createFixtureWorkspace, replacing manual filesystem scaffolding
+- [x] Migrate src/core/archival/archival.test.ts to createFixtureWorkspace with typed fixture links
+- [x] Migrate src/core/resolver/watermark.test.ts active scan and multibranch tests to hermetic fixture workspaces
+- [x] Verify all Tier 3 test suites pass with zero false-positive citations during reference queries

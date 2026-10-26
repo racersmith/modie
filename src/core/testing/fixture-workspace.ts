@@ -45,7 +45,8 @@ export interface CreateRuleOptions {
   title?: string;
   body?: string;
   links?: string[];
-  supersedes?: string;
+  supersedes?: string | string[];
+  superseded_by?: string | string[];
   isArchived?: boolean;
   subDir?: string;
   rawContent?: string;
@@ -56,9 +57,11 @@ export interface CreateAdrOptions {
   slug?: string;
   title?: string;
   context?: string;
+  alternatives?: string;
   decision?: string;
   links?: string[];
-  supersedes?: string;
+  supersedes?: string | string[];
+  superseded_by?: string | string[];
   isArchived?: boolean;
   subDir?: string;
   rawContent?: string;
@@ -73,7 +76,8 @@ export interface CreateFixtureArtifactOptions {
   slug?: string;
   links?: string[];
   depends_on?: string[];
-  supersedes?: string;
+  supersedes?: string | string[];
+  superseded_by?: string | string[];
   context?: string;
   body?: string;
   acceptanceCriteria?: TaskCriterionItem[];
@@ -110,6 +114,7 @@ export interface FixtureWorkspace {
   writeFile(relativePath: string, content: string): Promise<string>;
   initGit(options?: { defaultBranch?: string; initialCommit?: boolean }): Promise<void>;
   gitCommit(message: string): Promise<string>;
+  gitCheckout(branch: string, options?: { create?: boolean }): Promise<void>;
   cleanup(): Promise<void>;
   [Symbol.asyncDispose](): Promise<void>;
 }
@@ -182,7 +187,18 @@ export async function createFixtureWorkspace(
           frontmatterLines.push("links: []");
         }
         if (options.supersedes) {
-          frontmatterLines.push(`supersedes: ${options.supersedes}`);
+          frontmatterLines.push("supersedes:");
+          const list = Array.isArray(options.supersedes) ? options.supersedes : [options.supersedes];
+          for (const s of list) {
+            frontmatterLines.push(`  - ${s}`);
+          }
+        }
+        if (options.superseded_by) {
+          frontmatterLines.push("superseded_by:");
+          const list = Array.isArray(options.superseded_by) ? options.superseded_by : [options.superseded_by];
+          for (const s of list) {
+            frontmatterLines.push(`  - ${s}`);
+          }
         }
         frontmatterLines.push("---");
         frontmatterLines.push("");
@@ -265,9 +281,10 @@ export async function createFixtureWorkspace(
         subtype: "RULE",
         id: options.id,
         slug: options.slug ?? (options.title ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : undefined),
-        body: options.body ?? (options.title ? `# Invariant\nRule body for ${options.title}.` : undefined),
+        body: options.body ?? (options.title ? `# Invariant\n\nRule body for ${options.title}.` : undefined),
         links: options.links,
         supersedes: options.supersedes,
+        superseded_by: options.superseded_by,
         isArchived: options.isArchived,
         subDir: options.subDir,
         rawContent: options.rawContent,
@@ -276,8 +293,11 @@ export async function createFixtureWorkspace(
 
     async createAdr(options: CreateAdrOptions = {}): Promise<CreatedFixtureArtifact> {
       const bodySections: string[] = [];
+      if (options.alternatives) {
+        bodySections.push(`# Alternatives Considered\n\n${options.alternatives}`);
+      }
       if (options.decision) {
-        bodySections.push(`# Decision\n${options.decision}`);
+        bodySections.push(`# Decision\n\n${options.decision}`);
       }
       return workspace.createArtifact({
         subtype: "ADR",
@@ -287,6 +307,7 @@ export async function createFixtureWorkspace(
         body: bodySections.length > 0 ? bodySections.join("\n\n") : undefined,
         links: options.links,
         supersedes: options.supersedes,
+        superseded_by: options.superseded_by,
         isArchived: options.isArchived,
         subDir: options.subDir,
         rawContent: options.rawContent,
@@ -334,6 +355,11 @@ export async function createFixtureWorkspace(
       await execFileAsync("git", ["add", "-A"], { cwd });
       const { stdout } = await execFileAsync("git", ["commit", "-m", message], { cwd });
       return stdout;
+    },
+
+    async gitCheckout(branch: string, options?: { create?: boolean }): Promise<void> {
+      const args = options?.create ? ["checkout", "-b", branch] : ["checkout", branch];
+      await execFileAsync("git", args, { cwd });
     },
 
     async cleanup(): Promise<void> {
