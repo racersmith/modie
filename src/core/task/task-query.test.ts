@@ -4,9 +4,8 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { rm } from "node:fs/promises";
+import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
 import {
   compareTaskIds,
   getTaskStatus,
@@ -37,310 +36,234 @@ describe("Task Queue Query Service - ID Comparison & Natural Ordering", () => {
 describe("Task Queue Query Service - DAG Readiness Evaluation (ADR-6, RULE-18)", () => {
   // @verifies ADR-6, RULE-18, RULE-22
   it("[ADR-6][RULE-18] should evaluate tasks with no dependencies as READY", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-query-ready-"));
-    const taskPath = join(tempDir, "root-task.TASK-100.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links:
-  - ADR-6
----
+    await using workspace = await createFixtureWorkspace("modie-query-ready-");
+    const task = await workspace.createTask({
+      id: 100,
+      slug: "root-task",
+      context: "Root task with no prerequisites.",
+      links: [makeTestTag("ADR", 6)],
+      criteria: ["Deliverable 1", "Deliverable 2"],
+    });
 
-# Context
-Root task with no prerequisites.
-
-# Acceptance Criteria
-- [ ] Deliverable 1
-- [ ] Deliverable 2
-`,
-      "utf8",
-    );
-
-    const queue = await queryTaskQueue({ cwd: tempDir });
+    const queue = await queryTaskQueue({ cwd: workspace.cwd });
     expect(queue.length).toBe(1);
-    expect(queue[0]!.id).toBe("100");
-    expect(queue[0]!.fullTaskId).toBe("TASK-100");
+    expect(queue[0]!.id).toBe(task.id);
+    expect(queue[0]!.fullTaskId).toBe(task.tag);
     expect(queue[0]!.readiness).toBe("READY");
     expect(queue[0]!.blockedBy).toEqual([]);
     expect(queue[0]!.criteriaTotal).toBe(2);
     expect(queue[0]!.criteriaCompleted).toBe(0);
     expect(queue[0]!.criteriaProgress).toBe("0/2");
     expect(queue[0]!.allCriteriaSatisfied).toBe(false);
-
-    await rm(tempDir, { recursive: true, force: true });
   });
 
   // @verifies ADR-6, RULE-18
   it("[ADR-6][RULE-18] should mark task as BLOCKED when prerequisite task is active on disk", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-query-blocked-"));
-    const taskAPath = join(tempDir, "upstream-task.TASK-201.md");
-    const taskBPath = join(tempDir, "downstream-task.TASK-202.md");
+    await using workspace = await createFixtureWorkspace("modie-query-blocked-");
+    const taskA = await workspace.createTask({
+      id: 201,
+      slug: "upstream-task",
+      context: "Upstream task.",
+      criteria: ["Criteria A"],
+    });
 
-    await writeFile(
-      taskAPath,
-      `---
-depends_on: []
-links: []
----
+    const taskB = await workspace.createTask({
+      id: 202,
+      slug: "downstream-task",
+      context: "Downstream task depending on upstream.",
+      depends_on: [taskA.tag],
+      criteria: ["Criteria B"],
+    });
 
-# Context
-Upstream task.
-
-# Acceptance Criteria
-- [ ] Criteria A
-`,
-      "utf8",
-    );
-
-    await writeFile(
-      taskBPath,
-      `---
-depends_on:
-  - TASK-201
-links: []
----
-
-# Context
-Downstream task depending on TASK-201.
-
-# Acceptance Criteria
-- [ ] Criteria B
-`,
-      "utf8",
-    );
-
-    const queue = await queryTaskQueue({ cwd: tempDir });
+    const queue = await queryTaskQueue({ cwd: workspace.cwd });
     expect(queue.length).toBe(2);
 
-    const taskA = queue.find((t) => t.id === "201");
-    const taskB = queue.find((t) => t.id === "202");
+    const foundA = queue.find((t) => t.id === taskA.id);
+    const foundB = queue.find((t) => t.id === taskB.id);
 
-    expect(taskA?.readiness).toBe("READY");
-    expect(taskA?.blockedBy).toEqual([]);
+    expect(foundA?.readiness).toBe("READY");
+    expect(foundA?.blockedBy).toEqual([]);
 
-    expect(taskB?.readiness).toBe("BLOCKED");
-    expect(taskB?.blockedBy).toEqual(["TASK-201"]);
-
-    await rm(tempDir, { recursive: true, force: true });
+    expect(foundB?.readiness).toBe("BLOCKED");
+    expect(foundB?.blockedBy).toEqual([taskA.tag]);
   });
 
   // @verifies ADR-6, RULE-18
   it("[ADR-6][RULE-18] should evaluate task as READY when prerequisite task was completed and deleted (not on disk)", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-query-deleted-dep-"));
-    const taskBPath = join(tempDir, "downstream-task.TASK-302.md");
+    await using workspace = await createFixtureWorkspace("modie-query-deleted-dep-");
+    const task301Tag = makeTestTag("TASK", 301);
+    const taskB = await workspace.createTask({
+      id: 302,
+      slug: "downstream-task",
+      context: "Downstream task whose dependency has already completed.",
+      depends_on: [task301Tag],
+      criteria: ["Actionable deliverable"],
+    });
 
-    // Notice: TASK-301 does NOT exist on disk (deleted per RULE-21 upon completion)
-    await writeFile(
-      taskBPath,
-      `---
-depends_on:
-  - TASK-301
-links: []
----
-
-# Context
-Downstream task whose dependency TASK-301 has already completed.
-
-# Acceptance Criteria
-- [ ] Actionable deliverable
-`,
-      "utf8",
-    );
-
-    const queue = await queryTaskQueue({ cwd: tempDir });
+    const queue = await queryTaskQueue({ cwd: workspace.cwd });
     expect(queue.length).toBe(1);
-    expect(queue[0]!.id).toBe("302");
+    expect(queue[0]!.id).toBe(taskB.id);
     // Per ADR-6 Section 3, absence from disk signifies satisfied prerequisite
     expect(queue[0]!.readiness).toBe("READY");
     expect(queue[0]!.blockedBy).toEqual([]);
-
-    await rm(tempDir, { recursive: true, force: true });
   });
 
   // @verifies ADR-6, RULE-18
   it("[ADR-6][RULE-18] should handle transitive dependency chains correctly", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-query-chain-"));
-    const task1 = join(tempDir, "phase-one.TASK-401.md");
-    const task2 = join(tempDir, "phase-two.TASK-402.md");
-    const task3 = join(tempDir, "phase-three.TASK-403.md");
+    await using workspace = await createFixtureWorkspace("modie-query-chain-");
+    const task1 = await workspace.createTask({
+      id: 401,
+      slug: "phase-one",
+      criteria: ["Step 1"],
+    });
+    const task2 = await workspace.createTask({
+      id: 402,
+      slug: "phase-two",
+      depends_on: [task1.tag],
+      criteria: ["Step 2"],
+    });
+    const task3 = await workspace.createTask({
+      id: 403,
+      slug: "phase-three",
+      depends_on: [task2.tag],
+      criteria: ["Step 3"],
+    });
 
-    await writeFile(
-      task1,
-      `---\ndepends_on: []\nlinks: []\n---\n# Acceptance Criteria\n- [ ] Step 1\n`,
-      "utf8",
-    );
-    await writeFile(
-      task2,
-      `---\ndepends_on:\n  - TASK-401\nlinks: []\n---\n# Acceptance Criteria\n- [ ] Step 2\n`,
-      "utf8",
-    );
-    await writeFile(
-      task3,
-      `---\ndepends_on:\n  - TASK-402\nlinks: []\n---\n# Acceptance Criteria\n- [ ] Step 3\n`,
-      "utf8",
-    );
-
-    const queue = await queryTaskQueue({ cwd: tempDir });
+    const queue = await queryTaskQueue({ cwd: workspace.cwd });
     expect(queue.length).toBe(3);
 
-    const t1 = queue.find((t) => t.id === "401")!;
-    const t2 = queue.find((t) => t.id === "402")!;
-    const t3 = queue.find((t) => t.id === "403")!;
+    const t1 = queue.find((t) => t.id === task1.id)!;
+    const t2 = queue.find((t) => t.id === task2.id)!;
+    const t3 = queue.find((t) => t.id === task3.id)!;
 
     expect(t1.readiness).toBe("READY");
     expect(t2.readiness).toBe("BLOCKED");
-    expect(t2.blockedBy).toEqual(["TASK-401"]);
+    expect(t2.blockedBy).toEqual([task1.tag]);
     expect(t3.readiness).toBe("BLOCKED");
-    expect(t3.blockedBy).toEqual(["TASK-402"]);
+    expect(t3.blockedBy).toEqual([task2.tag]);
 
     // Now delete task1 (simulating task 1 completion per RULE-21)
-    await rm(task1);
+    await rm(task1.filepath);
 
-    const updatedQueue = await queryTaskQueue({ cwd: tempDir });
-    const updatedT2 = updatedQueue.find((t) => t.id === "402")!;
-    const updatedT3 = updatedQueue.find((t) => t.id === "403")!;
+    const updatedQueue = await queryTaskQueue({ cwd: workspace.cwd });
+    const updatedT2 = updatedQueue.find((t) => t.id === task2.id)!;
+    const updatedT3 = updatedQueue.find((t) => t.id === task3.id)!;
 
     expect(updatedT2.readiness).toBe("READY");
     expect(updatedT2.blockedBy).toEqual([]);
     expect(updatedT3.readiness).toBe("BLOCKED");
-    expect(updatedT3.blockedBy).toEqual(["TASK-402"]);
-
-    await rm(tempDir, { recursive: true, force: true });
+    expect(updatedT3.blockedBy).toEqual([task2.tag]);
   });
 
   // @verifies RULE-18
   it("[RULE-18] should handle mutual circular dependencies safely without infinite loop", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-query-cycle-"));
-    const taskA = join(tempDir, "cycle-a.TASK-501.md");
-    const taskB = join(tempDir, "cycle-b.TASK-502.md");
+    await using workspace = await createFixtureWorkspace("modie-query-cycle-");
+    const task501Tag = makeTestTag("TASK", 501);
+    const task502Tag = makeTestTag("TASK", 502);
 
-    await writeFile(
-      taskA,
-      `---\ndepends_on:\n  - TASK-502\nlinks: []\n---\n# Acceptance Criteria\n- [ ] A\n`,
-      "utf8",
-    );
-    await writeFile(
-      taskB,
-      `---\ndepends_on:\n  - TASK-501\nlinks: []\n---\n# Acceptance Criteria\n- [ ] B\n`,
-      "utf8",
-    );
+    const taskA = await workspace.createTask({
+      id: 501,
+      slug: "cycle-a",
+      depends_on: [task502Tag],
+      criteria: ["A"],
+    });
+    const taskB = await workspace.createTask({
+      id: 502,
+      slug: "cycle-b",
+      depends_on: [task501Tag],
+      criteria: ["B"],
+    });
 
-    const queue = await queryTaskQueue({ cwd: tempDir });
+    const queue = await queryTaskQueue({ cwd: workspace.cwd });
     expect(queue.length).toBe(2);
 
-    const tA = queue.find((t) => t.id === "501")!;
-    const tB = queue.find((t) => t.id === "502")!;
+    const tA = queue.find((t) => t.id === taskA.id)!;
+    const tB = queue.find((t) => t.id === taskB.id)!;
 
     expect(tA.readiness).toBe("BLOCKED");
-    expect(tA.blockedBy).toEqual(["TASK-502"]);
+    expect(tA.blockedBy).toEqual([taskB.tag]);
     expect(tB.readiness).toBe("BLOCKED");
-    expect(tB.blockedBy).toEqual(["TASK-501"]);
-
-    await rm(tempDir, { recursive: true, force: true });
+    expect(tB.blockedBy).toEqual([taskA.tag]);
   });
 });
 
 describe("Task Queue Query Service - Progress & Filtering (RULE-22)", () => {
   // @verifies RULE-22
   it("[RULE-22] should accurately compute criteria completion status and percentage", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-query-progress-"));
-    const taskPath = join(tempDir, "progress-task.TASK-601.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links: []
----
+    await using workspace = await createFixtureWorkspace("modie-query-progress-");
+    const task = await workspace.createTask({
+      id: 601,
+      slug: "progress-task",
+      criteria: [
+        { text: "Item 1 completed", completed: true },
+        "Item 2 pending",
+        { text: "Item 3 completed", completed: true },
+      ],
+    });
 
-# Acceptance Criteria
-- [x] Item 1 completed
-- [ ] Item 2 pending
-- [x] Item 3 completed
-`,
-      "utf8",
-    );
-
-    const queue = await queryTaskQueue({ cwd: tempDir });
+    const queue = await queryTaskQueue({ cwd: workspace.cwd });
     expect(queue.length).toBe(1);
     expect(queue[0]!.criteriaTotal).toBe(3);
     expect(queue[0]!.criteriaCompleted).toBe(2);
     expect(queue[0]!.criteriaProgress).toBe("2/3");
     expect(queue[0]!.allCriteriaSatisfied).toBe(false);
-
-    await rm(tempDir, { recursive: true, force: true });
   });
 
   it("should filter by readyOnly and blockedOnly", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-query-filter-"));
-    const taskA = join(tempDir, "ready-task.TASK-701.md");
-    const taskB = join(tempDir, "blocked-task.TASK-702.md");
+    await using workspace = await createFixtureWorkspace("modie-query-filter-");
+    const taskA = await workspace.createTask({
+      id: 701,
+      slug: "ready-task",
+      criteria: ["Ready item"],
+    });
+    const taskB = await workspace.createTask({
+      id: 702,
+      slug: "blocked-task",
+      depends_on: [taskA.tag],
+      criteria: ["Blocked item"],
+    });
 
-    await writeFile(
-      taskA,
-      `---\ndepends_on: []\nlinks: []\n---\n# Acceptance Criteria\n- [ ] Ready item\n`,
-      "utf8",
-    );
-    await writeFile(
-      taskB,
-      `---\ndepends_on:\n  - TASK-701\nlinks: []\n---\n# Acceptance Criteria\n- [ ] Blocked item\n`,
-      "utf8",
-    );
-
-    const readyList = await queryTaskQueue({ cwd: tempDir, readyOnly: true });
+    const readyList = await queryTaskQueue({ cwd: workspace.cwd, readyOnly: true });
     expect(readyList.length).toBe(1);
-    expect(readyList[0]!.id).toBe("701");
+    expect(readyList[0]!.id).toBe(taskA.id);
 
-    const blockedList = await queryTaskQueue({ cwd: tempDir, blockedOnly: true });
+    const blockedList = await queryTaskQueue({ cwd: workspace.cwd, blockedOnly: true });
     expect(blockedList.length).toBe(1);
-    expect(blockedList[0]!.id).toBe("702");
-
-    await rm(tempDir, { recursive: true, force: true });
+    expect(blockedList[0]!.id).toBe(taskB.id);
   });
 });
 
 describe("Task Status Inspection Service - getTaskStatus (RULE-22, RULE-25)", () => {
   // @verifies RULE-22, RULE-25
   it("[RULE-22][RULE-25] should retrieve detailed status and incomplete criteria for single task", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-query-single-"));
-    const taskPath = join(tempDir, "inspection-task.TASK-801.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links:
-  - ADR-6
-  - RULE-18
----
+    await using workspace = await createFixtureWorkspace("modie-query-single-");
+    const task = await workspace.createTask({
+      id: 801,
+      slug: "inspection-task",
+      context: "Detailed inspection test.",
+      links: [makeTestTag("ADR", 6), makeTestTag("RULE", 18)],
+      criteria: [
+        { text: "First item checked", completed: true },
+        "Second item pending",
+      ],
+    });
 
-# Context
-Detailed inspection test.
-
-# Acceptance Criteria
-- [x] First item checked
-- [ ] Second item pending
-`,
-      "utf8",
-    );
-
-    const status = await getTaskStatus("TASK-801", { cwd: tempDir });
-    expect(status.id).toBe("801");
-    expect(status.fullTaskId).toBe("TASK-801");
+    const status = await getTaskStatus(task.tag, { cwd: workspace.cwd });
+    expect(status.id).toBe(task.id);
+    expect(status.fullTaskId).toBe(task.tag);
     expect(status.readiness).toBe("READY");
     expect(status.criteriaTotal).toBe(2);
     expect(status.criteriaCompleted).toBe(1);
     expect(status.incompleteCriteria).toEqual(["Second item pending"]);
-    expect(status.links).toEqual(["ADR-6", "RULE-18"]);
-
-    await rm(tempDir, { recursive: true, force: true });
+    expect(status.links).toEqual([makeTestTag("ADR", 6), makeTestTag("RULE", 18)]);
   });
 
   it("should throw descriptive error when inspecting non-existent task", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-query-missing-"));
-    await expect(getTaskStatus("TASK-9999", { cwd: tempDir })).rejects.toThrow(
+    await using workspace = await createFixtureWorkspace("modie-query-missing-");
+    const missingTag = makeTestTag("TASK", 9999);
+    await expect(getTaskStatus(missingTag, { cwd: workspace.cwd })).rejects.toThrow(
       /was not found among active tasks on disk/,
     );
-    await rm(tempDir, { recursive: true, force: true });
   });
 });
 

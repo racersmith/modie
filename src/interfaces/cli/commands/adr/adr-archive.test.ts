@@ -58,7 +58,7 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
       join(workspace.cwd, stdout.trim()),
       "utf8",
     );
-    expect(archivedContent).toContain("# Context\nSingle database.");
+    expect(archivedContent).toContain("# Context\n\nSingle database.");
 
     await workspace.cleanup();
   });

@@ -3,10 +3,14 @@
  * @verifies ADR-6, RULE-21, RULE-22, RULE-25
  */
 
-import { describe, expect, it, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { rm } from "node:fs/promises";
+import {
+  createFixtureWorkspace,
+  makeTestTag,
+  type CreatedFixtureArtifact,
+  type FixtureWorkspace,
+} from "../testing/index.ts";
 import {
   checkTaskItem,
   completeTask,
@@ -14,7 +18,6 @@ import {
   normalizeTaskId,
   resolveTaskFile,
 } from "./index.ts";
-import { scanActiveTasks } from "../resolver/active-scanner.ts";
 
 describe("Task Completion & Checklist Services - Normalization & Resolution", () => {
   it("should normalize diverse task ID formats", () => {
@@ -26,89 +29,67 @@ describe("Task Completion & Checklist Services - Normalization & Resolution", ()
   });
 
   it("should resolve active tasks on disk by ID and slug", async () => {
-    const fixtureDir = await mkdtemp(join(tmpdir(), "modie-resolve-test-"));
-    const taskPath = join(fixtureDir, "sample-feature.TASK-42.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links: []
----
-
-# Context
-Resolve test fixture
-
-# Acceptance Criteria
-- [ ] Sample item
-`,
-      "utf8",
-    );
-
-    const fileById = await resolveTaskFile("TASK-42", { cwd: fixtureDir });
-    expect(fileById).toBe(taskPath);
-
-    const fileByRawId = await resolveTaskFile("42", { cwd: fixtureDir });
-    expect(fileByRawId).toBe(taskPath);
-
-    const fileBySlug = await resolveTaskFile("sample-feature", {
-      cwd: fixtureDir,
+    await using workspace = await createFixtureWorkspace("modie-resolve-test-");
+    const task = await workspace.createTask({
+      id: 42,
+      slug: "sample-feature",
+      context: "Resolve test fixture",
+      criteria: ["Sample item"],
     });
-    expect(fileBySlug).toBe(taskPath);
 
-    const fileByDirectPath = await resolveTaskFile(taskPath, {
-      cwd: fixtureDir,
+    const fileById = await resolveTaskFile(task.tag, { cwd: workspace.cwd });
+    expect(fileById).toBe(task.filepath);
+
+    const fileByRawId = await resolveTaskFile(task.id, { cwd: workspace.cwd });
+    expect(fileByRawId).toBe(task.filepath);
+
+    const fileBySlug = await resolveTaskFile(task.slug, { cwd: workspace.cwd });
+    expect(fileBySlug).toBe(task.filepath);
+
+    const fileByDirectPath = await resolveTaskFile(task.filepath, {
+      cwd: workspace.cwd,
     });
-    expect(fileByDirectPath).toBe(taskPath);
-
-    await rm(fixtureDir, { recursive: true, force: true });
+    expect(fileByDirectPath).toBe(task.filepath);
   });
 
   it("should throw a descriptive error when task does not exist", async () => {
-    const fixtureDir = await mkdtemp(join(tmpdir(), "modie-empty-test-"));
+    await using workspace = await createFixtureWorkspace("modie-empty-test-");
+    const missingTag = makeTestTag("TASK", 99999);
     await expect(
-      resolveTaskFile("TASK-99999", { cwd: fixtureDir }),
+      resolveTaskFile(missingTag, { cwd: workspace.cwd }),
     ).rejects.toThrow(/was not found among active tasks on disk/);
-    await rm(fixtureDir, { recursive: true, force: true });
   });
 });
 
 describe("Task Checklist Progression - checkTaskItem (RULE-22, RULE-25)", () => {
-  let tempDir: string;
-  let testTaskPath: string;
+  let workspace: FixtureWorkspace;
+  let testTask: CreatedFixtureArtifact;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "modie-checklist-test-"));
-    testTaskPath = join(tempDir, "sample-feature.TASK-99.md");
-
-    const initialContent = `---
-depends_on: []
-links:
-  - ADR-6
-  - RULE-22
----
-
-# Context
-
-Test task for checklist progression.
-
-# Acceptance Criteria
-
-- [ ] First deliverable item
-- [ ] Second deliverable item
-- [ ] Third deliverable item
-`;
-    await writeFile(testTaskPath, initialContent, "utf8");
+    workspace = await createFixtureWorkspace("modie-checklist-test-");
+    testTask = await workspace.createTask({
+      id: 99,
+      slug: "sample-feature",
+      context: "Test task for checklist progression.",
+      links: [makeTestTag("ADR", 6), makeTestTag("RULE", 22)],
+      depends_on: [],
+      criteria: [
+        "First deliverable item",
+        "Second deliverable item",
+        "Third deliverable item",
+      ],
+    });
   });
 
   afterEach(async () => {
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
   // @verifies RULE-22, RULE-25
   it("[RULE-22][RULE-25] should check off an item and update file on disk", async () => {
-    const result = await checkTaskItem(testTaskPath, 1, {
+    const result = await checkTaskItem(testTask.filepath, 1, {
       completed: true,
-      cwd: tempDir,
+      cwd: workspace.cwd,
     });
 
     expect(result.itemIndex).toBe(1);
@@ -118,7 +99,7 @@ Test task for checklist progression.
     expect(result.completedCount).toBe(1);
     expect(result.allCompleted).toBe(false);
 
-    const diskContent = await readFile(testTaskPath, "utf8");
+    const diskContent = await workspace.readFile(testTask.filepath);
     expect(diskContent).toContain("- [x] First deliverable item");
     expect(diskContent).toContain("- [ ] Second deliverable item");
     expect(diskContent).toContain("- [ ] Third deliverable item");
@@ -127,47 +108,47 @@ Test task for checklist progression.
   // @verifies RULE-22
   it("[RULE-22] should uncheck an already checked item when completed: false", async () => {
     // Check item 2 first
-    await checkTaskItem(testTaskPath, 2, { completed: true, cwd: tempDir });
-    let diskContent = await readFile(testTaskPath, "utf8");
+    await checkTaskItem(testTask.filepath, 2, { completed: true, cwd: workspace.cwd });
+    let diskContent = await workspace.readFile(testTask.filepath);
     expect(diskContent).toContain("- [x] Second deliverable item");
 
     // Uncheck item 2
-    const result = await checkTaskItem(testTaskPath, 2, {
+    const result = await checkTaskItem(testTask.filepath, 2, {
       completed: false,
-      cwd: tempDir,
+      cwd: workspace.cwd,
     });
     expect(result.completed).toBe(false);
     expect(result.completedCount).toBe(0);
 
-    diskContent = await readFile(testTaskPath, "utf8");
+    diskContent = await workspace.readFile(testTask.filepath);
     expect(diskContent).toContain("- [ ] Second deliverable item");
   });
 
   // @verifies RULE-22
   it("[RULE-22] should report allCompleted: true when all items are checked", async () => {
-    await checkTaskItem(testTaskPath, 1, { completed: true, cwd: tempDir });
-    await checkTaskItem(testTaskPath, 2, { completed: true, cwd: tempDir });
-    const result = await checkTaskItem(testTaskPath, 3, {
+    await checkTaskItem(testTask.filepath, 1, { completed: true, cwd: workspace.cwd });
+    await checkTaskItem(testTask.filepath, 2, { completed: true, cwd: workspace.cwd });
+    const result = await checkTaskItem(testTask.filepath, 3, {
       completed: true,
-      cwd: tempDir,
+      cwd: workspace.cwd,
     });
 
     expect(result.completedCount).toBe(3);
     expect(result.totalItems).toBe(3);
     expect(result.allCompleted).toBe(true);
 
-    const task = await getTask(testTaskPath, { cwd: tempDir });
+    const task = await getTask(testTask.filepath, { cwd: workspace.cwd });
     expect(task.acceptanceCriteria.every((c) => c.completed)).toBe(true);
   });
 
   // @verifies RULE-22
   it("[RULE-22] should preserve surrounding frontmatter and context intact", async () => {
-    await checkTaskItem(testTaskPath, 1, { completed: true, cwd: tempDir });
+    await checkTaskItem(testTask.filepath, 1, { completed: true, cwd: workspace.cwd });
 
-    const content = await readFile(testTaskPath, "utf8");
+    const content = await workspace.readFile(testTask.filepath);
     expect(content).toContain("depends_on: []");
-    expect(content).toContain("- ADR-6");
-    expect(content).toContain("- RULE-22");
+    expect(content).toContain(`- ${makeTestTag("ADR", 6)}`);
+    expect(content).toContain(`- ${makeTestTag("RULE", 22)}`);
     expect(content).toContain(
       "# Context\n\nTest task for checklist progression.",
     );
@@ -176,668 +157,420 @@ Test task for checklist progression.
   it("should throw an error for invalid item indices", async () => {
     // 0 is invalid (1-based index)
     await expect(
-      checkTaskItem(testTaskPath, 0, { cwd: tempDir }),
+      checkTaskItem(testTask.filepath, 0, { cwd: workspace.cwd }),
     ).rejects.toThrow(/Item index must be a positive integer/);
 
     // Negative index is invalid
     await expect(
-      checkTaskItem(testTaskPath, -1, { cwd: tempDir }),
+      checkTaskItem(testTask.filepath, -1, { cwd: workspace.cwd }),
     ).rejects.toThrow(/Item index must be a positive integer/);
 
     // Out of bounds index
     await expect(
-      checkTaskItem(testTaskPath, 10, { cwd: tempDir }),
+      checkTaskItem(testTask.filepath, 10, { cwd: workspace.cwd }),
     ).rejects.toThrow(
-      /Invalid item index 10\. Task TASK-99 has 3 acceptance criteria item\(s\)\./,
+      new RegExp(`Invalid item index 10\\. Task ${testTask.tag} has 3 acceptance criteria item\\(s\\)\\.`),
     );
   });
 });
 
 describe("Task Lifecycle Completion - completeTask (ADR-6, RULE-21, RULE-22)", () => {
-  let tempDir: string;
-  let testTaskPath: string;
+  let workspace: FixtureWorkspace;
+  let testTask: CreatedFixtureArtifact;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "modie-complete-test-"));
-    testTaskPath = join(tempDir, "ephemeral-lifecycle.TASK-100.md");
-
-    const content = `---
-depends_on: []
-links:
-  - ADR-6
-  - RULE-21
-  - RULE-22
----
-
-# Context
-
-Demonstrating ephemeral task completion lifecycle.
-
-# Acceptance Criteria
-
-- [ ] Unfinished deliverable A
-- [ ] Unfinished deliverable B
-`;
-    await writeFile(testTaskPath, content, "utf8");
+    workspace = await createFixtureWorkspace("modie-complete-test-");
+    testTask = await workspace.createTask({
+      id: 100,
+      slug: "ephemeral-lifecycle",
+      context: "Demonstrating ephemeral task completion lifecycle.",
+      links: [makeTestTag("ADR", 6), makeTestTag("RULE", 21), makeTestTag("RULE", 22)],
+      criteria: [
+        "Unfinished deliverable A",
+        "Unfinished deliverable B",
+      ],
+    });
   });
 
   afterEach(async () => {
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
   // @verifies RULE-21, RULE-22
   it("[RULE-21][RULE-22] should reject completion when criteria are incomplete", async () => {
-    await expect(completeTask(testTaskPath, { cwd: tempDir })).rejects.toThrow(
-      /Cannot complete task 100: 2 acceptance criteria remain unchecked/,
+    await expect(completeTask(testTask.filepath, { cwd: workspace.cwd })).rejects.toThrow(
+      new RegExp(`Cannot complete task ${testTask.id}: 2 acceptance criteria remain unchecked`),
     );
 
-    // File should still exist on disk
-    const content = await readFile(testTaskPath, "utf8");
-    expect(content).toBeDefined();
+    const exists = await workspace.fileExists(testTask.filepath);
+    expect(exists).toBe(true);
   });
 
   // @verifies RULE-21, RULE-22, ADR-6
   it("[RULE-21][RULE-22][ADR-6] should complete task and delete file from disk when all criteria are satisfied", async () => {
-    // Check off all criteria
-    await checkTaskItem(testTaskPath, 1, { completed: true, cwd: tempDir });
-    await checkTaskItem(testTaskPath, 2, { completed: true, cwd: tempDir });
+    await checkTaskItem(testTask.filepath, 1, { completed: true, cwd: workspace.cwd });
+    await checkTaskItem(testTask.filepath, 2, { completed: true, cwd: workspace.cwd });
 
-    const result = await completeTask(testTaskPath, { cwd: tempDir });
+    const result = await completeTask(testTask.filepath, { cwd: workspace.cwd });
 
-    expect(result.taskId).toBe("100");
-    expect(result.slug).toBe("ephemeral-lifecycle");
+    expect(result.taskId).toBe(testTask.id);
+    expect(result.slug).toBe(testTask.slug);
     expect(result.deleted).toBe(true);
     expect(result.criteriaTotal).toBe(2);
     expect(result.criteriaCompleted).toBe(2);
     expect(result.incompleteCriteria).toEqual([]);
 
-    // File MUST be deleted per RULE-21
-    await expect(readFile(testTaskPath, "utf8")).rejects.toThrow();
+    const exists = await workspace.fileExists(testTask.filepath);
+    expect(exists).toBe(false);
   });
 
   // @verifies RULE-21, RULE-22
   it("[RULE-21][RULE-22] should allow force completion of incomplete tasks if force: true", async () => {
-    const result = await completeTask(testTaskPath, {
+    const result = await completeTask(testTask.filepath, {
       force: true,
-      cwd: tempDir,
+      cwd: workspace.cwd,
     });
 
     expect(result.deleted).toBe(true);
     expect(result.criteriaCompleted).toBe(0);
     expect(result.incompleteCriteria.length).toBe(2);
 
-    // File is deleted even with force
-    await expect(readFile(testTaskPath, "utf8")).rejects.toThrow();
+    const exists = await workspace.fileExists(testTask.filepath);
+    expect(exists).toBe(false);
   });
 
   // @verifies RULE-21
   it("[RULE-21] should allow retaining artifact file when deleteArtifact: false is specified", async () => {
-    await checkTaskItem(testTaskPath, 1, { completed: true, cwd: tempDir });
-    await checkTaskItem(testTaskPath, 2, { completed: true, cwd: tempDir });
+    await checkTaskItem(testTask.filepath, 1, { completed: true, cwd: workspace.cwd });
+    await checkTaskItem(testTask.filepath, 2, { completed: true, cwd: workspace.cwd });
 
-    const result = await completeTask(testTaskPath, {
+    const result = await completeTask(testTask.filepath, {
       deleteArtifact: false,
-      cwd: tempDir,
+      cwd: workspace.cwd,
     });
 
     expect(result.deleted).toBe(false);
 
-    // File remains on disk
-    const content = await readFile(testTaskPath, "utf8");
+    const content = await workspace.readFile(testTask.filepath);
     expect(content).toContain("- [x] Unfinished deliverable A");
     expect(content).toContain("- [x] Unfinished deliverable B");
   });
 
   it("should reject completion if task declares no acceptance criteria at all", async () => {
-    const emptyCriteriaTaskPath = join(tempDir, "empty-criteria.TASK-101.md");
-    await writeFile(
-      emptyCriteriaTaskPath,
-      `---
-depends_on: []
-links: []
----
-
-# Context
-Empty criteria task.
-
-# Acceptance Criteria
-`,
-      "utf8",
-    );
+    const emptyTask = await workspace.createTask({
+      id: 101,
+      slug: "empty-criteria",
+      context: "Empty criteria task.",
+    });
 
     await expect(
-      completeTask(emptyCriteriaTaskPath, { cwd: tempDir }),
+      completeTask(emptyTask.filepath, { cwd: workspace.cwd }),
     ).rejects.toThrow(/Task declares no acceptance criteria checklist items/);
   });
 });
 
 describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
-  let gitDir: string;
+  let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
-    gitDir = await mkdtemp(join(tmpdir(), "modie-two-phase-git-"));
-    const { execFile } = await import("node:child_process");
-    const { promisify } = await import("node:util");
-    const execFileAsync = promisify(execFile);
-
-    await execFileAsync("git", ["init", "-q"], { cwd: gitDir });
-    await execFileAsync("git", ["config", "user.name", "Modie Test"], { cwd: gitDir });
-    await execFileAsync("git", ["config", "user.email", "test@modie.dev"], { cwd: gitDir });
+    workspace = await createFixtureWorkspace("modie-two-phase-git-");
+    await workspace.initGit({ initialCommit: false });
   });
 
   afterEach(async () => {
-    await rm(gitDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
   // @verifies ADR-6, RULE-21, RULE-22
   it("[ADR-6][RULE-21][RULE-22] should execute atomic two-phase commit on completeTask with commit: true", async () => {
-    const taskPath = join(gitDir, "feature-x.TASK-50.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links: []
----
+    const task = await workspace.createTask({
+      id: 50,
+      slug: "feature-x",
+      context: "Two phase task commit test.",
+      criteria: [
+        { text: "Implemented core service", completed: true },
+        { text: "Added unit tests", completed: true },
+      ],
+    });
 
-# Context
-Two phase task commit test.
-
-# Acceptance Criteria
-
-- [x] Implemented core service
-- [x] Added unit tests
-`,
-      "utf8",
-    );
-
-    const result = await completeTask(taskPath, { commit: true, cwd: gitDir });
+    const result = await completeTask(task.filepath, { commit: true, cwd: workspace.cwd });
 
     expect(result.deleted).toBe(true);
     expect(result.commits).toBeDefined();
     expect(result.commits?.phase1).toBeDefined();
     expect(result.commits?.phase2).toBeDefined();
 
-    // Verify file is deleted on disk
-    await expect(readFile(taskPath, "utf8")).rejects.toThrow();
+    const exists = await workspace.fileExists(task.filepath);
+    expect(exists).toBe(false);
 
-    // Verify git log contains both ceremony commits
-    const { execFile } = await import("node:child_process");
-    const { promisify } = await import("node:util");
-    const execFileAsync = promisify(execFile);
-
-    const { stdout: logOut } = await execFileAsync(
-      "git",
-      ["log", "--oneline", "--format=%s"],
-      { cwd: gitDir },
-    );
-
+    const logOut = await Bun.$`git log --oneline --format=%s`.cwd(workspace.cwd).text();
     const commitMessages = logOut.trim().split("\n");
-    expect(commitMessages[0]).toBe("chore(task): delete completed TASK-50 artifact");
-    expect(commitMessages[1]).toBe("feat(TASK-50): feature-x");
+    expect(commitMessages[0]).toBe(`chore(task): delete completed ${task.tag} artifact`);
+    expect(commitMessages[1]).toBe(`feat(${task.tag}): ${task.slug}`);
 
-    // Verify git diff-filter=D detects the deleted task
-    const { stdout: deletedOut } = await execFileAsync(
-      "git",
-      ["log", "--diff-filter=D", "--name-only", "--format="],
-      { cwd: gitDir },
-    );
-    expect(deletedOut).toContain("feature-x.TASK-50.md");
+    const deletedOut = await Bun.$`git log --diff-filter=D --name-only --format=`.cwd(workspace.cwd).text();
+    expect(deletedOut).toContain(task.filename);
   });
 
   // @verifies ADR-6, RULE-21
   it("[ADR-6][RULE-21] should only execute Phase 1 commit when deleteArtifact: false", async () => {
-    const taskPath = join(gitDir, "retained.TASK-51.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links: []
----
+    const task = await workspace.createTask({
+      id: 51,
+      slug: "retained",
+      context: "Retained commit test.",
+      criteria: [{ text: "Item 1", completed: true }],
+    });
 
-# Context
-Retained commit test.
-
-# Acceptance Criteria
-
-- [x] Item 1
-`,
-      "utf8",
-    );
-
-    const result = await completeTask(taskPath, {
+    const result = await completeTask(task.filepath, {
       commit: true,
       deleteArtifact: false,
-      cwd: gitDir,
+      cwd: workspace.cwd,
     });
 
     expect(result.deleted).toBe(false);
     expect(result.commits?.phase1).toBeDefined();
     expect(result.commits?.phase2).toBeUndefined();
 
-    // File remains on disk
-    const content = await readFile(taskPath, "utf8");
+    const content = await workspace.readFile(task.filepath);
     expect(content).toContain("- [x] Item 1");
 
-    const { execFile } = await import("node:child_process");
-    const { promisify } = await import("node:util");
-    const execFileAsync = promisify(execFile);
-
-    const { stdout: logOut } = await execFileAsync(
-      "git",
-      ["log", "--oneline", "--format=%s"],
-      { cwd: gitDir },
-    );
+    const logOut = await Bun.$`git log --oneline --format=%s`.cwd(workspace.cwd).text();
     const commitMessages = logOut.trim().split("\n");
     expect(commitMessages.length).toBe(1);
-    expect(commitMessages[0]).toBe("feat(TASK-51): retained");
+    expect(commitMessages[0]).toBe(`feat(${task.tag}): ${task.slug}`);
   });
 
   // @verifies ADR-6, RULE-21, RULE-22
   it("[ADR-6][RULE-21][RULE-22] should update unchecked items to checked on disk during forced commit", async () => {
-    const taskPath = join(gitDir, "forced.TASK-52.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links: []
----
+    const task = await workspace.createTask({
+      id: 52,
+      slug: "forced",
+      context: "Forced task commit.",
+      criteria: ["Item unchecked"],
+    });
 
-# Context
-Forced task commit.
-
-# Acceptance Criteria
-
-- [ ] Item unchecked
-`,
-      "utf8",
-    );
-
-    const result = await completeTask(taskPath, {
+    const result = await completeTask(task.filepath, {
       commit: true,
       force: true,
-      cwd: gitDir,
+      cwd: workspace.cwd,
     });
 
     expect(result.deleted).toBe(true);
     expect(result.commits?.phase1).toBeDefined();
     expect(result.commits?.phase2).toBeDefined();
 
-    // Verify git diff of Phase 1 commit shows checked criterion
-    const { execFile } = await import("node:child_process");
-    const { promisify } = await import("node:util");
-    const execFileAsync = promisify(execFile);
-
-    const { stdout: diffOut } = await execFileAsync(
-      "git",
-      ["show", result.commits!.phase1!],
-      { cwd: gitDir },
-    );
+    const diffOut = await Bun.$`git show ${result.commits!.phase1!}`.cwd(workspace.cwd).text();
     expect(diffOut).toContain("- [x] Item unchecked");
   });
 
   it("should throw error if commit: true is run outside a git repository", async () => {
-    const nonGitDir = await mkdtemp(join(tmpdir(), "modie-nongit-"));
-    const taskPath = join(nonGitDir, "fail.TASK-53.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links: []
----
-
-# Context
-Non git.
-
-# Acceptance Criteria
-
-- [x] Item 1
-`,
-      "utf8",
-    );
+    await using nonGitWorkspace = await createFixtureWorkspace("modie-nongit-");
+    const task = await nonGitWorkspace.createTask({
+      id: 53,
+      slug: "fail",
+      context: "Non git.",
+      criteria: [{ text: "Item 1", completed: true }],
+    });
 
     await expect(
-      completeTask(taskPath, { commit: true, cwd: nonGitDir }),
+      completeTask(task.filepath, { commit: true, cwd: nonGitWorkspace.cwd }),
     ).rejects.toThrow(/directory is not a git repository/);
-
-    await rm(nonGitDir, { recursive: true, force: true });
   });
 
   // @verifies ADR-6, RULE-21, RULE-22, RULE-32
   it("[ADR-6][RULE-32] should stage all pending code and task changes in Phase 1 commit when working tree is dirty", async () => {
-    const { execFile } = await import("node:child_process");
-    const { promisify } = await import("node:util");
-    const execFileAsync = promisify(execFile);
+    await workspace.writeFile("service.ts", 'export const value = "implemented";\n');
+    const task = await workspace.createTask({
+      id: 60,
+      slug: "dirty-tree",
+      context: "Dirty tree completion test.",
+      criteria: [{ text: "Service implemented", completed: true }],
+    });
 
-    // 1. Create an uncommitted code file in the repo
-    const codePath = join(gitDir, "service.ts");
-    await writeFile(codePath, 'export const value = "implemented";\n', "utf8");
-
-    // 2. Create an uncommitted task file
-    const taskPath = join(gitDir, "dirty-tree.TASK-60.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links: []
----
-
-# Context
-Dirty tree completion test.
-
-# Acceptance Criteria
-
-- [x] Service implemented
-`,
-      "utf8",
-    );
-
-    // 3. Complete task with commit: true
-    const result = await completeTask(taskPath, { commit: true, cwd: gitDir });
+    const result = await completeTask(task.filepath, { commit: true, cwd: workspace.cwd });
 
     expect(result.deleted).toBe(true);
     expect(result.commits?.phase1).toBeDefined();
     expect(result.commits?.phase2).toBeDefined();
 
-    // Verify Phase 1 commit contains BOTH the code file and the task file
-    const { stdout: phase1Files } = await execFileAsync(
-      "git",
-      ["diff-tree", "--root", "--no-commit-id", "--name-only", "-r", result.commits!.phase1!],
-      { cwd: gitDir },
-    );
+    const phase1Files = await Bun.$`git diff-tree --root --no-commit-id --name-only -r ${result.commits!.phase1!}`.cwd(workspace.cwd).text();
     expect(phase1Files).toContain("service.ts");
-    expect(phase1Files).toContain("dirty-tree.TASK-60.md");
+    expect(phase1Files).toContain(task.filename);
 
-    // Verify Phase 2 commit deleted the task file
-    const { stdout: phase2Files } = await execFileAsync(
-      "git",
-      ["diff-tree", "--no-commit-id", "--name-only", "-r", result.commits!.phase2!],
-      { cwd: gitDir },
-    );
-    expect(phase2Files.trim()).toBe("dirty-tree.TASK-60.md");
+    const phase2Files = await Bun.$`git diff-tree --no-commit-id --name-only -r ${result.commits!.phase2!}`.cwd(workspace.cwd).text();
+    expect(phase2Files.trim()).toContain(task.filename);
 
-    // Verify working tree is completely clean
-    const { stdout: statusOut } = await execFileAsync(
-      "git",
-      ["status", "--porcelain"],
-      { cwd: gitDir },
-    );
+    const statusOut = await Bun.$`git status --porcelain`.cwd(workspace.cwd).text();
     expect(statusOut.trim()).toBe("");
   });
 
-  // @verifies ADR-6, RULE-21, RULE-22, RULE-32
+  // @verifies ADR-6, RULE-32
   it("[ADR-6][RULE-32] should automatically skip Phase 1 commit when working tree is already clean", async () => {
-    const { execFile } = await import("node:child_process");
-    const { promisify } = await import("node:util");
-    const execFileAsync = promisify(execFile);
+    await workspace.writeFile("feature.ts", 'export const ready = true;\n');
+    const task = await workspace.createTask({
+      id: 61,
+      slug: "clean-tree",
+      context: "Clean tree completion test.",
+      criteria: [{ text: "Ready to complete", completed: true }],
+    });
 
-    // 1. Create code file and task file
-    const codePath = join(gitDir, "feature.ts");
-    await writeFile(codePath, 'export const ready = true;\n', "utf8");
+    await Bun.$`git add -A`.cwd(workspace.cwd).quiet();
+    await workspace.gitCommit(`feat(${task.tag}): pre-committed implementation`);
 
-    const taskPath = join(gitDir, "clean-tree.TASK-61.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links: []
----
-
-# Context
-Clean tree completion test.
-
-# Acceptance Criteria
-
-- [x] Ready to complete
-`,
-      "utf8",
-    );
-
-    // 2. Pre-commit implementation and task file so working tree is clean
-    await execFileAsync("git", ["add", "-A"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "feat(TASK-61): pre-committed implementation"], { cwd: gitDir });
-
-    const { stdout: cleanStatus } = await execFileAsync("git", ["status", "--porcelain"], { cwd: gitDir });
+    const cleanStatus = await Bun.$`git status --porcelain`.cwd(workspace.cwd).text();
     expect(cleanStatus.trim()).toBe("");
 
-    // 3. Complete task with commit: true
-    const result = await completeTask(taskPath, { commit: true, cwd: gitDir });
+    const result = await completeTask(task.filepath, { commit: true, cwd: workspace.cwd });
 
     expect(result.deleted).toBe(true);
-    // Phase 1 is skipped because working tree was already clean
     expect(result.commits?.phase1).toBeUndefined();
-    // Phase 2 executed the artifact deletion
     expect(result.commits?.phase2).toBeDefined();
 
-    const { stdout: logOut } = await execFileAsync(
-      "git",
-      ["log", "--oneline", "--format=%s", "-n", "2"],
-      { cwd: gitDir },
-    );
+    const logOut = await Bun.$`git log --oneline --format=%s -n 2`.cwd(workspace.cwd).text();
     const messages = logOut.trim().split("\n");
-    expect(messages[0]).toBe("chore(task): delete completed TASK-61 artifact");
-    expect(messages[1]).toBe("feat(TASK-61): pre-committed implementation");
+    expect(messages[0]).toBe(`chore(task): delete completed ${task.tag} artifact`);
+    expect(messages[1]).toBe(`feat(${task.tag}): pre-committed implementation`);
 
-    // Working tree remains clean
-    const { stdout: finalStatus } = await execFileAsync("git", ["status", "--porcelain"], { cwd: gitDir });
+    const finalStatus = await Bun.$`git status --porcelain`.cwd(workspace.cwd).text();
     expect(finalStatus.trim()).toBe("");
   });
 });
 
 describe("Zombie Task Resurrection Prevention (ADR-6, RULE-21)", () => {
-  let gitDir: string;
+  let workspace: FixtureWorkspace;
+  const zombieTag = makeTestTag("TASK", 99);
 
   beforeEach(async () => {
-    gitDir = await mkdtemp(join(tmpdir(), "modie-zombie-git-"));
-    const { execFile } = await import("node:child_process");
-    const { promisify } = await import("node:util");
-    const execFileAsync = promisify(execFile);
+    workspace = await createFixtureWorkspace("modie-zombie-git-");
+    await workspace.initGit({ initialCommit: false });
 
-    await execFileAsync("git", ["init", "-q"], { cwd: gitDir });
-    await execFileAsync("git", ["config", "user.name", "Modie Test"], { cwd: gitDir });
-    await execFileAsync("git", ["config", "user.email", "test@modie.dev"], { cwd: gitDir });
+    // Create and complete task 99 via two-phase commit
+    const task = await workspace.createTask({
+      id: 99,
+      slug: "zombie-target",
+      context: "Zombie test task.",
+      criteria: [{ text: "Criterion 1", completed: true }],
+    });
 
-    // Create and complete TASK-99 via two-phase commit
-    const taskPath = join(gitDir, "zombie-target.TASK-99.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links: []
----
-
-# Context
-Zombie test task.
-
-# Acceptance Criteria
-
-- [x] Criterion 1
-`,
-      "utf8",
-    );
-
-    await execFileAsync("git", ["add", "zombie-target.TASK-99.md"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "feat: verify all acceptance criteria for TASK-99"], { cwd: gitDir });
-    await rm(taskPath, { force: true });
-    await execFileAsync("git", ["add", "-u", "zombie-target.TASK-99.md"], { cwd: gitDir });
-    await execFileAsync("git", ["commit", "-m", "chore(task): delete completed TASK-99 artifact per RULE-21"], { cwd: gitDir });
+    await Bun.$`git add .`.cwd(workspace.cwd).quiet();
+    await workspace.gitCommit(`feat: verify all acceptance criteria for ${task.tag}`);
+    await rm(task.filepath, { force: true });
+    await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+    await workspace.gitCommit(`chore(task): delete completed ${task.tag} artifact per RULE-21`);
   });
 
   afterEach(async () => {
-    await rm(gitDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
   // @verifies ADR-6, RULE-21
   it("[ADR-6][RULE-21] should reject resolving a resurrected zombie task file on disk", async () => {
-    // Re-create deleted TASK-99 on disk
-    const zombieFile = join(gitDir, "resurrected.TASK-99.md");
-    await writeFile(
-      zombieFile,
-      `---
-depends_on: []
-links: []
----
+    const zombieArtifact = await workspace.createTask({
+      id: 99,
+      slug: "resurrected",
+      context: "Zombie resurrected.",
+      criteria: ["Criterion"],
+    });
 
-# Context
-Zombie resurrected.
-
-# Acceptance Criteria
-
-- [ ] Criterion
-`,
-      "utf8",
+    await expect(
+      resolveTaskFile(zombieTag, { cwd: workspace.cwd }),
+    ).rejects.toThrow(
+      new RegExp(`Zombie task detected: Task "${zombieTag}" was previously completed and deleted in Git history`),
     );
 
-    // Attempting to resolve TASK-99 must throw zombie detection error
-    await expect(
-      resolveTaskFile("TASK-99", { cwd: gitDir }),
-    ).rejects.toThrow(/Zombie task detected: Task "TASK-99" was previously completed and deleted in Git history/);
-
-    // Bypassing with allowZombie: true resolves the path
-    const resolved = await resolveTaskFile("TASK-99", { cwd: gitDir, allowZombie: true });
-    expect(resolved).toBe(zombieFile);
+    const resolved = await resolveTaskFile(zombieTag, {
+      cwd: workspace.cwd,
+      allowZombie: true,
+    });
+    expect(resolved).toBe(zombieArtifact.filepath);
   });
 
   // @verifies ADR-6, RULE-21
   it("[ADR-6][RULE-21] should detect zombie tasks across active queue", async () => {
     const { detectZombieTasks } = await import("./index.ts");
 
-    // Initially no active tasks on disk
-    let zombies = await detectZombieTasks(gitDir);
+    let zombies = await detectZombieTasks(workspace.cwd);
     expect(zombies.length).toBe(0);
 
-    // Re-create deleted TASK-99 on disk
-    const zombieFile = join(gitDir, "resurrected.TASK-99.md");
-    await writeFile(
-      zombieFile,
-      `---
-depends_on: []
-links: []
----
+    await workspace.createTask({
+      id: 99,
+      slug: "resurrected",
+      context: "Zombie.",
+      criteria: ["Item"],
+    });
 
-# Context
-Zombie.
-
-# Acceptance Criteria
-
-- [ ] Item
-`,
-      "utf8",
-    );
-
-    zombies = await detectZombieTasks(gitDir);
+    zombies = await detectZombieTasks(workspace.cwd);
     expect(zombies.length).toBe(1);
     expect(zombies[0]?.id).toBe("99");
   });
 });
 
 describe("Task Completion - Planned Governance Enforcement (TASK-35)", () => {
-  let fixtureDir: string;
+  let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
-    fixtureDir = await mkdtemp(join(tmpdir(), "modie-planned-gov-test-"));
+    workspace = await createFixtureWorkspace("modie-planned-gov-test-");
   });
 
   afterEach(async () => {
-    await rm(fixtureDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
   // @verifies ADR-6, RULE-21, RULE-22
   it("[ADR-6][RULE-21][RULE-22] should reject task completion if a planned rule is incomplete", async () => {
-    const taskPath = join(fixtureDir, "planned-gov.TASK-101.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links: []
----
-
-# Context
-Planned governance test.
-
-# Planned Governance
-
-## Rules
-- [ ] Multi-branch collision guard
-
-# Acceptance Criteria
-- [x] Feature implementation done
-`,
-      "utf8",
-    );
+    const task = await workspace.createTask({
+      id: 101,
+      slug: "planned-gov",
+      context: "Planned governance test.",
+      plannedGovernance: {
+        rules: ["Multi-branch collision guard"],
+      },
+      criteria: [{ text: "Feature implementation done", completed: true }],
+    });
 
     await expect(
-      completeTask("TASK-101", { cwd: fixtureDir, deleteArtifact: false }),
+      completeTask(task.tag, { cwd: workspace.cwd, deleteArtifact: false }),
     ).rejects.toThrow(/Planned rule "Multi-branch collision guard" is not marked completed/);
   });
 
   // @verifies ADR-6, RULE-21, RULE-22
   it("[ADR-6][RULE-21][RULE-22] should reject task completion if planned rule is checked but does not exist on disk", async () => {
-    const taskPath = join(fixtureDir, "planned-gov.TASK-102.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links: []
----
-
-# Context
-Planned governance test.
-
-# Planned Governance
-
-## Rules
-- [x] Multi-branch collision guard
-
-# Acceptance Criteria
-- [x] Feature implementation done
-`,
-      "utf8",
-    );
+    const task = await workspace.createTask({
+      id: 102,
+      slug: "planned-gov",
+      context: "Planned governance test.",
+      plannedGovernance: {
+        rules: [{ text: "Multi-branch collision guard", completed: true }],
+      },
+      criteria: [{ text: "Feature implementation done", completed: true }],
+    });
 
     await expect(
-      completeTask("TASK-102", { cwd: fixtureDir, deleteArtifact: false }),
+      completeTask(task.tag, { cwd: workspace.cwd, deleteArtifact: false }),
     ).rejects.toThrow(/Planned rule "Multi-branch collision guard" was not found on disk/);
   });
 
   // @verifies ADR-6, RULE-21, RULE-22
   it("[ADR-6][RULE-21][RULE-22] should succeed when planned rule exists on disk and is checked", async () => {
-    const taskPath = join(fixtureDir, "planned-gov.TASK-103.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links: []
----
+    const rule88Tag = makeTestTag("RULE", 88);
+    const task = await workspace.createTask({
+      id: 103,
+      slug: "planned-gov",
+      context: "Planned governance test.",
+      plannedGovernance: {
+        rules: [{ text: `multi-branch-collision-guard.${rule88Tag}.md`, completed: true }],
+      },
+      criteria: [{ text: "Feature implementation done", completed: true }],
+    });
 
-# Context
-Planned governance test.
+    await workspace.createRule({
+      id: 88,
+      slug: "multi-branch-collision-guard",
+      body: "A test rule invariant statement.",
+    });
 
-# Planned Governance
-
-## Rules
-- [x] multi-branch-collision-guard.RULE-88.md
-
-# Acceptance Criteria
-- [x] Feature implementation done
-`,
-      "utf8",
-    );
-
-    // Create the planned rule on disk
-    const rulePath = join(fixtureDir, "multi-branch-collision-guard.RULE-88.md");
-    await writeFile(
-      rulePath,
-      `---
-links: []
----
-
-A test rule invariant statement.
-`,
-      "utf8",
-    );
-
-    const result = await completeTask("TASK-103", {
-      cwd: fixtureDir,
+    const result = await completeTask(task.tag, {
+      cwd: workspace.cwd,
       deleteArtifact: false,
     });
     expect(result.taskId).toBe("103");
@@ -845,34 +578,21 @@ A test rule invariant statement.
 
   // @verifies ADR-6, RULE-21, RULE-22
   it("[ADR-6][RULE-21][RULE-22] should bypass planned governance enforcement when --force is used", async () => {
-    const taskPath = join(fixtureDir, "planned-gov.TASK-104.md");
-    await writeFile(
-      taskPath,
-      `---
-depends_on: []
-links: []
----
+    const task = await workspace.createTask({
+      id: 104,
+      slug: "planned-gov",
+      context: "Planned governance test.",
+      plannedGovernance: {
+        rules: ["Unfinished rule"],
+      },
+      criteria: [{ text: "Feature implementation done", completed: true }],
+    });
 
-# Context
-Planned governance test.
-
-# Planned Governance
-
-## Rules
-- [ ] Unfinished rule
-
-# Acceptance Criteria
-- [x] Feature implementation done
-`,
-      "utf8",
-    );
-
-    const result = await completeTask("TASK-104", {
-      cwd: fixtureDir,
+    const result = await completeTask(task.tag, {
+      cwd: workspace.cwd,
       force: true,
       deleteArtifact: false,
     });
     expect(result.taskId).toBe("104");
   });
 });
-
