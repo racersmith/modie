@@ -1,43 +1,28 @@
 /**
  * Unit and integration tests for ADR supersession and bidirectional frontmatter links.
  * Tagged per ADR-7 and RULE-23 for universal rule verification.
- * @verifies ADR-4, RULE-4, RULE-14, RULE-31
+ * @verifies ADR-4, RULE-4, RULE-14, RULE-31, RULE-34
  */
 
 import { describe, expect, it } from "bun:test";
-import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { createAdr } from "./creation.ts";
 import { findArtifactReferences } from "../query/references.ts";
+import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
 import { archiveAdr } from "./archive.ts";
+import { createAdr } from "./creation.ts";
 
-describe("Core ADR Creation - Supersession & Bidirectional Frontmatter (RULE-4, RULE-14, RULE-31)", () => {
-  // @verifies ADR-4, RULE-4, RULE-14
-  it("[ADR-4][RULE-4][RULE-14] should create an ADR with supersedes and update predecessor ADR frontmatter bidirectionally", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-adr-supersession-test-"));
-    const adrsDir = join(tempDir, ".adrs");
-    await mkdir(adrsDir, { recursive: true });
+describe("Core ADR Creation - Supersession & Bidirectional Frontmatter (RULE-4, RULE-14, RULE-31, RULE-34)", () => {
+  // @verifies ADR-4, RULE-4, RULE-14, RULE-34
+  it("[ADR-4][RULE-4][RULE-14][RULE-34] should create an ADR with supersedes and update predecessor ADR frontmatter bidirectionally", async () => {
+    const workspace = await createFixtureWorkspace("adr-supersession-");
 
     // 1. Create predecessor ADR-1
-    const adr1Path = join(adrsDir, "single-database.ADR-1.md");
-    await writeFile(
-      adr1Path,
-      `---
-links: []
----
-
-# Context
-Initial single database design.
-
-# Alternatives Considered
-None.
-
-# Decision
-Use SQLite.
-`,
-      "utf8",
-    );
+    const adr1 = await workspace.createAdr({
+      id: 1,
+      slug: "single-database",
+      context: "Initial single database design.",
+      alternatives: "None.",
+      decision: "Use SQLite.",
+    });
 
     // 2. Create superseding ADR-2 with supersedes option
     const result = await createAdr({
@@ -45,95 +30,79 @@ Use SQLite.
       context: "Need horizontal scale.",
       alternatives: "Stick with single database.",
       decision: "Adopt distributed storage.",
-      supersedes: ["ADR-1"],
-      cwd: tempDir,
+      supersedes: [adr1.tag],
+      cwd: workspace.cwd,
     });
 
-    expect(result.tag).toBe("ADR-2");
-    expect(result.artifact.supersedes).toEqual(["ADR-1"]);
+    const expectedAdr2Tag = makeTestTag("ADR", 2);
+    expect(result.tag).toBe(expectedAdr2Tag);
+    expect(result.artifact.supersedes).toEqual([adr1.tag]);
 
     // 3. Verify new ADR-2 content has supersedes in frontmatter
-    const adr2Content = await readFile(result.filepath, "utf8");
-    expect(adr2Content).toContain("supersedes:\n  - ADR-1");
+    const adr2Content = await workspace.readFile(result.filepath);
+    expect(adr2Content).toContain(`supersedes:\n  - ${adr1.tag}`);
 
     // 4. Verify predecessor ADR-1 has been updated with superseded_by: - ADR-2
-    const adr1UpdatedContent = await readFile(adr1Path, "utf8");
-    expect(adr1UpdatedContent).toContain("superseded_by:\n  - ADR-2");
+    const adr1UpdatedContent = await workspace.readFile(adr1.filepath);
+    expect(adr1UpdatedContent).toContain(`superseded_by:\n  - ${expectedAdr2Tag}`);
 
     // 5. Verify references query on ADR-1 detects supersession and does not treat ADR-2's supersedes as a blocking dependent
-    const refs = await findArtifactReferences("ADR-1", { cwd: tempDir });
+    const refs = await findArtifactReferences(adr1.tag, { cwd: workspace.cwd });
     expect(refs.archivalGuard.canArchive).toBe(true);
     expect(refs.archivalGuard.blockingCount).toBe(0);
 
     // 6. Predecessor can now be safely archived per RULE-31
-    const archiveResult = await archiveAdr("ADR-1", { cwd: tempDir });
-    expect(archiveResult.archivedFilename).toBe("single-database.ADR-1.ARCHIVED.md");
+    const archiveResult = await archiveAdr(adr1.tag, { cwd: workspace.cwd });
+    expect(archiveResult.archivedFilename).toBe(`single-database.${adr1.tag}.ARCHIVED.md`);
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-4
-  it("[RULE-4] should append without duplication when superseded_by already exists on predecessor", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-adr-supersession-multi-test-"));
-    const adrsDir = join(tempDir, ".adrs");
-    await mkdir(adrsDir, { recursive: true });
+  // @verifies RULE-4, RULE-34
+  it("[RULE-4][RULE-34] should append without duplication when superseded_by already exists on predecessor", async () => {
+    const workspace = await createFixtureWorkspace("adr-supersession-multi-");
 
-    const adr1Path = join(adrsDir, "initial-concept.ADR-1.md");
-    await writeFile(
-      adr1Path,
-      `---
-links: []
-superseded_by:
-  - ADR-2
----
-
-# Context
-Initial concept.
-`,
-      "utf8",
-    );
-
-    await writeFile(
-      join(adrsDir, "second-concept.ADR-2.md"),
-      `---
-links: []
-supersedes:
-  - ADR-1
----
-
-# Context
-Second concept.
-`,
-      "utf8",
-    );
-
-    // Create ADR-3 which also supersedes ADR-1
-    await createAdr({
-      title: "Modular Subsystem Architecture",
-      supersedes: "ADR-1",
-      cwd: tempDir,
+    const adr2Tag = makeTestTag("ADR", 2);
+    const adr1 = await workspace.createAdr({
+      id: 1,
+      slug: "initial-concept",
+      superseded_by: [adr2Tag],
+      context: "Initial concept.",
     });
 
-    const adr1Updated = await readFile(adr1Path, "utf8");
-    expect(adr1Updated).toContain("superseded_by:\n  - ADR-2\n  - ADR-3");
+    await workspace.createAdr({
+      id: 2,
+      slug: "second-concept",
+      supersedes: [adr1.tag],
+      context: "Second concept.",
+    });
 
-    await rm(tempDir, { recursive: true, force: true });
+    // Create ADR-3 which also supersedes ADR-1
+    const result = await createAdr({
+      title: "Modular Subsystem Architecture",
+      supersedes: adr1.tag,
+      cwd: workspace.cwd,
+    });
+
+    const adr1Updated = await workspace.readFile(adr1.filepath);
+    expect(adr1Updated).toContain(`superseded_by:\n  - ${adr2Tag}\n  - ${result.tag}`);
+
+    await workspace.cleanup();
   });
 
-  // @verifies RULE-14
-  it("[RULE-14] should reject supersedes targeting a non-ADR artifact", async () => {
-    const tempDir = await mkdtemp(join(tmpdir(), "modie-adr-supersession-invalid-"));
-    const adrsDir = join(tempDir, ".adrs");
-    await mkdir(adrsDir, { recursive: true });
+  // @verifies RULE-14, RULE-34
+  it("[RULE-14][RULE-34] should reject supersedes targeting a non-ADR artifact", async () => {
+    const workspace = await createFixtureWorkspace("adr-supersession-invalid-");
+    const ruleTag = makeTestTag("RULE", 1);
 
     expect(
       createAdr({
         title: "Invalid Supersedes",
-        supersedes: ["RULE-1"],
-        cwd: tempDir,
+        supersedes: [ruleTag],
+        cwd: workspace.cwd,
       }),
     ).rejects.toThrow("Invalid supersedes target");
 
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 });
