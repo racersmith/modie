@@ -44,7 +44,9 @@ describe("Core ADR Creation - Supersession & Bidirectional Frontmatter (RULE-4, 
 
     // 4. Verify predecessor ADR-1 has been updated with superseded_by: - ADR-2
     const adr1UpdatedContent = await workspace.readFile(adr1.filepath);
-    expect(adr1UpdatedContent).toContain(`superseded_by:\n  - ${expectedAdr2Tag}`);
+    expect(adr1UpdatedContent).toContain(
+      `superseded_by:\n  - ${expectedAdr2Tag}`,
+    );
 
     // 5. Verify references query on ADR-1 detects supersession and does not treat ADR-2's supersedes as a blocking dependent
     const refs = await findArtifactReferences(adr1.tag, { cwd: workspace.cwd });
@@ -53,7 +55,9 @@ describe("Core ADR Creation - Supersession & Bidirectional Frontmatter (RULE-4, 
 
     // 6. Predecessor can now be safely archived per RULE-31
     const archiveResult = await archiveAdr(adr1.tag, { cwd: workspace.cwd });
-    expect(archiveResult.archivedFilename).toBe(`single-database.${adr1.tag}.ARCHIVED.md`);
+    expect(archiveResult.archivedFilename).toBe(
+      `single-database.${adr1.tag}.ARCHIVED.md`,
+    );
 
     await workspace.cleanup();
   });
@@ -85,7 +89,9 @@ describe("Core ADR Creation - Supersession & Bidirectional Frontmatter (RULE-4, 
     });
 
     const adr1Updated = await workspace.readFile(adr1.filepath);
-    expect(adr1Updated).toContain(`superseded_by:\n  - ${adr2Tag}\n  - ${result.tag}`);
+    expect(adr1Updated).toContain(
+      `superseded_by:\n  - ${adr2Tag}\n  - ${result.tag}`,
+    );
 
     await workspace.cleanup();
   });
