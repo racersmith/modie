@@ -7,8 +7,6 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { captureCli, createTestWorkspace } from "../../test-utils.ts";
 
 describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31, RULE-34)", () => {
@@ -53,13 +51,10 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
       "✓ Archived RULE RULE-TEST-5: obsolete-pattern.RULE-TEST-5.ARCHIVED.md",
     );
 
-    const existsOriginal = await readFile(rule.filepath, "utf8").catch(() => null);
-    expect(existsOriginal).toBeNull();
+    const existsOriginal = await workspace.fileExists(rule);
+    expect(existsOriginal).toBe(false);
 
-    const existsArchived = await readFile(
-      join(workspace.cwd, ".modie/rules/obsolete-pattern.RULE-TEST-5.ARCHIVED.md"),
-      "utf8",
-    );
+    const existsArchived = await workspace.readFile(stdout);
     expect(existsArchived).toContain("Obsolete pattern invariant.");
 
     await workspace.cleanup();

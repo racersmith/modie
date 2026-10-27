@@ -13,11 +13,11 @@ Enhance createFixtureWorkspace and test architecture utilities with encapsulated
 
 # Acceptance Criteria
 
-- [ ] Add encapsulated mkdir, resolve, and remove helpers to FixtureWorkspace and enhance readFile / fileExists / readJson to auto-trim paths and accept stdout output directly
-- [ ] Optimize workspace.initGit with high-speed test configs (gc.auto=0, core.compression=0, commit.gpgsign=false, core.preloadindex=true)
-- [ ] Modernize MCP server subprocess tests (src/interfaces/mcp/mcp.test.ts) and CLI test harness (src/interfaces/cli/test-utils.ts) to native Bun.spawn, removing node:child_process imports and event listener boilerplate
-- [ ] Modernize CLI archive test suites (adr-archive.test.ts, rule-archive.test.ts, archive.test.ts) to use workspace.readFile(stdout) directly, removing node:fs/promises and node:path imports
-- [ ] Modernize governance creation test suites (adr-creation.test.ts, rule-creation.test.ts) to use workspace.mkdir and workspace.resolve, removing node:fs/promises and node:path imports
-- [ ] Modernize file deletion across core and CLI test suites (vcs.test.ts, task-branching.test.ts, task-query.test.ts, task-completion.test.ts, task-branching-cli.test.ts) to use workspace.remove(artifact)
-- [ ] Modernize remaining join(workspace.cwd, ...) usages across core test suites to use workspace.resolve
-- [ ] Verify all test suites pass with zero regressions and zero false-positive citations during reference queries
+- [x] Add encapsulated mkdir, resolve, and remove helpers to FixtureWorkspace and enhance readFile / fileExists / readJson to auto-trim paths and accept stdout output directly
+- [x] Optimize workspace.initGit with high-speed test configs (gc.auto=0, core.compression=0, commit.gpgsign=false, core.preloadindex=true)
+- [x] Modernize MCP server subprocess tests (src/interfaces/mcp/mcp.test.ts) and CLI test harness (src/interfaces/cli/test-utils.ts) to native Bun.spawn, removing node:child_process imports and event listener boilerplate
+- [x] Modernize CLI archive test suites (adr-archive.test.ts, rule-archive.test.ts, archive.test.ts) to use workspace.readFile(stdout) directly, removing node:fs/promises and node:path imports
+- [x] Modernize governance creation test suites (adr-creation.test.ts, rule-creation.test.ts) to use workspace.mkdir and workspace.resolve, removing node:fs/promises and node:path imports
+- [x] Modernize file deletion across core and CLI test suites (vcs.test.ts, task-branching.test.ts, task-query.test.ts, task-completion.test.ts, task-branching-cli.test.ts) to use workspace.remove(artifact)
+- [x] Modernize remaining join(workspace.cwd, ...) usages across core test suites to use workspace.resolve
+- [x] Verify all test suites pass with zero regressions and zero false-positive citations during reference queries

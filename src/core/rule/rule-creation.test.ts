@@ -5,8 +5,6 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { mkdir } from "node:fs/promises";
-import { join } from "node:path";
 import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
 import {
   createRule,
@@ -84,8 +82,7 @@ describe("Rule Creation - Frontmatter Validation & Ancestry (RULE-13, RULE-16, R
     });
 
     // Rule scoped in a sub-package (e.g. workspace.cwd/src/interfaces)
-    const ruleScope = join(workspace.cwd, "src", "interfaces");
-    await mkdir(ruleScope, { recursive: true });
+    const ruleScope = await workspace.mkdir("src/interfaces");
 
     // ADR is at workspace.cwd (root), Rule is at workspace.cwd/src/interfaces -> Root is ancestor of sub-package
     await expect(
@@ -124,8 +121,7 @@ describe("Rule Creation - Frontmatter Validation & Ancestry (RULE-13, RULE-16, R
     });
 
     // Rule scoped in workspace.cwd/src/interfaces
-    const interfacesRuleScope = join(workspace.cwd, "src", "interfaces");
-    await mkdir(interfacesRuleScope, { recursive: true });
+    const interfacesRuleScope = await workspace.mkdir("src/interfaces");
 
     await expect(
       validateRuleAncestry(interfacesRuleScope, [adr.tag], workspace.cwd),
@@ -146,7 +142,7 @@ describe("Rule Creation - Frontmatter Validation & Ancestry (RULE-13, RULE-16, R
     });
 
     // Rule scoped at workspace.cwd/src/interfaces (parent of CLI)
-    const interfacesRuleScope = join(workspace.cwd, "src", "interfaces");
+    const interfacesRuleScope = workspace.resolve("src/interfaces");
 
     await expect(
       validateRuleAncestry(interfacesRuleScope, [adr.tag], workspace.cwd),
@@ -204,7 +200,7 @@ describe("Rule Creation - Execution & Disk Writing (RULE-1, RULE-3, RULE-8, RULE
     });
 
     expect(result.relativePath).toBe(`flat-invariant-rule.${expectedRule1Tag}.md`);
-    expect(result.filepath).toBe(join(workspace.cwd, `flat-invariant-rule.${expectedRule1Tag}.md`));
+    expect(result.filepath).toBe(workspace.resolve(`flat-invariant-rule.${expectedRule1Tag}.md`));
 
     const onDisk = await workspace.readFile(result.filepath);
     expect(onDisk).toBe("Flat placement rule assertion.\n");
