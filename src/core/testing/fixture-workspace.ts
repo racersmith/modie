@@ -16,6 +16,7 @@ const execFileAsync = promisify(execFile);
  * Prevents literal tag strings from appearing in test source code, ensuring dogfooding citation
  * scans never match test fixture data as active repository artifacts while maintaining 100%
  * runtime parity with production tag formats.
+ * @satisfies RULE-35
  */
 export function makeTestTag(subtype: string, id: number | string): string {
   return `${subtype.toUpperCase()}-${id}`;

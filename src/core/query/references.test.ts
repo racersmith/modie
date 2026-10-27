@@ -292,8 +292,8 @@ describe("isTestVerificationCitation - Rule Verification Tag Disambiguation (ADR
     ).toBe(true);
   });
 
-  // @verifies RULE-23, ADR-7
-  it("[RULE-23][ADR-7] should reject test fixture data, invocations, and raw assertions", () => {
+  // @verifies RULE-23, RULE-35, ADR-7
+  it("[RULE-23][RULE-35][ADR-7] should reject test fixture data, invocations, and raw assertions", () => {
     // Array literals inside CLI calls or helpers
     expect(
       isTestVerificationCitation('const { exitCode } = await captureCli(["find", "RULE-1"]);', "RULE-1"),
