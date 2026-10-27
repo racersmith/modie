@@ -33,7 +33,7 @@ Parent modernization task coordinating the refactoring of 12 test suites across 
 
 # Acceptance Criteria
 
-- [ ] Complete core task creation test suite modernization (TASK-43-1)
+- [x] Complete core task creation test suite modernization (TASK-43-1)
 - [ ] Complete core task primitive test suite modernization (TASK-43-2)
 - [ ] Complete core rule primitive test suite modernization (TASK-43-3)
 - [ ] Complete core watermark resolver test suite modernization (TASK-43-4)
