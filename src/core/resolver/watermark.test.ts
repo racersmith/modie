@@ -1,7 +1,5 @@
 /**
  * Unit tests for the task ID watermark resolver and active scanner.
- * Complies with ADR-1, ADR-2, ADR-6, ADR-7, ADR-9, RULE-1, RULE-21, RULE-23, RULE-33, RULE-34, and RULE-35.
- * @verifies ADR-1, ADR-2, ADR-6, ADR-7, ADR-9, RULE-1, RULE-21, RULE-23, RULE-33, RULE-34, RULE-35
  */
 
 import { describe, expect, it } from "bun:test";
@@ -340,7 +338,10 @@ describe("Watermark Resolver - Integrated Workspace Verification (ADR-6, ADR-9, 
     expect(liveDetails.fullTaskId).toBe(makeTestTag("TASK", 4));
 
     // Resolving for trunk dev branch
-    const trunkDetails = await resolveWatermark({ branch: "dev", cwd: workspace.cwd });
+    const trunkDetails = await resolveWatermark({
+      branch: "dev",
+      cwd: workspace.cwd,
+    });
     expect(trunkDetails.strategy).toBe("trunk");
     expect(trunkDetails.nextId).toBe("4");
     expect(trunkDetails.fullTaskId).toBe(makeTestTag("TASK", 4));
@@ -392,14 +393,20 @@ describe("Watermark Resolver - Multi-Subtype Monotonic Allocation (ADR-1, ADR-2,
     await workspace.remove(rule2);
     await workspace.gitCommit("chore: remove rule 2");
 
-    const ruleDetails = await resolveWatermark({ subtype: "RULE", cwd: workspace.cwd });
+    const ruleDetails = await resolveWatermark({
+      subtype: "RULE",
+      cwd: workspace.cwd,
+    });
     expect(ruleDetails.subtype).toBe("RULE");
     expect(ruleDetails.nextId).toBe("3");
     expect(ruleDetails.tag).toBe(makeTestTag("RULE", 3));
 
     // Active ADR 1
     await workspace.createAdr({ id: 1, slug: "first-adr" });
-    const adrDetails = await resolveWatermark({ subtype: "ADR", cwd: workspace.cwd });
+    const adrDetails = await resolveWatermark({
+      subtype: "ADR",
+      cwd: workspace.cwd,
+    });
     expect(adrDetails.subtype).toBe("ADR");
     expect(adrDetails.nextId).toBe("2");
     expect(adrDetails.tag).toBe(makeTestTag("ADR", 2));

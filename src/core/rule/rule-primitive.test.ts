@@ -1,11 +1,13 @@
 /**
  * Unit tests for RULE primitives and template rendering.
- * Complies with ADR-7, RULE-3, RULE-11, RULE-13, RULE-23, RULE-34, and RULE-35.
- * @verifies ADR-7, RULE-3, RULE-11, RULE-13, RULE-23, RULE-34, RULE-35
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { createFixtureWorkspace, makeTestTag, type FixtureWorkspace } from "../testing/index.ts";
+import {
+  createFixtureWorkspace,
+  makeTestTag,
+  type FixtureWorkspace,
+} from "../testing/index.ts";
 import { renderRuleMarkdown, validateRuleLinks } from "./template.ts";
 
 describe("RULE Primitive - Frontmatter Links Validation (RULE-13, RULE-35)", () => {
@@ -37,8 +39,12 @@ describe("RULE Primitive - Frontmatter Links Validation (RULE-13, RULE-35)", () 
       `Invalid rule link target: "${invalidRule}". A RULE artifact's frontmatter links must exclusively reference ADR artifacts (${rule13}).`,
     );
     expect(() => validateRuleLinks([invalidTask])).toThrow(new RegExp(rule13));
-    expect(() => validateRuleLinks([validAdr, invalidRule2])).toThrow(new RegExp(rule13));
-    expect(() => validateRuleLinks([invalidNonTag])).toThrow(new RegExp(rule13));
+    expect(() => validateRuleLinks([validAdr, invalidRule2])).toThrow(
+      new RegExp(rule13),
+    );
+    expect(() => validateRuleLinks([invalidNonTag])).toThrow(
+      new RegExp(rule13),
+    );
   });
 });
 

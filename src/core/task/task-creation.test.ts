@@ -1,11 +1,13 @@
 /**
  * Integration and unit tests for the core task creation service.
- * Complies with ADR-6, ADR-7, ADR-9, RULE-1, RULE-6, RULE-8, RULE-12, RULE-15, RULE-18, RULE-21, RULE-22, RULE-23, RULE-25, RULE-34, and RULE-35.
- * @verifies ADR-6, ADR-7, ADR-9, RULE-1, RULE-6, RULE-8, RULE-12, RULE-15, RULE-18, RULE-21, RULE-22, RULE-23, RULE-25, RULE-34, RULE-35
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { createFixtureWorkspace, makeTestTag, type FixtureWorkspace } from "../testing/index.ts";
+import {
+  createFixtureWorkspace,
+  makeTestTag,
+  type FixtureWorkspace,
+} from "../testing/index.ts";
 import * as TaskPrimitive from "./index.ts";
 import {
   createTask,
@@ -17,28 +19,40 @@ import {
 describe("Task Creation Service - Scope Directory & Subtype Placement (RULE-8)", () => {
   // @verifies RULE-8
   it("[RULE-8] should resolve default placement inside .modie/tasks container", () => {
-    const { normalizedScopeDir, targetDir } = resolveTaskDirectories("/app/src/core", true);
+    const { normalizedScopeDir, targetDir } = resolveTaskDirectories(
+      "/app/src/core",
+      true,
+    );
     expect(normalizedScopeDir).toBe("/app/src/core");
     expect(targetDir).toBe("/app/src/core/.modie/tasks");
   });
 
   // @verifies RULE-8
   it("[RULE-8] should resolve flat placement when useSubtypeContainer is false", () => {
-    const { normalizedScopeDir, targetDir } = resolveTaskDirectories("/app/src/core", false);
+    const { normalizedScopeDir, targetDir } = resolveTaskDirectories(
+      "/app/src/core",
+      false,
+    );
     expect(normalizedScopeDir).toBe("/app/src/core");
     expect(targetDir).toBe("/app/src/core");
   });
 
   // @verifies RULE-8
   it("[RULE-8] should normalize scope to parent when .modie/tasks directory is explicitly passed", () => {
-    const { normalizedScopeDir, targetDir } = resolveTaskDirectories("/app/src/core/.modie/tasks", true);
+    const { normalizedScopeDir, targetDir } = resolveTaskDirectories(
+      "/app/src/core/.modie/tasks",
+      true,
+    );
     expect(normalizedScopeDir).toBe("/app/src/core");
     expect(targetDir).toBe("/app/src/core/.modie/tasks");
   });
 
   // @verifies RULE-8
   it("[RULE-8] should normalize scope to parent when legacy .tasks directory is explicitly passed", () => {
-    const { normalizedScopeDir, targetDir } = resolveTaskDirectories("/app/src/core/.tasks", true);
+    const { normalizedScopeDir, targetDir } = resolveTaskDirectories(
+      "/app/src/core/.tasks",
+      true,
+    );
     expect(normalizedScopeDir).toBe("/app/src/core");
     expect(targetDir).toBe("/app/src/core/.tasks");
   });
@@ -150,8 +164,12 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     expect(result.artifact.title).toBe(testTitle);
     expect(result.artifact.slug).toBe("task-service-integration-verification");
     expect(result.artifact.id).toBe("1");
-    expect(result.filename).toBe(`task-service-integration-verification.${expectedTaskTag}.md`);
-    expect(result.relativePath).toContain(`.modie/tasks/task-service-integration-verification.${expectedTaskTag}.md`);
+    expect(result.filename).toBe(
+      `task-service-integration-verification.${expectedTaskTag}.md`,
+    );
+    expect(result.relativePath).toContain(
+      `.modie/tasks/task-service-integration-verification.${expectedTaskTag}.md`,
+    );
 
     // Verify file was written to disk and can be read
     const fileContents = await workspace.readFile(result.filepath);
@@ -163,11 +181,16 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     expect(fileContents).toContain(`- ${linkRule25}`);
     expect(fileContents).toContain("# Context");
     expect(fileContents).toContain("# Acceptance Criteria");
-    expect(fileContents).toContain("- [ ] Create task file in .tasks directory");
+    expect(fileContents).toContain(
+      "- [ ] Create task file in .tasks directory",
+    );
     expect(fileContents).toContain("- [ ] Verify valid frontmatter parsing");
 
     // Roundtrip verification using TaskPrimitive parser
-    const parsed = TaskPrimitive.parseTaskMarkdown(fileContents, result.filepath);
+    const parsed = TaskPrimitive.parseTaskMarkdown(
+      fileContents,
+      result.filepath,
+    );
     expect(parsed.id).toBe(result.artifact.id);
     expect(parsed.slug).toBe("task-service-integration-verification");
     expect(parsed.depends_on).toEqual([depTask3, depTask4]);
@@ -193,7 +216,9 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
 
     expect(result.watermark.strategy).toBe("subtask");
     expect(result.artifact.id).toBe(expectedSubtaskId);
-    expect(result.filename).toBe(`subtask-under-task-5.${expectedSubtaskTag}.md`);
+    expect(result.filename).toBe(
+      `subtask-under-task-5.${expectedSubtaskTag}.md`,
+    );
   });
 
   // @verifies ADR-9, RULE-34, RULE-35
