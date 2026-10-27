@@ -1,28 +1,39 @@
 /**
  * Integration and unit tests for `modie task check` and `modie task complete`.
- * Tagged per ADR-7 and RULE-23 for universal rule verification.
- * @verifies ADR-6, RULE-21, RULE-22, RULE-25, RULE-27, RULE-34
  */
 
-import { describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
   captureCli,
   createTestWorkspace,
   makeTestTag,
+  type TestWorkspace,
 } from "../../test-utils.ts";
 
 const execFileAsync = promisify(execFile);
 
-describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE-27, RULE-34)", () => {
-  // @verifies RULE-22, RULE-25, RULE-27, RULE-34
-  it("[RULE-22][RULE-25][RULE-27][RULE-34] should check off an item, emit file path to stdout and status to stderr", async () => {
-    const workspace = await createTestWorkspace("cli-check-");
+describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE-27, RULE-34, RULE-35)", () => {
+  let workspace: TestWorkspace;
+
+  beforeEach(async () => {
+    workspace = await createTestWorkspace("cli-check-");
+  });
+
+  afterEach(async () => {
+    await workspace.cleanup();
+  });
+
+  // @verifies RULE-22, RULE-25, RULE-27, RULE-34, RULE-35
+  it("[RULE-22][RULE-25][RULE-27][RULE-34][RULE-35] should check off an item, emit file path to stdout and status to stderr", async () => {
+    const linkAdr = makeTestTag("ADR", 6);
+    const linkRule = makeTestTag("RULE", 22);
+
     const task = await workspace.createTask({
       id: 200,
       slug: "cli-check-test",
-      links: ["ADR-6", "RULE-22"],
+      links: [linkAdr, linkRule],
       context: "Test task for CLI check.",
       criteria: [
         "First item to check",
@@ -48,13 +59,10 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
     const updated = await workspace.readFile(task);
     expect(updated).toContain("- [x] First item to check");
     expect(updated).toContain("- [ ] Second item to check");
-
-    await workspace.cleanup();
   });
 
   // @verifies RULE-22, RULE-27, RULE-34
   it("[RULE-22][RULE-27][RULE-34] should emit machine JSON to stdout when --json is passed", async () => {
-    const workspace = await createTestWorkspace("cli-check-json-");
     const task = await workspace.createTask({
       id: 201,
       slug: "cli-json",
@@ -82,13 +90,10 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
     expect(stderr).toContain(
       `✓ All acceptance criteria for ${task.tag} are satisfied!`,
     );
-
-    await workspace.cleanup();
   });
 
   // @verifies RULE-22, RULE-27, RULE-34
   it("[RULE-22][RULE-27][RULE-34] should support unchecking an item with -u / --uncheck", async () => {
-    const workspace = await createTestWorkspace("cli-uncheck-");
     const task = await workspace.createTask({
       id: 202,
       slug: "cli-uncheck",
@@ -112,12 +117,10 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
 
     const updated = await workspace.readFile(task);
     expect(updated).toContain("- [ ] Already checked item");
-
-    await workspace.cleanup();
   });
 
-  // @verifies RULE-27
-  it("[RULE-27] should report error to stderr when --item flag is missing", async () => {
+  // @verifies RULE-27, RULE-35
+  it("[RULE-27][RULE-35] should report error to stderr when --item flag is missing", async () => {
     const dummyTag = makeTestTag("TASK", "7-2");
     const { exitCode, stdout, stderr } = await captureCli([
       "task",
@@ -131,7 +134,6 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
 
   // @verifies RULE-27, RULE-34
   it("[RULE-27][RULE-34] should report error to stderr when task identifier is missing", async () => {
-    const workspace = await createTestWorkspace("check-no-id-");
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "task",
       "check",
@@ -141,18 +143,30 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("Error: Missing required task identifier");
-    await workspace.cleanup();
   });
 });
 
-describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, RULE-25, RULE-27, RULE-34)", () => {
-  // @verifies RULE-21, RULE-22, RULE-27, RULE-34
-  it("[RULE-21][RULE-22][RULE-27][RULE-34] should reject completion with error to stderr when criteria are incomplete", async () => {
-    const workspace = await createTestWorkspace("cli-complete-err-");
+describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, RULE-25, RULE-27, RULE-34, RULE-35, ADR-6)", () => {
+  let workspace: TestWorkspace;
+
+  beforeEach(async () => {
+    workspace = await createTestWorkspace("cli-complete-");
+  });
+
+  afterEach(async () => {
+    await workspace.cleanup();
+  });
+
+  // @verifies RULE-21, RULE-22, RULE-27, RULE-34, RULE-35, ADR-6
+  it("[RULE-21][RULE-22][RULE-27][RULE-34][RULE-35][ADR-6] should reject completion with error to stderr when criteria are incomplete", async () => {
+    const linkAdr = makeTestTag("ADR", 6);
+    const linkRule21 = makeTestTag("RULE", 21);
+    const linkRule22 = makeTestTag("RULE", 22);
+
     const task = await workspace.createTask({
       id: 300,
       slug: "incomplete-task",
-      links: ["ADR-6", "RULE-21", "RULE-22"],
+      links: [linkAdr, linkRule21, linkRule22],
       context: "Incomplete task.",
       criteria: ["Pending deliverable"],
     });
@@ -171,16 +185,18 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
 
     // File must NOT be deleted
     expect(await workspace.fileExists(task)).toBe(true);
-    await workspace.cleanup();
   });
 
-  // @verifies RULE-21, RULE-22, RULE-25, RULE-27, RULE-34
-  it("[RULE-21][RULE-22][RULE-25][RULE-27][RULE-34] should complete task and delete file when all criteria are satisfied", async () => {
-    const workspace = await createTestWorkspace("cli-complete-ok-");
+  // @verifies RULE-21, RULE-22, RULE-25, RULE-27, RULE-34, RULE-35, ADR-6
+  it("[RULE-21][RULE-22][RULE-25][RULE-27][RULE-34][RULE-35][ADR-6] should complete task and delete file when all criteria are satisfied", async () => {
+    const linkAdr = makeTestTag("ADR", 6);
+    const linkRule21 = makeTestTag("RULE", 21);
+    const linkRule22 = makeTestTag("RULE", 22);
+
     const task = await workspace.createTask({
       id: 301,
       slug: "complete-task",
-      links: ["ADR-6", "RULE-21", "RULE-22"],
+      links: [linkAdr, linkRule21, linkRule22],
       context: "Satisfied task.",
       criteria: [
         { text: "Completed deliverable", completed: true },
@@ -201,14 +217,12 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
       `✓ Completed task ${task.tag}: ${task.filename} (artifact deleted)`,
     );
 
-    // File MUST be deleted per RULE-21
+    // File MUST be deleted per task completion invariants
     expect(await workspace.fileExists(task)).toBe(false);
-    await workspace.cleanup();
   });
 
   // @verifies RULE-21, RULE-27, RULE-34
   it("[RULE-21][RULE-27][RULE-34] should support --force to bypass incomplete criteria", async () => {
-    const workspace = await createTestWorkspace("cli-force-");
     const task = await workspace.createTask({
       id: 302,
       slug: "force-task",
@@ -226,13 +240,10 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
     expect(exitCode).toBe(0);
     expect(stderr).toContain(`✓ Completed task ${task.tag}`);
     expect(await workspace.fileExists(task)).toBe(false);
-
-    await workspace.cleanup();
   });
 
   // @verifies RULE-21, RULE-27, RULE-34
   it("[RULE-21][RULE-27][RULE-34] should support --keep-file to retain artifact on disk", async () => {
-    const workspace = await createTestWorkspace("cli-keep-");
     const task = await workspace.createTask({
       id: 303,
       slug: "keep-task",
@@ -254,13 +265,10 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
 
     const content = await workspace.readFile(task);
     expect(content).toContain("- [x] Checked item");
-
-    await workspace.cleanup();
   });
 
   // @verifies RULE-27, RULE-34
   it("[RULE-27][RULE-34] should emit machine JSON to stdout when --json is passed", async () => {
-    const workspace = await createTestWorkspace("cli-complete-json-");
     const task = await workspace.createTask({
       id: 304,
       slug: "json-complete",
@@ -282,13 +290,10 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
     expect(parsed.taskId).toBe(task.id);
     expect(parsed.deleted).toBe(true);
     expect(parsed.criteriaCompleted).toBe(1);
-
-    await workspace.cleanup();
   });
 
   // @verifies ADR-6, RULE-21, RULE-27, RULE-34
   it("[ADR-6][RULE-21][RULE-27][RULE-34] should execute two-phase commit ceremony with -c / --commit", async () => {
-    const workspace = await createTestWorkspace("cli-commit-");
     await workspace.initGit();
 
     const task = await workspace.createTask({
@@ -325,13 +330,10 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
     const messages = logOut.trim().split("\n");
     expect(messages[0]).toBe(`chore(task): delete completed ${task.tag} artifact`);
     expect(messages[1]).toBe(`feat(${task.tag}): ${task.slug}`);
-
-    await workspace.cleanup();
   });
 
   // @verifies ADR-6, RULE-21, RULE-27, RULE-34
   it("[ADR-6][RULE-21][RULE-27][RULE-34] should support task finish alias for complete", async () => {
-    const workspace = await createTestWorkspace("cli-finish-");
     const task = await workspace.createTask({
       id: 306,
       slug: "finish-task",
@@ -350,13 +352,10 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
     expect(exitCode).toBe(0);
     expect(stderr).toContain(`✓ Completed task ${task.tag}`);
     expect(await workspace.fileExists(task)).toBe(false);
-
-    await workspace.cleanup();
   });
 
   // @verifies ADR-6, RULE-21, RULE-27, RULE-34
   it("[ADR-6][RULE-21][RULE-27][RULE-34] should reject completing a zombie task with error to stderr", async () => {
-    const workspace = await createTestWorkspace("cli-zombie-");
     await workspace.initGit();
 
     // Create and delete task in git
@@ -389,15 +388,22 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
     expect(stdout).toBe("");
     expect(stderr).toContain("Zombie task detected");
     expect(stderr).toContain(originalTask.tag);
-
-    await workspace.cleanup();
   });
 });
 
-describe("CLI Task Lifecycle - End-to-End Subprocess via bin.ts (RULE-34)", () => {
+describe("CLI Task Lifecycle - End-to-End Subprocess via bin.ts (RULE-21, RULE-22, RULE-25, RULE-27, RULE-34)", () => {
+  let workspace: TestWorkspace;
+
+  beforeEach(async () => {
+    workspace = await createTestWorkspace("cli-subproc-lifecycle-");
+  });
+
+  afterEach(async () => {
+    await workspace.cleanup();
+  });
+
   // @verifies RULE-21, RULE-22, RULE-25, RULE-27, RULE-34
   it("[RULE-21][RULE-22][RULE-25][RULE-27][RULE-34] should execute full check and complete lifecycle via bin.ts subprocess", async () => {
-    const workspace = await createTestWorkspace("cli-subproc-lifecycle-");
     await workspace.initGit();
 
     // 1. Create a task with two criteria inside isolated workspace
@@ -459,7 +465,5 @@ describe("CLI Task Lifecycle - End-to-End Subprocess via bin.ts (RULE-34)", () =
 
     // Verify deletion
     expect(await workspace.fileExists(taskPath)).toBe(false);
-
-    await workspace.cleanup();
   });
 });

@@ -1,13 +1,15 @@
 /**
  * Integration and unit tests for `modie task create`.
- * Tagged per ADR-7 and RULE-23 for universal rule verification.
- * Enforces RULE-1, RULE-15, RULE-18, RULE-25, RULE-27, RULE-34, ADR-1, ADR-6, ADR-9.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { createTestWorkspace, type TestWorkspace } from "../../test-utils.ts";
+import {
+  createTestWorkspace,
+  makeTestTag,
+  type TestWorkspace,
+} from "../../test-utils.ts";
 
-describe("CLI Task Creation - Execution & Stream Separation (RULE-25, RULE-27, RULE-34)", () => {
+describe("CLI Task Creation - Execution & Stream Separation (RULE-1, RULE-25, RULE-27, RULE-34, RULE-35, ADR-1, ADR-6, ADR-9)", () => {
   let workspace: TestWorkspace;
 
   beforeEach(async () => {
@@ -18,8 +20,12 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-25, RULE-27, R
     await workspace.cleanup();
   });
 
-  // @verifies RULE-1, RULE-25, RULE-27, RULE-34, ADR-1, ADR-6, ADR-9
-  it("[RULE-1][RULE-25][RULE-27][RULE-34][ADR-1][ADR-6][ADR-9] should create a task with machine path to stdout and status to stderr", async () => {
+  // @verifies RULE-1, RULE-25, RULE-27, RULE-34, RULE-35, ADR-1, ADR-6, ADR-9
+  it("[RULE-1][RULE-25][RULE-27][RULE-34][RULE-35][ADR-1][ADR-6][ADR-9] should create a task with machine path to stdout and status to stderr", async () => {
+    const depTask = makeTestTag("TASK", 1);
+    const linkAdr = makeTestTag("ADR", 1);
+    const linkRule = makeTestTag("RULE", 27);
+
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "task",
       "create",
@@ -29,9 +35,9 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-25, RULE-27, R
       "--context",
       "Verifying CLI stream output separation",
       "--depends-on",
-      "TASK-1",
+      depTask,
       "--links",
-      "ADR-1,RULE-27",
+      `${linkAdr},${linkRule}`,
       "--criteria",
       "Verify stdout path,Verify stderr log",
       "--branch",
@@ -41,7 +47,8 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-25, RULE-27, R
     expect(exitCode).toBe(0);
 
     // RULE-27: stdout must strictly contain the machine-parsable relative file path
-    expect(stdout).toContain(".modie/tasks/cli-stream-verification-task.TASK-");
+    expect(stdout).toContain(".modie/tasks/cli-stream-verification-task.");
+    expect(stdout).toContain(".md");
     expect(stdout).not.toContain("✓");
 
     // RULE-27: stderr must strictly contain human status and diagnostics
@@ -66,15 +73,16 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-25, RULE-27, R
     // RULE-27: stdout must be valid parseable JSON
     const parsed = JSON.parse(stdout);
     expect(parsed.slug).toBe("json-output-mode-task");
-    expect(parsed.filename).toContain("json-output-mode-task.TASK-");
+    expect(parsed.filename).toContain("json-output-mode-task.");
+    expect(parsed.filename).toContain(".md");
     expect(parsed.relativePath).toContain(".modie/tasks");
 
     // Status diagnostics emitted to stderr
     expect(stderr).toContain("✓ Created task");
   });
 
-  // @verifies ADR-9, RULE-34
-  it("[ADR-9][RULE-34] should support prefix tag via --prefix flag", async () => {
+  // @verifies ADR-9, RULE-34, RULE-35
+  it("[ADR-9][RULE-34][RULE-35] should support prefix tag via --prefix flag", async () => {
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "task",
       "create",
@@ -90,12 +98,13 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-25, RULE-27, R
 
     expect(exitCode).toBe(0);
     const parsed = JSON.parse(stdout);
+    const expectedTag = makeTestTag("TASK", "C1");
     expect(parsed.id).toBe("C1");
-    expect(parsed.filename).toBe("prefixed-cli-task.TASK-C1.md");
+    expect(parsed.filename).toBe(`prefixed-cli-task.${expectedTag}.md`);
   });
 });
 
-describe("CLI Task Creation - Validation & Errors (RULE-15, RULE-18, RULE-27)", () => {
+describe("CLI Task Creation - Validation & Errors (RULE-15, RULE-18, RULE-27, RULE-35)", () => {
   let workspace: TestWorkspace;
 
   beforeEach(async () => {
@@ -108,7 +117,10 @@ describe("CLI Task Creation - Validation & Errors (RULE-15, RULE-18, RULE-27)", 
 
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr when title is omitted", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["task", "create"]);
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "task",
+      "create",
+    ]);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("Error: Missing required task title");
@@ -127,23 +139,26 @@ describe("CLI Task Creation - Validation & Errors (RULE-15, RULE-18, RULE-27)", 
     expect(stderr).toContain('Error: Unknown flag "--unknown-flag"');
   });
 
-  // @verifies RULE-15, RULE-27
-  it("[RULE-15][RULE-27] should report domain link validation error to stderr with exit code 1", async () => {
+  // @verifies RULE-15, RULE-27, RULE-35
+  it("[RULE-15][RULE-27][RULE-35] should report domain link validation error to stderr with exit code 1", async () => {
+    const illegalLink = makeTestTag("TASK", 1);
+    const rule15Tag = makeTestTag("RULE", 15);
+
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "task",
       "create",
       "Invalid Links Test",
       "--links",
-      "TASK-1", // Illegal per RULE-15
+      illegalLink,
     ]);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("Invalid task link target");
-    expect(stderr).toContain("RULE-15");
+    expect(stderr).toContain(rule15Tag);
   });
 });
 
-describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RULE-25, RULE-27, RULE-34)", () => {
+describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RULE-25, RULE-27, RULE-34, RULE-35)", () => {
   let workspace: TestWorkspace;
 
   beforeEach(async () => {
@@ -154,8 +169,10 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
     await workspace.cleanup();
   });
 
-  // @verifies RULE-25, RULE-27, RULE-34
-  it("[RULE-25][RULE-27][RULE-34] should preserve criteria with punctuation verbatim when using -a or --criterion", async () => {
+  // @verifies RULE-25, RULE-27, RULE-34, RULE-35
+  it("[RULE-25][RULE-27][RULE-34][RULE-35] should preserve criteria with punctuation verbatim when using -a or --criterion", async () => {
+    const rule27Tag = makeTestTag("RULE", 27);
+
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "task",
       "create",
@@ -167,7 +184,7 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
       "-a",
       "Export checkTaskItem from index.ts, including all types",
       "--criterion",
-      "Ensure stdout and stderr separation, per RULE-27",
+      `Ensure stdout and stderr separation, per ${rule27Tag}`,
       "--json",
     ]);
 
@@ -178,12 +195,15 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
       "Export checkTaskItem from index.ts, including all types",
     );
     expect(parsed.acceptanceCriteria[1].text).toBe(
-      "Ensure stdout and stderr separation, per RULE-27",
+      `Ensure stdout and stderr separation, per ${rule27Tag}`,
     );
   });
 
-  // @verifies RULE-15, RULE-25, RULE-34
-  it("[RULE-15][RULE-25][RULE-34] should support repeated -l / --link flags without comma splitting", async () => {
+  // @verifies RULE-15, RULE-25, RULE-34, RULE-35
+  it("[RULE-15][RULE-25][RULE-34][RULE-35] should support repeated -l / --link flags without comma splitting", async () => {
+    const linkAdr6 = makeTestTag("ADR", 6);
+    const linkRule25 = makeTestTag("RULE", 25);
+
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "task",
       "create",
@@ -193,15 +213,15 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
       "--branch",
       "dev",
       "--link",
-      "ADR-6",
+      linkAdr6,
       "-l",
-      "RULE-25",
+      linkRule25,
       "--json",
     ]);
 
     expect(exitCode).toBe(0);
     const parsed = JSON.parse(stdout.trim());
-    expect(parsed.links).toEqual(["ADR-6", "RULE-25"]);
+    expect(parsed.links).toEqual([linkAdr6, linkRule25]);
   });
 
   // @verifies RULE-25, RULE-27, RULE-34
@@ -225,9 +245,13 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
     const parsed = JSON.parse(stdout.trim());
     expect(parsed.plannedGovernance).toBeDefined();
     expect(parsed.plannedGovernance.rules).toHaveLength(1);
-    expect(parsed.plannedGovernance.rules[0].text).toBe("Multi-Branch Guard Rule");
+    expect(parsed.plannedGovernance.rules[0].text).toBe(
+      "Multi-Branch Guard Rule",
+    );
     expect(parsed.plannedGovernance.adrs).toHaveLength(1);
-    expect(parsed.plannedGovernance.adrs[0].text).toBe("Unified Storage Architecture");
+    expect(parsed.plannedGovernance.adrs[0].text).toBe(
+      "Unified Storage Architecture",
+    );
   });
 });
 
@@ -258,7 +282,7 @@ describe("CLI Task Creation - Subprocess Execution (RULE-25, RULE-27, RULE-34)",
     expect(stderr).toContain("✓ Created task");
     const parsed = JSON.parse(stdout.trim());
     expect(parsed.slug).toBe("subprocess-verification-task");
-    expect(parsed.filename).toContain("subprocess-verification-task.TASK-");
+    expect(parsed.filename).toContain("subprocess-verification-task.");
+    expect(parsed.filename).toContain(".md");
   });
 });
-
