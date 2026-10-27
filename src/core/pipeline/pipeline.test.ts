@@ -1,8 +1,13 @@
+/**
+ * Unit tests for the generic declarative artifact pipeline.
+ */
+
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { readFile } from "node:fs/promises";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import {
+  createFixtureWorkspace,
+  makeTestTag,
+  type FixtureWorkspace,
+} from "../testing/index.ts";
 import {
   adrDefinition,
   createArtifact,
@@ -12,18 +17,19 @@ import {
   type BaseCreateArtifactOptions,
 } from "./index.ts";
 
-describe("Generic Declarative Artifact Pipeline (TASK-18, ADR-1, ADR-4, RULE-1, RULE-8)", () => {
-  let tempDir: string;
+describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-35, ADR-1, ADR-4)", () => {
+  let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "modie-pipeline-test-"));
+    workspace = await createFixtureWorkspace("modie-pipeline-test-");
   });
 
   afterEach(async () => {
-    await rm(tempDir, { recursive: true, force: true });
+    await workspace.cleanup();
   });
 
-  it("should create an artifact through a custom declarative ArtifactDefinition", async () => {
+  // @verifies RULE-1, RULE-8, RULE-34, RULE-35, ADR-1, ADR-4
+  it("[RULE-1][RULE-8][RULE-34][RULE-35][ADR-1][ADR-4] should create an artifact through a custom declarative ArtifactDefinition", async () => {
     interface CustomSpecOptions extends BaseCreateArtifactOptions {
       overview: string;
       tags?: string[];
@@ -62,18 +68,25 @@ describe("Generic Declarative Artifact Pipeline (TASK-18, ADR-1, ADR-4, RULE-1, 
       title: "Authentication Workflow",
       overview: "Details the OAuth2 token grant ceremony.",
       tags: ["auth", "security"],
-      cwd: tempDir,
+      cwd: workspace.cwd,
     });
 
+    const expectedSpec1Tag = makeTestTag("SPEC", 1);
     expect(res.id).toBe("1");
-    expect(res.tag).toBe("SPEC-1");
-    expect(res.filename).toBe("authentication-workflow.SPEC-1.md");
+    expect(res.tag).toBe(expectedSpec1Tag);
+    expect(res.filename).toBe(`authentication-workflow.${expectedSpec1Tag}.md`);
     expect(res.filepath).toBe(
-      join(tempDir, ".modie", "specs", "authentication-workflow.SPEC-1.md"),
+      workspace.resolve(
+        ".modie",
+        "specs",
+        `authentication-workflow.${expectedSpec1Tag}.md`,
+      ),
     );
-    expect(res.artifact.overview).toBe("Details the OAuth2 token grant ceremony.");
+    expect(res.artifact.overview).toBe(
+      "Details the OAuth2 token grant ceremony.",
+    );
 
-    const fileContent = await readFile(res.filepath, "utf8");
+    const fileContent = await workspace.readFile(res.filepath);
     expect(fileContent).toContain("# Authentication Workflow");
     expect(fileContent).toContain("Details the OAuth2 token grant ceremony.");
 
@@ -81,17 +94,21 @@ describe("Generic Declarative Artifact Pipeline (TASK-18, ADR-1, ADR-4, RULE-1, 
     const res2 = await createArtifact(specDefinition, {
       title: "Authorization Grants",
       overview: "Details scope permissions.",
-      cwd: tempDir,
+      cwd: workspace.cwd,
     });
+    const expectedSpec2Tag = makeTestTag("SPEC", 2);
     expect(res2.id).toBe("2");
-    expect(res2.tag).toBe("SPEC-2");
+    expect(res2.tag).toBe(expectedSpec2Tag);
   });
 
-  it("should invoke custom validation hook and reject invalid options", async () => {
+  // @verifies RULE-8, RULE-34
+  it("[RULE-8][RULE-34] should invoke custom validation hook and reject invalid options", async () => {
     const guardedDefinition: ArtifactDefinition = {
       subtype: "RULE",
       validate: () => {
-        throw new Error("Validation constraint failed: custom link rule violated.");
+        throw new Error(
+          "Validation constraint failed: custom link rule violated.",
+        );
       },
       render: ({ id, slug, title }) => ({
         markdown: `# ${title}`,
@@ -102,12 +119,15 @@ describe("Generic Declarative Artifact Pipeline (TASK-18, ADR-1, ADR-4, RULE-1, 
     await expect(
       createArtifact(guardedDefinition, {
         title: "Test Guard",
-        cwd: tempDir,
+        cwd: workspace.cwd,
       }),
-    ).rejects.toThrow("Validation constraint failed: custom link rule violated.");
+    ).rejects.toThrow(
+      "Validation constraint failed: custom link rule violated.",
+    );
   });
 
-  it("should reject creation with empty or whitespace title", async () => {
+  // @verifies RULE-8, RULE-34
+  it("[RULE-8][RULE-34] should reject creation with empty or whitespace title", async () => {
     const dummyDefinition: ArtifactDefinition = {
       subtype: "RULE",
       render: ({ id, slug, title }) => ({
@@ -119,39 +139,48 @@ describe("Generic Declarative Artifact Pipeline (TASK-18, ADR-1, ADR-4, RULE-1, 
     await expect(
       createArtifact(dummyDefinition, {
         title: "   ",
-        cwd: tempDir,
+        cwd: workspace.cwd,
       }),
     ).rejects.toThrow("Rule title must be a non-empty string.");
   });
 
-  it("should support creating standard artifacts directly via standard definitions", async () => {
+  // @verifies RULE-1, RULE-8, RULE-34, RULE-35, ADR-1, ADR-4
+  it("[RULE-1][RULE-8][RULE-34][RULE-35][ADR-1][ADR-4] should support creating standard artifacts directly via standard definitions", async () => {
+    const expectedRuleTag = makeTestTag("RULE", 1);
+    const expectedAdrTag = makeTestTag("ADR", 1);
+    const expectedTaskTag = makeTestTag("TASK", 1);
+
     // 1. RULE via ruleDefinition
     const ruleRes = await createArtifact(ruleDefinition, {
       title: "Invariant Cache Validity",
       assertion: "Cached entries must invalidate on write.",
-      cwd: tempDir,
+      cwd: workspace.cwd,
     });
-    expect(ruleRes.tag).toBe("RULE-1");
-    expect(ruleRes.filename).toBe("invariant-cache-validity.RULE-1.md");
+    expect(ruleRes.tag).toBe(expectedRuleTag);
+    expect(ruleRes.filename).toBe(
+      `invariant-cache-validity.${expectedRuleTag}.md`,
+    );
 
     // 2. ADR via adrDefinition
     const adrRes = await createArtifact(adrDefinition, {
       title: "Use Redis For Caching",
       context: "Need distributed key-value store.",
       decision: "Adopt Redis.",
-      cwd: tempDir,
+      cwd: workspace.cwd,
     });
-    expect(adrRes.tag).toBe("ADR-1");
-    expect(adrRes.filename).toBe("use-redis-for-caching.ADR-1.md");
+    expect(adrRes.tag).toBe(expectedAdrTag);
+    expect(adrRes.filename).toBe(`use-redis-for-caching.${expectedAdrTag}.md`);
 
     // 3. TASK via taskDefinition
     const taskRes = await createArtifact(taskDefinition, {
       title: "Implement Cache Invalidation",
       acceptanceCriteria: ["Add TTL support", "Test eviction"],
-      cwd: tempDir,
+      cwd: workspace.cwd,
     });
-    expect(taskRes.tag).toBe("TASK-1");
-    expect(taskRes.filename).toBe("implement-cache-invalidation.TASK-1.md");
+    expect(taskRes.tag).toBe(expectedTaskTag);
+    expect(taskRes.filename).toBe(
+      `implement-cache-invalidation.${expectedTaskTag}.md`,
+    );
     expect(taskRes.watermark).toBeDefined();
   });
 });
