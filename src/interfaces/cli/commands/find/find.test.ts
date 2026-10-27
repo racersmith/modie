@@ -1,13 +1,15 @@
 /**
  * Integration and unit tests for `modie find`.
- * Tagged per ADR-7 and RULE-23 for universal rule verification.
- * Enforces RULE-25, RULE-27, RULE-29, and RULE-34 (fixture-based test isolation).
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { createTestWorkspace, type TestWorkspace } from "../../test-utils.ts";
+import {
+  createTestWorkspace,
+  makeTestTag,
+  type TestWorkspace,
+} from "../../test-utils.ts";
 
-describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, RULE-34)", () => {
+describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, RULE-34, RULE-35)", () => {
   let workspace: TestWorkspace;
 
   beforeEach(async () => {
@@ -20,7 +22,10 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
 
   // @verifies RULE-27
   it("[RULE-27] should emit find help to stderr with exit code 0", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["find", "--help"]);
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "find",
+      "--help",
+    ]);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Usage: modie find");
@@ -28,13 +33,15 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
 
   // @verifies RULE-25, RULE-27, RULE-29, RULE-34
   it("[RULE-25][RULE-27][RULE-29][RULE-34] should find active RULE artifact and emit relative path to stdout", async () => {
-    const rule = await workspace.createArtifact({
-      subtype: "RULE",
+    const rule = await workspace.createRule({
       id: "TEST-1",
       slug: "artifact-filename-structure",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["find", rule.tag]);
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "find",
+      rule.tag,
+    ]);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
     expect(stdout.trim()).toBe(rule.relativePath);
@@ -42,8 +49,7 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
 
   // @verifies RULE-25, RULE-27, RULE-29, RULE-34
   it("[RULE-25][RULE-27][RULE-29][RULE-34] should emit absolute path to stdout when --absolute is passed", async () => {
-    const adr = await workspace.createArtifact({
-      subtype: "ADR",
+    const adr = await workspace.createAdr({
       id: "TEST-1",
       slug: "self-indexing-filenames",
     });
@@ -61,8 +67,7 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
 
   // @verifies RULE-25, RULE-27, RULE-29, RULE-34
   it("[RULE-25][RULE-27][RULE-29][RULE-34] should emit JSON payload to stdout when --json is passed", async () => {
-    const rule = await workspace.createArtifact({
-      subtype: "RULE",
+    const rule = await workspace.createRule({
       id: "TEST-1",
       slug: "artifact-filename-structure",
     });
@@ -84,32 +89,42 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
 
   // @verifies RULE-29, RULE-34
   it("[RULE-29][RULE-34] should find archived artifact in custom directory", async () => {
-    const archived = await workspace.createArtifact({
-      subtype: "ADR",
+    const archived = await workspace.createAdr({
       id: "TEST-99",
       slug: "legacy-decision",
       isArchived: true,
       rawContent: "---\nlinks: []\n---\n# Archived ADR\n",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["find", archived.tag]);
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "find",
+      archived.tag,
+    ]);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
     expect(stdout.trim()).toBe(archived.relativePath);
 
-    const jsonResult = await workspace.captureCli(["find", archived.tag, "--json"]);
+    const jsonResult = await workspace.captureCli([
+      "find",
+      archived.tag,
+      "--json",
+    ]);
     expect(jsonResult.exitCode).toBe(0);
     const parsed = JSON.parse(jsonResult.stdout.trim());
     expect(parsed.isArchived).toBe(true);
     expect(parsed.tag).toBe(archived.tag);
   });
 
-  // @verifies RULE-27
-  it("[RULE-27] should report error to stderr when artifact tag is not found", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["find", "RULE-TEST-9999"]);
+  // @verifies RULE-27, RULE-35
+  it("[RULE-27][RULE-35] should report error to stderr when artifact tag is not found", async () => {
+    const missingTag = makeTestTag("RULE", "TEST-9999");
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "find",
+      missingTag,
+    ]);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
-    expect(stderr).toContain('Error: Artifact "RULE-TEST-9999" was not found');
+    expect(stderr).toContain(`Error: Artifact "${missingTag}" was not found`);
   });
 
   // @verifies RULE-27
@@ -122,8 +137,7 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
 
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr on unknown flag", async () => {
-    const rule = await workspace.createArtifact({
-      subtype: "RULE",
+    const rule = await workspace.createRule({
       id: "TEST-1",
       slug: "artifact-filename-structure",
     });
@@ -140,8 +154,7 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
 
   // @verifies RULE-25, RULE-27, RULE-29, RULE-34
   it("[RULE-25][RULE-27][RULE-29][RULE-34] should execute find via bin.ts subprocess", async () => {
-    const rule = await workspace.createArtifact({
-      subtype: "RULE",
+    const rule = await workspace.createRule({
       id: "TEST-1",
       slug: "artifact-filename-structure",
     });
@@ -151,4 +164,3 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
     expect(stdout.trim()).toBe(rule.relativePath);
   });
 });
-
