@@ -32,7 +32,7 @@ Review the Core Task Creation test suite (`src/core/task/task-creation.test.ts`)
 
 # Acceptance Criteria
 
-- [ ] Review the target test suite and refactor temporary directory and test fixture handling to use createFixtureWorkspace and typed workspace helpers per RULE-34
-- [ ] Eliminate hardcoded governance tag literals in fixture data and test assertions by parameterizing with makeTestTag per RULE-35
-- [ ] Verify all tests in the suite pass cleanly under bun test with full test isolation
-- [ ] Verify modie references queries on cited governance rules yield zero false-positive citations from this test file
+- [x] Review the target test suite and refactor temporary directory and test fixture handling to use createFixtureWorkspace and typed workspace helpers per RULE-34
+- [x] Eliminate hardcoded governance tag literals in fixture data and test assertions by parameterizing with makeTestTag per RULE-35
+- [x] Verify all tests in the suite pass cleanly under bun test with full test isolation
+- [x] Verify modie references queries on cited governance rules yield zero false-positive citations from this test file
