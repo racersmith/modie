@@ -37,7 +37,7 @@ Parent modernization task coordinating the refactoring of 12 test suites across 
 - [x] Complete core task primitive test suite modernization (TASK-43-2)
 - [x] Complete core rule primitive test suite modernization (TASK-43-3)
 - [x] Complete core watermark resolver test suite modernization (TASK-43-4)
-- [ ] Complete core artifact query test suite modernization (TASK-43-5)
+- [x] Complete core artifact query test suite modernization (TASK-43-5)
 - [ ] Complete core pipeline test suite modernization (TASK-43-6)
 - [ ] Complete core common primitives test suite modernization (TASK-43-7)
 - [ ] Complete CLI find command test suite modernization (TASK-43-8)
