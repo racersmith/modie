@@ -42,7 +42,7 @@ Parent modernization task coordinating the refactoring of 12 test suites across 
 - [x] Complete core common primitives test suite modernization (TASK-43-7)
 - [x] Complete CLI find command test suite modernization (TASK-43-8)
 - [x] Complete CLI show command test suite modernization (TASK-43-9)
-- [ ] Complete CLI task create command test suite modernization (TASK-43-10)
+- [x] Complete CLI task create command test suite modernization (TASK-43-10)
 - [ ] Complete CLI task lifecycle command test suite modernization (TASK-43-11)
 - [ ] Complete CLI root entrypoint test suite modernization (TASK-43-12)
 - [ ] Verify all test suites pass with zero false positives across active governance queries
