@@ -13,7 +13,7 @@ Modernize CLI archive test suites (archive.test.ts, adr-archive.test.ts, rule-ar
 
 # Acceptance Criteria
 
-- [ ] Modernize archive.test.ts to use makeTestTag and typed workspace creation helpers (createRule, createAdr)
-- [ ] Modernize adr-archive.test.ts to use makeTestTag and typed workspace creation helpers (createRule, createAdr)
-- [ ] Modernize rule-archive.test.ts to use makeTestTag and typed workspace creation helpers (createRule, createAdr)
-- [ ] Verify all test suites pass with zero regressions and zero false-positive citations in references query
+- [x] Modernize archive.test.ts to use makeTestTag and typed workspace creation helpers (createRule, createAdr)
+- [x] Modernize adr-archive.test.ts to use makeTestTag and typed workspace creation helpers (createRule, createAdr)
+- [x] Modernize rule-archive.test.ts to use makeTestTag and typed workspace creation helpers (createRule, createAdr)
+- [x] Verify all test suites pass with zero regressions and zero false-positive citations in references query

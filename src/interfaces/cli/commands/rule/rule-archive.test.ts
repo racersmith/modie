@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { captureCli, createTestWorkspace } from "../../test-utils.ts";
+import { captureCli, createTestWorkspace, makeTestTag } from "../../test-utils.ts";
 
 describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31, RULE-34)", () => {
   // @verifies RULE-27
@@ -33,9 +33,9 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
   // @verifies RULE-25, RULE-27, RULE-31, RULE-34
   it("[RULE-25][RULE-27][RULE-31][RULE-34] should archive an unreferenced RULE with relative path to stdout and status to stderr", async () => {
     const workspace = await createTestWorkspace("cli-rule-archive-");
-    const rule = await workspace.createArtifact({
-      subtype: "RULE",
-      id: "TEST-1",
+    const ruleTag = makeTestTag("RULE", 1);
+    const rule = await workspace.createRule({
+      id: 1,
       slug: "single-purpose",
       body: "Rule description.\n",
     });
@@ -47,9 +47,9 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
     ]);
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(".modie/rules/single-purpose.RULE-TEST-1.ARCHIVED.md");
+    expect(stdout.trim()).toBe(`.modie/rules/single-purpose.${ruleTag}.ARCHIVED.md`);
     expect(stderr).toContain(
-      "✓ Archived RULE RULE-TEST-1: single-purpose.RULE-TEST-1.ARCHIVED.md",
+      `✓ Archived RULE ${ruleTag}: single-purpose.${ruleTag}.ARCHIVED.md`,
     );
 
     const archivedContent = await workspace.readFile(stdout);
@@ -62,16 +62,16 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
   it("[RULE-27][RULE-31][RULE-34] should reject archiving when active references exist", async () => {
     const workspace = await createTestWorkspace("cli-rule-reject-");
 
-    const rule = await workspace.createArtifact({
-      subtype: "RULE",
-      id: "TEST-1",
+    const ruleTag = makeTestTag("RULE", 1);
+    const rule = await workspace.createRule({
+      id: 1,
       slug: "target-rule",
       body: "Target rule.",
     });
 
-    await workspace.createArtifact({
-      subtype: "TASK",
-      id: "TEST-1",
+    const taskTag = makeTestTag("TASK", 1);
+    await workspace.createTask({
+      id: 1,
       slug: "dependent-task",
       links: [rule.tag],
       context: "Dependent task.",
@@ -89,7 +89,7 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
       `Error: Cannot archive ${rule.tag}: 1 active incoming reference(s) exist.`,
     );
     expect(stderr).toContain(
-      `Active artifact TASK-TEST-1 (links) maintains link to ${rule.tag}`,
+      `Active artifact ${taskTag} (links) maintains link to ${rule.tag}`,
     );
 
     await workspace.cleanup();
@@ -99,16 +99,16 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
   it("[RULE-25][RULE-27][RULE-31][RULE-34] should bypass active references guard with --force", async () => {
     const workspace = await createTestWorkspace("cli-rule-force-");
 
-    const rule = await workspace.createArtifact({
-      subtype: "RULE",
-      id: "TEST-1",
+    const ruleTag = makeTestTag("RULE", 1);
+    const rule = await workspace.createRule({
+      id: 1,
       slug: "forced-rule",
       body: "Forced rule.",
     });
 
-    await workspace.createArtifact({
-      subtype: "TASK",
-      id: "TEST-1",
+    const taskTag = makeTestTag("TASK", 1);
+    await workspace.createTask({
+      id: 1,
       slug: "dependent-task",
       links: [rule.tag],
       context: "Dependent task.",
@@ -122,9 +122,9 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
     ]);
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(".modie/rules/forced-rule.RULE-TEST-1.ARCHIVED.md");
+    expect(stdout.trim()).toBe(`.modie/rules/forced-rule.${ruleTag}.ARCHIVED.md`);
     expect(stderr).toContain(
-      "✓ Archived RULE RULE-TEST-1: forced-rule.RULE-TEST-1.ARCHIVED.md (forced with active references)",
+      `✓ Archived RULE ${ruleTag}: forced-rule.${ruleTag}.ARCHIVED.md (forced with active references)`,
     );
 
     await workspace.cleanup();
@@ -134,9 +134,9 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
   it("[RULE-27][RULE-34] should emit machine JSON to stdout when --json is passed", async () => {
     const workspace = await createTestWorkspace("cli-rule-json-");
 
-    const rule = await workspace.createArtifact({
-      subtype: "RULE",
-      id: "TEST-1",
+    const ruleTag = makeTestTag("RULE", 1);
+    const rule = await workspace.createRule({
+      id: 1,
       slug: "json-rule",
       body: "Json rule.",
     });
@@ -149,11 +149,11 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
     ]);
 
     expect(exitCode).toBe(0);
-    expect(stderr).toContain("✓ Archived RULE RULE-TEST-1");
+    expect(stderr).toContain(`✓ Archived RULE ${ruleTag}`);
 
     const parsed = JSON.parse(stdout);
-    expect(parsed.tag).toBe("RULE-TEST-1");
-    expect(parsed.archivedFilename).toBe("json-rule.RULE-TEST-1.ARCHIVED.md");
+    expect(parsed.tag).toBe(ruleTag);
+    expect(parsed.archivedFilename).toBe(`json-rule.${ruleTag}.ARCHIVED.md`);
     expect(parsed.canArchive).toBe(true);
 
     await workspace.cleanup();
@@ -163,9 +163,9 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
   it("[RULE-25][RULE-27][RULE-34] should execute rule archive via bin.ts subprocess", async () => {
     const workspace = await createTestWorkspace("cli-rule-subprocess-");
 
-    const rule = await workspace.createArtifact({
-      subtype: "RULE",
-      id: "TEST-1",
+    const ruleTag = makeTestTag("RULE", 1);
+    const rule = await workspace.createRule({
+      id: 1,
       slug: "sub-rule",
       body: "Subprocess rule.",
     });
@@ -176,9 +176,9 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
       rule.tag,
     ]);
 
-    expect(stdout.trim()).toBe(".modie/rules/sub-rule.RULE-TEST-1.ARCHIVED.md");
+    expect(stdout.trim()).toBe(`.modie/rules/sub-rule.${ruleTag}.ARCHIVED.md`);
     expect(stderr).toContain(
-      "✓ Archived RULE RULE-TEST-1: sub-rule.RULE-TEST-1.ARCHIVED.md",
+      `✓ Archived RULE ${ruleTag}: sub-rule.${ruleTag}.ARCHIVED.md`,
     );
 
     await workspace.cleanup();
