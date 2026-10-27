@@ -4,7 +4,6 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { rm } from "node:fs/promises";
 import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
 import {
   compareTaskIds,
@@ -143,7 +142,7 @@ describe("Task Queue Query Service - DAG Readiness Evaluation (ADR-6, RULE-18)",
     expect(t3.blockedBy).toEqual([task2.tag]);
 
     // Now delete task1 (simulating task 1 completion per RULE-21)
-    await rm(task1.filepath);
+    await workspace.remove(task1);
 
     const updatedQueue = await queryTaskQueue({ cwd: workspace.cwd });
     const updatedT2 = updatedQueue.find((t) => t.id === task2.id)!;

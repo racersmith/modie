@@ -1,6 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { rm } from "node:fs/promises";
-import { join } from "node:path";
 import { createFixtureWorkspace, makeTestTag, type FixtureWorkspace } from "../testing/index.ts";
 import {
   computeTaskBranchTopology,
@@ -179,7 +177,7 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     await startTaskBranch(subtask.tag, { cwd: workspace.cwd });
 
     // Mark completed in git
-    await rm(subtask.filepath);
+    await workspace.remove(subtask);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
     await workspace.gitCommit(`chore(task): delete completed ${subtask.tag} artifact`);
 
@@ -201,7 +199,7 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     await startTaskBranch(task.tag, { cwd: workspace.cwd });
 
     // Complete in git
-    await rm(task.filepath);
+    await workspace.remove(task);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
     await workspace.gitCommit(`chore(task): delete completed ${task.tag} artifact`);
 
@@ -237,7 +235,7 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     await workspace.gitCommit("feat: subtask implementation");
 
     // Complete subtask artifact per RULE-21
-    await rm(subtask.filepath);
+    await workspace.remove(subtask);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
     await workspace.gitCommit(`chore(task): delete completed ${subtask.tag} artifact`);
 
@@ -313,7 +311,7 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     await workspace.gitCommit(`feat(${task.tag}): task and conflicting ${adr50Tag}`);
 
     // Delete task artifact per RULE-21 completion record
-    await rm(task.filepath);
+    await workspace.remove(task);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
     await workspace.gitCommit(`chore(task): delete completed ${task.tag} artifact`);
 
@@ -354,11 +352,11 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     });
     // Archive RULE-24 on task branch
     const archivedFilename = `explore.${rule24Tag}.ARCHIVED.md`;
-    await Bun.$`git mv ${rule24.filepath} ${join(workspace.cwd, ".modie", "rules", archivedFilename)}`.cwd(workspace.cwd).quiet();
+    await Bun.$`git mv ${rule24.filepath} ${workspace.resolve(".modie", "rules", archivedFilename)}`.cwd(workspace.cwd).quiet();
     await workspace.gitCommit(`refactor: archive ${rule24Tag}`);
 
     // Complete task artifact
-    await rm(task.filepath);
+    await workspace.remove(task);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
     await workspace.gitCommit(`chore(task): delete completed ${task.tag} artifact`);
 
@@ -383,13 +381,13 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     await workspace.gitCommit(`feat: add ${rule30Tag} at base`);
 
     // 2. On dev, rename RULE-30 to dev-location
-    const devPath = join(workspace.cwd, ".modie", "rules", `rule-dev.${rule30Tag}.md`);
+    const devPath = workspace.resolve(".modie", "rules", `rule-dev.${rule30Tag}.md`);
     await Bun.$`git mv ${rule30.filepath} ${devPath}`.cwd(workspace.cwd).quiet();
     await workspace.gitCommit(`refactor: move ${rule30Tag} on dev`);
 
     // 3. Branch from HEAD~1 (base) and rename to feature-location
     await Bun.$`git checkout -b feature/divergent HEAD~1`.cwd(workspace.cwd).quiet();
-    const featPath = join(workspace.cwd, ".modie", "rules", `rule-feature.${rule30Tag}.md`);
+    const featPath = workspace.resolve(".modie", "rules", `rule-feature.${rule30Tag}.md`);
     await Bun.$`git mv ${rule30.filepath} ${featPath}`.cwd(workspace.cwd).quiet();
     await workspace.gitCommit(`refactor: move ${rule30Tag} on feature`);
 

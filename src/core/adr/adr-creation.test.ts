@@ -5,8 +5,6 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { mkdir } from "node:fs/promises";
-import { join } from "node:path";
 import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
 import {
   createAdr,
@@ -119,8 +117,7 @@ describe("ADR Creation - Frontmatter Validation & Rule Scope (RULE-14, RULE-17, 
     });
 
     // ADR scoped in workspace.cwd/src/nested (descendant of root where RULE resides)
-    const nestedAdrScope = join(workspace.cwd, "src", "nested");
-    await mkdir(nestedAdrScope, { recursive: true });
+    const nestedAdrScope = await workspace.mkdir("src/nested");
 
     await expect(
       validateAdrScope(nestedAdrScope, [rule.tag], workspace.cwd),
@@ -140,8 +137,7 @@ describe("ADR Creation - Frontmatter Validation & Rule Scope (RULE-14, RULE-17, 
     });
 
     // ADR scoped in workspace.cwd/target-module
-    const targetAdrScope = join(workspace.cwd, "target-module");
-    await mkdir(targetAdrScope, { recursive: true });
+    const targetAdrScope = await workspace.mkdir("target-module");
 
     await expect(
       validateAdrScope(targetAdrScope, [rule.tag], workspace.cwd),
@@ -160,8 +156,7 @@ describe("ADR Creation - Frontmatter Validation & Rule Scope (RULE-14, RULE-17, 
       subDir: "other/.adrs",
     });
 
-    const localScope = join(workspace.cwd, "local");
-    await mkdir(localScope, { recursive: true });
+    const localScope = await workspace.mkdir("local");
 
     await expect(
       validateAdrScope(localScope, [adr.tag], workspace.cwd),
@@ -222,7 +217,7 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
     });
 
     expect(result.relativePath).toBe(`flat-decision-record.${expectedAdr1Tag}.md`);
-    expect(result.filepath).toBe(join(workspace.cwd, `flat-decision-record.${expectedAdr1Tag}.md`));
+    expect(result.filepath).toBe(workspace.resolve(`flat-decision-record.${expectedAdr1Tag}.md`));
 
     const onDisk = await workspace.readFile(result.filepath);
     expect(onDisk).toContain("# Context");

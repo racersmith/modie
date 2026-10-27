@@ -104,6 +104,9 @@ export interface CreatedFixtureArtifact {
 export interface FixtureWorkspace {
   cwd: string;
   makeTag(subtype: string, id: number | string): string;
+  resolve(...paths: string[]): string;
+  mkdir(relativePath: string): Promise<string>;
+  remove(target: string | CreatedFixtureArtifact): Promise<void>;
   createArtifact(options: CreateFixtureArtifactOptions): Promise<CreatedFixtureArtifact>;
   createTask(options?: CreateTaskOptions): Promise<CreatedFixtureArtifact>;
   createRule(options?: CreateRuleOptions): Promise<CreatedFixtureArtifact>;
@@ -314,13 +317,31 @@ export async function createFixtureWorkspace(
       });
     },
 
+    resolve(...paths: string[]): string {
+      return join(cwd, ...paths);
+    },
+
+    async mkdir(relativePath: string): Promise<string> {
+      const targetDir = join(cwd, relativePath);
+      await mkdir(targetDir, { recursive: true });
+      return targetDir;
+    },
+
+    async remove(target: string | CreatedFixtureArtifact): Promise<void> {
+      const raw = typeof target === "string" ? target.trim() : target.filepath;
+      const p = raw.startsWith("/") ? raw : join(cwd, raw);
+      await rm(p, { recursive: true, force: true });
+    },
+
     async readFile(target: string | CreatedFixtureArtifact): Promise<string> {
-      const p = typeof target === "string" ? (target.startsWith("/") ? target : join(cwd, target)) : target.filepath;
+      const raw = typeof target === "string" ? target.trim() : target.filepath;
+      const p = raw.startsWith("/") ? raw : join(cwd, raw);
       return readFile(p, "utf8");
     },
 
     async fileExists(target: string | CreatedFixtureArtifact): Promise<boolean> {
-      const p = typeof target === "string" ? (target.startsWith("/") ? target : join(cwd, target)) : target.filepath;
+      const raw = typeof target === "string" ? target.trim() : target.filepath;
+      const p = raw.startsWith("/") ? raw : join(cwd, raw);
       try {
         await stat(p);
         return true;
@@ -346,6 +367,10 @@ export async function createFixtureWorkspace(
       await execFileAsync("git", ["init", "-b", branch], { cwd });
       await execFileAsync("git", ["config", "user.name", "Test Runner"], { cwd });
       await execFileAsync("git", ["config", "user.email", "test@example.com"], { cwd });
+      await execFileAsync("git", ["config", "gc.auto", "0"], { cwd });
+      await execFileAsync("git", ["config", "core.compression", "0"], { cwd });
+      await execFileAsync("git", ["config", "commit.gpgsign", "false"], { cwd });
+      await execFileAsync("git", ["config", "core.preloadindex", "true"], { cwd });
       if (options?.initialCommit ?? true) {
         await execFileAsync("git", ["commit", "--allow-empty", "-m", "chore: initial commit"], { cwd });
       }

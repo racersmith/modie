@@ -5,8 +5,6 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { captureCli, createTestWorkspace } from "../../test-utils.ts";
 
 describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31, RULE-34)", () => {
@@ -54,10 +52,7 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
       "✓ Archived RULE RULE-TEST-1: single-purpose.RULE-TEST-1.ARCHIVED.md",
     );
 
-    const archivedContent = await readFile(
-      join(workspace.cwd, stdout.trim()),
-      "utf8",
-    );
+    const archivedContent = await workspace.readFile(stdout);
     expect(archivedContent).toContain("Rule description.");
 
     await workspace.cleanup();

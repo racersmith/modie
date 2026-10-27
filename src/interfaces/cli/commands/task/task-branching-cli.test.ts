@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { rm } from "node:fs/promises";
 import { createTestWorkspace, makeTestTag, type TestWorkspace } from "../../test-utils.ts";
 
 describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-27, RULE-28)", () => {
@@ -138,7 +137,7 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     await workspace.writeFile("code.txt", "hello world\n");
     await Bun.$`git add code.txt`.cwd(workspace.cwd).quiet();
     await workspace.gitCommit("feat: code");
-    await rm(subTask.filepath);
+    await workspace.remove(subTask);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
     await workspace.gitCommit(`chore(task): delete completed ${subTaskTag} artifact`);
 
@@ -179,7 +178,7 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     await workspace.gitCommit(`feat(${subTaskTag}): sub`);
     await workspace.captureCli(["task", "start", subTaskTag]);
 
-    await rm(subTask.filepath);
+    await workspace.remove(subTask);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
     await workspace.gitCommit(`chore(task): delete completed ${subTaskTag} artifact`);
 

@@ -4,8 +4,6 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { rm } from "node:fs/promises";
-import { join } from "node:path";
 import { createFixtureWorkspace, makeTestTag, type FixtureWorkspace } from "../testing/index.ts";
 import { GitCliAdapter } from "./git-cli-adapter.ts";
 import { MockVcsAdapter } from "./mock-adapter.ts";
@@ -246,7 +244,7 @@ describe("Hermetic Core Domain Injections with MockVcsAdapter", () => {
     expect(mockVcs.branches.has(`task/201-${task.slug}`)).toBe(true);
 
     // 2. Complete task (delete file in mock)
-    await rm(task.filepath);
+    await workspace.remove(task);
     mockVcs.deletedArtifacts.push({
       id: "201",
       subtype: "TASK",

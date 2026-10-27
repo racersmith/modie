@@ -4,7 +4,6 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { rm } from "node:fs/promises";
 import {
   createFixtureWorkspace,
   makeTestTag,
@@ -454,7 +453,7 @@ describe("Zombie Task Resurrection Prevention (ADR-6, RULE-21)", () => {
 
     await Bun.$`git add .`.cwd(workspace.cwd).quiet();
     await workspace.gitCommit(`feat: verify all acceptance criteria for ${task.tag}`);
-    await rm(task.filepath, { force: true });
+    await workspace.remove(task);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
     await workspace.gitCommit(`chore(task): delete completed ${task.tag} artifact per RULE-21`);
   });

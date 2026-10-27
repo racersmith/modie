@@ -4,7 +4,6 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { spawn } from "node:child_process";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createFixtureWorkspace, makeTestTag, type FixtureWorkspace } from "../../core/testing/index.ts";
@@ -329,16 +328,16 @@ describe("Modie MCP Server - Read-Only Resources (Criterion 4)", () => {
 
 describe("Modie MCP CLI Entrypoint & Stdio Transport (RULE-27, Criterion 5)", () => {
   it("[RULE-27] should emit usage information to stderr when modie mcp --help is run", async () => {
-    const proc = spawn(process.execPath, ["./src/interfaces/cli/bin.ts", "mcp", "--help"], {
-      stdio: ["ignore", "pipe", "pipe"],
+    const proc = Bun.spawn([process.execPath, "./src/interfaces/cli/bin.ts", "mcp", "--help"], {
+      stdout: "pipe",
+      stderr: "pipe",
     });
 
-    let stdout = "";
-    let stderr = "";
-    proc.stdout.on("data", (d) => (stdout += d.toString()));
-    proc.stderr.on("data", (d) => (stderr += d.toString()));
-
-    const exitCode = await new Promise((resolve) => proc.on("close", resolve));
+    const [stdout, stderr] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+    ]);
+    const exitCode = await proc.exited;
 
     expect(exitCode).toBe(0);
     expect(stdout).toBe(""); // RULE-27: Help must be sent to stderr
@@ -347,13 +346,10 @@ describe("Modie MCP CLI Entrypoint & Stdio Transport (RULE-27, Criterion 5)", ()
   });
 
   it("should exchange JSON-RPC protocol messages over standard I/O via bin.ts", async () => {
-    const proc = spawn(process.execPath, ["./src/interfaces/cli/bin.ts", "mcp"], {
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-
-    let buffer = "";
-    proc.stdout.on("data", (d) => {
-      buffer += d.toString();
+    const proc = Bun.spawn([process.execPath, "./src/interfaces/cli/bin.ts", "mcp"], {
+      stdin: "pipe",
+      stdout: "pipe",
+      stderr: "pipe",
     });
 
     // Send JSON-RPC initialize request
@@ -372,34 +368,44 @@ describe("Modie MCP CLI Entrypoint & Stdio Transport (RULE-27, Criterion 5)", ()
     };
 
     proc.stdin.write(JSON.stringify(initRequest) + "\n");
+    proc.stdin.flush();
 
-    // Wait for response on stdout
-    const response = await new Promise<any>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error(`Timed out waiting for initialize response. Received: ${buffer}`));
-      }, 5000);
+    // Read response line from stdout using reader
+    const reader = proc.stdout.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let response: any = null;
 
-      const check = setInterval(() => {
+    const timeout = setTimeout(() => {
+      proc.kill();
+      throw new Error(`Timed out waiting for initialize response. Received: ${buffer}`);
+    }, 5000);
+
+    try {
+      while (!response) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n").filter((l) => l.trim().length > 0);
         for (const line of lines) {
           try {
             const parsed = JSON.parse(line);
             if (parsed.id === 1) {
-              clearTimeout(timeout);
-              clearInterval(check);
-              resolve(parsed);
-              return;
+              response = parsed;
+              break;
             }
           } catch {
             // Not a complete JSON line yet
           }
         }
-      }, 50);
-    });
+      }
+    } finally {
+      clearTimeout(timeout);
+      proc.kill();
+    }
 
+    expect(response).toBeDefined();
     expect(response.result).toBeDefined();
     expect(response.result.serverInfo.name).toBe("modie");
-
-    proc.kill("SIGTERM");
   });
 });

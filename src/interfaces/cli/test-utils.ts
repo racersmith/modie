@@ -1,6 +1,4 @@
-import { execFile } from "node:child_process";
 import { join } from "node:path";
-import { promisify } from "node:util";
 import {
   createFixtureWorkspace,
   makeTestTag,
@@ -14,8 +12,6 @@ import {
 } from "../../core/testing/index.ts";
 import { runCli } from "./cli.ts";
 import type { CliIoOptions } from "./types.ts";
-
-const execFileAsync = promisify(execFile);
 
 export { makeTestTag };
 export type {
@@ -82,7 +78,22 @@ export async function createTestWorkspace(
       return captureCli(args, baseWorkspace.cwd);
     },
     async execBin(args: string[]): Promise<{ stdout: string; stderr: string }> {
-      return execFileAsync(process.execPath, [binPath, ...args], { cwd: baseWorkspace.cwd });
+      const proc = Bun.spawn([process.execPath, binPath, ...args], {
+        cwd: baseWorkspace.cwd,
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      const [stdout, stderr] = await Promise.all([
+        new Response(proc.stdout).text(),
+        new Response(proc.stderr).text(),
+      ]);
+      const exitCode = await proc.exited;
+      if (exitCode !== 0) {
+        const error = new Error(`Command failed with exit code ${exitCode}: ${stderr}`);
+        Object.assign(error, { code: exitCode, exitCode, stdout, stderr });
+        throw error;
+      }
+      return { stdout, stderr };
     },
   };
 }
