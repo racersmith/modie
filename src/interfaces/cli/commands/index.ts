@@ -19,12 +19,16 @@ import {
   handleRuleCreate,
   ruleArchiveCommand,
   handleRuleArchive,
+  ruleListCommand,
+  handleRuleList,
 } from "./rule/index.ts";
 import {
   adrCreateCommand,
   handleAdrCreate,
   adrArchiveCommand,
   handleAdrArchive,
+  adrListCommand,
+  handleAdrList,
 } from "./adr/index.ts";
 import {
   taskCreateCommand,
@@ -62,8 +66,10 @@ export const allCliCommands: CliCommandDefinition<any, any, any>[] = [
   archiveCommand,
   ruleCreateCommand,
   ruleArchiveCommand,
+  ruleListCommand,
   adrCreateCommand,
   adrArchiveCommand,
+  adrListCommand,
   taskCreateCommand,
   taskListCommand,
   taskStatusCommand,

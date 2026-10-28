@@ -104,12 +104,18 @@ export * as QueryPrimitive from "./query/index.ts";
 export * from "./query/types.ts";
 export { findArtifactReferences } from "./query/references.ts";
 export {
+  compareArtifactIds,
   getArtifactDetails,
+  listActiveArtifacts,
+  listAdrs,
+  listRules,
   parseCanonicalTag,
   resolveArtifactByTag,
 } from "./query/artifact-query.ts";
 export type {
   ArtifactDetails,
+  ListArtifactsOptions,
+  ListedArtifact,
   ResolveArtifactOptions,
   ResolvedArtifact,
 } from "./query/artifact-query.ts";

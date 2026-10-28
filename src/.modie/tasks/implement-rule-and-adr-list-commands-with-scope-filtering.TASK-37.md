@@ -16,9 +16,9 @@ Provide discovery commands modie rule list and modie adr list (and matching MCP 
 
 # Acceptance Criteria
 
-- [ ] Implement query service in the core domain for listing active RULE and ADR artifacts with titles, tags, relative paths, and links
-- [ ] Implement --scope filtering in the core listing query honoring ancestral scope traversal up to the workspace root
-- [ ] Add rule list subcommand to the CLI interface with formatted table and machine-parsable JSON output enforcing stream separation
-- [ ] Add adr list subcommand to the CLI interface with formatted table and machine-parsable JSON output enforcing stream separation
-- [ ] Expose rule_list and adr_list tools in the MCP interface adhering to token economy and error conventions
-- [ ] Add unit and integration tests verifying listing output, link presentation, stream separation, and ancestral scope filtering
+- [x] Implement query service in the core domain for listing active RULE and ADR artifacts with titles, tags, relative paths, and links
+- [x] Implement --scope filtering in the core listing query honoring ancestral scope traversal up to the workspace root
+- [x] Add rule list subcommand to the CLI interface with formatted table and machine-parsable JSON output enforcing stream separation
+- [x] Add adr list subcommand to the CLI interface with formatted table and machine-parsable JSON output enforcing stream separation
+- [x] Expose rule_list and adr_list tools in the MCP interface adhering to token economy and error conventions
+- [x] Add unit and integration tests verifying listing output, link presentation, stream separation, and ancestral scope filtering
