@@ -15,6 +15,12 @@ import {
   handleArchive,
 } from "./archive/index.ts";
 import {
+  linkCommand,
+  handleLink,
+  unlinkCommand,
+  handleUnlink,
+} from "./link/index.ts";
+import {
   ruleCreateCommand,
   handleRuleCreate,
   ruleArchiveCommand,
@@ -51,6 +57,7 @@ export * from "./find/index.ts";
 export * from "./show/index.ts";
 export * from "./references/index.ts";
 export * from "./archive/index.ts";
+export * from "./link/index.ts";
 export * from "./rule/index.ts";
 export * from "./adr/index.ts";
 export * from "./task/index.ts";
@@ -64,6 +71,8 @@ export const allCliCommands: CliCommandDefinition<any, any, any>[] = [
   showCommand,
   referencesCommandDefinition,
   archiveCommand,
+  linkCommand,
+  unlinkCommand,
   ruleCreateCommand,
   ruleArchiveCommand,
   ruleListCommand,

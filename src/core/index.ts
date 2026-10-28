@@ -143,6 +143,20 @@ export { archiveArtifact } from "./archival/archive.ts";
 export { archiveRule } from "./rule/archive.ts";
 export type { ArchiveRuleOptions } from "./rule/archive.ts";
 
+// Linking & graph invariant validation domain module (ADR-5, RULE-36)
+export * as LinkingPrimitive from "./linking/index.ts";
+export * from "./linking/types.ts";
+export {
+  detectTaskDependencyCycle,
+  inferLinkRelationship,
+  validateArtifactLink,
+} from "./linking/validator.ts";
+export {
+  linkArtifact,
+  mutateFrontmatterListField,
+  unlinkArtifact,
+} from "./linking/mutation.ts";
+
 // Resolver & scan domain module
 export * as Resolver from "./resolver/index.ts";
 export * from "./resolver/types.ts";
