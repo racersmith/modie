@@ -79,8 +79,10 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     expect(toolNames).toContain("references");
     expect(toolNames).toContain("archive");
     expect(toolNames).toContain("rule_create");
+    expect(toolNames).toContain("rule_list");
     expect(toolNames).toContain("rule_archive");
     expect(toolNames).toContain("adr_create");
+    expect(toolNames).toContain("adr_list");
     expect(toolNames).toContain("adr_archive");
     expect(toolNames).toContain("task_create");
     expect(toolNames).toContain("task_list");
@@ -224,6 +226,83 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     expect(created.id).toBeDefined();
     expect(created.slug).toBe("agent-created-task");
     expect(created.acceptanceCriteria).toHaveLength(2);
+  });
+
+  // @verifies ADR-4, RULE-9, RULE-25, RULE-26, RULE-34, RULE-35
+  it("[ADR-4][RULE-9][RULE-25][RULE-26][RULE-34][RULE-35] should execute rule_list and adr_list tools with ancestral scope filtering and token economy", async () => {
+    const adr101Tag = makeTestTag("ADR", 101);
+    const adr102Tag = makeTestTag("ADR", 102);
+    const rule102Tag = makeTestTag("RULE", 102);
+    const rule103Tag = makeTestTag("RULE", 103);
+
+    await workspace.createAdr({
+      id: 101,
+      slug: "root-architecture-decision",
+      links: [ruleTag],
+      context: "Root decision context.",
+    });
+    await workspace.createAdr({
+      id: 102,
+      slug: "mcp-subsystem-decision",
+      subDir: "src/interfaces/mcp/.modie/adrs",
+      links: [],
+      context: "MCP decision context.",
+    });
+
+    await workspace.createRule({
+      id: 102,
+      slug: "mcp-subsystem-rule",
+      subDir: "src/interfaces/mcp/.modie/rules",
+      links: [adr101Tag],
+      body: "MCP subsystem rule body.",
+    });
+    await workspace.createRule({
+      id: 103,
+      slug: "cli-sibling-rule",
+      subDir: "src/interfaces/cli/.modie/rules",
+      links: [],
+      body: "CLI sibling rule body.",
+    });
+
+    // 1. rule_list with ancestral scope filtering
+    const ruleListRes = await client.callTool({
+      name: "rule_list",
+      arguments: { scope: "src/interfaces/mcp" },
+    });
+    expect(ruleListRes.isError).toBeFalsy();
+    const rules = JSON.parse(getTextContent(ruleListRes));
+    expect(rules.map((r: any) => r.tag)).toEqual([ruleTag, rule102Tag]);
+    expect(rules[1].title).toBe("mcp subsystem rule");
+    expect(rules[1].links).toEqual([adr101Tag]);
+    expect(rules[1].relativePath).toBe(
+      `src/interfaces/mcp/.modie/rules/mcp-subsystem-rule.${rule102Tag}.md`,
+    );
+    // Enforce RULE-26 token economy: no unsolicited rawContent or body in list responses
+    expect(rules[0].rawContent).toBeUndefined();
+    expect(rules[0].body).toBeUndefined();
+
+    // 2. adr_list with ancestral scope filtering
+    const adrListRes = await client.callTool({
+      name: "adr_list",
+      arguments: { scope: "src/interfaces/cli" },
+    });
+    expect(adrListRes.isError).toBeFalsy();
+    const adrs = JSON.parse(getTextContent(adrListRes));
+    expect(adrs.map((a: any) => a.tag)).toEqual([adr101Tag]);
+    expect(adrs[0].title).toBe("root architecture decision");
+    expect(adrs[0].links).toEqual([ruleTag]);
+    expect(adrs[0].rawContent).toBeUndefined();
+    expect(adrs[0].body).toBeUndefined();
+
+    // 3. Error convention on invalid scope outside workspace
+    const invalidScopeRes = await client.callTool({
+      name: "rule_list",
+      arguments: { scope: "../outside-workspace" },
+    });
+    expect(invalidScopeRes.isError).toBe(true);
+    expect(getTextContent(invalidScopeRes)).toContain(
+      "scope path must reside within the workspace root",
+    );
   });
 });
 

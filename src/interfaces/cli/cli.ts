@@ -7,8 +7,16 @@ import { handleFind } from "./commands/find/find.ts";
 import { handleShow } from "./commands/show/show.ts";
 import { handleReferences } from "./commands/references/references.ts";
 import { handleArchive } from "./commands/archive/archive.ts";
-import { handleRuleCreate, handleRuleArchive } from "./commands/rule/index.ts";
-import { handleAdrCreate, handleAdrArchive } from "./commands/adr/index.ts";
+import {
+  handleRuleCreate,
+  handleRuleArchive,
+  handleRuleList,
+} from "./commands/rule/index.ts";
+import {
+  handleAdrCreate,
+  handleAdrArchive,
+  handleAdrList,
+} from "./commands/adr/index.ts";
 import {
   handleTaskCheck,
   handleTaskComplete,
@@ -44,8 +52,10 @@ Commands:
   references <tag> [options]   Display citations and declared outbound links (alias: refs)
   archive <tag> [options]      Archive a governance artifact (RULE, ADR)
   rule create <title>          Create a new RULE artifact
+  rule list [options]          List active RULE artifacts (alias: ls)
   rule archive <tag>           Archive a RULE artifact
   adr create <title>           Create a new ADR artifact
+  adr list [options]           List active ADR artifacts (alias: ls)
   adr archive <tag>            Archive an ADR artifact
   task create <title>          Create a new TASK artifact with automatic watermark resolution
   task start <id>              Create and checkout a hierarchical task branch
@@ -84,6 +94,7 @@ export function printRuleNamespaceHelp(stderr: (msg: string) => void): void {
 
 Subcommands:
   create <title>               Create a new RULE artifact
+  list [options]               List active RULE artifacts (alias: ls)
   archive <tag> [options]      Archive a RULE artifact
 `);
 }
@@ -93,6 +104,7 @@ export function printAdrNamespaceHelp(stderr: (msg: string) => void): void {
 
 Subcommands:
   create <title>               Create a new ADR artifact
+  list [options]               List active ADR artifacts (alias: ls)
   archive <tag> [options]      Archive an ADR artifact
 `);
 }
@@ -129,14 +141,22 @@ const namespaces: Record<string, CommandNamespace> = {
     help: printRuleNamespaceHelp,
     commands: {
       create: handleRuleCreate,
+      list: handleRuleList,
       archive: handleRuleArchive,
+    },
+    aliases: {
+      ls: "list",
     },
   },
   adr: {
     help: printAdrNamespaceHelp,
     commands: {
       create: handleAdrCreate,
+      list: handleAdrList,
       archive: handleAdrArchive,
+    },
+    aliases: {
+      ls: "list",
     },
   },
 };
