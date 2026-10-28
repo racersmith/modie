@@ -13,7 +13,7 @@ Simplify task resolution so that active task queries strictly search active .md 
 
 # Acceptance Criteria
 
-- [ ] Default task resolution to search strictly active .md files on disk without automatic Git deletion scanning
-- [ ] Add explicit --history flag to task status and find commands to query completed task history and branches
-- [ ] Clean up allowZombie and implicit deletion fallback paths in core task query APIs
-- [ ] Add unit and integration tests verifying strict active resolution and explicit history queries
+- [x] Default task resolution to search strictly active .md files on disk without automatic Git deletion scanning
+- [x] Add explicit --history flag to task status and find commands to query completed task history and branches
+- [x] Clean up allowZombie and implicit deletion fallback paths in core task query APIs
+- [x] Add unit and integration tests verifying strict active resolution and explicit history queries

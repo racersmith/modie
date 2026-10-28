@@ -192,7 +192,6 @@ async function resolveTaskMetaForBranching(
   try {
     const filepath = await resolveTaskFile(taskIdentifier, {
       cwd,
-      allowZombie: true,
       vcs,
     });
     const content = await readFile(filepath, "utf8");
@@ -455,7 +454,6 @@ export async function mergeTaskBranch(
   try {
     const filepath = await resolveTaskFile(taskIdentifier, {
       cwd,
-      allowZombie: true,
       vcs,
     });
     const content = await readFile(filepath, "utf8");

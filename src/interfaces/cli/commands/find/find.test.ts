@@ -163,4 +163,35 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
     expect(stderr).toBe("");
     expect(stdout.trim()).toBe(rule.relativePath);
   });
+
+  // @verifies ADR-6, RULE-21, RULE-25, RULE-27, RULE-34, RULE-35
+  it("[ADR-6][RULE-21][RULE-25][RULE-27][RULE-34][RULE-35] should resolve completed task in Git history only when --history is passed", async () => {
+    await workspace.initGit({ defaultBranch: "dev", initialCommit: true });
+    const task = await workspace.createTask({
+      id: 404,
+      slug: "completed-find-task",
+      criteria: [{ text: "Done", completed: true }],
+    });
+
+    await Bun.$`git add .`.cwd(workspace.cwd).quiet();
+    await workspace.gitCommit(`feat(${task.tag}): ${task.slug}`);
+    await workspace.remove(task);
+    await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+    await workspace.gitCommit(`chore(task): delete completed ${task.tag} artifact`);
+
+    // Without --history: fails because active file is deleted
+    const withoutHistory = await workspace.captureCli(["find", task.tag]);
+    expect(withoutHistory.exitCode).toBe(1);
+    expect(withoutHistory.stderr).toContain(`Artifact "${task.tag}" was not found`);
+
+    // With --history: resolves path from Git deletion history
+    const withHistory = await workspace.captureCli([
+      "find",
+      task.tag,
+      "--history",
+    ]);
+    expect(withHistory.exitCode).toBe(0);
+    expect(withHistory.stderr).toBe("");
+    expect(withHistory.stdout.trim()).toBe(task.relativePath);
+  });
 });

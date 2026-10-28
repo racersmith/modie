@@ -6,6 +6,7 @@
 import { z } from "zod";
 import {
   getTaskStatus,
+  queryTaskHistory,
   queryTaskQueue,
   resolveCurrentTask,
   type TaskQueueItem,
@@ -29,12 +30,17 @@ export const taskStatusSchema = z.object({
     .boolean()
     .default(false)
     .describe("Resolve and display current task from active git branch"),
+  history: z
+    .boolean()
+    .default(false)
+    .describe("Query completed task history and branches in Git per ADR-6"),
 });
 
 export type TaskStatusInput = z.infer<typeof taskStatusSchema>;
 
 export interface TaskStatusFlags {
   current?: boolean;
+  history?: boolean;
   json?: boolean;
 }
 
@@ -69,16 +75,27 @@ export const taskStatusCommand: CliCommandDefinition<
       short: "c",
       description: "Resolve and display current task from active git branch",
     },
+    history: {
+      type: "boolean",
+      description:
+        "Query completed task history and branches in Git per ADR-6",
+    },
   },
   execute: async (input, context) => {
     // 1. If explicit task identifier provided, query that task
     if (input.id) {
-      return getTaskStatus(input.id, { cwd: context.cwd });
+      return getTaskStatus(input.id, {
+        cwd: context.cwd,
+        history: input.history,
+      });
     }
 
     // 2. If --current is explicitly passed, resolve current task or throw if outside task branch
     if (input.current) {
-      const current = await resolveCurrentTask({ cwd: context.cwd });
+      const current = await resolveCurrentTask({
+        cwd: context.cwd,
+        history: input.history,
+      });
       if (!current) {
         throw new Error(
           "Not on a task branch: cannot resolve current task from git branch.",
@@ -87,20 +104,29 @@ export const taskStatusCommand: CliCommandDefinition<
       return current;
     }
 
-    // 3. If no ID and no --current, attempt to resolve current task from active git branch
+    // 3. If --history is explicitly passed without an ID, query historical tasks and branches
+    if (input.history) {
+      return queryTaskHistory({ cwd: context.cwd });
+    }
+
+    // 4. If no ID and no --current, attempt to resolve current task from active git branch
     const current = await resolveCurrentTask({ cwd: context.cwd });
     if (current) {
       return current;
     }
 
-    // 4. Fallback to active task queue if not on a task branch
+    // 5. Fallback to active task queue if not on a task branch
     return queryTaskQueue({ cwd: context.cwd });
   },
   render: (status, context) => {
     if (!status || typeof status === "number") return;
     if (Array.isArray(status)) {
       if (status.length === 0) {
-        context.stderr("No active tasks found in working tree.");
+        if (context.flags.history) {
+          context.stderr("No completed tasks or task branches found in Git history.");
+        } else {
+          context.stderr("No active tasks found in working tree.");
+        }
         return;
       }
       context.stdout(renderTaskQueueTable(status));
@@ -108,6 +134,9 @@ export const taskStatusCommand: CliCommandDefinition<
     }
     context.stderr(`${status.fullTaskId}: ${status.slug}`);
     context.stderr(`Status:      ${status.readiness}`);
+    if (status.branch) {
+      context.stderr(`Branch:      ${status.branch}`);
+    }
     if (status.blockedBy.length > 0) {
       context.stderr(`Blocked By:  ${status.blockedBy.join(", ")}`);
     }

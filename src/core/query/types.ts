@@ -5,6 +5,7 @@
 
 import type { IndexableSubtype } from "../common/types.ts";
 import type { TaskAcceptanceCriteriaItem } from "../task/types.ts";
+import type { IVcsAdapter } from "../vcs/types.ts";
 
 export interface ResolvedArtifact {
   /**
@@ -46,6 +47,11 @@ export interface ResolvedArtifact {
    * Whether the artifact has a .ARCHIVED marker.
    */
   isArchived: boolean;
+
+  /**
+   * Whether the artifact was resolved from Git history or another branch (--history).
+   */
+  isHistorical?: boolean;
 }
 
 export interface ArtifactDetails extends ResolvedArtifact {
@@ -101,6 +107,17 @@ export interface ResolveArtifactOptions {
    * Defaults to true.
    */
   includeArchived?: boolean;
+
+  /**
+   * Whether to query Git deletion history and branches when the artifact is not active on disk (ADR-6).
+   * Defaults to false.
+   */
+  history?: boolean;
+
+  /**
+   * Optional VCS adapter override.
+   */
+  vcs?: IVcsAdapter;
 }
 
 export interface ListedArtifact {

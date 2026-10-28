@@ -463,7 +463,8 @@ describe("Zombie Task Resurrection Prevention (ADR-6, RULE-21)", () => {
   });
 
   // @verifies ADR-6, RULE-21
-  it("[ADR-6][RULE-21] should reject resolving a resurrected zombie task file on disk", async () => {
+  it("[ADR-6][RULE-21] should strictly resolve active .md files on disk without automatic Git deletion scanning while assertNotZombieTask guards ID reuse", async () => {
+    const { assertNotZombieTask } = await import("./index.ts");
     const zombieArtifact = await workspace.createTask({
       id: 99,
       slug: "resurrected",
@@ -471,17 +472,18 @@ describe("Zombie Task Resurrection Prevention (ADR-6, RULE-21)", () => {
       criteria: ["Criterion"],
     });
 
+    // resolveTaskFile strictly searches active .md files on disk without implicit git log scanning
+    const resolved = await resolveTaskFile(zombieTag, {
+      cwd: workspace.cwd,
+    });
+    expect(resolved).toBe(zombieArtifact.filepath);
+
+    // Explicit assertNotZombieTask guard still detects deleted IDs during watermark allocation
     await expect(
-      resolveTaskFile(zombieTag, { cwd: workspace.cwd }),
+      assertNotZombieTask(zombieTag, workspace.cwd),
     ).rejects.toThrow(
       new RegExp(`Zombie task detected: Task "${zombieTag}" was previously completed and deleted in Git history`),
     );
-
-    const resolved = await resolveTaskFile(zombieTag, {
-      cwd: workspace.cwd,
-      allowZombie: true,
-    });
-    expect(resolved).toBe(zombieArtifact.filepath);
   });
 
   // @verifies ADR-6, RULE-21

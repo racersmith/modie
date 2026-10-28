@@ -64,6 +64,7 @@ export {
   compareTaskIds,
   getTaskStatus,
   parseTaskIdFromBranch,
+  queryTaskHistory,
   queryTaskQueue,
   resolveCurrentTask,
 } from "./task/query.ts";
@@ -72,6 +73,7 @@ export type {
   TaskQueueQueryOptions,
   TaskReadiness,
   TaskStatusDetails,
+  TaskStatusQueryOptions,
 } from "./task/query.ts";
 export {
   branchExists,

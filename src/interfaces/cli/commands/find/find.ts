@@ -25,12 +25,19 @@ export const findSchema = z.object({
     .boolean()
     .default(false)
     .describe("Emit absolute file path instead of relative path"),
+  history: z
+    .boolean()
+    .default(false)
+    .describe(
+      "Query completed task history and branches in Git if artifact is not active on disk",
+    ),
 });
 
 export type FindInput = z.infer<typeof findSchema>;
 
 export interface FindFlags {
   absolute?: boolean;
+  history?: boolean;
   json?: boolean;
 }
 
@@ -62,9 +69,17 @@ export const findCommand: CliCommandDefinition<FindFlags, ResolvedArtifact, type
         type: "boolean",
         description: "Emit absolute file path instead of relative path",
       },
+      history: {
+        type: "boolean",
+        description:
+          "Query completed task history and branches in Git if artifact is not active on disk",
+      },
     },
     execute: async (input, context) => {
-      return resolveArtifactByTag(input.tag, { cwd: context.cwd });
+      return resolveArtifactByTag(input.tag, {
+        cwd: context.cwd,
+        history: input.history,
+      });
     },
     render: (result, context) => {
       const outputPath = context.flags.absolute
