@@ -24,7 +24,9 @@ export const taskCompleteSchema = z.object({
   id: z
     .string()
     .optional()
-    .describe("Task ID (e.g. TASK-7-1, 7-1), slug, or file path (optional when on a task branch)"),
+    .describe(
+      "Task ID (e.g. TASK-7-1, 7-1), slug, or file path (optional when on a task branch)",
+    ),
   commit: z
     .boolean()
     .optional()
@@ -40,9 +42,7 @@ export const taskCompleteSchema = z.object({
   force: z
     .boolean()
     .default(false)
-    .describe(
-      "Force completion even if acceptance criteria remain unchecked",
-    ),
+    .describe("Force completion even if acceptance criteria remain unchecked"),
   keepFile: z
     .boolean()
     .default(false)
@@ -82,7 +82,8 @@ export const taskCompleteCommand: CliCommandDefinition<
     {
       name: "id-or-path",
       property: "id",
-      description: "Task ID (e.g. TASK-7-1, 7-1), slug, or file path (optional when on a task branch)",
+      description:
+        "Task ID (e.g. TASK-7-1, 7-1), slug, or file path (optional when on a task branch)",
       required: false,
     },
   ],
@@ -107,7 +108,8 @@ export const taskCompleteCommand: CliCommandDefinition<
     },
     "keep-file": {
       type: "boolean",
-      description: "Retain the task artifact file on disk instead of deleting it",
+      description:
+        "Retain the task artifact file on disk instead of deleting it",
       aliases: ["no-delete"],
       property: "keepFile",
     },

@@ -98,12 +98,7 @@ describe("CLI `modie link` and `modie unlink` Commands (ADR-5, RULE-27, RULE-36)
     );
 
     // 2. Link task1 -> task2 with --json (automatic depends_on inference)
-    const jsonLinkCode = await execCli([
-      "link",
-      task1Tag,
-      task2Tag,
-      "--json",
-    ]);
+    const jsonLinkCode = await execCli(["link", task1Tag, task2Tag, "--json"]);
     expect(jsonLinkCode).toBe(0);
     const parsedLink = JSON.parse(stdoutLines.join("\n"));
     expect(parsedLink.action).toBe("link");
@@ -139,7 +134,9 @@ describe("CLI `modie link` and `modie unlink` Commands (ADR-5, RULE-27, RULE-36)
     const cycleFailCode = await execCli(["link", task2Tag, task1Tag]);
     expect(cycleFailCode).toBe(1);
     expect(stdoutLines).toEqual([]);
-    expect(stderrLines.join("\n")).toContain("Circular task dependency detected");
+    expect(stderrLines.join("\n")).toContain(
+      "Circular task dependency detected",
+    );
     expect(stderrLines.join("\n")).toContain("RULE-18");
 
     // 3. Explicit --type override violation: task1 -> task2 with --type links (RULE-15)
@@ -172,4 +169,3 @@ describe("CLI `modie link` and `modie unlink` Commands (ADR-5, RULE-27, RULE-36)
     );
   });
 });
-

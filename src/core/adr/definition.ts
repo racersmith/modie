@@ -39,12 +39,8 @@ export async function validateAdrScope(
     const rule = await resolveArtifactByTag(link, { cwd });
 
     const ruleDir = dirname(rule.filepath);
-    const { normalizedScopeDir: ruleNormalizedScope } = resolveArtifactDirectories(
-      "RULE",
-      ruleDir,
-      true,
-      cwd,
-    );
+    const { normalizedScopeDir: ruleNormalizedScope } =
+      resolveArtifactDirectories("RULE", ruleDir, true, cwd);
 
     const relFromAdrToRule = relative(normalizedScopeDir, ruleNormalizedScope);
     const isDescendantOrEqual =
@@ -59,48 +55,49 @@ export async function validateAdrScope(
   }
 }
 
-export const adrDefinition: ArtifactDefinition<CreateAdrOptions, AdrArtifact> = {
-  subtype: "ADR",
-  containerName: "adrs",
-  validate: async ({ normalizedScopeDir, options, cwd }) => {
-    const links = options.links ?? [];
-    await validateAdrScope(normalizedScopeDir, links, cwd);
-  },
-  render: ({ id, slug, title, options, filepath }) => {
-    const links = options.links ?? [];
-    const supersedesRaw = options.supersedes
-      ? Array.isArray(options.supersedes)
-        ? options.supersedes
-        : [options.supersedes]
-      : [];
-    const supersedes = supersedesRaw
-      .map((s) => s.trim().toUpperCase())
-      .filter(Boolean);
+export const adrDefinition: ArtifactDefinition<CreateAdrOptions, AdrArtifact> =
+  {
+    subtype: "ADR",
+    containerName: "adrs",
+    validate: async ({ normalizedScopeDir, options, cwd }) => {
+      const links = options.links ?? [];
+      await validateAdrScope(normalizedScopeDir, links, cwd);
+    },
+    render: ({ id, slug, title, options, filepath }) => {
+      const links = options.links ?? [];
+      const supersedesRaw = options.supersedes
+        ? Array.isArray(options.supersedes)
+          ? options.supersedes
+          : [options.supersedes]
+        : [];
+      const supersedes = supersedesRaw
+        .map((s) => s.trim().toUpperCase())
+        .filter(Boolean);
 
-    const markdown = renderAdrMarkdown({
-      id,
-      slug,
-      title,
-      links,
-      supersedes: supersedes.length > 0 ? supersedes : undefined,
-      context: options.context?.trim(),
-      alternatives: options.alternatives?.trim(),
-      decision: options.decision?.trim(),
-    });
+      const markdown = renderAdrMarkdown({
+        id,
+        slug,
+        title,
+        links,
+        supersedes: supersedes.length > 0 ? supersedes : undefined,
+        context: options.context?.trim(),
+        alternatives: options.alternatives?.trim(),
+        decision: options.decision?.trim(),
+      });
 
-    const artifact: AdrArtifact = {
-      id,
-      slug,
-      title,
-      links,
-      supersedes: supersedes.length > 0 ? supersedes : undefined,
-      context: options.context?.trim(),
-      alternatives: options.alternatives?.trim(),
-      decision: options.decision?.trim(),
-      filePath: filepath,
-      rawContent: markdown,
-    };
+      const artifact: AdrArtifact = {
+        id,
+        slug,
+        title,
+        links,
+        supersedes: supersedes.length > 0 ? supersedes : undefined,
+        context: options.context?.trim(),
+        alternatives: options.alternatives?.trim(),
+        decision: options.decision?.trim(),
+        filePath: filepath,
+        rawContent: markdown,
+      };
 
-    return { markdown, artifact };
-  },
-};
+      return { markdown, artifact };
+    },
+  };

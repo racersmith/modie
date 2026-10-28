@@ -1,5 +1,12 @@
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { promisify } from "node:util";
@@ -108,7 +115,9 @@ export interface FixtureWorkspace {
   resolve(...paths: string[]): string;
   mkdir(relativePath: string): Promise<string>;
   remove(target: string | CreatedFixtureArtifact): Promise<void>;
-  createArtifact(options: CreateFixtureArtifactOptions): Promise<CreatedFixtureArtifact>;
+  createArtifact(
+    options: CreateFixtureArtifactOptions,
+  ): Promise<CreatedFixtureArtifact>;
   createTask(options?: CreateTaskOptions): Promise<CreatedFixtureArtifact>;
   createRule(options?: CreateRuleOptions): Promise<CreatedFixtureArtifact>;
   createAdr(options?: CreateAdrOptions): Promise<CreatedFixtureArtifact>;
@@ -116,7 +125,10 @@ export interface FixtureWorkspace {
   fileExists(target: string | CreatedFixtureArtifact): Promise<boolean>;
   readJson<T = any>(target: string | CreatedFixtureArtifact): Promise<T>;
   writeFile(relativePath: string, content: string): Promise<string>;
-  initGit(options?: { defaultBranch?: string; initialCommit?: boolean }): Promise<void>;
+  initGit(options?: {
+    defaultBranch?: string;
+    initialCommit?: boolean;
+  }): Promise<void>;
   gitCommit(message: string): Promise<string>;
   gitCheckout(branch: string, options?: { create?: boolean }): Promise<void>;
   cleanup(): Promise<void>;
@@ -142,7 +154,9 @@ export async function createFixtureWorkspace(
       return makeTestTag(subtype, id);
     },
 
-    async createArtifact(options: CreateFixtureArtifactOptions): Promise<CreatedFixtureArtifact> {
+    async createArtifact(
+      options: CreateFixtureArtifactOptions,
+    ): Promise<CreatedFixtureArtifact> {
       const upperSubtype = options.subtype.toUpperCase() as IndexableSubtype;
       const rawId = options.id ?? `TEST-${testIdCounter++}`;
       const id = String(rawId);
@@ -192,14 +206,18 @@ export async function createFixtureWorkspace(
         }
         if (options.supersedes) {
           frontmatterLines.push("supersedes:");
-          const list = Array.isArray(options.supersedes) ? options.supersedes : [options.supersedes];
+          const list = Array.isArray(options.supersedes)
+            ? options.supersedes
+            : [options.supersedes];
           for (const s of list) {
             frontmatterLines.push(`  - ${s}`);
           }
         }
         if (options.superseded_by) {
           frontmatterLines.push("superseded_by:");
-          const list = Array.isArray(options.superseded_by) ? options.superseded_by : [options.superseded_by];
+          const list = Array.isArray(options.superseded_by)
+            ? options.superseded_by
+            : [options.superseded_by];
           for (const s of list) {
             frontmatterLines.push(`  - ${s}`);
           }
@@ -213,7 +231,10 @@ export async function createFixtureWorkspace(
         }
         if (options.plannedGovernance) {
           const govLines: string[] = ["# Planned Governance\n"];
-          if (options.plannedGovernance.rules && options.plannedGovernance.rules.length > 0) {
+          if (
+            options.plannedGovernance.rules &&
+            options.plannedGovernance.rules.length > 0
+          ) {
             govLines.push("## Rules\n");
             for (const r of options.plannedGovernance.rules) {
               const text = typeof r === "string" ? r : r.text;
@@ -222,7 +243,10 @@ export async function createFixtureWorkspace(
             }
             govLines.push("");
           }
-          if (options.plannedGovernance.adrs && options.plannedGovernance.adrs.length > 0) {
+          if (
+            options.plannedGovernance.adrs &&
+            options.plannedGovernance.adrs.length > 0
+          ) {
             govLines.push("## ADRs\n");
             for (const a of options.plannedGovernance.adrs) {
               const text = typeof a === "string" ? a : a.text;
@@ -233,14 +257,19 @@ export async function createFixtureWorkspace(
           }
           bodySections.push(govLines.join("\n").trim());
         }
-        if (options.acceptanceCriteria && options.acceptanceCriteria.length > 0) {
+        if (
+          options.acceptanceCriteria &&
+          options.acceptanceCriteria.length > 0
+        ) {
           const criteriaLines = options.acceptanceCriteria.map((c) => {
             if (typeof c === "string") {
               return `- [ ] ${c}`;
             }
             return `- [${c.completed ? "x" : " "}] ${c.text}`;
           });
-          bodySections.push(`# Acceptance Criteria\n\n${criteriaLines.join("\n")}`);
+          bodySections.push(
+            `# Acceptance Criteria\n\n${criteriaLines.join("\n")}`,
+          );
         }
         if (options.body) {
           bodySections.push(options.body);
@@ -265,12 +294,20 @@ export async function createFixtureWorkspace(
       };
     },
 
-    async createTask(options: CreateTaskOptions = {}): Promise<CreatedFixtureArtifact> {
+    async createTask(
+      options: CreateTaskOptions = {},
+    ): Promise<CreatedFixtureArtifact> {
       return workspace.createArtifact({
         subtype: "TASK",
         id: options.id,
-        slug: options.slug ?? (options.title ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : undefined),
-        context: options.context ?? (options.title ? `Context for ${options.title}` : undefined),
+        slug:
+          options.slug ??
+          (options.title
+            ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+            : undefined),
+        context:
+          options.context ??
+          (options.title ? `Context for ${options.title}` : undefined),
         acceptanceCriteria: options.criteria,
         plannedGovernance: options.plannedGovernance,
         depends_on: options.depends_on,
@@ -280,12 +317,22 @@ export async function createFixtureWorkspace(
       });
     },
 
-    async createRule(options: CreateRuleOptions = {}): Promise<CreatedFixtureArtifact> {
+    async createRule(
+      options: CreateRuleOptions = {},
+    ): Promise<CreatedFixtureArtifact> {
       return workspace.createArtifact({
         subtype: "RULE",
         id: options.id,
-        slug: options.slug ?? (options.title ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : undefined),
-        body: options.body ?? (options.title ? `# Invariant\n\nRule body for ${options.title}.` : undefined),
+        slug:
+          options.slug ??
+          (options.title
+            ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+            : undefined),
+        body:
+          options.body ??
+          (options.title
+            ? `# Invariant\n\nRule body for ${options.title}.`
+            : undefined),
         links: options.links,
         supersedes: options.supersedes,
         superseded_by: options.superseded_by,
@@ -295,10 +342,14 @@ export async function createFixtureWorkspace(
       });
     },
 
-    async createAdr(options: CreateAdrOptions = {}): Promise<CreatedFixtureArtifact> {
+    async createAdr(
+      options: CreateAdrOptions = {},
+    ): Promise<CreatedFixtureArtifact> {
       const bodySections: string[] = [];
       if (options.alternatives) {
-        bodySections.push(`# Alternatives Considered\n\n${options.alternatives}`);
+        bodySections.push(
+          `# Alternatives Considered\n\n${options.alternatives}`,
+        );
       }
       if (options.decision) {
         bodySections.push(`# Decision\n\n${options.decision}`);
@@ -306,8 +357,14 @@ export async function createFixtureWorkspace(
       return workspace.createArtifact({
         subtype: "ADR",
         id: options.id,
-        slug: options.slug ?? (options.title ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : undefined),
-        context: options.context ?? (options.title ? `Context for ${options.title}` : undefined),
+        slug:
+          options.slug ??
+          (options.title
+            ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+            : undefined),
+        context:
+          options.context ??
+          (options.title ? `Context for ${options.title}` : undefined),
         body: bodySections.length > 0 ? bodySections.join("\n\n") : undefined,
         links: options.links,
         supersedes: options.supersedes,
@@ -340,7 +397,9 @@ export async function createFixtureWorkspace(
       return readFile(p, "utf8");
     },
 
-    async fileExists(target: string | CreatedFixtureArtifact): Promise<boolean> {
+    async fileExists(
+      target: string | CreatedFixtureArtifact,
+    ): Promise<boolean> {
       const raw = typeof target === "string" ? target.trim() : target.filepath;
       const p = raw.startsWith("/") ? raw : join(cwd, raw);
       try {
@@ -351,7 +410,9 @@ export async function createFixtureWorkspace(
       }
     },
 
-    async readJson<T = any>(target: string | CreatedFixtureArtifact): Promise<T> {
+    async readJson<T = any>(
+      target: string | CreatedFixtureArtifact,
+    ): Promise<T> {
       const text = await workspace.readFile(target);
       return JSON.parse(text);
     },
@@ -363,28 +424,50 @@ export async function createFixtureWorkspace(
       return targetPath;
     },
 
-    async initGit(options?: { defaultBranch?: string; initialCommit?: boolean }): Promise<void> {
+    async initGit(options?: {
+      defaultBranch?: string;
+      initialCommit?: boolean;
+    }): Promise<void> {
       const branch = options?.defaultBranch ?? "dev";
       await execFileAsync("git", ["init", "-b", branch], { cwd });
-      await execFileAsync("git", ["config", "user.name", "Test Runner"], { cwd });
-      await execFileAsync("git", ["config", "user.email", "test@example.com"], { cwd });
+      await execFileAsync("git", ["config", "user.name", "Test Runner"], {
+        cwd,
+      });
+      await execFileAsync("git", ["config", "user.email", "test@example.com"], {
+        cwd,
+      });
       await execFileAsync("git", ["config", "gc.auto", "0"], { cwd });
       await execFileAsync("git", ["config", "core.compression", "0"], { cwd });
-      await execFileAsync("git", ["config", "commit.gpgsign", "false"], { cwd });
-      await execFileAsync("git", ["config", "core.preloadindex", "true"], { cwd });
+      await execFileAsync("git", ["config", "commit.gpgsign", "false"], {
+        cwd,
+      });
+      await execFileAsync("git", ["config", "core.preloadindex", "true"], {
+        cwd,
+      });
       if (options?.initialCommit ?? true) {
-        await execFileAsync("git", ["commit", "--allow-empty", "-m", "chore: initial commit"], { cwd });
+        await execFileAsync(
+          "git",
+          ["commit", "--allow-empty", "-m", "chore: initial commit"],
+          { cwd },
+        );
       }
     },
 
     async gitCommit(message: string): Promise<string> {
       await execFileAsync("git", ["add", "-A"], { cwd });
-      const { stdout } = await execFileAsync("git", ["commit", "-m", message], { cwd });
+      const { stdout } = await execFileAsync("git", ["commit", "-m", message], {
+        cwd,
+      });
       return stdout;
     },
 
-    async gitCheckout(branch: string, options?: { create?: boolean }): Promise<void> {
-      const args = options?.create ? ["checkout", "-b", branch] : ["checkout", branch];
+    async gitCheckout(
+      branch: string,
+      options?: { create?: boolean },
+    ): Promise<void> {
+      const args = options?.create
+        ? ["checkout", "-b", branch]
+        : ["checkout", branch];
       await execFileAsync("git", args, { cwd });
     },
 

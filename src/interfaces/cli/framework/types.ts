@@ -228,4 +228,3 @@ export type DefineCommandOptions<
     context: CliExecutionContext<TFlags>,
   ) => Promise<TResult | number | void> | TResult | number | void;
 };
-

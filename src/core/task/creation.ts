@@ -21,14 +21,21 @@ export function resolveTaskDirectories(
   useSubtypeContainer: boolean = true,
   cwd: string = process.cwd(),
 ): { normalizedScopeDir: string; targetDir: string } {
-  return resolveArtifactDirectories("TASK", scopeDirInput, useSubtypeContainer, cwd);
+  return resolveArtifactDirectories(
+    "TASK",
+    scopeDirInput,
+    useSubtypeContainer,
+    cwd,
+  );
 }
 
 /**
  * Orchestrating domain service to create a new TASK artifact.
  * Follows RULE-1, RULE-6, RULE-8, RULE-12, RULE-15, RULE-18, RULE-22, RULE-25, and ADR-9.
  */
-export async function createTask(options: CreateTaskOptions): Promise<CreateTaskResult> {
+export async function createTask(
+  options: CreateTaskOptions,
+): Promise<CreateTaskResult> {
   const result = await createArtifact(taskDefinition, options);
   return {
     artifact: result.artifact,

@@ -15,7 +15,11 @@ import type {
  */
 export const ARTIFACT_ID_REGEX = /^[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*$/;
 
-export const DEFAULT_INDEXABLE_SUBTYPES = new Set<string>(["RULE", "ADR", "TASK"]);
+export const DEFAULT_INDEXABLE_SUBTYPES = new Set<string>([
+  "RULE",
+  "ADR",
+  "TASK",
+]);
 const registeredSubtypes = new Set<string>(DEFAULT_INDEXABLE_SUBTYPES);
 
 /**
@@ -66,7 +70,9 @@ export function isValidArtifactId(id: string | number): boolean {
  *
  * @throws Error if slug, subtype, or id do not conform to RULE-1 grammar.
  */
-export function formatArtifactFilename(options: FormatArtifactFilenameOptions): string {
+export function formatArtifactFilename(
+  options: FormatArtifactFilenameOptions,
+): string {
   const { slug, subtype, id, isArchived = false } = options;
   const strId = String(id).trim();
 
@@ -155,15 +161,18 @@ export function isArtifactFilename(
  * subtask branches (`task/106-1-subtask-slug`), and prefixed tasks (`task/J101-slug`).
  * Returns null if the branch is not a task branch.
  */
-export function parseTaskIdFromBranch(branchName?: string | null): string | null {
+export function parseTaskIdFromBranch(
+  branchName?: string | null,
+): string | null {
   if (!branchName) {
     return null;
   }
   const trimmed = branchName.trim();
-  const match = trimmed.match(/^task\/(?:TASK-)?([A-Za-z0-9]+(?:-[0-9]+)?)(?:-.*)?$/i);
+  const match = trimmed.match(
+    /^task\/(?:TASK-)?([A-Za-z0-9]+(?:-[0-9]+)?)(?:-.*)?$/i,
+  );
   if (!match || !match[1]) {
     return null;
   }
   return match[1];
 }
-

@@ -22,10 +22,7 @@ export const ruleCreateSchema = z.object({
     .string()
     .optional()
     .describe("Target scope directory (defaults to current working directory)"),
-  context: z
-    .string()
-    .optional()
-    .describe("Invariant assertion claim text"),
+  context: z.string().optional().describe("Invariant assertion claim text"),
   links: z
     .array(z.string())
     .optional()
@@ -90,7 +87,8 @@ export const ruleCreateCommand: CliCommandDefinition<
     {
       name: "title",
       property: "title",
-      description: 'Title of the rule to create (e.g. "Rule Verification Tagging")',
+      description:
+        'Title of the rule to create (e.g. "Rule Verification Tagging")',
       required: true,
       variadic: true,
       missingError:
@@ -102,7 +100,8 @@ export const ruleCreateCommand: CliCommandDefinition<
       type: "string",
       short: "s",
       placeholder: "<dir>",
-      description: "Target scope directory (defaults to current working directory)",
+      description:
+        "Target scope directory (defaults to current working directory)",
     },
     context: {
       type: "string",
@@ -116,8 +115,7 @@ export const ruleCreateCommand: CliCommandDefinition<
       short: "l",
       multiple: true,
       placeholder: "<targets>",
-      description:
-        "ADR link targets (repeat flag or use comma-separated list)",
+      description: "ADR link targets (repeat flag or use comma-separated list)",
       aliases: ["links"],
       property: "links",
     },
@@ -167,7 +165,9 @@ export const ruleCreateCommand: CliCommandDefinition<
         ? ` (supersedes ${result.supersedes.join(", ")})`
         : "";
     context.stdout(result.relativePath);
-    context.stderr(`✓ Created rule ${result.tag}: ${result.filename}${supersedesNotice}`);
+    context.stderr(
+      `✓ Created rule ${result.tag}: ${result.filename}${supersedesNotice}`,
+    );
   },
   renderJson: (result, context) => {
     const supersedesNotice =
@@ -175,7 +175,9 @@ export const ruleCreateCommand: CliCommandDefinition<
         ? ` (supersedes ${result.supersedes.join(", ")})`
         : "";
     context.stdout(JSON.stringify(result, null, 2));
-    context.stderr(`✓ Created rule ${result.tag} (${result.relativePath})${supersedesNotice}`);
+    context.stderr(
+      `✓ Created rule ${result.tag} (${result.relativePath})${supersedesNotice}`,
+    );
   },
 });
 

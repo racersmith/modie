@@ -10,7 +10,10 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
   // @verifies RULE-27
   it("[RULE-27] should emit rule subcommand help to stderr with exit code 0", async () => {
     await using workspace = await createTestWorkspace("modie-cli-rule-help-");
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["rule", "--help"]);
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "rule",
+      "--help",
+    ]);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Usage: modie rule <subcommand>");
@@ -30,12 +33,18 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
     expect(exitCode).toBe(0);
     // RULE-27: stdout strictly contains relative file path
-    expect(stdout.trim()).toBe(`.modie/rules/cli-stream-verification-rule.${expectedTag}.md`);
+    expect(stdout.trim()).toBe(
+      `.modie/rules/cli-stream-verification-rule.${expectedTag}.md`,
+    );
     // RULE-27: stderr strictly contains human status
-    expect(stderr).toContain(`✓ Created rule ${expectedTag}: cli-stream-verification-rule.${expectedTag}.md`);
+    expect(stderr).toContain(
+      `✓ Created rule ${expectedTag}: cli-stream-verification-rule.${expectedTag}.md`,
+    );
 
     const content = await workspace.readFile(stdout.trim());
-    expect(content).toBe("Command output must separate machine and human streams.\n");
+    expect(content).toBe(
+      "Command output must separate machine and human streams.\n",
+    );
   });
 
   // @verifies RULE-27
@@ -59,7 +68,9 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
     expect(parsed.tag).toBe(expectedTag);
     expect(parsed.slug).toBe("json-mode-rule");
     expect(parsed.filename).toBe(`json-mode-rule.${expectedTag}.md`);
-    expect(parsed.relativePath).toContain(`.modie/rules/json-mode-rule.${expectedTag}.md`);
+    expect(parsed.relativePath).toContain(
+      `.modie/rules/json-mode-rule.${expectedTag}.md`,
+    );
     expect(parsed.assertion).toBe("JSON payload must go to stdout.");
   });
 
@@ -125,8 +136,13 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr when title is omitted", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-rule-notitle-");
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["rule", "create"]);
+    await using workspace = await createTestWorkspace(
+      "modie-cli-rule-notitle-",
+    );
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "rule",
+      "create",
+    ]);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("Error: Missing required rule title");
@@ -148,7 +164,9 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
   // @verifies RULE-4, RULE-25, RULE-27
   it("[RULE-4][RULE-25][RULE-27] should create a rule with --supersedes and update predecessor", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-rule-supersedes-");
+    await using workspace = await createTestWorkspace(
+      "modie-cli-rule-supersedes-",
+    );
     const oldRule = await workspace.createRule({
       id: 1,
       slug: "old-rule",
@@ -169,7 +187,9 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe(`.modie/rules/new-rule.${newTag}.md`);
-    expect(stderr).toContain(`✓ Created rule ${newTag}: new-rule.${newTag}.md (supersedes ${oldRule.tag})`);
+    expect(stderr).toContain(
+      `✓ Created rule ${newTag}: new-rule.${newTag}.md (supersedes ${oldRule.tag})`,
+    );
 
     const rule1Content = await workspace.readFile(oldRule.filepath);
     expect(rule1Content).toContain(`superseded_by:\n  - ${newTag}`);
@@ -177,7 +197,9 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
   // @verifies RULE-4, RULE-27
   it("[RULE-4][RULE-27] should emit supersedes in JSON output when --supersedes and --json are passed", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-rule-sup-json-");
+    await using workspace = await createTestWorkspace(
+      "modie-cli-rule-sup-json-",
+    );
     const oldRule = await workspace.createRule({
       id: 1,
       slug: "old-rule",
@@ -196,7 +218,9 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
     ]);
 
     expect(exitCode).toBe(0);
-    expect(stderr).toContain(`✓ Created rule ${newTag} (.modie/rules/superseding-json-rule.${newTag}.md) (supersedes ${oldRule.tag})`);
+    expect(stderr).toContain(
+      `✓ Created rule ${newTag} (.modie/rules/superseding-json-rule.${newTag}.md) (supersedes ${oldRule.tag})`,
+    );
 
     const parsed = JSON.parse(stdout.trim());
     expect(parsed.tag).toBe(newTag);
@@ -205,7 +229,9 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
   // @verifies RULE-13, RULE-27
   it("[RULE-13][RULE-27] should reject invalid --supersedes target with error to stderr", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-rule-sup-err-");
+    await using workspace = await createTestWorkspace(
+      "modie-cli-rule-sup-err-",
+    );
     const invalidTarget = makeTestTag("ADR", 1);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "rule",
@@ -222,7 +248,9 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
   // @verifies RULE-25, RULE-27
   it("[RULE-25][RULE-27] should execute rule create via bin.ts subprocess", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-rule-subproc-");
+    await using workspace = await createTestWorkspace(
+      "modie-cli-rule-subproc-",
+    );
     const expectedTag = makeTestTag("RULE", 1);
     const { stdout, stderr } = await workspace.execBin([
       "rule",

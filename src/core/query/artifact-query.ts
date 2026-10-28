@@ -42,7 +42,9 @@ export function parseCanonicalTag(
   raw: string,
 ): { subtype: IndexableSubtype; id: string; tag: string } | null {
   const trimmed = raw.trim();
-  const match = trimmed.match(/^(RULE|ADR|TASK)-([A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*)$/i);
+  const match = trimmed.match(
+    /^(RULE|ADR|TASK)-([A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*)$/i,
+  );
   if (!match || !match[1] || !match[2]) {
     return null;
   }
@@ -158,7 +160,9 @@ export async function resolveArtifactByTag(
     if (!targetSubtype || targetSubtype === "TASK") {
       const branches = await listGitBranches(cwd, options.vcs);
       for (const b of branches) {
-        const branchMatch = b.match(/^task\/(?:TASK-)?([A-Za-z0-9]+(?:-[0-9]+)*)-(.+)$/i);
+        const branchMatch = b.match(
+          /^task\/(?:TASK-)?([A-Za-z0-9]+(?:-[0-9]+)*)-(.+)$/i,
+        );
         if (branchMatch && branchMatch[1] && branchMatch[2]) {
           const bId = branchMatch[1];
           const bSlug = branchMatch[2];

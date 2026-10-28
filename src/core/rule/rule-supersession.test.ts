@@ -19,13 +19,15 @@ describe("Core Rule Creation - Supersession & Bidirectional Frontmatter (RULE-3,
     const rule1 = await workspace.createRule({
       id: 1,
       slug: "monolithic-state",
-      rawContent: "Global mutable state must not be modified across asynchronous dispatch boundaries.\n",
+      rawContent:
+        "Global mutable state must not be modified across asynchronous dispatch boundaries.\n",
     });
 
     // 2. Create superseding RULE-2 with supersedes option
     const result = await createRule({
       title: "Isolated Actor Concurrency",
-      assertion: "All asynchronous state mutations must execute within isolated actor message envelopes.",
+      assertion:
+        "All asynchronous state mutations must execute within isolated actor message envelopes.",
       supersedes: [rule1.tag],
       cwd: workspace.cwd,
     });
@@ -40,19 +42,25 @@ describe("Core Rule Creation - Supersession & Bidirectional Frontmatter (RULE-3,
 
     // 4. Verify predecessor RULE-1 has been updated with frontmatter containing superseded_by: - RULE-2
     const rule1UpdatedContent = await workspace.readFile(rule1.filepath);
-    expect(rule1UpdatedContent).toContain(`superseded_by:\n  - ${expectedRule2Tag}`);
+    expect(rule1UpdatedContent).toContain(
+      `superseded_by:\n  - ${expectedRule2Tag}`,
+    );
     expect(rule1UpdatedContent).toContain(
       "Global mutable state must not be modified across asynchronous dispatch boundaries.",
     );
 
     // 5. Verify references query on RULE-1 detects supersession and does not treat RULE-2's supersedes as a blocking dependent
-    const refs = await findArtifactReferences(rule1.tag, { cwd: workspace.cwd });
+    const refs = await findArtifactReferences(rule1.tag, {
+      cwd: workspace.cwd,
+    });
     expect(refs.archivalGuard.canArchive).toBe(true);
     expect(refs.archivalGuard.blockingCount).toBe(0);
 
     // 6. Predecessor can now be safely archived per RULE-31
     const archiveResult = await archiveRule(rule1.tag, { cwd: workspace.cwd });
-    expect(archiveResult.archivedFilename).toBe(`monolithic-state.${rule1.tag}.ARCHIVED.md`);
+    expect(archiveResult.archivedFilename).toBe(
+      `monolithic-state.${rule1.tag}.ARCHIVED.md`,
+    );
 
     await workspace.cleanup();
   });
@@ -122,14 +130,18 @@ describe("Core Rule Creation - Supersession & Bidirectional Frontmatter (RULE-3,
     });
 
     const rule1Updated = await workspace.readFile(rule1.filepath);
-    expect(rule1Updated).toContain(`superseded_by:\n  - ${rule2Tag}\n  - ${result.tag}`);
+    expect(rule1Updated).toContain(
+      `superseded_by:\n  - ${rule2Tag}\n  - ${result.tag}`,
+    );
 
     await workspace.cleanup();
   });
 
   // @verifies RULE-13, RULE-34
   it("[RULE-13][RULE-34] should reject supersedes targeting a non-RULE artifact", async () => {
-    const workspace = await createFixtureWorkspace("rule-supersession-invalid-");
+    const workspace = await createFixtureWorkspace(
+      "rule-supersession-invalid-",
+    );
     const adrTag = makeTestTag("ADR", 1);
 
     expect(

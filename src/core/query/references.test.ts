@@ -5,7 +5,11 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { createFixtureWorkspace, makeTestTag, type FixtureWorkspace } from "../testing/index.ts";
+import {
+  createFixtureWorkspace,
+  makeTestTag,
+  type FixtureWorkspace,
+} from "../testing/index.ts";
 import { MockVcsAdapter } from "../vcs/index.ts";
 import {
   findArtifactReferences,
@@ -92,7 +96,9 @@ Follow ${targetAdrTag} for architectural guidelines.
 `,
     );
 
-    const result = await findArtifactReferences(targetAdrTag, { cwd: workspace.cwd });
+    const result = await findArtifactReferences(targetAdrTag, {
+      cwd: workspace.cwd,
+    });
 
     // Target details
     expect(result.target.tag).toBe(targetAdrTag);
@@ -133,7 +139,9 @@ Follow ${targetAdrTag} for architectural guidelines.
 
     // Documentation citations
     expect(result.foundIn.documentation.length).toBe(1);
-    expect(result.foundIn.documentation[0]!.snippet).toContain(`Follow ${targetAdrTag}`);
+    expect(result.foundIn.documentation[0]!.snippet).toContain(
+      `Follow ${targetAdrTag}`,
+    );
 
     // Archival Guard
     // Blocked by activeRuleTag and activeTaskTag
@@ -141,10 +149,14 @@ Follow ${targetAdrTag} for architectural guidelines.
     expect(result.archivalGuard.blockingCount).toBe(2);
     expect(result.archivalGuard.blockingReasons.length).toBe(2);
     expect(
-      result.archivalGuard.blockingReasons.some((r) => r.includes(activeRuleTag)),
+      result.archivalGuard.blockingReasons.some((r) =>
+        r.includes(activeRuleTag),
+      ),
     ).toBe(true);
     expect(
-      result.archivalGuard.blockingReasons.some((r) => r.includes(activeTaskTag)),
+      result.archivalGuard.blockingReasons.some((r) =>
+        r.includes(activeTaskTag),
+      ),
     ).toBe(true);
   });
 
@@ -171,9 +183,14 @@ links:
     );
 
     // 3. Code citing Target Rule (code citations are informative, not blocking for archival per RULE-31)
-    await workspace.writeFile("legacy.ts", `// Complies with ${targetRuleTag}\n`);
+    await workspace.writeFile(
+      "legacy.ts",
+      `// Complies with ${targetRuleTag}\n`,
+    );
 
-    const result = await findArtifactReferences(targetRuleTag, { cwd: workspace.cwd });
+    const result = await findArtifactReferences(targetRuleTag, {
+      cwd: workspace.cwd,
+    });
 
     expect(result.target.tag).toBe(targetRuleTag);
     expect(result.foundIn.governanceLinks.length).toBe(1);
@@ -201,9 +218,14 @@ links:
       body: "Interfaces must remain decoupled from core.\n",
     });
 
-    await workspace.writeFile("sample.ts", `// Implements ${ruleTag} contract\n`);
+    await workspace.writeFile(
+      "sample.ts",
+      `// Implements ${ruleTag} contract\n`,
+    );
 
-    const result = await findArtifactReferences(ruleTag, { cwd: workspace.cwd });
+    const result = await findArtifactReferences(ruleTag, {
+      cwd: workspace.cwd,
+    });
 
     expect(result.target.tag).toBe(ruleTag);
     expect(result.target.slug).toBe("interface-core-decoupling");
@@ -227,14 +249,23 @@ links:
     await workspace.gitCommit("feat: add committed file");
 
     // 2. Untracked file referencing the rule (not committed, not staged)
-    await workspace.writeFile("untracked.ts", `// Fallback reference to ${ruleTag}\n`);
+    await workspace.writeFile(
+      "untracked.ts",
+      `// Fallback reference to ${ruleTag}\n`,
+    );
 
-    const result = await findArtifactReferences(ruleTag, { cwd: workspace.cwd });
+    const result = await findArtifactReferences(ruleTag, {
+      cwd: workspace.cwd,
+    });
 
     expect(result.target.tag).toBe(ruleTag);
     expect(result.foundIn.code.length).toBe(2);
-    expect(result.foundIn.code.some((c) => c.relativePath === "committed.ts")).toBe(true);
-    expect(result.foundIn.code.some((c) => c.relativePath === "untracked.ts")).toBe(true);
+    expect(
+      result.foundIn.code.some((c) => c.relativePath === "committed.ts"),
+    ).toBe(true);
+    expect(
+      result.foundIn.code.some((c) => c.relativePath === "untracked.ts"),
+    ).toBe(true);
   });
 
   // @verifies RULE-25, RULE-31, RULE-34, RULE-35
@@ -261,10 +292,15 @@ links:
       "service.test.ts",
       `// @verifies ${targetTag}\nit("[${targetTag}] should verify", () => {});\n`,
     );
-    await workspace.writeFile("untracked.md", `# Docs\nSee ${targetTag} for details.\n`);
+    await workspace.writeFile(
+      "untracked.md",
+      `# Docs\nSee ${targetTag} for details.\n`,
+    );
 
     // Run with git-native scanner
-    const gitResult = await findArtifactReferences(targetTag, { cwd: workspace.cwd });
+    const gitResult = await findArtifactReferences(targetTag, {
+      cwd: workspace.cwd,
+    });
 
     // Run with non-git mock adapter forcing fallback walk
     const mockVcs = new MockVcsAdapter({ insideWorkTree: false });
@@ -274,10 +310,18 @@ links:
     });
 
     expect(gitResult.foundIn.total).toBe(fallbackResult.foundIn.total);
-    expect(gitResult.foundIn.governanceLinks.length).toBe(fallbackResult.foundIn.governanceLinks.length);
-    expect(gitResult.foundIn.code.length).toBe(fallbackResult.foundIn.code.length);
-    expect(gitResult.foundIn.tests.length).toBe(fallbackResult.foundIn.tests.length);
-    expect(gitResult.foundIn.documentation.length).toBe(fallbackResult.foundIn.documentation.length);
+    expect(gitResult.foundIn.governanceLinks.length).toBe(
+      fallbackResult.foundIn.governanceLinks.length,
+    );
+    expect(gitResult.foundIn.code.length).toBe(
+      fallbackResult.foundIn.code.length,
+    );
+    expect(gitResult.foundIn.tests.length).toBe(
+      fallbackResult.foundIn.tests.length,
+    );
+    expect(gitResult.foundIn.documentation.length).toBe(
+      fallbackResult.foundIn.documentation.length,
+    );
     expect(gitResult.archivalGuard).toEqual(fallbackResult.archivalGuard);
   });
 
@@ -294,19 +338,30 @@ links:
 
     // Generate synthetic files across multiple directories
     for (let i = 0; i < 40; i++) {
-      await workspace.writeFile(`src/module-${i}/file-${i}.ts`, `// Module ${i} file\nexport const x = ${i};\n`);
+      await workspace.writeFile(
+        `src/module-${i}/file-${i}.ts`,
+        `// Module ${i} file\nexport const x = ${i};\n`,
+      );
     }
 
     // Add files with citations
-    await workspace.writeFile("src/module-10/cite.ts", `// Implements ${targetTag}\n`);
+    await workspace.writeFile(
+      "src/module-10/cite.ts",
+      `// Implements ${targetTag}\n`,
+    );
     await workspace.writeFile("docs/guide.md", `# Guide\nSee ${targetTag}.\n`);
     await workspace.gitCommit("chore: add synthetic fixture files");
 
     // Untracked file
-    await workspace.writeFile("src/module-20/untracked.ts", `// Untracked ${targetTag}\n`);
+    await workspace.writeFile(
+      "src/module-20/untracked.ts",
+      `// Untracked ${targetTag}\n`,
+    );
 
     const startGit = performance.now();
-    const gitResult = await findArtifactReferences(targetTag, { cwd: workspace.cwd });
+    const gitResult = await findArtifactReferences(targetTag, {
+      cwd: workspace.cwd,
+    });
     const gitDuration = performance.now() - startGit;
 
     const mockVcs = new MockVcsAdapter({ insideWorkTree: false });
@@ -332,11 +387,24 @@ describe("isTestVerificationCitation - Rule Verification Tag Disambiguation (ADR
     const adrTag = makeTestTag("ADR", 904);
     const rule3Tag = makeTestTag("RULE", 934);
 
-    expect(isTestVerificationCitation(`// @verifies ${ruleTag}`, ruleTag)).toBe(true);
-    expect(isTestVerificationCitation(`// @verifies ${ruleTag}, ${rule2Tag}`, rule2Tag)).toBe(true);
-    expect(isTestVerificationCitation(`/* @satisfies ${ruleTag} */`, ruleTag)).toBe(true);
-    expect(isTestVerificationCitation(`# @verifies ${adrTag}`, adrTag)).toBe(true);
-    expect(isTestVerificationCitation(` * @verifies ${rule3Tag}`, rule3Tag)).toBe(true);
+    expect(isTestVerificationCitation(`// @verifies ${ruleTag}`, ruleTag)).toBe(
+      true,
+    );
+    expect(
+      isTestVerificationCitation(
+        `// @verifies ${ruleTag}, ${rule2Tag}`,
+        rule2Tag,
+      ),
+    ).toBe(true);
+    expect(
+      isTestVerificationCitation(`/* @satisfies ${ruleTag} */`, ruleTag),
+    ).toBe(true);
+    expect(isTestVerificationCitation(`# @verifies ${adrTag}`, adrTag)).toBe(
+      true,
+    );
+    expect(
+      isTestVerificationCitation(` * @verifies ${rule3Tag}`, rule3Tag),
+    ).toBe(true);
   });
 
   // @verifies RULE-23, ADR-7
@@ -346,13 +414,22 @@ describe("isTestVerificationCitation - Rule Verification Tag Disambiguation (ADR
     const adrTag = makeTestTag("ADR", 901);
 
     expect(
-      isTestVerificationCitation(`it("[${ruleTag}] should execute find", async () => {`, ruleTag),
+      isTestVerificationCitation(
+        `it("[${ruleTag}] should execute find", async () => {`,
+        ruleTag,
+      ),
     ).toBe(true);
     expect(
-      isTestVerificationCitation(`test("[${ruleTag}][${rule2Tag}] should separate streams", () => {`, rule2Tag),
+      isTestVerificationCitation(
+        `test("[${ruleTag}][${rule2Tag}] should separate streams", () => {`,
+        rule2Tag,
+      ),
     ).toBe(true);
     expect(
-      isTestVerificationCitation(`it('[${adrTag}] should test resolution', () => {`, adrTag),
+      isTestVerificationCitation(
+        `it('[${adrTag}] should test resolution', () => {`,
+        adrTag,
+      ),
     ).toBe(true);
   });
 
@@ -381,29 +458,50 @@ describe("isTestVerificationCitation - Rule Verification Tag Disambiguation (ADR
 
     // Array literals inside CLI calls or helpers
     expect(
-      isTestVerificationCitation(`const { exitCode } = await captureCli(["find", "${ruleTag}"]);`, ruleTag),
+      isTestVerificationCitation(
+        `const { exitCode } = await captureCli(["find", "${ruleTag}"]);`,
+        ruleTag,
+      ),
     ).toBe(false);
     expect(
-      isTestVerificationCitation(`const { stdout } = await execFileAsync(binPath, ["find", "${ruleTag}"]);`, ruleTag),
+      isTestVerificationCitation(
+        `const { stdout } = await execFileAsync(binPath, ["find", "${ruleTag}"]);`,
+        ruleTag,
+      ),
     ).toBe(false);
     expect(
-      isTestVerificationCitation(`expect(() => validateRuleLinks(["${ruleTag}"])).toThrow();`, ruleTag),
+      isTestVerificationCitation(
+        `expect(() => validateRuleLinks(["${ruleTag}"])).toThrow();`,
+        ruleTag,
+      ),
     ).toBe(false);
 
     // Equality assertions
     expect(
-      isTestVerificationCitation(`expect(stdout.trim()).toBe("src/.modie/rules/sample.${ruleTag}.md");`, ruleTag),
+      isTestVerificationCitation(
+        `expect(stdout.trim()).toBe("src/.modie/rules/sample.${ruleTag}.md");`,
+        ruleTag,
+      ),
     ).toBe(false);
     expect(
-      isTestVerificationCitation(`expect(parsed.tag).toBe("${ruleTag}");`, ruleTag),
+      isTestVerificationCitation(
+        `expect(parsed.tag).toBe("${ruleTag}");`,
+        ruleTag,
+      ),
     ).toBe(false);
 
     // File creation lines
     expect(
-      isTestVerificationCitation(`const rulePath = join(tempDir, "sample-rule.${ruleTag}.md");`, ruleTag),
+      isTestVerificationCitation(
+        `const rulePath = join(tempDir, "sample-rule.${ruleTag}.md");`,
+        ruleTag,
+      ),
     ).toBe(false);
     expect(
-      isTestVerificationCitation(`await writeFile(join(rulesDir, "single-purpose.${ruleTag}.md"), content);`, ruleTag),
+      isTestVerificationCitation(
+        `await writeFile(join(rulesDir, "single-purpose.${ruleTag}.md"), content);`,
+        ruleTag,
+      ),
     ).toBe(false);
   });
 });

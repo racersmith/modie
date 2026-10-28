@@ -10,7 +10,10 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
   // @verifies RULE-27
   it("[RULE-27] should emit adr namespace help to stderr with exit code 0", async () => {
     await using workspace = await createTestWorkspace("modie-cli-adr-help-");
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["adr", "--help"]);
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "adr",
+      "--help",
+    ]);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Usage: modie adr <subcommand>");
@@ -18,8 +21,14 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
 
   // @verifies RULE-27
   it("[RULE-27] should emit adr create subcommand help to stderr with exit code 0", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-adr-create-help-");
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["adr", "create", "--help"]);
+    await using workspace = await createTestWorkspace(
+      "modie-cli-adr-create-help-",
+    );
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "adr",
+      "create",
+      "--help",
+    ]);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Usage: modie adr create <title> [options]");
@@ -43,13 +52,21 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
 
     expect(exitCode).toBe(0);
     // RULE-27: stdout strictly contains relative file path
-    expect(stdout.trim()).toBe(`.modie/adrs/architecture-decision-separation.${expectedTag}.md`);
+    expect(stdout.trim()).toBe(
+      `.modie/adrs/architecture-decision-separation.${expectedTag}.md`,
+    );
     // RULE-27: stderr strictly contains human status
-    expect(stderr).toContain(`✓ Created ADR ${expectedTag}: architecture-decision-separation.${expectedTag}.md`);
+    expect(stderr).toContain(
+      `✓ Created ADR ${expectedTag}: architecture-decision-separation.${expectedTag}.md`,
+    );
 
     const content = await workspace.readFile(stdout.trim());
-    expect(content).toContain("# Context\n\nSeparate machine streams from human streams.");
-    expect(content).toContain("# Alternatives Considered\n\nCombined output stream.");
+    expect(content).toContain(
+      "# Context\n\nSeparate machine streams from human streams.",
+    );
+    expect(content).toContain(
+      "# Alternatives Considered\n\nCombined output stream.",
+    );
     expect(content).toContain("# Decision\n\nAdopt strict stream isolation.");
   });
 
@@ -74,7 +91,9 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
     expect(parsed.tag).toBe(expectedTag);
     expect(parsed.slug).toBe("json-mode-adr");
     expect(parsed.filename).toBe(`json-mode-adr.${expectedTag}.md`);
-    expect(parsed.relativePath).toContain(`.modie/adrs/json-mode-adr.${expectedTag}.md`);
+    expect(parsed.relativePath).toContain(
+      `.modie/adrs/json-mode-adr.${expectedTag}.md`,
+    );
     expect(parsed.context).toBe("JSON payload must go to stdout.");
   });
 
@@ -107,7 +126,9 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
     ]);
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(`src/subsystem/.modie/adrs/scoped-subsystem-adr.${expectedTag}.md`);
+    expect(stdout.trim()).toBe(
+      `src/subsystem/.modie/adrs/scoped-subsystem-adr.${expectedTag}.md`,
+    );
     expect(stderr).toContain(`✓ Created ADR ${expectedTag}`);
 
     const content = await workspace.readFile(stdout.trim());
@@ -132,12 +153,16 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
     expect(parsed.links).toEqual([targetAdrTag]);
 
     const content = await workspace.readFile(parsed.relativePath);
-    expect(content.startsWith(`---\nlinks:\n  - ${targetAdrTag}\n---`)).toBe(true);
+    expect(content.startsWith(`---\nlinks:\n  - ${targetAdrTag}\n---`)).toBe(
+      true,
+    );
   });
 
   // @verifies RULE-14, RULE-17
   it("[RULE-14][RULE-17] should support linking to a descendant RULE", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-adr-rule-link-");
+    await using workspace = await createTestWorkspace(
+      "modie-cli-adr-rule-link-",
+    );
     const rule = await workspace.createRule({
       id: 5,
       slug: "sample-rule",
@@ -161,7 +186,9 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
 
   // @verifies RULE-14, RULE-27
   it("[RULE-14][RULE-27] should reject non-ADR and non-RULE link targets with exit code 1", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-adr-invalid-link-");
+    await using workspace = await createTestWorkspace(
+      "modie-cli-adr-invalid-link-",
+    );
     const invalidTarget = makeTestTag("TASK", 1);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "adr",
@@ -179,7 +206,9 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
 
   // @verifies RULE-17, RULE-27
   it("[RULE-17][RULE-27] should reject linking to ancestor/sibling RULE with error citing RULE-17", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-adr-rule-scope-err-");
+    await using workspace = await createTestWorkspace(
+      "modie-cli-adr-rule-scope-err-",
+    );
     const rootRule = await workspace.createRule({
       id: 10,
       slug: "root-rule",
@@ -208,7 +237,10 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr when title is omitted", async () => {
     await using workspace = await createTestWorkspace("modie-cli-adr-notitle-");
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["adr", "create"]);
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "adr",
+      "create",
+    ]);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("Error: Missing required ADR title");
@@ -230,7 +262,9 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
 
   // @verifies RULE-4, RULE-25, RULE-27
   it("[RULE-4][RULE-25][RULE-27] should support --supersedes flag and update predecessor frontmatter", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-adr-supersedes-");
+    await using workspace = await createTestWorkspace(
+      "modie-cli-adr-supersedes-",
+    );
     const adr1 = await workspace.createAdr({
       id: 1,
       slug: "first-arch",
@@ -248,7 +282,9 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
 
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe(`.modie/adrs/second-arch.${newTag}.md`);
-    expect(stderr).toContain(`✓ Created ADR ${newTag}: second-arch.${newTag}.md (supersedes ${adr1.tag})`);
+    expect(stderr).toContain(
+      `✓ Created ADR ${newTag}: second-arch.${newTag}.md (supersedes ${adr1.tag})`,
+    );
 
     const adr1Content = await workspace.readFile(adr1.filepath);
     expect(adr1Content).toContain(`superseded_by:\n  - ${newTag}`);

@@ -68,7 +68,9 @@ export class GitCliAdapter implements IVcsAdapter {
     return output === "true";
   }
 
-  async detectCurrentBranch(cwd: string = process.cwd()): Promise<string | null> {
+  async detectCurrentBranch(
+    cwd: string = process.cwd(),
+  ): Promise<string | null> {
     const branch = await this.run(["rev-parse", "--abbrev-ref", "HEAD"], cwd);
     if (branch && branch !== "HEAD") {
       return branch;
@@ -116,7 +118,10 @@ export class GitCliAdapter implements IVcsAdapter {
     return output !== null;
   }
 
-  async checkout(branchName: string, cwd: string = process.cwd()): Promise<void> {
+  async checkout(
+    branchName: string,
+    cwd: string = process.cwd(),
+  ): Promise<void> {
     await this.runCommand(["checkout", branchName], cwd);
   }
 
@@ -210,10 +215,7 @@ export class GitCliAdapter implements IVcsAdapter {
   ): Promise<string> {
     const msg = message ?? `merge: ${sourceBranch} into ${targetBranch}`;
     await this.checkout(targetBranch, cwd);
-    await this.runCommand(
-      ["merge", "--no-ff", "-m", msg, sourceBranch],
-      cwd,
-    );
+    await this.runCommand(["merge", "--no-ff", "-m", msg, sourceBranch], cwd);
     return this.getShortHash("HEAD", cwd);
   }
 
@@ -351,7 +353,9 @@ export class GitCliAdapter implements IVcsAdapter {
           if (match && match[1]) {
             const compId = match[1];
             if (
-              !discovered.some((d) => d.id.toLowerCase() === compId.toLowerCase())
+              !discovered.some(
+                (d) => d.id.toLowerCase() === compId.toLowerCase(),
+              )
             ) {
               discovered.push({
                 id: compId,

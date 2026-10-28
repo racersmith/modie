@@ -4,7 +4,11 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { createTestWorkspace, makeTestTag, type TestWorkspace } from "../../test-utils.ts";
+import {
+  createTestWorkspace,
+  makeTestTag,
+  type TestWorkspace,
+} from "../../test-utils.ts";
 
 describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-27, RULE-31, RULE-34)", () => {
   let workspace: TestWorkspace;
@@ -67,7 +71,10 @@ export function run() {
   });
 
   it("[RULE-25][RULE-27][RULE-34] should emit human formatted output to stderr and exit code 0", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["references", rule25Tag]);
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "references",
+      rule25Tag,
+    ]);
 
     expect(exitCode).toBe(0);
     // RULE-27: stdout strictly empty for human command output
@@ -99,7 +106,10 @@ export function run() {
   });
 
   it("[RULE-34] should support the refs alias via CLI entrypoint in fixture workspace", async () => {
-    const { exitCode, stderr } = await workspace.captureCli(["refs", rule25Tag]);
+    const { exitCode, stderr } = await workspace.captureCli([
+      "refs",
+      rule25Tag,
+    ]);
 
     expect(exitCode).toBe(0);
     expect(stderr).toContain(`Target: ${rule25Tag}`);
@@ -107,7 +117,11 @@ export function run() {
   });
 
   it("[RULE-34] should support --to flag to show only outbound declared links in fixture workspace", async () => {
-    const { exitCode, stderr } = await workspace.captureCli(["references", rule31Tag, "--to"]);
+    const { exitCode, stderr } = await workspace.captureCli([
+      "references",
+      rule31Tag,
+      "--to",
+    ]);
 
     expect(exitCode).toBe(0);
     expect(stderr).toContain("[Links To]");
@@ -130,7 +144,10 @@ export function run() {
   });
 
   it("[RULE-27] should emit help to stderr with exit code 0 when --help is passed", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["references", "--help"]);
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "references",
+      "--help",
+    ]);
 
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
@@ -140,7 +157,9 @@ export function run() {
   });
 
   it("[RULE-27] should report error to stderr when required tag argument is missing", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["references"]);
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "references",
+    ]);
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
@@ -149,7 +168,10 @@ export function run() {
 
   it("[RULE-27] should report error to stderr when querying non-existent artifact", async () => {
     const nonExistent = makeTestTag("RULE", 9999);
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["references", nonExistent]);
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "references",
+      nonExistent,
+    ]);
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");

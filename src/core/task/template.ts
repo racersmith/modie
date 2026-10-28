@@ -4,7 +4,10 @@
  */
 
 import { renderAcceptanceCriteria } from "./checklist.ts";
-import type { PlannedGovernanceDeclaration, TaskRenderOptions } from "./types.ts";
+import type {
+  PlannedGovernanceDeclaration,
+  TaskRenderOptions,
+} from "./types.ts";
 
 const ADR_RULE_LINK_REGEX = /^(?:ADR|RULE)-[A-Za-z0-9_-]+$/;
 const TASK_DEPENDENCY_REGEX = /^TASK-[A-Za-z0-9_.-]+$/;
@@ -38,7 +41,9 @@ export function validateTaskDependencies(dependsOn: string[] = []): void {
 /**
  * Renders the optional Planned Governance markdown section.
  */
-export function renderPlannedGovernance(planned?: PlannedGovernanceDeclaration): string {
+export function renderPlannedGovernance(
+  planned?: PlannedGovernanceDeclaration,
+): string {
   if (!planned) return "";
   const lines: string[] = [];
   const rules = planned.rules ?? [];
@@ -122,7 +127,9 @@ export function renderTaskMarkdown(options: TaskRenderOptions): string {
 
   frontmatterLines.push("---");
 
-  const contextContent = context?.trim() || (title ? `Implement ${title}.` : "Execution plan description.");
+  const contextContent =
+    context?.trim() ||
+    (title ? `Implement ${title}.` : "Execution plan description.");
   const plannedGovContent = renderPlannedGovernance(plannedGovernance);
 
   const sections: string[] = [

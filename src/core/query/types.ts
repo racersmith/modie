@@ -187,11 +187,7 @@ export interface ListArtifactsOptions {
 }
 
 export type ReferenceCategory =
-  | "governance-link"
-  | "governance-prose"
-  | "code"
-  | "test"
-  | "documentation";
+  "governance-link" | "governance-prose" | "code" | "test" | "documentation";
 
 export interface FoundInItem {
   /**

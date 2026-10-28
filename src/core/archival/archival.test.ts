@@ -27,8 +27,12 @@ describe("Core Artifact Archival - Guarded Archival & Reference Invariance (RULE
     expect(result.tag).toBe(adr.tag);
     expect(result.canArchive).toBe(true);
     expect(result.forced).toBe(false);
-    expect(result.archivedFilename).toBe(`initial-architecture.${adr.tag}.ARCHIVED.md`);
-    expect(result.archivedRelativePath).toBe(`.modie/adrs/initial-architecture.${adr.tag}.ARCHIVED.md`);
+    expect(result.archivedFilename).toBe(
+      `initial-architecture.${adr.tag}.ARCHIVED.md`,
+    );
+    expect(result.archivedRelativePath).toBe(
+      `.modie/adrs/initial-architecture.${adr.tag}.ARCHIVED.md`,
+    );
 
     // Check that old file is gone and new file exists
     const archivedContent = await workspace.readFile(result.archivedFilepath);
@@ -50,7 +54,9 @@ describe("Core Artifact Archival - Guarded Archival & Reference Invariance (RULE
     const result = await archiveRule(rule.tag, { cwd: workspace.cwd });
 
     expect(result.tag).toBe(rule.tag);
-    expect(result.archivedFilename).toBe(`single-purpose.${rule.tag}.ARCHIVED.md`);
+    expect(result.archivedFilename).toBe(
+      `single-purpose.${rule.tag}.ARCHIVED.md`,
+    );
 
     await workspace.cleanup();
   });
@@ -137,7 +143,9 @@ describe("Core Artifact Archival - Guarded Archival & Reference Invariance (RULE
 
   // @verifies RULE-31, RULE-34
   it("[RULE-31][RULE-34] should reject when subtype constraint does not match target artifact", async () => {
-    const workspace = await createFixtureWorkspace("archival-subtype-mismatch-");
+    const workspace = await createFixtureWorkspace(
+      "archival-subtype-mismatch-",
+    );
 
     const adr = await workspace.createAdr({
       id: 1,

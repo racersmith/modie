@@ -7,7 +7,11 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { captureCli, createTestWorkspace, makeTestTag } from "../../test-utils.ts";
+import {
+  captureCli,
+  createTestWorkspace,
+  makeTestTag,
+} from "../../test-utils.ts";
 
 describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31, RULE-34)", () => {
   // @verifies RULE-27
@@ -46,7 +50,9 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
     ]);
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(`.modie/rules/obsolete-pattern.${ruleTag}.ARCHIVED.md`);
+    expect(stdout.trim()).toBe(
+      `.modie/rules/obsolete-pattern.${ruleTag}.ARCHIVED.md`,
+    );
     expect(stderr).toContain(
       `✓ Archived RULE ${ruleTag}: obsolete-pattern.${ruleTag}.ARCHIVED.md`,
     );
@@ -144,7 +150,9 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
     ]);
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(`.modie/adrs/forced-design.${adrTag}.ARCHIVED.md`);
+    expect(stdout.trim()).toBe(
+      `.modie/adrs/forced-design.${adrTag}.ARCHIVED.md`,
+    );
     expect(stderr).toContain("(forced with active references)");
 
     await workspace.cleanup();
@@ -220,7 +228,9 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
     ]);
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(`.modie/rules/alias-rule.${ruleTag}.ARCHIVED.md`);
+    expect(stdout.trim()).toBe(
+      `.modie/rules/alias-rule.${ruleTag}.ARCHIVED.md`,
+    );
     expect(stderr).toContain(
       `✓ Archived RULE ${ruleTag}: alias-rule.${ruleTag}.ARCHIVED.md`,
     );
@@ -247,7 +257,9 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
     expect(stderr).toContain(`✓ Archived RULE ${ruleTag}`);
     const parsed = JSON.parse(stdout.trim());
     expect(parsed.tag).toBe(ruleTag);
-    expect(parsed.archivedFilename).toBe(`subprocess-rule.${ruleTag}.ARCHIVED.md`);
+    expect(parsed.archivedFilename).toBe(
+      `subprocess-rule.${ruleTag}.ARCHIVED.md`,
+    );
 
     await workspace.cleanup();
   });

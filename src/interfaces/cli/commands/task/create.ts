@@ -30,7 +30,9 @@ export const taskCreateSchema = z.object({
     .array(z.string())
     .optional()
     .default([])
-    .describe("Prerequisite TASK IDs (repeat flag or use comma-separated list)"),
+    .describe(
+      "Prerequisite TASK IDs (repeat flag or use comma-separated list)",
+    ),
   links: z
     .array(z.string())
     .optional()
@@ -157,7 +159,8 @@ export const taskCreateCommand: CliCommandDefinition<
       type: "string",
       short: "s",
       placeholder: "<dir>",
-      description: "Target scope directory (defaults to current working directory)",
+      description:
+        "Target scope directory (defaults to current working directory)",
     },
     context: {
       type: "string",
@@ -170,7 +173,8 @@ export const taskCreateCommand: CliCommandDefinition<
       short: "d",
       multiple: true,
       placeholder: "<ids>",
-      description: "Prerequisite TASK IDs (repeat flag or use comma-separated list)",
+      description:
+        "Prerequisite TASK IDs (repeat flag or use comma-separated list)",
       aliases: ["depend-on"],
       property: "depends_on",
     },
@@ -186,7 +190,8 @@ export const taskCreateCommand: CliCommandDefinition<
       short: "l",
       multiple: true,
       placeholder: "<targets>",
-      description: "ADR and RULE link targets (repeat flag for verbatim targets)",
+      description:
+        "ADR and RULE link targets (repeat flag for verbatim targets)",
       property: "links",
       splitCommas: false,
     },
@@ -230,7 +235,8 @@ export const taskCreateCommand: CliCommandDefinition<
       property: "plan_rules",
       splitCommas: false,
       placeholder: "<rule-title>",
-      description: "Planned RULE artifact to author before completing this task",
+      description:
+        "Planned RULE artifact to author before completing this task",
     },
     "plan-rules": {
       type: "string",

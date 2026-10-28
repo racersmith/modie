@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { createTestWorkspace, makeTestTag, type TestWorkspace } from "../../test-utils.ts";
+import {
+  createTestWorkspace,
+  makeTestTag,
+  type TestWorkspace,
+} from "../../test-utils.ts";
 
 describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-27, RULE-28)", () => {
   let workspace: TestWorkspace;
@@ -43,12 +47,16 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     const startRes = await workspace.captureCli(["task", "start"]);
     expect(startRes.exitCode).toBe(1);
     expect(startRes.stdout).toBe("");
-    expect(startRes.stderr).toContain("Error: Missing required task identifier");
+    expect(startRes.stderr).toContain(
+      "Error: Missing required task identifier",
+    );
 
     const mergeRes = await workspace.captureCli(["task", "merge"]);
     expect(mergeRes.exitCode).toBe(1);
     expect(mergeRes.stdout).toBe("");
-    expect(mergeRes.stderr).toContain("Error: Missing required task identifier");
+    expect(mergeRes.stderr).toContain(
+      "Error: Missing required task identifier",
+    );
   });
 
   it("[RULE-25][RULE-27][RULE-28] should start task branch with machine name to stdout and status to stderr", async () => {
@@ -58,7 +66,11 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
       criteria: ["Item"],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["task", "start", task.tag]);
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "task",
+      "start",
+      task.tag,
+    ]);
 
     const expectedBranch = `task/200-${task.slug}`;
     expect(exitCode).toBe(0);
@@ -66,7 +78,9 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     expect(stderr).toContain(`✓ Switched to branch "${expectedBranch}"`);
 
     // Verify git branch is currently task/200-cli-feat
-    const curBranch = await Bun.$`git branch --show-current`.cwd(workspace.cwd).text();
+    const curBranch = await Bun.$`git branch --show-current`
+      .cwd(workspace.cwd)
+      .text();
     expect(curBranch.trim()).toBe(expectedBranch);
   });
 
@@ -139,7 +153,9 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     await workspace.gitCommit("feat: code");
     await workspace.remove(subTask);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
-    await workspace.gitCommit(`chore(task): delete completed ${subTaskTag} artifact`);
+    await workspace.gitCommit(
+      `chore(task): delete completed ${subTaskTag} artifact`,
+    );
 
     // Execute CLI task merge
     const { exitCode, stdout, stderr } = await workspace.captureCli([
@@ -152,10 +168,14 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     const expectedSubBranch = `task/203-1-${subTask.slug}`;
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe(expectedParentBranch);
-    expect(stderr).toContain(`✓ Merged task branch "${expectedSubBranch}" into "${expectedParentBranch}"`);
+    expect(stderr).toContain(
+      `✓ Merged task branch "${expectedSubBranch}" into "${expectedParentBranch}"`,
+    );
 
     // Subtask branch deleted
-    const bList = await Bun.$`git branch --list ${expectedSubBranch}`.cwd(workspace.cwd).text();
+    const bList = await Bun.$`git branch --list ${expectedSubBranch}`
+      .cwd(workspace.cwd)
+      .text();
     expect(bList.trim()).toBe("");
   });
 
@@ -180,7 +200,9 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
 
     await workspace.remove(subTask);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
-    await workspace.gitCommit(`chore(task): delete completed ${subTaskTag} artifact`);
+    await workspace.gitCommit(
+      `chore(task): delete completed ${subTaskTag} artifact`,
+    );
 
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "task",
@@ -193,7 +215,9 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     const expectedSubBranch = `task/204-1-${subTask.slug}`;
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
-    expect(stderr).toContain(`Subtask branch "${expectedSubBranch}" cannot be merged directly into trunk branch "dev" per RULE-28`);
+    expect(stderr).toContain(
+      `Subtask branch "${expectedSubBranch}" cannot be merged directly into trunk branch "dev" per RULE-28`,
+    );
   });
 
   // @verifies RULE-21, RULE-22, RULE-25, RULE-27, RULE-28
@@ -212,15 +236,27 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     expect(startRes.exitCode).toBe(0);
 
     // 3. Check item 1 omitting task ID
-    const checkRes1 = await workspace.captureCli(["task", "check", "--item", "1"]);
+    const checkRes1 = await workspace.captureCli([
+      "task",
+      "check",
+      "--item",
+      "1",
+    ]);
     expect(checkRes1.exitCode).toBe(0);
     expect(checkRes1.stderr).toContain(`Checked item 1 on ${task.tag}`);
 
     // 4. Check item 2 omitting task ID
-    const checkRes2 = await workspace.captureCli(["task", "check", "--item", "2"]);
+    const checkRes2 = await workspace.captureCli([
+      "task",
+      "check",
+      "--item",
+      "2",
+    ]);
     expect(checkRes2.exitCode).toBe(0);
     expect(checkRes2.stderr).toContain(`Checked item 2 on ${task.tag}`);
-    expect(checkRes2.stderr).toContain(`All acceptance criteria for ${task.tag} are satisfied`);
+    expect(checkRes2.stderr).toContain(
+      `All acceptance criteria for ${task.tag} are satisfied`,
+    );
 
     // Make an implementation commit on the task branch so working tree is clean
     await workspace.writeFile("feature.ts", "export const feat = true;\n");
@@ -237,28 +273,45 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     const expectedBranch = `task/205-${task.slug}`;
     expect(mergeRes.exitCode).toBe(0);
     expect(mergeRes.stdout.trim()).toBe("dev");
-    expect(mergeRes.stderr).toContain(`✓ Merged task branch "${expectedBranch}" into "dev"`);
+    expect(mergeRes.stderr).toContain(
+      `✓ Merged task branch "${expectedBranch}" into "dev"`,
+    );
 
     // Verify checked-out branch is now dev and source branch was deleted
-    const currentBranch = await Bun.$`git rev-parse --abbrev-ref HEAD`.cwd(workspace.cwd).text();
+    const currentBranch = await Bun.$`git rev-parse --abbrev-ref HEAD`
+      .cwd(workspace.cwd)
+      .text();
     expect(currentBranch.trim()).toBe("dev");
-    const bList = await Bun.$`git branch --list ${expectedBranch}`.cwd(workspace.cwd).text();
+    const bList = await Bun.$`git branch --list ${expectedBranch}`
+      .cwd(workspace.cwd)
+      .text();
     expect(bList.trim()).toBe("");
   });
 
   // @verifies RULE-27, RULE-28
   it("[RULE-27][RULE-28] should report clear error when omitting task ID on non-task branch", async () => {
     // Current branch is dev (not a task branch)
-    const checkRes = await workspace.captureCli(["task", "check", "--item", "1"]);
+    const checkRes = await workspace.captureCli([
+      "task",
+      "check",
+      "--item",
+      "1",
+    ]);
     expect(checkRes.exitCode).toBe(1);
-    expect(checkRes.stderr).toContain("Error: Missing required task identifier and current git branch");
+    expect(checkRes.stderr).toContain(
+      "Error: Missing required task identifier and current git branch",
+    );
 
     const completeRes = await workspace.captureCli(["task", "complete"]);
     expect(completeRes.exitCode).toBe(1);
-    expect(completeRes.stderr).toContain("Error: Missing required task identifier and current git branch");
+    expect(completeRes.stderr).toContain(
+      "Error: Missing required task identifier and current git branch",
+    );
 
     const mergeRes = await workspace.captureCli(["task", "merge"]);
     expect(mergeRes.exitCode).toBe(1);
-    expect(mergeRes.stderr).toContain("Error: Missing required task identifier and current git branch");
+    expect(mergeRes.stderr).toContain(
+      "Error: Missing required task identifier and current git branch",
+    );
   });
 });

@@ -5,9 +5,15 @@
 
 import { readFile, rm, stat, writeFile } from "node:fs/promises";
 import { basename, isAbsolute, relative, resolve } from "node:path";
-import { parseArtifactFilename, parseTaskIdFromBranch } from "../common/index.ts";
+import {
+  parseArtifactFilename,
+  parseTaskIdFromBranch,
+} from "../common/index.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
-import { scanActiveArtifacts, scanActiveTasks } from "../resolver/active-scanner.ts";
+import {
+  scanActiveArtifacts,
+  scanActiveTasks,
+} from "../resolver/active-scanner.ts";
 import {
   detectGitBranch,
   inspectGitDeletedTaskIds,
@@ -169,7 +175,6 @@ export async function resolveTaskFile(
     trimmed = inferredId;
   }
 
-
   // 1. Direct path check (relative or absolute)
   const candidatePath = isAbsolute(trimmed) ? trimmed : resolve(cwd, trimmed);
   try {
@@ -177,7 +182,11 @@ export async function resolveTaskFile(
     if (fileStat.isFile()) {
       const filename = basename(candidatePath);
       const parsedFilename = parseArtifactFilename(filename);
-      if (parsedFilename && parsedFilename.subtype === "TASK" && !parsedFilename.isArchived) {
+      if (
+        parsedFilename &&
+        parsedFilename.subtype === "TASK" &&
+        !parsedFilename.isArchived
+      ) {
         return candidatePath;
       }
     }
@@ -223,7 +232,9 @@ export async function resolveTaskFile(
   }
 
   if (partialMatches.length > 1) {
-    const candidates = partialMatches.map((t) => `${t.id} (${t.slug})`).join(", ");
+    const candidates = partialMatches
+      .map((t) => `${t.id} (${t.slug})`)
+      .join(", ");
     throw new Error(
       `Ambiguous task identifier "${trimmed}". Matches multiple active tasks: ${candidates}. Please specify the full task ID or path.`,
     );
@@ -259,7 +270,11 @@ export async function checkTaskItem(
   itemIndex: number,
   options: CheckTaskItemOptions = {},
 ): Promise<CheckTaskItemResult> {
-  if (typeof itemIndex !== "number" || !Number.isInteger(itemIndex) || itemIndex < 1) {
+  if (
+    typeof itemIndex !== "number" ||
+    !Number.isInteger(itemIndex) ||
+    itemIndex < 1
+  ) {
     throw new Error(
       `Item index must be a positive integer (1-based index). Received: ${itemIndex}.`,
     );
@@ -289,7 +304,12 @@ export async function checkTaskItem(
 
     if (inCriteriaSection) {
       const match = line.match(/^(\s*-\s*\[)([ xX])(\]\s*)(.+)$/);
-      if (match && match[1] !== undefined && match[3] !== undefined && match[4] !== undefined) {
+      if (
+        match &&
+        match[1] !== undefined &&
+        match[3] !== undefined &&
+        match[4] !== undefined
+      ) {
         currentItemIndex++;
         if (currentItemIndex === itemIndex) {
           targetLineIndex = i;
@@ -368,7 +388,10 @@ export async function assertPlannedGovernanceSatisfied(
         }
       } else if (rule.slug) {
         exists = activeRules.some(
-          (r) => r.slug === rule.slug || r.slug.includes(rule.slug!) || rule.slug!.includes(r.slug),
+          (r) =>
+            r.slug === rule.slug ||
+            r.slug.includes(rule.slug!) ||
+            rule.slug!.includes(r.slug),
         );
       }
 
@@ -402,7 +425,10 @@ export async function assertPlannedGovernanceSatisfied(
         }
       } else if (adr.slug) {
         exists = activeAdrs.some(
-          (a) => a.slug === adr.slug || a.slug.includes(adr.slug!) || adr.slug!.includes(a.slug),
+          (a) =>
+            a.slug === adr.slug ||
+            a.slug.includes(adr.slug!) ||
+            adr.slug!.includes(a.slug),
         );
       }
 

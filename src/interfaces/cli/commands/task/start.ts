@@ -25,11 +25,10 @@ export const taskStartSchema = z.object({
   base: z
     .string()
     .optional()
-    .describe("Base branch to branch from (default: parent task branch or trunk)"),
-  force: z
-    .boolean()
-    .default(false)
-    .describe("Bypass branch protection checks"),
+    .describe(
+      "Base branch to branch from (default: parent task branch or trunk)",
+    ),
+  force: z.boolean().default(false).describe("Bypass branch protection checks"),
 });
 
 export type TaskStartInput = z.infer<typeof taskStartSchema>;

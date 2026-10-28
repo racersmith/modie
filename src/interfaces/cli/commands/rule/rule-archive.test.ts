@@ -5,7 +5,11 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { captureCli, createTestWorkspace, makeTestTag } from "../../test-utils.ts";
+import {
+  captureCli,
+  createTestWorkspace,
+  makeTestTag,
+} from "../../test-utils.ts";
 
 describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31, RULE-34)", () => {
   // @verifies RULE-27
@@ -47,7 +51,9 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
     ]);
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(`.modie/rules/single-purpose.${ruleTag}.ARCHIVED.md`);
+    expect(stdout.trim()).toBe(
+      `.modie/rules/single-purpose.${ruleTag}.ARCHIVED.md`,
+    );
     expect(stderr).toContain(
       `✓ Archived RULE ${ruleTag}: single-purpose.${ruleTag}.ARCHIVED.md`,
     );
@@ -122,7 +128,9 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
     ]);
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(`.modie/rules/forced-rule.${ruleTag}.ARCHIVED.md`);
+    expect(stdout.trim()).toBe(
+      `.modie/rules/forced-rule.${ruleTag}.ARCHIVED.md`,
+    );
     expect(stderr).toContain(
       `✓ Archived RULE ${ruleTag}: forced-rule.${ruleTag}.ARCHIVED.md (forced with active references)`,
     );

@@ -26,7 +26,9 @@ export function getSubtypeContainerName(subtype: IndexableSubtype): string {
 /**
  * Returns the legacy dot-prefixed container directory name for an indexable subtype (ADR-3).
  */
-export function getLegacySubtypeContainerName(subtype: IndexableSubtype): string {
+export function getLegacySubtypeContainerName(
+  subtype: IndexableSubtype,
+): string {
   switch (subtype.toUpperCase()) {
     case "RULE":
       return ".rules";
@@ -110,7 +112,8 @@ export function resolveArtifactDirectories(
     const scopeDir = dirname(parent);
     return {
       normalizedScopeDir: scopeDir,
-      targetDir: base === containerName ? normalized : join(parent, containerName),
+      targetDir:
+        base === containerName ? normalized : join(parent, containerName),
     };
   }
 

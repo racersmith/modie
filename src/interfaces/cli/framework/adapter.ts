@@ -48,7 +48,9 @@ export function getZodKind(schema: any): string {
       type === "ZodOptional" ||
       type === "ZodNullable"
     ) {
-      curr = curr._def?.innerType ?? (typeof curr.unwrap === "function" ? curr.unwrap() : null);
+      curr =
+        curr._def?.innerType ??
+        (typeof curr.unwrap === "function" ? curr.unwrap() : null);
     } else {
       return type.toLowerCase().replace(/^zod/, "");
     }
@@ -76,7 +78,8 @@ export function formatZodIssue(
   if (isMissing) {
     // If it's a positional argument
     const pos = definition.positionals?.find(
-      (p) => (p.property ?? p.name) === pathStr || toCamelCase(p.name) === pathStr,
+      (p) =>
+        (p.property ?? p.name) === pathStr || toCamelCase(p.name) === pathStr,
     );
     if (pos) {
       if (pos.missingError) return pos.missingError;
@@ -195,7 +198,12 @@ export function mapContextToSchemaInput(
     } else if (propName === "criteria") {
       candidates.push("criterion", "criteria", "acceptance-criteria");
     } else if (propName === "plan_rules") {
-      candidates.push("plan-rule", "plan-rules", "planned-rule", "planned-rules");
+      candidates.push(
+        "plan-rule",
+        "plan-rules",
+        "planned-rule",
+        "planned-rules",
+      );
     } else if (propName === "plan_adrs") {
       candidates.push("plan-adr", "plan-adrs", "planned-adr", "planned-adrs");
     } else if (propName === "context") {
@@ -230,7 +238,12 @@ export function mapContextToSchemaInput(
               if (isVerbatim) {
                 aggregated.push(item.trim());
               } else {
-                aggregated.push(...item.split(",").map((s) => s.trim()).filter(Boolean));
+                aggregated.push(
+                  ...item
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean),
+                );
               }
             }
           }
@@ -238,7 +251,12 @@ export function mapContextToSchemaInput(
           if (isVerbatim) {
             aggregated.push(val.trim());
           } else {
-            aggregated.push(...val.split(",").map((s) => s.trim()).filter(Boolean));
+            aggregated.push(
+              ...val
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean),
+            );
           }
         }
       }

@@ -77,11 +77,19 @@ describe("Modie Configuration Loader (ADR-9, ADR-10, RULE-28)", () => {
 
   it("should prioritize git config overrides over .modie/config.json", async () => {
     await execFileAsync("git", ["init", "-q"], { cwd: tempDir });
-    await execFileAsync("git", ["config", "modie.trunk", "git-trunk"], { cwd: tempDir });
-    await execFileAsync("git", ["config", "modie.protectedBranches", "main,production"], {
+    await execFileAsync("git", ["config", "modie.trunk", "git-trunk"], {
       cwd: tempDir,
     });
-    await execFileAsync("git", ["config", "modie.prefix", "GITC"], { cwd: tempDir });
+    await execFileAsync(
+      "git",
+      ["config", "modie.protectedBranches", "main,production"],
+      {
+        cwd: tempDir,
+      },
+    );
+    await execFileAsync("git", ["config", "modie.prefix", "GITC"], {
+      cwd: tempDir,
+    });
 
     const modieDir = join(tempDir, ".modie");
     await mkdir(modieDir, { recursive: true });

@@ -22,19 +22,14 @@ export const taskCheckSchema = z.object({
   id: z
     .string()
     .optional()
-    .describe("Task ID (e.g. TASK-7-1, 7-1), slug, or file path (optional when on a task branch)"),
-  item: z.preprocess(
-    (val) => {
-      if (val === undefined || val === null || val === "") return undefined;
-      const n = Number(val);
-      return isNaN(n) ? val : n;
-    },
-    z
-      .number()
-      .int("Item index must be a positive integer (1-based index)")
-      .positive("Item index must be a positive integer (1-based index)")
-      .describe("1-based index of the acceptance criteria item (required)"),
-  ),
+    .describe(
+      "Task ID (e.g. TASK-7-1, 7-1), slug, or file path (optional when on a task branch)",
+    ),
+  item: z.preprocess((val) => {
+    if (val === undefined || val === null || val === "") return undefined;
+    const n = Number(val);
+    return isNaN(n) ? val : n;
+  }, z.number().int("Item index must be a positive integer (1-based index)").positive("Item index must be a positive integer (1-based index)").describe("1-based index of the acceptance criteria item (required)")),
   uncheck: z
     .boolean()
     .default(false)
@@ -70,7 +65,8 @@ export const taskCheckCommand: CliCommandDefinition<
     {
       name: "id-or-path",
       property: "id",
-      description: "Task ID (e.g. TASK-7-1, 7-1), slug, or file path (optional when on a task branch)",
+      description:
+        "Task ID (e.g. TASK-7-1, 7-1), slug, or file path (optional when on a task branch)",
       required: false,
     },
   ],

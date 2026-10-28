@@ -17,7 +17,9 @@ export const DEFAULT_TRUNK_BRANCH = "dev";
  * Searches upward from `startDir` to locate `.modie/config.json`.
  * Stops if the filesystem root is reached or a `.git` root boundary is encountered.
  */
-export function findModieConfigFile(startDir: string = process.cwd()): string | null {
+export function findModieConfigFile(
+  startDir: string = process.cwd(),
+): string | null {
   let current = resolve(startDir);
 
   while (true) {
@@ -82,13 +84,18 @@ export async function loadModieConfig(
       fileConfig = JSON.parse(raw);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to parse Modie configuration file at "${configPath}": ${msg}`);
+      throw new Error(
+        `Failed to parse Modie configuration file at "${configPath}": ${msg}`,
+      );
     }
   }
 
   // 1. Inspect Git config overrides
   const gitConfigTrunk = await vcs.getConfig("modie.trunk", cwd);
-  const gitConfigProtected = await vcs.getConfig("modie.protectedBranches", cwd);
+  const gitConfigProtected = await vcs.getConfig(
+    "modie.protectedBranches",
+    cwd,
+  );
   const gitConfigPrefix = await vcs.getConfig("modie.prefix", cwd);
 
   // 2. Resolve trunk branch
@@ -106,10 +113,19 @@ export async function loadModieConfig(
   // 3. Resolve protected branches
   let rawProtected: string[] = [];
   if (gitConfigProtected && gitConfigProtected.length > 0) {
-    rawProtected = gitConfigProtected.split(",").map((b) => b.trim()).filter(Boolean);
-  } else if (fileConfig.git?.protectedBranches && Array.isArray(fileConfig.git.protectedBranches)) {
+    rawProtected = gitConfigProtected
+      .split(",")
+      .map((b) => b.trim())
+      .filter(Boolean);
+  } else if (
+    fileConfig.git?.protectedBranches &&
+    Array.isArray(fileConfig.git.protectedBranches)
+  ) {
     rawProtected = fileConfig.git.protectedBranches;
-  } else if (fileConfig.protectedBranches && Array.isArray(fileConfig.protectedBranches)) {
+  } else if (
+    fileConfig.protectedBranches &&
+    Array.isArray(fileConfig.protectedBranches)
+  ) {
     rawProtected = fileConfig.protectedBranches;
   } else {
     rawProtected = DEFAULT_PROTECTED_BRANCHES;
@@ -121,7 +137,9 @@ export async function loadModieConfig(
 
   // 4. Resolve prefix
   const prefix =
-    (gitConfigPrefix && gitConfigPrefix.length > 0 ? gitConfigPrefix.trim() : undefined) ||
+    (gitConfigPrefix && gitConfigPrefix.length > 0
+      ? gitConfigPrefix.trim()
+      : undefined) ||
     fileConfig.git?.prefix?.trim() ||
     fileConfig.prefix?.trim() ||
     undefined;

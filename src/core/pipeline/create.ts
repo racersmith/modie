@@ -14,7 +14,10 @@ import {
   resolveArtifactDirectories,
 } from "../common/index.ts";
 import type { IndexableSubtype } from "../common/types.ts";
-import { parseCanonicalTag, resolveArtifactByTag } from "../query/artifact-query.ts";
+import {
+  parseCanonicalTag,
+  resolveArtifactByTag,
+} from "../query/artifact-query.ts";
 import { resolveNextArtifactId } from "../resolver/watermark.ts";
 import { updateSupersededArtifactFrontmatter } from "./supersession.ts";
 import type {
@@ -113,7 +116,9 @@ export async function createArtifact<
     id = alloc.id;
     watermark = alloc.watermark;
   } else {
-    id = await resolveNextArtifactId(definition.subtype as IndexableSubtype, { cwd });
+    id = await resolveNextArtifactId(definition.subtype as IndexableSubtype, {
+      cwd,
+    });
   }
 
   // 5. Format canonical filename per RULE-1

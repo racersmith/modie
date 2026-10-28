@@ -309,9 +309,19 @@ describe("Declarative CLI Subcommand Framework (TASK-19, RULE-25, RULE-27)", () 
 
     const widgetSchema = (await import("zod")).z.object({
       id: (await import("zod")).z.string().describe("Widget ID"),
-      count: (await import("zod")).z.coerce.number().int().positive().describe("Count"),
-      verbose: (await import("zod")).z.boolean().default(false).describe("Verbose mode"),
-      tags: (await import("zod")).z.array((await import("zod")).z.string()).default([]).describe("Tags"),
+      count: (await import("zod")).z.coerce
+        .number()
+        .int()
+        .positive()
+        .describe("Count"),
+      verbose: (await import("zod")).z
+        .boolean()
+        .default(false)
+        .describe("Verbose mode"),
+      tags: (await import("zod")).z
+        .array((await import("zod")).z.string())
+        .default([])
+        .describe("Tags"),
     });
 
     const widgetCommand = (await import("./index.ts")).defineCommand({
@@ -353,7 +363,9 @@ describe("Declarative CLI Subcommand Framework (TASK-19, RULE-25, RULE-27)", () 
 
     let stdoutOutput = "";
     let stderrOutput = "";
-    const exitCode = await (await import("./index.ts")).executeCliCommand(
+    const exitCode = await (
+      await import("./index.ts")
+    ).executeCliCommand(
       widgetCommand,
       ["W-123", "--count", "42", "--verbose", "--tags", "alpha,beta"],
       {
@@ -390,16 +402,13 @@ describe("Declarative CLI Subcommand Framework (TASK-19, RULE-25, RULE-27)", () 
     });
 
     let stderrOutput = "";
-    const exitCode = await (await import("./index.ts")).executeCliCommand(
-      strictCommand,
-      [],
-      {
-        stderr: (msg) => (stderrOutput += msg + "\n"),
-      },
-    );
+    const exitCode = await (
+      await import("./index.ts")
+    ).executeCliCommand(strictCommand, [], {
+      stderr: (msg) => (stderrOutput += msg + "\n"),
+    });
 
     expect(exitCode).toBe(1);
     expect(stderrOutput).toContain("Error: Missing required --target flag");
   });
 });
-

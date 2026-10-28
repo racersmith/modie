@@ -27,7 +27,8 @@ import type {
  * Example: `task/2-1-subtask` -> parentId = "2-1", slug = "subtask"
  * Example: `task/J101-auth` -> parentId = "J101", slug = "auth"
  */
-const TASK_BRANCH_REGEX = /^task\/([0-9]+(?:-[0-9]+)*|[A-Za-z]+[0-9]+)(?:-(.+))?$/;
+const TASK_BRANCH_REGEX =
+  /^task\/([0-9]+(?:-[0-9]+)*|[A-Za-z]+[0-9]+)(?:-(.+))?$/;
 
 /**
  * Escapes regex special characters in dynamic strings.
@@ -39,7 +40,9 @@ function escapeRegex(str: string): string {
 /**
  * Parses a branch name to extract the parent task ID if it is a task branch.
  */
-export function parseTaskBranch(branch: string): { parentId: string; slug?: string } | null {
+export function parseTaskBranch(
+  branch: string,
+): { parentId: string; slug?: string } | null {
   const match = branch.match(TASK_BRANCH_REGEX);
   if (!match || !match[1]) {
     return null;
@@ -62,7 +65,8 @@ export async function resolveWatermark(
 ): Promise<WatermarkDetails> {
   const cwd = options.cwd ?? process.cwd();
   const vcs = options.vcs ?? defaultVcsAdapter;
-  const subtype: IndexableSubtype = (options.subtype?.toUpperCase() as IndexableSubtype) ?? "TASK";
+  const subtype: IndexableSubtype =
+    (options.subtype?.toUpperCase() as IndexableSubtype) ?? "TASK";
   registerArtifactSubtype(subtype);
 
   // 1. Gather active IDs from disk (or use provided overrides for testing)
@@ -75,9 +79,14 @@ export async function resolveWatermark(
   const otherBranchActiveIds =
     options.otherBranchActiveIds !== undefined
       ? options.otherBranchActiveIds
-      : (options.activeIds !== undefined
-          ? []
-          : await inspectMultiBranchActiveArtifactIds(cwd, subtype, { excludeCurrent: true }, vcs));
+      : options.activeIds !== undefined
+        ? []
+        : await inspectMultiBranchActiveArtifactIds(
+            cwd,
+            subtype,
+            { excludeCurrent: true },
+            vcs,
+          );
 
   // 3. Gather deleted IDs from Git history (or use provided overrides for testing)
   const deletedIds =
@@ -86,14 +95,16 @@ export async function resolveWatermark(
       : await inspectGitDeletedArtifactIds(cwd, subtype, vcs);
 
   // 4. Aggregate all known historical and active IDs (including active on other branches)
-  const allKnownIds = Array.from(new Set([...activeIds, ...otherBranchActiveIds, ...deletedIds]));
+  const allKnownIds = Array.from(
+    new Set([...activeIds, ...otherBranchActiveIds, ...deletedIds]),
+  );
   const allKnownIdSet = new Set(allKnownIds);
 
   // 4. Resolve branch context
   const detectedBranch =
     options.branch !== undefined
       ? options.branch
-      : (await detectGitBranch(cwd, vcs)) ?? "dev";
+      : ((await detectGitBranch(cwd, vcs)) ?? "dev");
 
   // 5. Allocation Strategy: Non-TASK subtypes always follow pure monotonic progression (RULE-1)
   if (subtype !== "TASK") {
@@ -142,12 +153,17 @@ export async function resolveWatermark(
   let parentId: string | undefined;
   let sequence: number;
 
-  const taskBranchInfo = !options.forceTrunk ? parseTaskBranch(detectedBranch) : null;
+  const taskBranchInfo = !options.forceTrunk
+    ? parseTaskBranch(detectedBranch)
+    : null;
 
   if (!options.forceTrunk && resolvedPrefix) {
     // Strategy 3: Feature Branch & Agent/Author Namespacing (TASK-<prefix><sequence>)
     strategy = "prefixed";
-    const prefixRegex = new RegExp(`^${escapeRegex(resolvedPrefix)}([0-9]+)$`, "i");
+    const prefixRegex = new RegExp(
+      `^${escapeRegex(resolvedPrefix)}([0-9]+)$`,
+      "i",
+    );
 
     const existingSeqs = allKnownIds
       .map((id) => {

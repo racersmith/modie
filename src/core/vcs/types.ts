@@ -3,7 +3,10 @@
  * Complies with RULE-25, RULE-28, and ADR-6.
  */
 
-import type { DiscoveredArtifact, IndexableSubtype } from "../resolver/types.ts";
+import type {
+  DiscoveredArtifact,
+  IndexableSubtype,
+} from "../resolver/types.ts";
 
 export interface MultiBranchOptions {
   excludeCurrent?: boolean;
@@ -67,11 +70,7 @@ export interface IVcsAdapter {
     cwd?: string,
     options?: StageFilesOptions,
   ): Promise<void>;
-  commit(
-    message: string,
-    cwd?: string,
-    files?: string[],
-  ): Promise<string>;
+  commit(message: string, cwd?: string, files?: string[]): Promise<string>;
   getShortHash(ref?: string, cwd?: string): Promise<string>;
 
   // Merge

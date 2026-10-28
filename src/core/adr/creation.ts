@@ -37,7 +37,12 @@ export function resolveAdrDirectories(
   useSubtypeContainer: boolean = true,
   cwd: string = process.cwd(),
 ): { normalizedScopeDir: string; targetDir: string } {
-  return resolveArtifactDirectories("ADR", scopeDirInput, useSubtypeContainer, cwd);
+  return resolveArtifactDirectories(
+    "ADR",
+    scopeDirInput,
+    useSubtypeContainer,
+    cwd,
+  );
 }
 
 /**

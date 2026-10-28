@@ -142,17 +142,15 @@ Detailed test context for show command.
     expect(stderr).toContain(`${task.tag}: sample-work`);
     expect(stderr).toContain(`Depends On:  ${taskDep}`);
     expect(stderr).toContain(`Links:       ${taskLink}`);
-    expect(stderr).toContain("Context:\n  Detailed test context for show command.");
+    expect(stderr).toContain(
+      "Context:\n  Detailed test context for show command.",
+    );
     expect(stderr).toContain("Acceptance Criteria:");
     expect(stderr).toContain("1. [x] First completed criteria");
     expect(stderr).toContain("2. [ ] Second pending criteria");
 
     // Also verify --json with criteria and depends_on
-    const jsonResult = await workspace.captureCli([
-      "show",
-      task.tag,
-      "--json",
-    ]);
+    const jsonResult = await workspace.captureCli(["show", task.tag, "--json"]);
     expect(jsonResult.exitCode).toBe(0);
     const parsed = JSON.parse(jsonResult.stdout.trim());
     expect(parsed.depends_on).toEqual([taskDep]);

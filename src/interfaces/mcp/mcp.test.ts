@@ -6,17 +6,25 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { createFixtureWorkspace, makeTestTag, type FixtureWorkspace } from "../../core/testing/index.ts";
+import {
+  createFixtureWorkspace,
+  makeTestTag,
+  type FixtureWorkspace,
+} from "../../core/testing/index.ts";
 import { createModieMcpServer } from "./server.ts";
 
 function getTextContent(result: any): string {
   const item = result?.content?.[0];
-  return item && typeof item === "object" && "text" in item ? (item.text as string) : "";
+  return item && typeof item === "object" && "text" in item
+    ? (item.text as string)
+    : "";
 }
 
 function getResourceText(readRes: any): string {
   const item = readRes?.contents?.[0];
-  return item && typeof item === "object" && "text" in item ? (item.text as string) : "";
+  return item && typeof item === "object" && "text" in item
+    ? (item.text as string)
+    : "";
 }
 
 describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RULE-26)", () => {
@@ -57,10 +65,14 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     });
 
     server = createModieMcpServer({ cwd: workspace.cwd });
-    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
     await server.connect(serverTransport);
 
-    client = new Client({ name: "modie-test-client", version: "0.0.1" }, { capabilities: {} });
+    client = new Client(
+      { name: "modie-test-client", version: "0.0.1" },
+      { capabilities: {} },
+    );
     await client.connect(clientTransport);
   });
 
@@ -103,7 +115,9 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
 
     // Verify injected agent guidance and anti-pattern warnings (TASK-35)
     const createTool = response.tools.find((t) => t.name === "task_create");
-    expect(createTool?.description).toContain("Contract-Based Acceptance Criteria (RULE-30)");
+    expect(createTool?.description).toContain(
+      "Contract-Based Acceptance Criteria (RULE-30)",
+    );
     expect(createTool?.description).toContain("Ephemeral Task Decoupling");
     expect(createTool?.description).toContain("Upfront Planned Governance");
 
@@ -341,7 +355,9 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
       },
     });
     expect(cycleRes.isError).toBe(true);
-    expect(getTextContent(cycleRes)).toContain("Circular task dependency detected");
+    expect(getTextContent(cycleRes)).toContain(
+      "Circular task dependency detected",
+    );
     expect(getTextContent(cycleRes)).toContain("RULE-18");
 
     // 3. Valid unlink_artifact removing RULE -> ADR link
@@ -394,10 +410,14 @@ describe("Modie MCP Server - Read-Only Resources (Criterion 4)", () => {
     });
 
     server = createModieMcpServer({ cwd: workspace.cwd });
-    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const [clientTransport, serverTransport] =
+      InMemoryTransport.createLinkedPair();
     await server.connect(serverTransport);
 
-    client = new Client({ name: "modie-test-client", version: "0.0.1" }, { capabilities: {} });
+    client = new Client(
+      { name: "modie-test-client", version: "0.0.1" },
+      { capabilities: {} },
+    );
     await client.connect(clientTransport);
   });
 
@@ -416,10 +436,14 @@ describe("Modie MCP Server - Read-Only Resources (Criterion 4)", () => {
     expect(uris).toContain("modie://rules");
     expect(uris).toContain("modie://instructions");
 
-    const readyResource = listRes.resources.find((r) => r.uri === "modie://tasks/ready");
+    const readyResource = listRes.resources.find(
+      (r) => r.uri === "modie://tasks/ready",
+    );
     expect(readyResource?.mimeType).toBe("application/json");
 
-    const instructionsResource = listRes.resources.find((r) => r.uri === "modie://instructions");
+    const instructionsResource = listRes.resources.find(
+      (r) => r.uri === "modie://instructions",
+    );
     expect(instructionsResource?.mimeType).toBe("text/markdown");
   });
 
@@ -462,10 +486,13 @@ describe("Modie MCP Server - Read-Only Resources (Criterion 4)", () => {
 
 describe("Modie MCP CLI Entrypoint & Stdio Transport (RULE-27, Criterion 5)", () => {
   it("[RULE-27] should emit usage information to stderr when modie mcp --help is run", async () => {
-    const proc = Bun.spawn([process.execPath, "./src/interfaces/cli/bin.ts", "mcp", "--help"], {
-      stdout: "pipe",
-      stderr: "pipe",
-    });
+    const proc = Bun.spawn(
+      [process.execPath, "./src/interfaces/cli/bin.ts", "mcp", "--help"],
+      {
+        stdout: "pipe",
+        stderr: "pipe",
+      },
+    );
 
     const [stdout, stderr] = await Promise.all([
       new Response(proc.stdout).text(),
@@ -480,11 +507,14 @@ describe("Modie MCP CLI Entrypoint & Stdio Transport (RULE-27, Criterion 5)", ()
   });
 
   it("should exchange JSON-RPC protocol messages over standard I/O via bin.ts", async () => {
-    const proc = Bun.spawn([process.execPath, "./src/interfaces/cli/bin.ts", "mcp"], {
-      stdin: "pipe",
-      stdout: "pipe",
-      stderr: "pipe",
-    });
+    const proc = Bun.spawn(
+      [process.execPath, "./src/interfaces/cli/bin.ts", "mcp"],
+      {
+        stdin: "pipe",
+        stdout: "pipe",
+        stderr: "pipe",
+      },
+    );
 
     // Send JSON-RPC initialize request
     const initRequest = {
@@ -512,7 +542,9 @@ describe("Modie MCP CLI Entrypoint & Stdio Transport (RULE-27, Criterion 5)", ()
 
     const timeout = setTimeout(() => {
       proc.kill();
-      throw new Error(`Timed out waiting for initialize response. Received: ${buffer}`);
+      throw new Error(
+        `Timed out waiting for initialize response. Received: ${buffer}`,
+      );
     }, 5000);
 
     try {

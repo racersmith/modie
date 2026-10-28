@@ -4,7 +4,14 @@
  */
 
 import { readdir, readFile, stat } from "node:fs/promises";
-import { basename, extname, isAbsolute, join, relative, resolve } from "node:path";
+import {
+  basename,
+  extname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+} from "node:path";
 import { parseArtifactFilename } from "../common/filename.ts";
 import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
 import type { GitGrepMatch, IVcsAdapter } from "../vcs/types.ts";
@@ -102,7 +109,10 @@ function escapeRegex(str: string): string {
  * 3. Suite/test block declaration headers: `describe("...(TAG)...")`, `it("...(TAG)...")`
  * 4. Idiomatic test functions: `test_<tag>`, `def test_<tag>`, `fn test_<tag>`
  */
-export function isTestVerificationCitation(line: string, targetTag: string): boolean {
+export function isTestVerificationCitation(
+  line: string,
+  targetTag: string,
+): boolean {
   const escaped = escapeRegex(targetTag);
 
   // 1. Comment annotations: @verifies or @satisfies containing the tag
@@ -268,51 +278,60 @@ export async function findArtifactReferences(
     }
   }
 
-function parseFrontmatterList(content: string, fieldName: string): string[] {
-  const lines = content.split("\n");
-  const items: string[] = [];
-  let inField = false;
+  function parseFrontmatterList(content: string, fieldName: string): string[] {
+    const lines = content.split("\n");
+    const items: string[] = [];
+    let inField = false;
 
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (line === "---" && inField) break;
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (line === "---" && inField) break;
 
-    if (line.startsWith(`${fieldName}:`)) {
-      inField = true;
-      const inline = line.slice(fieldName.length + 1).trim();
-      if (inline.startsWith("[") && inline.endsWith("]")) {
-        const parsed = inline
-          .slice(1, -1)
-          .split(",")
-          .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
-          .filter(Boolean);
-        items.push(...parsed);
-        inField = false;
-      } else if (inline.length > 0) {
-        items.push(inline.replace(/^['"]|['"]$/g, ""));
-        inField = false;
+      if (line.startsWith(`${fieldName}:`)) {
+        inField = true;
+        const inline = line.slice(fieldName.length + 1).trim();
+        if (inline.startsWith("[") && inline.endsWith("]")) {
+          const parsed = inline
+            .slice(1, -1)
+            .split(",")
+            .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
+            .filter(Boolean);
+          items.push(...parsed);
+          inField = false;
+        } else if (inline.length > 0) {
+          items.push(inline.replace(/^['"]|['"]$/g, ""));
+          inField = false;
+        }
+        continue;
       }
-      continue;
+
+      if (inField) {
+        if (line.startsWith("- ")) {
+          const val = line
+            .slice(2)
+            .trim()
+            .replace(/^['"]|['"]$/g, "");
+          if (val) items.push(val);
+        } else if (/^[a-zA-Z0-9_-]+:/.test(line)) {
+          inField = false;
+        }
+      }
     }
 
-    if (inField) {
-      if (line.startsWith("- ")) {
-        const val = line.slice(2).trim().replace(/^['"]|['"]$/g, "");
-        if (val) items.push(val);
-      } else if (/^[a-zA-Z0-9_-]+:/.test(line)) {
-        inField = false;
-      }
-    }
+    return items;
   }
 
-  return items;
-}
-
   // Parse supersedes / superseded_by from raw content if present
-  const supersedesItems = parseFrontmatterList(details.rawContent, "supersedes");
+  const supersedesItems = parseFrontmatterList(
+    details.rawContent,
+    "supersedes",
+  );
   supersedes.push(...supersedesItems);
 
-  const supersededByItems = parseFrontmatterList(details.rawContent, "superseded_by");
+  const supersededByItems = parseFrontmatterList(
+    details.rawContent,
+    "superseded_by",
+  );
   if (supersededByItems.length > 0) {
     superseded_by = supersededByItems[0];
   }
@@ -376,7 +395,9 @@ function parseFrontmatterList(content: string, fieldName: string): string[] {
     }
     const lines = content.split("\n");
     const { linkLines, frontmatterEndLine } = parseFrontmatterLineMap(lines);
-    const candidateSupersedes = parseFrontmatterList(content, "supersedes").map((s) => s.toUpperCase());
+    const candidateSupersedes = parseFrontmatterList(content, "supersedes").map(
+      (s) => s.toUpperCase(),
+    );
     const isSupersedingSuccessor = candidateSupersedes.includes(targetTag);
     const data = {
       parsedArtifact,
@@ -402,7 +423,10 @@ function parseFrontmatterList(content: string, fieldName: string): string[] {
     if (lineNum <= gov.frontmatterEndLine && gov.linkLines.has(lineNum)) {
       const relationship = gov.linkLines.get(lineNum)!;
       const isArchived = gov.parsedArtifact.isArchived;
-      const isBlocking = !isArchived && relationship !== "supersedes" && !gov.isSupersedingSuccessor;
+      const isBlocking =
+        !isArchived &&
+        relationship !== "supersedes" &&
+        !gov.isSupersedingSuccessor;
 
       governanceLinks.push({
         type: "governance-link",
@@ -440,7 +464,8 @@ function parseFrontmatterList(content: string, fieldName: string): string[] {
     if (!tagRegex.test(rawLine)) {
       return;
     }
-    const isTest = TEST_FILE_REGEX.test(fileName) || fullPath.includes("/__tests__/");
+    const isTest =
+      TEST_FILE_REGEX.test(fileName) || fullPath.includes("/__tests__/");
     const isCode = CODE_EXTENSIONS.has(ext);
     const isDoc = DOC_EXTENSIONS.has(ext);
 
@@ -452,7 +477,10 @@ function parseFrontmatterList(content: string, fieldName: string): string[] {
           ? "code"
           : "code";
 
-    if (category === "test" && !isTestVerificationCitation(rawLine, targetTag)) {
+    if (
+      category === "test" &&
+      !isTestVerificationCitation(rawLine, targetTag)
+    ) {
       return;
     }
 
@@ -478,12 +506,14 @@ function parseFrontmatterList(content: string, fieldName: string): string[] {
   const isGitRepo = await vcs.isInsideWorkTree(cwd).catch(() => false);
 
   if (isGitRepo) {
-    matches = await vcs.grep(targetTag, cwd, {
-      untracked: true,
-      caseSensitive: false,
-      fixedStrings: true,
-      ignoredDirectories: Array.from(ignoredDirs),
-    }).catch(() => null);
+    matches = await vcs
+      .grep(targetTag, cwd, {
+        untracked: true,
+        caseSensitive: false,
+        fixedStrings: true,
+        ignoredDirectories: Array.from(ignoredDirs),
+      })
+      .catch(() => null);
   }
 
   if (matches !== null) {
@@ -511,9 +541,22 @@ function parseFrontmatterList(content: string, fieldName: string): string[] {
 
       const govData = await getGovArtifactData(fullPath, fileName);
       if (govData) {
-        processGovernanceMatch(govData, fullPath, relPath, match.line, match.snippet);
+        processGovernanceMatch(
+          govData,
+          fullPath,
+          relPath,
+          match.line,
+          match.snippet,
+        );
       } else {
-        processNonGovernanceMatch(fullPath, relPath, fileName, ext, match.line, match.snippet);
+        processNonGovernanceMatch(
+          fullPath,
+          relPath,
+          fileName,
+          ext,
+          match.line,
+          match.snippet,
+        );
       }
     }
   } else {
@@ -576,7 +619,14 @@ function parseFrontmatterList(content: string, fieldName: string): string[] {
             if (govData) {
               processGovernanceMatch(govData, fullPath, relPath, lineNum, line);
             } else {
-              processNonGovernanceMatch(fullPath, relPath, entry.name, ext, lineNum, line);
+              processNonGovernanceMatch(
+                fullPath,
+                relPath,
+                entry.name,
+                ext,
+                lineNum,
+                line,
+              );
             }
           }
         }

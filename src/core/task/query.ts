@@ -195,8 +195,7 @@ export async function queryTaskQueue(
   }
 
   // 4. Resolve current task ID from active git branch topology or options
-  const currentBranch =
-    options.currentBranch ?? (await detectGitBranch(cwd));
+  const currentBranch = options.currentBranch ?? (await detectGitBranch(cwd));
   const currentTaskId =
     options.currentTaskId ??
     (currentBranch ? parseTaskIdFromBranch(currentBranch) : null);
@@ -293,26 +292,41 @@ export async function queryTaskHistory(
   const cwd = options.cwd ?? process.cwd();
   const vcs = options.vcs ?? defaultVcsAdapter;
 
-  const [activeOnDisk, deletedArtifacts, branchArtifacts, localBranches, currentBranch] =
-    await Promise.all([
-      scanActiveTasks(cwd),
-      inspectGitDeletedArtifacts(cwd, "TASK", vcs),
-      inspectMultiBranchActiveArtifacts(cwd, "TASK", { excludeCurrent: true }, vcs),
-      listGitBranches(cwd, vcs),
-      detectGitBranch(cwd, vcs),
-    ]);
+  const [
+    activeOnDisk,
+    deletedArtifacts,
+    branchArtifacts,
+    localBranches,
+    currentBranch,
+  ] = await Promise.all([
+    scanActiveTasks(cwd),
+    inspectGitDeletedArtifacts(cwd, "TASK", vcs),
+    inspectMultiBranchActiveArtifacts(
+      cwd,
+      "TASK",
+      { excludeCurrent: true },
+      vcs,
+    ),
+    listGitBranches(cwd, vcs),
+    detectGitBranch(cwd, vcs),
+  ]);
 
   const activeDiskIds = new Set(
     activeOnDisk.map((t) => normalizeTaskId(t.id).toLowerCase()),
   );
 
-  const currentTaskId = currentBranch ? parseTaskIdFromBranch(currentBranch) : null;
+  const currentTaskId = currentBranch
+    ? parseTaskIdFromBranch(currentBranch)
+    : null;
   const normCurrentId = currentTaskId
     ? normalizeTaskId(currentTaskId).toLowerCase()
     : null;
 
   // Map normalized task ID -> branch metadata
-  const branchMap = new Map<string, { branch: string; id: string; slug: string }>();
+  const branchMap = new Map<
+    string,
+    { branch: string; id: string; slug: string }
+  >();
   for (const b of localBranches) {
     const match = b.match(/^task\/(?:TASK-)?([A-Za-z0-9]+(?:-[0-9]+)*)-(.+)$/i);
     if (match && match[1] && match[2]) {
@@ -471,7 +485,12 @@ export async function queryTaskHistory(
  * does not exist on disk (unless `history: true` is specified).
  */
 export async function resolveCurrentTask(
-  options: { cwd?: string; branch?: string; history?: boolean; vcs?: IVcsAdapter } = {},
+  options: {
+    cwd?: string;
+    branch?: string;
+    history?: boolean;
+    vcs?: IVcsAdapter;
+  } = {},
 ): Promise<TaskStatusDetails | null> {
   const cwd = options.cwd ?? process.cwd();
   const branch = options.branch ?? (await detectGitBranch(cwd, options.vcs));

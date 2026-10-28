@@ -10,10 +10,7 @@ import {
   referencesCommandDefinition,
   handleReferences,
 } from "./references/index.ts";
-import {
-  archiveCommand,
-  handleArchive,
-} from "./archive/index.ts";
+import { archiveCommand, handleArchive } from "./archive/index.ts";
 import {
   linkCommand,
   handleLink,
@@ -87,4 +84,3 @@ export const allCliCommands: CliCommandDefinition<any, any, any>[] = [
   taskCompleteCommand,
   taskMergeCommand,
 ];
-

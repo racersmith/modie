@@ -77,7 +77,10 @@ export function parseFrontmatterFields(frontmatterStr: string): {
     }
 
     if (line.startsWith("- ") || line === "-") {
-      const val = line.slice(1).trim().replace(/^['"]|['"]$/g, "");
+      const val = line
+        .slice(1)
+        .trim()
+        .replace(/^['"]|['"]$/g, "");
       if (val) {
         if (currentKey === "links") links.push(val);
         if (currentKey === "depends_on") depends_on.push(val);

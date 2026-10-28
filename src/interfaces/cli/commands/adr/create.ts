@@ -32,15 +32,14 @@ export const adrCreateSchema = z.object({
     .string()
     .optional()
     .describe("Alternatives considered and trade-off evaluations"),
-  decision: z
-    .string()
-    .optional()
-    .describe("Adopted decision specification"),
+  decision: z.string().optional().describe("Adopted decision specification"),
   links: z
     .array(z.string())
     .optional()
     .default([])
-    .describe("ADR and RULE link targets (repeat flag or use comma-separated list)"),
+    .describe(
+      "ADR and RULE link targets (repeat flag or use comma-separated list)",
+    ),
   supersedes: z
     .array(z.string())
     .optional()
@@ -116,7 +115,8 @@ export const adrCreateCommand: CliCommandDefinition<
       type: "string",
       short: "s",
       placeholder: "<dir>",
-      description: "Target scope directory (defaults to current working directory)",
+      description:
+        "Target scope directory (defaults to current working directory)",
     },
     context: {
       type: "string",
@@ -196,7 +196,9 @@ export const adrCreateCommand: CliCommandDefinition<
         ? ` (supersedes ${result.supersedes.join(", ")})`
         : "";
     context.stdout(result.relativePath);
-    context.stderr(`✓ Created ADR ${result.tag}: ${result.filename}${supersedesNotice}`);
+    context.stderr(
+      `✓ Created ADR ${result.tag}: ${result.filename}${supersedesNotice}`,
+    );
   },
   renderJson: (result, context) => {
     const supersedesNotice =
@@ -204,7 +206,9 @@ export const adrCreateCommand: CliCommandDefinition<
         ? ` (supersedes ${result.supersedes.join(", ")})`
         : "";
     context.stdout(JSON.stringify(result, null, 2));
-    context.stderr(`✓ Created ADR ${result.tag} (${result.relativePath})${supersedesNotice}`);
+    context.stderr(
+      `✓ Created ADR ${result.tag} (${result.relativePath})${supersedesNotice}`,
+    );
   },
 });
 
