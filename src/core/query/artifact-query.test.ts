@@ -241,6 +241,40 @@ describe("Artifact Query Service - Resolution by Tag (RULE-25, RULE-29, RULE-34,
     expect(resolvedAdr6.subtype).toBe("ADR");
     expect(resolvedAdr6.filepath).toBe(adr6.filepath);
   });
+
+  // @verifies ADR-6, RULE-21, RULE-25, RULE-34, RULE-35
+  it("[ADR-6][RULE-21][RULE-25][RULE-34][RULE-35] should strictly search active .md files by default and resolve deleted task history when history: true is passed", async () => {
+    await workspace.initGit({ defaultBranch: "dev", initialCommit: true });
+
+    const taskTag = makeTestTag("TASK", 75);
+    const task = await workspace.createTask({
+      id: 75,
+      slug: "ephemeral-history-task",
+      context: "History test.",
+      criteria: [{ text: "Done", completed: true }],
+    });
+
+    await Bun.$`git add .`.cwd(workspace.cwd).quiet();
+    await workspace.gitCommit(`feat(${task.tag}): ${task.slug}`);
+    await workspace.remove(task);
+    await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+    await workspace.gitCommit(`chore(task): delete completed ${task.tag} artifact`);
+
+    // Default strictly checks active .md files on disk
+    await expect(
+      resolveArtifactByTag(taskTag, { cwd: workspace.cwd }),
+    ).rejects.toThrow(/was not found across active or archived/);
+
+    // Explicit history: true finds the deleted task in Git history
+    const resolvedHist = await resolveArtifactByTag(taskTag, {
+      cwd: workspace.cwd,
+      history: true,
+    });
+    expect(resolvedHist.tag).toBe(taskTag);
+    expect(resolvedHist.slug).toBe("ephemeral-history-task");
+    expect(resolvedHist.isHistorical).toBe(true);
+    expect(resolvedHist.relativePath).toBe(task.relativePath);
+  });
 });
 
 describe("Artifact Query Service - Deep Inspection (RULE-26, RULE-29, RULE-34, RULE-35)", () => {

@@ -28,12 +28,6 @@ export interface ResolveTaskOptions {
   cwd?: string;
 
   /**
-   * Whether to allow resolving zombie tasks that were deleted in Git history.
-   * Defaults to false per ADR-6 and RULE-21.
-   */
-  allowZombie?: boolean;
-
-  /**
    * Optional VCS adapter (defaults to defaultVcsAdapter).
    */
   vcs?: IVcsAdapter;
@@ -86,11 +80,6 @@ export interface CompleteTaskOptions {
    * - Phase 2: `chore(task): delete completed TASK-<id> artifact`
    */
   commit?: boolean;
-
-  /**
-   * Whether to allow resolving zombie tasks without throwing an error.
-   */
-  allowZombie?: boolean;
 
   /**
    * Optional VCS adapter (defaults to defaultVcsAdapter).
@@ -189,16 +178,10 @@ export async function resolveTaskFile(
       const filename = basename(candidatePath);
       const parsedFilename = parseArtifactFilename(filename);
       if (parsedFilename && parsedFilename.subtype === "TASK" && !parsedFilename.isArchived) {
-        if (!options.allowZombie) {
-          await assertNotZombieTask(parsedFilename.id, cwd, options.vcs);
-        }
         return candidatePath;
       }
     }
-  } catch (error: unknown) {
-    if (error instanceof Error && error.message.includes("Zombie task detected")) {
-      throw error;
-    }
+  } catch {
     // Not a direct accessible file path; fall through to scanner
   }
 
@@ -216,9 +199,6 @@ export async function resolveTaskFile(
   });
 
   if (matchById) {
-    if (!options.allowZombie) {
-      await assertNotZombieTask(matchById.id, cwd, options.vcs);
-    }
     return matchById.filepath;
   }
 
@@ -228,9 +208,6 @@ export async function resolveTaskFile(
   );
 
   if (matchBySlug) {
-    if (!options.allowZombie) {
-      await assertNotZombieTask(matchBySlug.id, cwd, options.vcs);
-    }
     return matchBySlug.filepath;
   }
 
@@ -242,9 +219,6 @@ export async function resolveTaskFile(
   );
 
   if (partialMatches.length === 1 && partialMatches[0]) {
-    if (!options.allowZombie) {
-      await assertNotZombieTask(partialMatches[0].id, cwd, options.vcs);
-    }
     return partialMatches[0].filepath;
   }
 
@@ -481,6 +455,7 @@ export async function completeTask(
   }
 
   if (!force) {
+    await assertNotZombieTask(parsed.id, cwd, vcs);
     await assertPlannedGovernanceSatisfied(parsed, cwd);
   }
 

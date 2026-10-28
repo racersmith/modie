@@ -248,4 +248,55 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
     const listItems = JSON.parse(listJson.stdout.trim());
     expect(listItems[0].isCurrent).toBe(true);
   });
+
+  // @verifies ADR-6, ADR-9, RULE-21, RULE-25, RULE-27, RULE-34, RULE-35
+  it("[ADR-6][ADR-9][RULE-21][RULE-25][RULE-27][RULE-34][RULE-35] should support --history flag on task status to query completed task history and branches", async () => {
+    await using workspace = await createTestWorkspace("modie-cli-status-history-");
+    await workspace.initGit({ defaultBranch: "dev", initialCommit: true });
+
+    const task = await workspace.createTask({
+      id: 750,
+      slug: "historical-feature",
+      context: "Historical feature context.",
+      criteria: [{ text: "Shipped item", completed: true }],
+    });
+
+    await Bun.$`git add .`.cwd(workspace.cwd).quiet();
+    await workspace.gitCommit(`feat(${task.tag}): ${task.slug}`);
+    await workspace.remove(task);
+    await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+    await workspace.gitCommit(`chore(task): delete completed ${task.tag} artifact`);
+
+    // 1. Without --history: strict active resolution rejects deleted task
+    const strictRes = await workspace.captureCli(["task", "status", task.tag]);
+    expect(strictRes.exitCode).toBe(1);
+    expect(strictRes.stderr).toContain(`Task "${task.tag}" was not found among active tasks on disk`);
+
+    // 2. With --history: resolves completed task details from Git history
+    const histRes = await workspace.captureCli([
+      "task",
+      "status",
+      task.tag,
+      "--history",
+      "--json",
+    ]);
+    expect(histRes.exitCode).toBe(0);
+    const parsed = JSON.parse(histRes.stdout.trim());
+    expect(parsed.fullTaskId).toBe(task.tag);
+    expect(parsed.readiness).toBe("COMPLETED");
+    expect(parsed.isHistorical).toBe(true);
+    expect(parsed.criteriaCompleted).toBe(1);
+
+    // 3. Bare `task status --history --json` lists historical tasks
+    const listHistRes = await workspace.captureCli([
+      "task",
+      "status",
+      "--history",
+      "--json",
+    ]);
+    expect(listHistRes.exitCode).toBe(0);
+    const histList = JSON.parse(listHistRes.stdout.trim());
+    expect(Array.isArray(histList)).toBe(true);
+    expect(histList.some((t: any) => t.fullTaskId === task.tag)).toBe(true);
+  });
 });
