@@ -125,7 +125,10 @@ function formatScopeDisplay(scopeDir: string, cwd: string): string {
 /**
  * Checks whether `candidateAncestor` is an ancestor of or equal to `targetDir`.
  */
-function isAncestorOrSelfDir(candidateAncestor: string, targetDir: string): boolean {
+function isAncestorOrSelfDir(
+  candidateAncestor: string,
+  targetDir: string,
+): boolean {
   const rel = relative(candidateAncestor, targetDir);
   return !rel.startsWith("..") && !isAbsolute(rel);
 }
@@ -160,7 +163,8 @@ export async function validateArtifactLink(
 
   // 2. Determine relationship field (explicit override or automatic inference)
   const relationship: ArtifactLinkRelationship =
-    options.relationship ?? inferLinkRelationship(source.subtype, target.subtype);
+    options.relationship ??
+    inferLinkRelationship(source.subtype, target.subtype);
 
   if (relationship !== "links" && relationship !== "depends_on") {
     throw new Error(

@@ -77,8 +77,7 @@ export const taskStatusCommand: CliCommandDefinition<
     },
     history: {
       type: "boolean",
-      description:
-        "Query completed task history and branches in Git per ADR-6",
+      description: "Query completed task history and branches in Git per ADR-6",
     },
   },
   execute: async (input, context) => {
@@ -123,7 +122,9 @@ export const taskStatusCommand: CliCommandDefinition<
     if (Array.isArray(status)) {
       if (status.length === 0) {
         if (context.flags.history) {
-          context.stderr("No completed tasks or task branches found in Git history.");
+          context.stderr(
+            "No completed tasks or task branches found in Git history.",
+          );
         } else {
           context.stderr("No active tasks found in working tree.");
         }
@@ -141,7 +142,9 @@ export const taskStatusCommand: CliCommandDefinition<
       context.stderr(`Blocked By:  ${status.blockedBy.join(", ")}`);
     }
     context.stderr(`Path:        ${status.relativePath}`);
-    context.stderr(`Progress:    ${status.criteriaProgress} criteria satisfied`);
+    context.stderr(
+      `Progress:    ${status.criteriaProgress} criteria satisfied`,
+    );
     if (status.depends_on.length > 0) {
       context.stderr(`Depends On:  ${status.depends_on.join(", ")}`);
     } else {
@@ -157,10 +160,12 @@ export const taskStatusCommand: CliCommandDefinition<
 
     if (status.acceptanceCriteria.length > 0) {
       context.stderr(`\nAcceptance Criteria:`);
-      status.acceptanceCriteria.forEach((c: { completed: boolean; text: string }, idx: number) => {
-        const box = c.completed ? "[x]" : "[ ]";
-        context.stderr(`  ${idx + 1}. ${box} ${c.text}`);
-      });
+      status.acceptanceCriteria.forEach(
+        (c: { completed: boolean; text: string }, idx: number) => {
+          const box = c.completed ? "[x]" : "[ ]";
+          context.stderr(`  ${idx + 1}. ${box} ${c.text}`);
+        },
+      );
     }
   },
   renderJson: (status, context) => {

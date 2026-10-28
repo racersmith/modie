@@ -43,7 +43,10 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
       tags: string[];
     }
 
-    const specDefinition: ArtifactDefinition<CustomSpecOptions, CustomSpecArtifact> = {
+    const specDefinition: ArtifactDefinition<
+      CustomSpecOptions,
+      CustomSpecArtifact
+    > = {
       subtype: "SPEC",
       containerName: "specs",
       validate: ({ options }) => {

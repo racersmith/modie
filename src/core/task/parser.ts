@@ -1,11 +1,18 @@
 import { generateSlug, parseArtifactFilename } from "../common/index.ts";
 import { parseAcceptanceCriteria } from "./checklist.ts";
-import type { ParsedPlannedGovernance, PlannedGovernanceItem, TaskArtifact } from "./types.ts";
+import type {
+  ParsedPlannedGovernance,
+  PlannedGovernanceItem,
+  TaskArtifact,
+} from "./types.ts";
 
 /**
  * Parses YAML frontmatter string block into depends_on and links lists.
  */
-function parseTaskFrontmatter(frontmatterStr: string): { depends_on: string[]; links: string[] } {
+function parseTaskFrontmatter(frontmatterStr: string): {
+  depends_on: string[];
+  links: string[];
+} {
   const lines = frontmatterStr.split("\n");
   const depends_on: string[] = [];
   const links: string[] = [];
@@ -50,7 +57,10 @@ function parseTaskFrontmatter(frontmatterStr: string): { depends_on: string[]; l
     }
 
     if (line.startsWith("- ")) {
-      const value = line.slice(2).trim().replace(/^['"]|['"]$/g, "");
+      const value = line
+        .slice(2)
+        .trim()
+        .replace(/^['"]|['"]$/g, "");
       if (currentKey === "depends_on") {
         depends_on.push(value);
       } else if (currentKey === "links") {
@@ -70,7 +80,10 @@ function parseTaskFrontmatter(frontmatterStr: string): { depends_on: string[]; l
 /**
  * Extracts frontmatter string and markdown body from a document.
  */
-function splitFrontmatter(content: string): { frontmatter: string; body: string } {
+function splitFrontmatter(content: string): {
+  frontmatter: string;
+  body: string;
+} {
   const trimmed = content.trim();
   if (!trimmed.startsWith("---")) {
     return { frontmatter: "", body: content };
@@ -101,7 +114,9 @@ function parseContextSection(body: string): string | undefined {
 /**
  * Extracts and parses `# Planned Governance` section into structured items.
  */
-export function parsePlannedGovernanceSection(body: string): ParsedPlannedGovernance | undefined {
+export function parsePlannedGovernanceSection(
+  body: string,
+): ParsedPlannedGovernance | undefined {
   const match = body.match(/^#\s+Planned Governance\b([\s\S]*?)(?=^#\s+|\Z)/im);
   if (!match || !match[1]) {
     return undefined;
@@ -133,7 +148,9 @@ export function parsePlannedGovernanceSection(body: string): ParsedPlannedGovern
 
     if (boxMatch || bulletMatch) {
       const completed = boxMatch ? boxMatch[1]?.toLowerCase() === "x" : false;
-      const rawItemText = (boxMatch ? boxMatch[2] : bulletMatch ? bulletMatch[1] : "")!.trim();
+      const rawItemText = (
+        boxMatch ? boxMatch[2] : bulletMatch ? bulletMatch[1] : ""
+      )!.trim();
 
       let itemSubtype = currentSubtype;
       const text = rawItemText;
@@ -154,7 +171,9 @@ export function parsePlannedGovernanceSection(body: string): ParsedPlannedGovern
 
       let slug: string | undefined;
       try {
-        const cleanTitle = text.replace(/^(?:RULE|ADR)(?:-\w+)?:?\s*/i, "").trim();
+        const cleanTitle = text
+          .replace(/^(?:RULE|ADR)(?:-\w+)?:?\s*/i, "")
+          .trim();
         if (cleanTitle) {
           slug = generateSlug(cleanTitle);
         }
@@ -190,7 +209,10 @@ export function parsePlannedGovernanceSection(body: string): ParsedPlannedGovern
 /**
  * Parses task markdown text into a strongly-typed TaskArtifact object.
  */
-export function parseTaskMarkdown(content: string, filePathOrFilename?: string): TaskArtifact {
+export function parseTaskMarkdown(
+  content: string,
+  filePathOrFilename?: string,
+): TaskArtifact {
   const { frontmatter, body } = splitFrontmatter(content);
   const { depends_on, links } = parseTaskFrontmatter(frontmatter);
   const context = parseContextSection(body);

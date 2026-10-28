@@ -78,7 +78,10 @@ export async function updateSupersededArtifactFrontmatter(
 
   // Check if superseded_by is already present
   if (frontmatter.includes("superseded_by:")) {
-    const regex = new RegExp(`(?<![A-Za-z0-9_-])${newTag}(?![A-Za-z0-9_-])`, "i");
+    const regex = new RegExp(
+      `(?<![A-Za-z0-9_-])${newTag}(?![A-Za-z0-9_-])`,
+      "i",
+    );
     if (regex.test(frontmatter)) {
       return; // Already present, idempotent
     }
@@ -88,7 +91,10 @@ export async function updateSupersededArtifactFrontmatter(
     for (let i = 0; i < lines.length; i++) {
       if (lines[i]!.trim().startsWith("superseded_by:")) {
         insertIdx = i + 1;
-        while (insertIdx < lines.length && lines[insertIdx]!.trim().startsWith("- ")) {
+        while (
+          insertIdx < lines.length &&
+          lines[insertIdx]!.trim().startsWith("- ")
+        ) {
           insertIdx++;
         }
         break;

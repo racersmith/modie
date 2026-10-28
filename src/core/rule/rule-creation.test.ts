@@ -167,22 +167,29 @@ describe("Rule Creation - Execution & Disk Writing (RULE-1, RULE-3, RULE-8, RULE
     expect(result.id).toBe("1");
     expect(result.tag).toBe(expectedRule1Tag);
     expect(result.filename).toBe(`first-invariant-rule.${expectedRule1Tag}.md`);
-    expect(result.relativePath).toContain(`.modie/rules/first-invariant-rule.${expectedRule1Tag}.md`);
+    expect(result.relativePath).toContain(
+      `.modie/rules/first-invariant-rule.${expectedRule1Tag}.md`,
+    );
 
     const onDisk = await workspace.readFile(result.filepath);
-    expect(onDisk).toBe("All inputs must be strictly validated before parsing.\n");
+    expect(onDisk).toBe(
+      "All inputs must be strictly validated before parsing.\n",
+    );
 
     // Second rule should allocate ID 2
     const result2 = await createRule({
       title: "Second Invariant Rule",
-      assertion: "All outputs must be formatted according to standard conventions.",
+      assertion:
+        "All outputs must be formatted according to standard conventions.",
       cwd: workspace.cwd,
     });
 
     const expectedRule2Tag = makeTestTag("RULE", 2);
     expect(result2.id).toBe("2");
     expect(result2.tag).toBe(expectedRule2Tag);
-    expect(result2.filename).toBe(`second-invariant-rule.${expectedRule2Tag}.md`);
+    expect(result2.filename).toBe(
+      `second-invariant-rule.${expectedRule2Tag}.md`,
+    );
 
     await workspace.cleanup();
   });
@@ -199,8 +206,12 @@ describe("Rule Creation - Execution & Disk Writing (RULE-1, RULE-3, RULE-8, RULE
       cwd: workspace.cwd,
     });
 
-    expect(result.relativePath).toBe(`flat-invariant-rule.${expectedRule1Tag}.md`);
-    expect(result.filepath).toBe(workspace.resolve(`flat-invariant-rule.${expectedRule1Tag}.md`));
+    expect(result.relativePath).toBe(
+      `flat-invariant-rule.${expectedRule1Tag}.md`,
+    );
+    expect(result.filepath).toBe(
+      workspace.resolve(`flat-invariant-rule.${expectedRule1Tag}.md`),
+    );
 
     const onDisk = await workspace.readFile(result.filepath);
     expect(onDisk).toBe("Flat placement rule assertion.\n");
@@ -229,7 +240,9 @@ describe("Rule Creation - Execution & Disk Writing (RULE-1, RULE-3, RULE-8, RULE
     expect(result.artifact.links).toEqual([adr.tag]);
     const onDisk = await workspace.readFile(result.filepath);
     expect(onDisk.startsWith(`---\nlinks:\n  - ${adr.tag}\n---`)).toBe(true);
-    expect(onDisk).toContain("All components must respect governance boundary.");
+    expect(onDisk).toContain(
+      "All components must respect governance boundary.",
+    );
 
     await workspace.cleanup();
   });

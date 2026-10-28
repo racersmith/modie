@@ -4,7 +4,11 @@
 
 import type { ParseArgsConfig } from "node:util";
 import { parseCliArgs } from "../arg-parser.ts";
-import type { CliIoOptions, CliCommandResult, CommandHandler } from "../types.ts";
+import type {
+  CliIoOptions,
+  CliCommandResult,
+  CommandHandler,
+} from "../types.ts";
 import { generateCommandHelp } from "./help.ts";
 import type {
   CliCommandDefinition,
@@ -21,7 +25,11 @@ function buildParseOptions(
   const optionsMap: NonNullable<ParseArgsConfig["options"]> = {};
 
   for (const [flagName, flagDef] of Object.entries(declaredFlags)) {
-    const entry: { type: "string" | "boolean"; short?: string; multiple?: boolean } = {
+    const entry: {
+      type: "string" | "boolean";
+      short?: string;
+      multiple?: boolean;
+    } = {
       type: flagDef.type,
     };
     if (flagDef.short !== undefined) {
@@ -73,8 +81,7 @@ function normalizeFlags(
     if (flagDef.aliases && flagDef.aliases.length > 0) {
       if (flagDef.type === "boolean") {
         const isTrue = Boolean(
-          normalized[flagName] ||
-            flagDef.aliases.some((a) => normalized[a]),
+          normalized[flagName] || flagDef.aliases.some((a) => normalized[a]),
         );
         normalized[flagName] = isTrue;
       } else if (normalized[flagName] === undefined) {
@@ -94,7 +101,10 @@ function normalizeFlags(
 /**
  * Executes a declarative CLI command definition against command arguments and I/O sinks.
  */
-export async function executeCliCommand<TFlags = Record<string, any>, TResult = any>(
+export async function executeCliCommand<
+  TFlags = Record<string, any>,
+  TResult = any,
+>(
   definition: CliCommandDefinition<TFlags, TResult>,
   args: string[],
   options: CliIoOptions = {},
@@ -108,7 +118,9 @@ export async function executeCliCommand<TFlags = Record<string, any>, TResult = 
   const parseOptions = buildParseOptions(definition.flags);
   const helpUsage =
     definition.helpUsage ??
-    (definition.usage ? `${definition.usage.split(" ")[0]} ${definition.name} --help` : undefined);
+    (definition.usage
+      ? `${definition.usage.split(" ")[0]} ${definition.name} --help`
+      : undefined);
 
   const parsed = parseCliArgs({
     args,
@@ -152,7 +164,9 @@ export async function executeCliCommand<TFlags = Record<string, any>, TResult = 
         if (posDef.missingError) {
           stderr(posDef.missingError);
         } else {
-          const usageHint = definition.usage ? ` Usage: ${definition.usage}` : "";
+          const usageHint = definition.usage
+            ? ` Usage: ${definition.usage}`
+            : "";
           stderr(`Error: Missing required ${posDef.name}.${usageHint}`);
         }
         return 1;
@@ -211,13 +225,15 @@ export async function executeCliCommand<TFlags = Record<string, any>, TResult = 
     stderr(message);
     return 1;
   }
-
 }
 
 /**
  * Creates a standard CommandHandler function wrapping a declarative CliCommandDefinition.
  */
-export function createCommandHandler<TFlags = Record<string, any>, TResult = any>(
+export function createCommandHandler<
+  TFlags = Record<string, any>,
+  TResult = any,
+>(
   definition: CliCommandDefinition<TFlags, TResult>,
 ): (args: string[], options?: CliIoOptions) => Promise<number> {
   return (args: string[], options: CliIoOptions = {}) =>

@@ -26,13 +26,7 @@ export function validateAdrLinks(links: string[] = []): void {
  * sections (# Context, # Alternatives Considered, # Decision) per ADR-4.
  */
 export function renderAdrMarkdown(options: AdrRenderOptions): string {
-  const {
-    title,
-    links = [],
-    context,
-    alternatives,
-    decision,
-  } = options;
+  const { title, links = [], context, alternatives, decision } = options;
 
   // Validate frontmatter boundaries per RULE-14
   validateAdrLinks(links);
@@ -70,8 +64,7 @@ export function renderAdrMarkdown(options: AdrRenderOptions): string {
       ? `Architecture decision context and motivation for ${title.trim()}.`
       : "Architecture decision context and problem statement.");
 
-  const alternativesContent =
-    alternatives?.trim() || "- None recorded.";
+  const alternativesContent = alternatives?.trim() || "- None recorded.";
 
   const decisionContent =
     decision?.trim() ||

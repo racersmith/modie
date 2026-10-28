@@ -59,7 +59,9 @@ describe("Task Queue Query Service - DAG Readiness Evaluation (ADR-6, RULE-18)",
 
   // @verifies ADR-6, RULE-18
   it("[ADR-6][RULE-18] should mark task as BLOCKED when prerequisite task is active on disk", async () => {
-    await using workspace = await createFixtureWorkspace("modie-query-blocked-");
+    await using workspace = await createFixtureWorkspace(
+      "modie-query-blocked-",
+    );
     const taskA = await workspace.createTask({
       id: 201,
       slug: "upstream-task",
@@ -90,7 +92,9 @@ describe("Task Queue Query Service - DAG Readiness Evaluation (ADR-6, RULE-18)",
 
   // @verifies ADR-6, RULE-18
   it("[ADR-6][RULE-18] should evaluate task as READY when prerequisite task was completed and deleted (not on disk)", async () => {
-    await using workspace = await createFixtureWorkspace("modie-query-deleted-dep-");
+    await using workspace = await createFixtureWorkspace(
+      "modie-query-deleted-dep-",
+    );
     const task301Tag = makeTestTag("TASK", 301);
     const taskB = await workspace.createTask({
       id: 302,
@@ -190,7 +194,9 @@ describe("Task Queue Query Service - DAG Readiness Evaluation (ADR-6, RULE-18)",
 describe("Task Queue Query Service - Progress & Filtering (RULE-22)", () => {
   // @verifies RULE-22
   it("[RULE-22] should accurately compute criteria completion status and percentage", async () => {
-    await using workspace = await createFixtureWorkspace("modie-query-progress-");
+    await using workspace = await createFixtureWorkspace(
+      "modie-query-progress-",
+    );
     const task = await workspace.createTask({
       id: 601,
       slug: "progress-task",
@@ -223,11 +229,17 @@ describe("Task Queue Query Service - Progress & Filtering (RULE-22)", () => {
       criteria: ["Blocked item"],
     });
 
-    const readyList = await queryTaskQueue({ cwd: workspace.cwd, readyOnly: true });
+    const readyList = await queryTaskQueue({
+      cwd: workspace.cwd,
+      readyOnly: true,
+    });
     expect(readyList.length).toBe(1);
     expect(readyList[0]!.id).toBe(taskA.id);
 
-    const blockedList = await queryTaskQueue({ cwd: workspace.cwd, blockedOnly: true });
+    const blockedList = await queryTaskQueue({
+      cwd: workspace.cwd,
+      blockedOnly: true,
+    });
     expect(blockedList.length).toBe(1);
     expect(blockedList[0]!.id).toBe(taskB.id);
   });
@@ -255,20 +267,27 @@ describe("Task Status Inspection Service - getTaskStatus (RULE-22, RULE-25)", ()
     expect(status.criteriaTotal).toBe(2);
     expect(status.criteriaCompleted).toBe(1);
     expect(status.incompleteCriteria).toEqual(["Second item pending"]);
-    expect(status.links).toEqual([makeTestTag("ADR", 6), makeTestTag("RULE", 18)]);
+    expect(status.links).toEqual([
+      makeTestTag("ADR", 6),
+      makeTestTag("RULE", 18),
+    ]);
   });
 
   it("should throw descriptive error when inspecting non-existent task", async () => {
-    await using workspace = await createFixtureWorkspace("modie-query-missing-");
-    const missingTag = makeTestTag("TASK", 9999);
-    await expect(getTaskStatus(missingTag, { cwd: workspace.cwd })).rejects.toThrow(
-      /was not found among active tasks on disk/,
+    await using workspace = await createFixtureWorkspace(
+      "modie-query-missing-",
     );
+    const missingTag = makeTestTag("TASK", 9999);
+    await expect(
+      getTaskStatus(missingTag, { cwd: workspace.cwd }),
+    ).rejects.toThrow(/was not found among active tasks on disk/);
   });
 
   // @verifies ADR-6, ADR-9, RULE-21, RULE-25, RULE-34, RULE-35
   it("[ADR-6][ADR-9][RULE-21][RULE-25][RULE-34][RULE-35] should strictly search active .md files by default and resolve completed tasks and branches when history: true is passed", async () => {
-    await using workspace = await createFixtureWorkspace("modie-query-history-");
+    await using workspace = await createFixtureWorkspace(
+      "modie-query-history-",
+    );
     await workspace.initGit({ defaultBranch: "dev", initialCommit: true });
 
     const rule1Tag = makeTestTag("RULE", 1);
@@ -285,10 +304,14 @@ describe("Task Status Inspection Service - getTaskStatus (RULE-22, RULE-25)", ()
 
     // Execute two-phase commit completion ceremony (ADR-6, RULE-21)
     await Bun.$`git add .`.cwd(workspace.cwd).quiet();
-    await workspace.gitCommit(`feat(${completedTask.tag}): ${completedTask.slug}`);
+    await workspace.gitCommit(
+      `feat(${completedTask.tag}): ${completedTask.slug}`,
+    );
     await workspace.remove(completedTask);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
-    await workspace.gitCommit(`chore(task): delete completed ${completedTask.tag} artifact`);
+    await workspace.gitCommit(
+      `chore(task): delete completed ${completedTask.tag} artifact`,
+    );
 
     // 1. Default getTaskStatus strictly checks active .md files on disk and rejects completed task
     await expect(
@@ -310,7 +333,9 @@ describe("Task Status Inspection Service - getTaskStatus (RULE-22, RULE-25)", ()
 
     // 3. queryTaskHistory returns completed tasks and tasks on other branches
     const historyList = await queryTaskHistory({ cwd: workspace.cwd });
-    expect(historyList.some((t) => t.fullTaskId === completedTask.tag)).toBe(true);
+    expect(historyList.some((t) => t.fullTaskId === completedTask.tag)).toBe(
+      true,
+    );
   });
 });
 
@@ -328,7 +353,9 @@ describe("Task Branch Parsing Service - parseTaskIdFromBranch (RULE-28)", () => 
 
   // @verifies RULE-28
   it("[RULE-28] should parse branch with explicit TASK- prefix", () => {
-    expect(parseTaskIdFromBranch("task/TASK-30-resolve-current-task")).toBe("30");
+    expect(parseTaskIdFromBranch("task/TASK-30-resolve-current-task")).toBe(
+      "30",
+    );
   });
 
   // @verifies RULE-28

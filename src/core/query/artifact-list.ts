@@ -156,4 +156,3 @@ export async function listAdrs(
 ): Promise<ListedArtifact[]> {
   return listActiveArtifacts("ADR", options);
 }
-

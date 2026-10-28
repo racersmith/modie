@@ -36,15 +36,22 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14)", () => {
     const rendered = renderAdrMarkdown({
       title: "Subtype Directory Partitioning",
       links: ["RULE-8", "ADR-2"],
-      context: "Enforcing strict dedicated folders creates unnecessary directory sprawl.",
+      context:
+        "Enforcing strict dedicated folders creates unnecessary directory sprawl.",
       alternatives: "- Strict Mandatory Folders\n- Strict Flat Colocation",
       decision: "We adopt a permissive containment model.",
     });
 
     expect(rendered).toContain("links:\n  - RULE-8\n  - ADR-2");
-    expect(rendered).toContain("# Context\n\nEnforcing strict dedicated folders creates unnecessary directory sprawl.");
-    expect(rendered).toContain("# Alternatives Considered\n\n- Strict Mandatory Folders\n- Strict Flat Colocation");
-    expect(rendered).toContain("# Decision\n\nWe adopt a permissive containment model.");
+    expect(rendered).toContain(
+      "# Context\n\nEnforcing strict dedicated folders creates unnecessary directory sprawl.",
+    );
+    expect(rendered).toContain(
+      "# Alternatives Considered\n\n- Strict Mandatory Folders\n- Strict Flat Colocation",
+    );
+    expect(rendered).toContain(
+      "# Decision\n\nWe adopt a permissive containment model.",
+    );
   });
 
   // @verifies ADR-4
@@ -66,8 +73,12 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14)", () => {
       title: "Defaulted Decision",
     });
 
-    expect(rendered).toContain("Architecture decision context and motivation for Defaulted Decision.");
+    expect(rendered).toContain(
+      "Architecture decision context and motivation for Defaulted Decision.",
+    );
     expect(rendered).toContain("- None recorded.");
-    expect(rendered).toContain("Adopted decision regarding Defaulted Decision.");
+    expect(rendered).toContain(
+      "Adopted decision regarding Defaulted Decision.",
+    );
   });
 });

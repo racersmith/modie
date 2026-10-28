@@ -3,7 +3,10 @@
  * Complies with RULE-25, RULE-28, and ADR-6.
  */
 
-import type { DiscoveredArtifact, IndexableSubtype } from "../resolver/types.ts";
+import type {
+  DiscoveredArtifact,
+  IndexableSubtype,
+} from "../resolver/types.ts";
 
 export interface MultiBranchOptions {
   excludeCurrent?: boolean;
@@ -16,6 +19,19 @@ export interface StageFilesOptions {
    * If true, only updates tracked files (equivalent to git add -u).
    */
   updateOnly?: boolean;
+}
+
+export interface GitGrepMatch {
+  relativePath: string;
+  line: number;
+  snippet: string;
+}
+
+export interface GitGrepOptions {
+  untracked?: boolean;
+  ignoredDirectories?: string[];
+  caseSensitive?: boolean;
+  fixedStrings?: boolean;
 }
 
 /**
@@ -54,11 +70,7 @@ export interface IVcsAdapter {
     cwd?: string,
     options?: StageFilesOptions,
   ): Promise<void>;
-  commit(
-    message: string,
-    cwd?: string,
-    files?: string[],
-  ): Promise<string>;
+  commit(message: string, cwd?: string, files?: string[]): Promise<string>;
   getShortHash(ref?: string, cwd?: string): Promise<string>;
 
   // Merge
@@ -89,6 +101,13 @@ export interface IVcsAdapter {
     subtype?: IndexableSubtype,
     options?: MultiBranchOptions,
   ): Promise<DiscoveredArtifact[]>;
+
+  // Search & Index Query
+  grep(
+    query: string,
+    cwd?: string,
+    options?: GitGrepOptions,
+  ): Promise<GitGrepMatch[] | null>;
 
   // Configuration & Raw Execution (Escape Hatch)
   getConfig(key: string, cwd?: string): Promise<string | null>;

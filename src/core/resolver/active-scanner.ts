@@ -6,8 +6,15 @@
 
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { parseArtifactFilename, registerArtifactSubtype } from "../common/filename.ts";
-import type { DiscoveredArtifact, DiscoveredTask, IndexableSubtype } from "./types.ts";
+import {
+  parseArtifactFilename,
+  registerArtifactSubtype,
+} from "../common/filename.ts";
+import type {
+  DiscoveredArtifact,
+  DiscoveredTask,
+  IndexableSubtype,
+} from "./types.ts";
 
 const IGNORED_DIRECTORIES = new Set([
   ".git",
@@ -43,7 +50,9 @@ export async function scanActiveArtifacts(
     registerArtifactSubtype(subtype);
   }
   const discovered: DiscoveredArtifact[] = [];
-  const targetSubtype = subtype ? (subtype.toUpperCase() as IndexableSubtype) : undefined;
+  const targetSubtype = subtype
+    ? (subtype.toUpperCase() as IndexableSubtype)
+    : undefined;
 
   async function walk(dir: string): Promise<void> {
     let entries;
@@ -97,7 +106,9 @@ export async function scanActiveArtifactIds(
  * Recursively scans directory for active task files (*.TASK-*.md).
  * Backward compatibility wrapper around scanActiveArtifacts.
  */
-export async function scanActiveTasks(rootDir: string = process.cwd()): Promise<DiscoveredTask[]> {
+export async function scanActiveTasks(
+  rootDir: string = process.cwd(),
+): Promise<DiscoveredTask[]> {
   const artifacts = await scanActiveArtifacts(rootDir, "TASK");
   return artifacts
     .filter((a) => !a.isArchived)
@@ -114,6 +125,8 @@ export async function scanActiveTasks(rootDir: string = process.cwd()): Promise<
  * Returns a deduplicated list of active task IDs found on disk.
  * Backward compatibility wrapper around scanActiveArtifactIds.
  */
-export async function scanActiveTaskIds(rootDir: string = process.cwd()): Promise<string[]> {
+export async function scanActiveTaskIds(
+  rootDir: string = process.cwd(),
+): Promise<string[]> {
   return scanActiveArtifactIds(rootDir, "TASK");
 }

@@ -4,7 +4,10 @@
  */
 
 import { archiveArtifact } from "../archival/archive.ts";
-import type { ArchiveArtifactOptions, ArchiveArtifactResult } from "../archival/types.ts";
+import type {
+  ArchiveArtifactOptions,
+  ArchiveArtifactResult,
+} from "../archival/types.ts";
 
 export type ArchiveRuleOptions = Omit<ArchiveArtifactOptions, "subtype">;
 

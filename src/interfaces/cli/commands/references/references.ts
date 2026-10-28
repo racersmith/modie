@@ -22,10 +22,7 @@ export const referencesSchema = z.object({
     .string()
     .min(1, "Artifact tag or identifier is required")
     .describe("Artifact tag (e.g. RULE-25, ADR-4, TASK-20), slug, or filepath"),
-  by: z
-    .boolean()
-    .default(false)
-    .describe("Display only 'Found In' citations"),
+  by: z.boolean().default(false).describe("Display only 'Found In' citations"),
   to: z
     .boolean()
     .default(false)
@@ -71,7 +68,8 @@ export const referencesCommandDefinition: CliCommandDefinition<
     {
       name: "tag",
       property: "tag",
-      description: "Artifact tag (e.g. RULE-25, ADR-4, TASK-20), slug, or filepath",
+      description:
+        "Artifact tag (e.g. RULE-25, ADR-4, TASK-20), slug, or filepath",
       required: true,
       missingError:
         "Missing required artifact identifier. Usage: modie references <tag> [options]",
@@ -116,47 +114,65 @@ export const referencesCommandDefinition: CliCommandDefinition<
 
     // Section 1: Found In
     if (!showOnlyTo) {
-      context.stderr(`\n[Found In] (${result.foundIn.total} citations across repository)`);
+      context.stderr(
+        `\n[Found In] (${result.foundIn.total} citations across repository)`,
+      );
 
       const showGov = !codeOnly;
       const showCode = !govOnly;
 
       if (showGov && result.foundIn.governanceLinks.length > 0) {
-        context.stderr(`  Governance Links (${result.foundIn.governanceLinks.length}):`);
+        context.stderr(
+          `  Governance Links (${result.foundIn.governanceLinks.length}):`,
+        );
         for (const item of result.foundIn.governanceLinks) {
           const tagDisplay = item.sourceTag ?? "Artifact";
           const status = item.isArchived ? " [archived]" : "";
           const rel = item.relationship ? ` (${item.relationship})` : "";
-          context.stderr(`    ${tagDisplay.padEnd(10)} ${item.relativePath}:${item.line}${rel}${status}`);
+          context.stderr(
+            `    ${tagDisplay.padEnd(10)} ${item.relativePath}:${item.line}${rel}${status}`,
+          );
         }
       }
 
       if (showGov && result.foundIn.governanceProse.length > 0) {
-        context.stderr(`  Governance Prose (${result.foundIn.governanceProse.length}):`);
+        context.stderr(
+          `  Governance Prose (${result.foundIn.governanceProse.length}):`,
+        );
         for (const item of result.foundIn.governanceProse) {
           const tagDisplay = item.sourceTag ?? "Artifact";
-          context.stderr(`    ${tagDisplay.padEnd(10)} ${item.relativePath}:${item.line}`);
+          context.stderr(
+            `    ${tagDisplay.padEnd(10)} ${item.relativePath}:${item.line}`,
+          );
         }
       }
 
       if (showCode && result.foundIn.code.length > 0) {
         context.stderr(`  Source Code (${result.foundIn.code.length}):`);
         for (const item of result.foundIn.code) {
-          context.stderr(`    ${item.relativePath}:${item.line}  ${item.snippet}`);
+          context.stderr(
+            `    ${item.relativePath}:${item.line}  ${item.snippet}`,
+          );
         }
       }
 
       if (showCode && result.foundIn.tests.length > 0) {
         context.stderr(`  Test Suites (${result.foundIn.tests.length}):`);
         for (const item of result.foundIn.tests) {
-          context.stderr(`    ${item.relativePath}:${item.line}  ${item.snippet}`);
+          context.stderr(
+            `    ${item.relativePath}:${item.line}  ${item.snippet}`,
+          );
         }
       }
 
       if (result.foundIn.documentation.length > 0 && !codeOnly && !govOnly) {
-        context.stderr(`  Documentation (${result.foundIn.documentation.length}):`);
+        context.stderr(
+          `  Documentation (${result.foundIn.documentation.length}):`,
+        );
         for (const item of result.foundIn.documentation) {
-          context.stderr(`    ${item.relativePath}:${item.line}  ${item.snippet}`);
+          context.stderr(
+            `    ${item.relativePath}:${item.line}  ${item.snippet}`,
+          );
         }
       }
 
@@ -168,10 +184,18 @@ export const referencesCommandDefinition: CliCommandDefinition<
     // Section 2: Links To
     if (!showOnlyBy) {
       const linksTo = result.linksTo;
-      context.stderr(`\n[Links To] (${linksTo.total} declared outbound targets)`);
-      context.stderr(`  ADRs:   ${linksTo.adrs.length > 0 ? linksTo.adrs.join(", ") : "(none)"}`);
-      context.stderr(`  Rules:  ${linksTo.rules.length > 0 ? linksTo.rules.join(", ") : "(none)"}`);
-      context.stderr(`  Tasks:  ${linksTo.tasks.length > 0 ? linksTo.tasks.join(", ") : "(none)"}`);
+      context.stderr(
+        `\n[Links To] (${linksTo.total} declared outbound targets)`,
+      );
+      context.stderr(
+        `  ADRs:   ${linksTo.adrs.length > 0 ? linksTo.adrs.join(", ") : "(none)"}`,
+      );
+      context.stderr(
+        `  Rules:  ${linksTo.rules.length > 0 ? linksTo.rules.join(", ") : "(none)"}`,
+      );
+      context.stderr(
+        `  Tasks:  ${linksTo.tasks.length > 0 ? linksTo.tasks.join(", ") : "(none)"}`,
+      );
       if (linksTo.supersedes.length > 0) {
         context.stderr(`  Supersedes: ${linksTo.supersedes.join(", ")}`);
       }
@@ -185,9 +209,13 @@ export const referencesCommandDefinition: CliCommandDefinition<
       const guard = result.archivalGuard;
       context.stderr(`\n[Archival Safety Check]`);
       if (guard.canArchive) {
-        context.stderr(`  Can Archive: YES (0 active blocking governance links)`);
+        context.stderr(
+          `  Can Archive: YES (0 active blocking governance links)`,
+        );
       } else {
-        context.stderr(`  Can Archive: NO (${guard.blockingCount} active blocking governance link(s))`);
+        context.stderr(
+          `  Can Archive: NO (${guard.blockingCount} active blocking governance link(s))`,
+        );
         context.stderr(`  Blocking Dependencies:`);
         for (const reason of guard.blockingReasons) {
           context.stderr(`    - ${reason}`);

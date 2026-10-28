@@ -35,10 +35,7 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
       slug: "cli-check-test",
       links: [linkAdr, linkRule],
       context: "Test task for CLI check.",
-      criteria: [
-        "First item to check",
-        "Second item to check",
-      ],
+      criteria: ["First item to check", "Second item to check"],
     });
 
     const { exitCode, stdout, stderr } = await workspace.captureCli([
@@ -98,9 +95,7 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
       id: 202,
       slug: "cli-uncheck",
       context: "Uncheck test.",
-      criteria: [
-        { text: "Already checked item", completed: true },
-      ],
+      criteria: [{ text: "Already checked item", completed: true }],
     });
 
     const { exitCode, stdout, stderr } = await workspace.captureCli([
@@ -198,9 +193,7 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
       slug: "complete-task",
       links: [linkAdr, linkRule21, linkRule22],
       context: "Satisfied task.",
-      criteria: [
-        { text: "Completed deliverable", completed: true },
-      ],
+      criteria: [{ text: "Completed deliverable", completed: true }],
     });
 
     const { exitCode, stdout, stderr } = await workspace.captureCli([
@@ -248,9 +241,7 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
       id: 303,
       slug: "keep-task",
       context: "Retain test.",
-      criteria: [
-        { text: "Checked item", completed: true },
-      ],
+      criteria: [{ text: "Checked item", completed: true }],
     });
 
     const { exitCode, stdout, stderr } = await workspace.captureCli([
@@ -273,9 +264,7 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
       id: 304,
       slug: "json-complete",
       context: "JSON complete test.",
-      criteria: [
-        { text: "Item", completed: true },
-      ],
+      criteria: [{ text: "Item", completed: true }],
     });
 
     const { exitCode, stdout, stderr } = await workspace.captureCli([
@@ -300,9 +289,7 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
       id: 305,
       slug: "commit-task",
       context: "CLI Commit Ceremony Test.",
-      criteria: [
-        { text: "Verified item", completed: true },
-      ],
+      criteria: [{ text: "Verified item", completed: true }],
     });
 
     const { exitCode, stdout, stderr } = await workspace.captureCli([
@@ -328,7 +315,9 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
       { cwd: workspace.cwd },
     );
     const messages = logOut.trim().split("\n");
-    expect(messages[0]).toBe(`chore(task): delete completed ${task.tag} artifact`);
+    expect(messages[0]).toBe(
+      `chore(task): delete completed ${task.tag} artifact`,
+    );
     expect(messages[1]).toBe(`feat(${task.tag}): ${task.slug}`);
   });
 
@@ -338,9 +327,7 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
       id: 306,
       slug: "finish-task",
       context: "Finish alias test.",
-      criteria: [
-        { text: "Finished item", completed: true },
-      ],
+      criteria: [{ text: "Finished item", completed: true }],
     });
 
     const { exitCode, stdout, stderr } = await workspace.captureCli([
@@ -433,11 +420,7 @@ describe("CLI Task Lifecycle - End-to-End Subprocess via bin.ts (RULE-21, RULE-2
 
     // 3. Attempt to complete (should fail because item 2 is incomplete)
     try {
-      await workspace.execBin([
-        "task",
-        "complete",
-        taskPath,
-      ]);
+      await workspace.execBin(["task", "complete", taskPath]);
       expect(true).toBe(false); // should not reach here
     } catch (err: any) {
       expect(err.stderr).toContain("1 acceptance criteria remain unchecked");

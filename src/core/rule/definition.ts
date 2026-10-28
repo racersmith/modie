@@ -33,12 +33,8 @@ export async function validateRuleAncestry(
     const adr = await resolveArtifactByTag(link, { cwd });
 
     const adrDir = dirname(adr.filepath);
-    const { normalizedScopeDir: adrNormalizedScope } = resolveArtifactDirectories(
-      "ADR",
-      adrDir,
-      true,
-      cwd,
-    );
+    const { normalizedScopeDir: adrNormalizedScope } =
+      resolveArtifactDirectories("ADR", adrDir, true, cwd);
 
     const relFromAdrToRule = relative(adrNormalizedScope, normalizedScopeDir);
     const isAncestorOrEqual =
@@ -53,7 +49,10 @@ export async function validateRuleAncestry(
   }
 }
 
-export const ruleDefinition: ArtifactDefinition<CreateRuleOptions, RuleArtifact> = {
+export const ruleDefinition: ArtifactDefinition<
+  CreateRuleOptions,
+  RuleArtifact
+> = {
   subtype: "RULE",
   containerName: "rules",
   validate: async ({ normalizedScopeDir, options, cwd }) => {

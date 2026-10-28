@@ -67,7 +67,8 @@ export function mutateFrontmatterListField(
   const frontmatterInner = fmMatch[1] ?? "";
   const tailAfterClosingFence = fmMatch[2] ?? "";
 
-  const lines = frontmatterInner.length > 0 ? frontmatterInner.split(/\r?\n/) : [];
+  const lines =
+    frontmatterInner.length > 0 ? frontmatterInner.split(/\r?\n/) : [];
   const keyRegex = new RegExp(`^(\\s*)${field}\\s*:(.*)$`);
 
   let keyLineIdx = -1;
@@ -134,7 +135,11 @@ export function mutateFrontmatterListField(
 
       // Blank or comment line: only consume if followed by more list items of the same key
       let hasFollowingListItem = false;
-      for (let lookahead = blockEndIdx + 1; lookahead < lines.length; lookahead++) {
+      for (
+        let lookahead = blockEndIdx + 1;
+        lookahead < lines.length;
+        lookahead++
+      ) {
         const laTrimmed = lines[lookahead]!.trim();
         if (laTrimmed === "" || laTrimmed.startsWith("#")) {
           continue;
@@ -213,14 +218,10 @@ export async function linkArtifact(
 ): Promise<LinkMutationResult> {
   const cwd = resolve(options.cwd ?? process.cwd());
 
-  const validated = await validateArtifactLink(
-    options.source,
-    options.target,
-    {
-      cwd,
-      relationship: options.relationship,
-    },
-  );
+  const validated = await validateArtifactLink(options.source, options.target, {
+    cwd,
+    relationship: options.relationship,
+  });
 
   const { source, target, relationship } = validated;
   const rawContent = await readFile(source.filepath, "utf8");
@@ -289,7 +290,8 @@ export async function unlinkArtifact(
   }
 
   const relationship: ArtifactLinkRelationship =
-    options.relationship ?? inferLinkRelationship(source.subtype, target.subtype);
+    options.relationship ??
+    inferLinkRelationship(source.subtype, target.subtype);
 
   if (relationship !== "links" && relationship !== "depends_on") {
     throw new Error(
@@ -328,4 +330,3 @@ export async function unlinkArtifact(
     relativePath: source.relativePath,
   };
 }
-

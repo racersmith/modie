@@ -88,7 +88,9 @@ export interface ArtifactDefinition<TOptions = any, TArtifact = any> {
   /**
    * Optional validation hook executed before ID allocation (e.g. link/scope validation).
    */
-  validate?: (context: ArtifactValidationContext<TOptions>) => void | Promise<void>;
+  validate?: (
+    context: ArtifactValidationContext<TOptions>,
+  ) => void | Promise<void>;
 
   /**
    * Optional ID allocator. Defaults to monotonic watermark resolution.
@@ -100,7 +102,9 @@ export interface ArtifactDefinition<TOptions = any, TArtifact = any> {
   /**
    * Template renderer that generates the markdown string and structured artifact object.
    */
-  render: (context: ArtifactRenderContext<TOptions>) => ArtifactRenderResult<TArtifact>;
+  render: (
+    context: ArtifactRenderContext<TOptions>,
+  ) => ArtifactRenderResult<TArtifact>;
 }
 
 export interface CreateArtifactResult<TArtifact = unknown> {

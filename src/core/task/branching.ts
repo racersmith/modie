@@ -319,7 +319,11 @@ export async function computeTaskBranchTopology(
   let expectedBaseBranch: string;
 
   if (isSubtask && subtaskInfo) {
-    parentBranchName = await findParentTaskBranch(subtaskInfo.parentId, cwd, vcs);
+    parentBranchName = await findParentTaskBranch(
+      subtaskInfo.parentId,
+      cwd,
+      vcs,
+    );
     expectedBaseBranch =
       options.base ?? parentBranchName ?? `task/${subtaskInfo.parentId}`;
   } else {
@@ -357,7 +361,10 @@ export async function startTaskBranch(
 ): Promise<StartTaskBranchResult> {
   const cwd = options.cwd ?? process.cwd();
   const vcs = options.vcs ?? defaultVcsAdapter;
-  const topology = await computeTaskBranchTopology(taskIdentifier, { ...options, vcs });
+  const topology = await computeTaskBranchTopology(taskIdentifier, {
+    ...options,
+    vcs,
+  });
 
   // 1. Guard against starting directly from a protected branch
   if (topology.isCurrentBranchProtected && !options.base && !options.force) {
@@ -439,7 +446,10 @@ export async function mergeTaskBranch(
     }
     targetId = inferredId;
   }
-  const topology = await computeTaskBranchTopology(targetId, { ...options, vcs });
+  const topology = await computeTaskBranchTopology(targetId, {
+    ...options,
+    vcs,
+  });
   const sourceBranch = topology.branchName;
 
   // 1. Verify source branch exists
@@ -502,7 +512,9 @@ export async function mergeTaskBranch(
 
   if (topology.isSubtask) {
     targetBranch =
-      options.target ?? topology.parentBranchName ?? topology.expectedBaseBranch;
+      options.target ??
+      topology.parentBranchName ??
+      topology.expectedBaseBranch;
 
     // RULE-28: Subtasks must never be merged directly into trunk
     if (targetBranch === topology.trunkBranch && !options.force) {

@@ -7,14 +7,20 @@
 
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { McpServer, type McpServerOptions } from "@modelcontextprotocol/sdk/server/mcp.js";
+import {
+  McpServer,
+  type McpServerOptions,
+} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   getArtifactDetails,
   queryTaskQueue,
   scanActiveArtifacts,
 } from "../../core/index.ts";
 import { allCliCommands } from "../cli/commands/index.ts";
-import type { CliCommandDefinition, CliExecutionContext } from "../cli/framework/types.ts";
+import type {
+  CliCommandDefinition,
+  CliExecutionContext,
+} from "../cli/framework/types.ts";
 
 export interface ModieMcpServerOptions {
   /**
@@ -69,7 +75,8 @@ export function createModieMcpServer(
   options: ModieMcpServerOptions = {},
 ): McpServer {
   const cwd = options.cwd ?? process.env.MODIE_CWD ?? process.cwd();
-  const stderr = options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
+  const stderr =
+    options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
 
   const server = new McpServer(
     {
@@ -118,7 +125,11 @@ export function createModieMcpServer(
           };
 
           const rawResult = await executeFn(args, context);
-          const cleanResult = sanitizePayloadForRule26(toolName, args, rawResult);
+          const cleanResult = sanitizePayloadForRule26(
+            toolName,
+            args,
+            rawResult,
+          );
 
           return {
             content: [
@@ -174,7 +185,8 @@ export function createModieMcpServer(
     "modie://tasks",
     {
       title: "All Active Tasks",
-      description: "All active tasks in the repository with DAG readiness status",
+      description:
+        "All active tasks in the repository with DAG readiness status",
       mimeType: "application/json",
     },
     async (uri) => {
@@ -254,7 +266,16 @@ export function createModieMcpServer(
       let text = "";
       const candidates = [
         join(cwd, ".agents", "plugins", "modie", "instructions.md"),
-        join(import.meta.dir, "..", "..", "..", ".agents", "plugins", "modie", "instructions.md"),
+        join(
+          import.meta.dir,
+          "..",
+          "..",
+          "..",
+          ".agents",
+          "plugins",
+          "modie",
+          "instructions.md",
+        ),
       ];
 
       for (const path of candidates) {

@@ -35,6 +35,7 @@
     "modie": "PATH=\"$HOME/.bun/bin:$PATH\" bun --silent ./src/interfaces/cli/bin.ts",
     "typecheck": "bun check",
     "test": "bun test",
+    "format": "bun fmt",
     "prepublishOnly": "bun run build && bun test",
     "count:all": "find src -type f \\( -name \"*.ts\" -o -name \"*.tsx\" \\) | xargs wc -l",
     "count:src": "find src -type f \\( -name \"*.ts\" -o -name \"*.tsx\" \\) ! -name \"*.test.ts\" ! -name \"*.spec.ts\" | xargs wc -l"

@@ -402,12 +402,7 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
       taskATag,
       workspace.cwd,
     );
-    expect(transitiveCycle).toEqual([
-      taskCTag,
-      taskATag,
-      taskBTag,
-      taskCTag,
-    ]);
+    expect(transitiveCycle).toEqual([taskCTag, taskATag, taskBTag, taskCTag]);
 
     await expect(
       linkArtifact({
@@ -479,7 +474,9 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
       mutateFrontmatterListField(afterAdd, "links", "remove", rootAdrTag);
     expect(rem1Changed).toBe(true);
     expect(afterRemove1).toContain(`links:\n  - ${rootAdr2Tag}`);
-    expect(afterRemove1).toContain(`supersedes:\n  - ${makeTestTag("RULE", 499)}`);
+    expect(afterRemove1).toContain(
+      `supersedes:\n  - ${makeTestTag("RULE", 499)}`,
+    );
     expect(afterRemove1.endsWith(expectedBodyWithLeadingFence)).toBe(true);
 
     // Unlink second ADR -> renders `links: []`
@@ -487,7 +484,9 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
       mutateFrontmatterListField(afterRemove1, "links", "remove", rootAdr2Tag);
     expect(rem2Changed).toBe(true);
     expect(afterRemove2).toContain("links: []");
-    expect(afterRemove2).toContain(`supersedes:\n  - ${makeTestTag("RULE", 499)}`);
+    expect(afterRemove2).toContain(
+      `supersedes:\n  - ${makeTestTag("RULE", 499)}`,
+    );
     expect(afterRemove2.endsWith(expectedBodyWithLeadingFence)).toBe(true);
 
     // Idempotent remove when already absent
@@ -528,4 +527,3 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     expect(onDiskAfterUnlink).toBe(`---\nlinks: []\n---\n\n${bareBody}`);
   });
 });
-

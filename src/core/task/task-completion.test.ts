@@ -107,7 +107,10 @@ describe("Task Checklist Progression - checkTaskItem (RULE-22, RULE-25)", () => 
   // @verifies RULE-22
   it("[RULE-22] should uncheck an already checked item when completed: false", async () => {
     // Check item 2 first
-    await checkTaskItem(testTask.filepath, 2, { completed: true, cwd: workspace.cwd });
+    await checkTaskItem(testTask.filepath, 2, {
+      completed: true,
+      cwd: workspace.cwd,
+    });
     let diskContent = await workspace.readFile(testTask.filepath);
     expect(diskContent).toContain("- [x] Second deliverable item");
 
@@ -125,8 +128,14 @@ describe("Task Checklist Progression - checkTaskItem (RULE-22, RULE-25)", () => 
 
   // @verifies RULE-22
   it("[RULE-22] should report allCompleted: true when all items are checked", async () => {
-    await checkTaskItem(testTask.filepath, 1, { completed: true, cwd: workspace.cwd });
-    await checkTaskItem(testTask.filepath, 2, { completed: true, cwd: workspace.cwd });
+    await checkTaskItem(testTask.filepath, 1, {
+      completed: true,
+      cwd: workspace.cwd,
+    });
+    await checkTaskItem(testTask.filepath, 2, {
+      completed: true,
+      cwd: workspace.cwd,
+    });
     const result = await checkTaskItem(testTask.filepath, 3, {
       completed: true,
       cwd: workspace.cwd,
@@ -142,7 +151,10 @@ describe("Task Checklist Progression - checkTaskItem (RULE-22, RULE-25)", () => 
 
   // @verifies RULE-22
   it("[RULE-22] should preserve surrounding frontmatter and context intact", async () => {
-    await checkTaskItem(testTask.filepath, 1, { completed: true, cwd: workspace.cwd });
+    await checkTaskItem(testTask.filepath, 1, {
+      completed: true,
+      cwd: workspace.cwd,
+    });
 
     const content = await workspace.readFile(testTask.filepath);
     expect(content).toContain("depends_on: []");
@@ -168,7 +180,9 @@ describe("Task Checklist Progression - checkTaskItem (RULE-22, RULE-25)", () => 
     await expect(
       checkTaskItem(testTask.filepath, 10, { cwd: workspace.cwd }),
     ).rejects.toThrow(
-      new RegExp(`Invalid item index 10\\. Task ${testTask.tag} has 3 acceptance criteria item\\(s\\)\\.`),
+      new RegExp(
+        `Invalid item index 10\\. Task ${testTask.tag} has 3 acceptance criteria item\\(s\\)\\.`,
+      ),
     );
   });
 });
@@ -183,11 +197,12 @@ describe("Task Lifecycle Completion - completeTask (ADR-6, RULE-21, RULE-22)", (
       id: 100,
       slug: "ephemeral-lifecycle",
       context: "Demonstrating ephemeral task completion lifecycle.",
-      links: [makeTestTag("ADR", 6), makeTestTag("RULE", 21), makeTestTag("RULE", 22)],
-      criteria: [
-        "Unfinished deliverable A",
-        "Unfinished deliverable B",
+      links: [
+        makeTestTag("ADR", 6),
+        makeTestTag("RULE", 21),
+        makeTestTag("RULE", 22),
       ],
+      criteria: ["Unfinished deliverable A", "Unfinished deliverable B"],
     });
   });
 
@@ -197,8 +212,12 @@ describe("Task Lifecycle Completion - completeTask (ADR-6, RULE-21, RULE-22)", (
 
   // @verifies RULE-21, RULE-22
   it("[RULE-21][RULE-22] should reject completion when criteria are incomplete", async () => {
-    await expect(completeTask(testTask.filepath, { cwd: workspace.cwd })).rejects.toThrow(
-      new RegExp(`Cannot complete task ${testTask.id}: 2 acceptance criteria remain unchecked`),
+    await expect(
+      completeTask(testTask.filepath, { cwd: workspace.cwd }),
+    ).rejects.toThrow(
+      new RegExp(
+        `Cannot complete task ${testTask.id}: 2 acceptance criteria remain unchecked`,
+      ),
     );
 
     const exists = await workspace.fileExists(testTask.filepath);
@@ -207,10 +226,18 @@ describe("Task Lifecycle Completion - completeTask (ADR-6, RULE-21, RULE-22)", (
 
   // @verifies RULE-21, RULE-22, ADR-6
   it("[RULE-21][RULE-22][ADR-6] should complete task and delete file from disk when all criteria are satisfied", async () => {
-    await checkTaskItem(testTask.filepath, 1, { completed: true, cwd: workspace.cwd });
-    await checkTaskItem(testTask.filepath, 2, { completed: true, cwd: workspace.cwd });
+    await checkTaskItem(testTask.filepath, 1, {
+      completed: true,
+      cwd: workspace.cwd,
+    });
+    await checkTaskItem(testTask.filepath, 2, {
+      completed: true,
+      cwd: workspace.cwd,
+    });
 
-    const result = await completeTask(testTask.filepath, { cwd: workspace.cwd });
+    const result = await completeTask(testTask.filepath, {
+      cwd: workspace.cwd,
+    });
 
     expect(result.taskId).toBe(testTask.id);
     expect(result.slug).toBe(testTask.slug);
@@ -240,8 +267,14 @@ describe("Task Lifecycle Completion - completeTask (ADR-6, RULE-21, RULE-22)", (
 
   // @verifies RULE-21
   it("[RULE-21] should allow retaining artifact file when deleteArtifact: false is specified", async () => {
-    await checkTaskItem(testTask.filepath, 1, { completed: true, cwd: workspace.cwd });
-    await checkTaskItem(testTask.filepath, 2, { completed: true, cwd: workspace.cwd });
+    await checkTaskItem(testTask.filepath, 1, {
+      completed: true,
+      cwd: workspace.cwd,
+    });
+    await checkTaskItem(testTask.filepath, 2, {
+      completed: true,
+      cwd: workspace.cwd,
+    });
 
     const result = await completeTask(testTask.filepath, {
       deleteArtifact: false,
@@ -292,7 +325,10 @@ describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
       ],
     });
 
-    const result = await completeTask(task.filepath, { commit: true, cwd: workspace.cwd });
+    const result = await completeTask(task.filepath, {
+      commit: true,
+      cwd: workspace.cwd,
+    });
 
     expect(result.deleted).toBe(true);
     expect(result.commits).toBeDefined();
@@ -302,12 +338,19 @@ describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
     const exists = await workspace.fileExists(task.filepath);
     expect(exists).toBe(false);
 
-    const logOut = await Bun.$`git log --oneline --format=%s`.cwd(workspace.cwd).text();
+    const logOut = await Bun.$`git log --oneline --format=%s`
+      .cwd(workspace.cwd)
+      .text();
     const commitMessages = logOut.trim().split("\n");
-    expect(commitMessages[0]).toBe(`chore(task): delete completed ${task.tag} artifact`);
+    expect(commitMessages[0]).toBe(
+      `chore(task): delete completed ${task.tag} artifact`,
+    );
     expect(commitMessages[1]).toBe(`feat(${task.tag}): ${task.slug}`);
 
-    const deletedOut = await Bun.$`git log --diff-filter=D --name-only --format=`.cwd(workspace.cwd).text();
+    const deletedOut =
+      await Bun.$`git log --diff-filter=D --name-only --format=`
+        .cwd(workspace.cwd)
+        .text();
     expect(deletedOut).toContain(task.filename);
   });
 
@@ -333,7 +376,9 @@ describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
     const content = await workspace.readFile(task.filepath);
     expect(content).toContain("- [x] Item 1");
 
-    const logOut = await Bun.$`git log --oneline --format=%s`.cwd(workspace.cwd).text();
+    const logOut = await Bun.$`git log --oneline --format=%s`
+      .cwd(workspace.cwd)
+      .text();
     const commitMessages = logOut.trim().split("\n");
     expect(commitMessages.length).toBe(1);
     expect(commitMessages[0]).toBe(`feat(${task.tag}): ${task.slug}`);
@@ -358,7 +403,9 @@ describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
     expect(result.commits?.phase1).toBeDefined();
     expect(result.commits?.phase2).toBeDefined();
 
-    const diffOut = await Bun.$`git show ${result.commits!.phase1!}`.cwd(workspace.cwd).text();
+    const diffOut = await Bun.$`git show ${result.commits!.phase1!}`
+      .cwd(workspace.cwd)
+      .text();
     expect(diffOut).toContain("- [x] Item unchecked");
   });
 
@@ -378,7 +425,10 @@ describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
 
   // @verifies ADR-6, RULE-21, RULE-22, RULE-32
   it("[ADR-6][RULE-32] should stage all pending code and task changes in Phase 1 commit when working tree is dirty", async () => {
-    await workspace.writeFile("service.ts", 'export const value = "implemented";\n');
+    await workspace.writeFile(
+      "service.ts",
+      'export const value = "implemented";\n',
+    );
     const task = await workspace.createTask({
       id: 60,
       slug: "dirty-tree",
@@ -386,26 +436,37 @@ describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
       criteria: [{ text: "Service implemented", completed: true }],
     });
 
-    const result = await completeTask(task.filepath, { commit: true, cwd: workspace.cwd });
+    const result = await completeTask(task.filepath, {
+      commit: true,
+      cwd: workspace.cwd,
+    });
 
     expect(result.deleted).toBe(true);
     expect(result.commits?.phase1).toBeDefined();
     expect(result.commits?.phase2).toBeDefined();
 
-    const phase1Files = await Bun.$`git diff-tree --root --no-commit-id --name-only -r ${result.commits!.phase1!}`.cwd(workspace.cwd).text();
+    const phase1Files =
+      await Bun.$`git diff-tree --root --no-commit-id --name-only -r ${result.commits!.phase1!}`
+        .cwd(workspace.cwd)
+        .text();
     expect(phase1Files).toContain("service.ts");
     expect(phase1Files).toContain(task.filename);
 
-    const phase2Files = await Bun.$`git diff-tree --no-commit-id --name-only -r ${result.commits!.phase2!}`.cwd(workspace.cwd).text();
+    const phase2Files =
+      await Bun.$`git diff-tree --no-commit-id --name-only -r ${result.commits!.phase2!}`
+        .cwd(workspace.cwd)
+        .text();
     expect(phase2Files.trim()).toContain(task.filename);
 
-    const statusOut = await Bun.$`git status --porcelain`.cwd(workspace.cwd).text();
+    const statusOut = await Bun.$`git status --porcelain`
+      .cwd(workspace.cwd)
+      .text();
     expect(statusOut.trim()).toBe("");
   });
 
   // @verifies ADR-6, RULE-32
   it("[ADR-6][RULE-32] should automatically skip Phase 1 commit when working tree is already clean", async () => {
-    await workspace.writeFile("feature.ts", 'export const ready = true;\n');
+    await workspace.writeFile("feature.ts", "export const ready = true;\n");
     const task = await workspace.createTask({
       id: 61,
       slug: "clean-tree",
@@ -414,23 +475,36 @@ describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
     });
 
     await Bun.$`git add -A`.cwd(workspace.cwd).quiet();
-    await workspace.gitCommit(`feat(${task.tag}): pre-committed implementation`);
+    await workspace.gitCommit(
+      `feat(${task.tag}): pre-committed implementation`,
+    );
 
-    const cleanStatus = await Bun.$`git status --porcelain`.cwd(workspace.cwd).text();
+    const cleanStatus = await Bun.$`git status --porcelain`
+      .cwd(workspace.cwd)
+      .text();
     expect(cleanStatus.trim()).toBe("");
 
-    const result = await completeTask(task.filepath, { commit: true, cwd: workspace.cwd });
+    const result = await completeTask(task.filepath, {
+      commit: true,
+      cwd: workspace.cwd,
+    });
 
     expect(result.deleted).toBe(true);
     expect(result.commits?.phase1).toBeUndefined();
     expect(result.commits?.phase2).toBeDefined();
 
-    const logOut = await Bun.$`git log --oneline --format=%s -n 2`.cwd(workspace.cwd).text();
+    const logOut = await Bun.$`git log --oneline --format=%s -n 2`
+      .cwd(workspace.cwd)
+      .text();
     const messages = logOut.trim().split("\n");
-    expect(messages[0]).toBe(`chore(task): delete completed ${task.tag} artifact`);
+    expect(messages[0]).toBe(
+      `chore(task): delete completed ${task.tag} artifact`,
+    );
     expect(messages[1]).toBe(`feat(${task.tag}): pre-committed implementation`);
 
-    const finalStatus = await Bun.$`git status --porcelain`.cwd(workspace.cwd).text();
+    const finalStatus = await Bun.$`git status --porcelain`
+      .cwd(workspace.cwd)
+      .text();
     expect(finalStatus.trim()).toBe("");
   });
 });
@@ -452,10 +526,14 @@ describe("Zombie Task Resurrection Prevention (ADR-6, RULE-21)", () => {
     });
 
     await Bun.$`git add .`.cwd(workspace.cwd).quiet();
-    await workspace.gitCommit(`feat: verify all acceptance criteria for ${task.tag}`);
+    await workspace.gitCommit(
+      `feat: verify all acceptance criteria for ${task.tag}`,
+    );
     await workspace.remove(task);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
-    await workspace.gitCommit(`chore(task): delete completed ${task.tag} artifact per RULE-21`);
+    await workspace.gitCommit(
+      `chore(task): delete completed ${task.tag} artifact per RULE-21`,
+    );
   });
 
   afterEach(async () => {
@@ -479,10 +557,10 @@ describe("Zombie Task Resurrection Prevention (ADR-6, RULE-21)", () => {
     expect(resolved).toBe(zombieArtifact.filepath);
 
     // Explicit assertNotZombieTask guard still detects deleted IDs during watermark allocation
-    await expect(
-      assertNotZombieTask(zombieTag, workspace.cwd),
-    ).rejects.toThrow(
-      new RegExp(`Zombie task detected: Task "${zombieTag}" was previously completed and deleted in Git history`),
+    await expect(assertNotZombieTask(zombieTag, workspace.cwd)).rejects.toThrow(
+      new RegExp(
+        `Zombie task detected: Task "${zombieTag}" was previously completed and deleted in Git history`,
+      ),
     );
   });
 
@@ -531,7 +609,9 @@ describe("Task Completion - Planned Governance Enforcement (TASK-35)", () => {
 
     await expect(
       completeTask(task.tag, { cwd: workspace.cwd, deleteArtifact: false }),
-    ).rejects.toThrow(/Planned rule "Multi-branch collision guard" is not marked completed/);
+    ).rejects.toThrow(
+      /Planned rule "Multi-branch collision guard" is not marked completed/,
+    );
   });
 
   // @verifies ADR-6, RULE-21, RULE-22
@@ -548,7 +628,9 @@ describe("Task Completion - Planned Governance Enforcement (TASK-35)", () => {
 
     await expect(
       completeTask(task.tag, { cwd: workspace.cwd, deleteArtifact: false }),
-    ).rejects.toThrow(/Planned rule "Multi-branch collision guard" was not found on disk/);
+    ).rejects.toThrow(
+      /Planned rule "Multi-branch collision guard" was not found on disk/,
+    );
   });
 
   // @verifies ADR-6, RULE-21, RULE-22
@@ -559,7 +641,12 @@ describe("Task Completion - Planned Governance Enforcement (TASK-35)", () => {
       slug: "planned-gov",
       context: "Planned governance test.",
       plannedGovernance: {
-        rules: [{ text: `multi-branch-collision-guard.${rule88Tag}.md`, completed: true }],
+        rules: [
+          {
+            text: `multi-branch-collision-guard.${rule88Tag}.md`,
+            completed: true,
+          },
+        ],
       },
       criteria: [{ text: "Feature implementation done", completed: true }],
     });

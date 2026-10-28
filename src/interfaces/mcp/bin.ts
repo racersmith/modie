@@ -21,7 +21,9 @@ if (
   process.argv[1]?.endsWith("bin.ts")
 ) {
   runMcpServer().catch((error) => {
-    process.stderr.write(`Modie MCP Server Error: ${error?.message || error}\n`);
+    process.stderr.write(
+      `Modie MCP Server Error: ${error?.message || error}\n`,
+    );
     process.exit(1);
   });
 }

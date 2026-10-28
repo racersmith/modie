@@ -52,10 +52,7 @@ export function renderTaskQueueTable(tasks: TaskQueueItem[]): string {
     return t.readiness;
   };
 
-  const idColWidth = Math.max(
-    8,
-    ...tasks.map((t) => t.fullTaskId.length),
-  );
+  const idColWidth = Math.max(8, ...tasks.map((t) => t.fullTaskId.length));
   const statusColWidth = Math.max(
     9,
     ...tasks.map((t) => formatStatus(t).length),
@@ -66,7 +63,9 @@ export function renderTaskQueueTable(tasks: TaskQueueItem[]): string {
   );
   const blockedColWidth = Math.max(
     12,
-    ...tasks.map((t) => (t.blockedBy.length > 0 ? t.blockedBy.join(", ").length : 1)),
+    ...tasks.map((t) =>
+      t.blockedBy.length > 0 ? t.blockedBy.join(", ").length : 1,
+    ),
   );
 
   const header = `${"ID".padEnd(idColWidth)}  ${"STATUS".padEnd(statusColWidth)}  ${"PROGRESS".padEnd(progressColWidth)}  ${"BLOCKED BY".padEnd(blockedColWidth)}  TITLE / SLUG`;
@@ -142,7 +141,9 @@ export const taskListCommand: CliCommandDefinition<
       } else if (blockedOnly) {
         context.stderr("No blocked tasks found in active queue.");
       } else {
-        context.stderr("Active task queue is empty. No pending tasks found on disk.");
+        context.stderr(
+          "Active task queue is empty. No pending tasks found on disk.",
+        );
       }
       return;
     }

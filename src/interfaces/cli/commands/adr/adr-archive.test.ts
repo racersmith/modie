@@ -5,7 +5,11 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { captureCli, createTestWorkspace, makeTestTag } from "../../test-utils.ts";
+import {
+  captureCli,
+  createTestWorkspace,
+  makeTestTag,
+} from "../../test-utils.ts";
 
 describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31, RULE-34)", () => {
   // @verifies RULE-27
@@ -47,7 +51,9 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
     ]);
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(`.modie/adrs/single-database.${adrTag}.ARCHIVED.md`);
+    expect(stdout.trim()).toBe(
+      `.modie/adrs/single-database.${adrTag}.ARCHIVED.md`,
+    );
     expect(stderr).toContain(
       `✓ Archived ADR ${adrTag}: single-database.${adrTag}.ARCHIVED.md`,
     );
@@ -122,7 +128,9 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
     ]);
 
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(`.modie/adrs/forced-decision.${adrTag}.ARCHIVED.md`);
+    expect(stdout.trim()).toBe(
+      `.modie/adrs/forced-decision.${adrTag}.ARCHIVED.md`,
+    );
     expect(stderr).toContain(
       `✓ Archived ADR ${adrTag}: forced-decision.${adrTag}.ARCHIVED.md (forced with active references)`,
     );
@@ -176,7 +184,9 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
       adr.tag,
     ]);
 
-    expect(stdout.trim()).toBe(`.modie/adrs/sub-decision.${adrTag}.ARCHIVED.md`);
+    expect(stdout.trim()).toBe(
+      `.modie/adrs/sub-decision.${adrTag}.ARCHIVED.md`,
+    );
     expect(stderr).toContain(
       `✓ Archived ADR ${adrTag}: sub-decision.${adrTag}.ARCHIVED.md`,
     );

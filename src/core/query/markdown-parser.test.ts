@@ -63,8 +63,12 @@ Body text with --- horizontal rule:
 End of body.`;
 
     const { frontmatter, body } = splitMarkdownFrontmatter(content);
-    expect(frontmatter).toBe(`# --- Governance Links ---\nlinks:\n  - ${adr1Tag}`);
-    expect(body).toBe("# Context\n\nBody text with --- horizontal rule:\n---\nEnd of body.");
+    expect(frontmatter).toBe(
+      `# --- Governance Links ---\nlinks:\n  - ${adr1Tag}`,
+    );
+    expect(body).toBe(
+      "# Context\n\nBody text with --- horizontal rule:\n---\nEnd of body.",
+    );
   });
 
   // @verifies RULE-1, RULE-25
@@ -198,9 +202,10 @@ Final decision paragraph.
     const sections = parseMarkdownSections(body);
     expect(Object.keys(sections)).toEqual(["Decision", "Consequences"]);
     expect(sections["Decision"]).toContain("# Modie GIST Ledger");
-    expect(sections["Decision"]).toContain("# Shell comment inside tilde fence");
+    expect(sections["Decision"]).toContain(
+      "# Shell comment inside tilde fence",
+    );
     expect(sections["Decision"]).toContain("Final decision paragraph.");
     expect(sections["Consequences"]).toBe("- Fast zero-read verification.");
   });
 });
-

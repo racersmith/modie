@@ -23,25 +23,21 @@ export const taskMergeSchema = z.object({
   id: z
     .string()
     .optional()
-    .describe("Task ID (e.g. TASK-11, 11-1), slug, or file path (optional when on a task branch)"),
+    .describe(
+      "Task ID (e.g. TASK-11, 11-1), slug, or file path (optional when on a task branch)",
+    ),
   target: z
     .string()
     .optional()
-    .describe(
-      "Target branch to merge into (default: parent branch or trunk)",
-    ),
+    .describe("Target branch to merge into (default: parent branch or trunk)"),
   keepBranch: z
     .boolean()
     .default(false)
-    .describe(
-      "Retain the task branch after merging instead of deleting it",
-    ),
+    .describe("Retain the task branch after merging instead of deleting it"),
   force: z
     .boolean()
     .default(false)
-    .describe(
-      "Bypass completion verification and protected branch guards",
-    ),
+    .describe("Bypass completion verification and protected branch guards"),
 });
 
 export type TaskMergeInput = z.infer<typeof taskMergeSchema>;
@@ -73,7 +69,8 @@ export const taskMergeCommand: CliCommandDefinition<
     {
       name: "id-or-path",
       property: "id",
-      description: "Task ID (e.g. TASK-11, 11-1), slug, or file path (optional when on a task branch)",
+      description:
+        "Task ID (e.g. TASK-11, 11-1), slug, or file path (optional when on a task branch)",
       required: false,
     },
   ],
@@ -94,8 +91,7 @@ export const taskMergeCommand: CliCommandDefinition<
     force: {
       type: "boolean",
       short: "f",
-      description:
-        "Bypass completion verification and protected branch guards",
+      description: "Bypass completion verification and protected branch guards",
     },
   },
   execute: async (input, context) => {

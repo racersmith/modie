@@ -258,7 +258,9 @@ describe("Artifact Query Service - Resolution by Tag (RULE-25, RULE-29, RULE-34,
     await workspace.gitCommit(`feat(${task.tag}): ${task.slug}`);
     await workspace.remove(task);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
-    await workspace.gitCommit(`chore(task): delete completed ${task.tag} artifact`);
+    await workspace.gitCommit(
+      `chore(task): delete completed ${task.tag} artifact`,
+    );
 
     // Default strictly checks active .md files on disk
     await expect(

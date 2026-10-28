@@ -37,7 +37,9 @@ function formatFlagTokens(name: string, flag: CliFlagDefinition): string {
 /**
  * Generates canonical, aligned help text for a declared CLI command.
  */
-export function generateCommandHelp(definition: CliCommandDefinition<any, any>): string {
+export function generateCommandHelp(
+  definition: CliCommandDefinition<any, any>,
+): string {
   const sections: string[] = [];
 
   // 1. Usage line
@@ -104,7 +106,9 @@ export function generateCommandHelp(definition: CliCommandDefinition<any, any>):
 
   for (const item of formattedFlags) {
     if (item.token.length >= maxTokenLen) {
-      sections.push(`${item.token}\n${" ".repeat(maxTokenLen)}${item.description}`);
+      sections.push(
+        `${item.token}\n${" ".repeat(maxTokenLen)}${item.description}`,
+      );
     } else {
       sections.push(`${item.token.padEnd(maxTokenLen)}${item.description}`);
     }

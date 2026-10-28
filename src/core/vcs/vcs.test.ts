@@ -4,7 +4,11 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { createFixtureWorkspace, makeTestTag, type FixtureWorkspace } from "../testing/index.ts";
+import {
+  createFixtureWorkspace,
+  makeTestTag,
+  type FixtureWorkspace,
+} from "../testing/index.ts";
 import { GitCliAdapter } from "./git-cli-adapter.ts";
 import { MockVcsAdapter } from "./mock-adapter.ts";
 import { completeTask } from "../task/completion.ts";
@@ -34,7 +38,10 @@ describe("GitCliAdapter - Real Subprocess Fixture Tests", () => {
   it("should manage branches, commits, and detect active branch", async () => {
     await adapter.runCommand(["init", "-q", "-b", "main"], workspace.cwd);
     await adapter.runCommand(["config", "user.name", "Tester"], workspace.cwd);
-    await adapter.runCommand(["config", "user.email", "test@modie.dev"], workspace.cwd);
+    await adapter.runCommand(
+      ["config", "user.email", "test@modie.dev"],
+      workspace.cwd,
+    );
 
     expect(await adapter.detectCurrentBranch(workspace.cwd)).toBe("main");
     expect(await adapter.branchExists("dev", workspace.cwd)).toBe(false);
@@ -54,7 +61,9 @@ describe("GitCliAdapter - Real Subprocess Fixture Tests", () => {
 
     // Create a new branch
     await adapter.checkoutNewBranch("feature/vcs", "main", workspace.cwd);
-    expect(await adapter.detectCurrentBranch(workspace.cwd)).toBe("feature/vcs");
+    expect(await adapter.detectCurrentBranch(workspace.cwd)).toBe(
+      "feature/vcs",
+    );
     expect(await adapter.branchExists("feature/vcs", workspace.cwd)).toBe(true);
 
     const branches = await adapter.listBranches(workspace.cwd);
@@ -66,16 +75,26 @@ describe("GitCliAdapter - Real Subprocess Fixture Tests", () => {
     expect(await adapter.detectCurrentBranch(workspace.cwd)).toBe("main");
 
     await adapter.deleteBranch("feature/vcs", workspace.cwd);
-    expect(await adapter.branchExists("feature/vcs", workspace.cwd)).toBe(false);
+    expect(await adapter.branchExists("feature/vcs", workspace.cwd)).toBe(
+      false,
+    );
   });
 
   it("should inspect tracked tree artifacts and git configs", async () => {
     await adapter.runCommand(["init", "-q", "-b", "main"], workspace.cwd);
     await adapter.runCommand(["config", "user.name", "Tester"], workspace.cwd);
-    await adapter.runCommand(["config", "user.email", "test@modie.dev"], workspace.cwd);
-    await adapter.runCommand(["config", "modie.prefix", "MYPREFIX"], workspace.cwd);
+    await adapter.runCommand(
+      ["config", "user.email", "test@modie.dev"],
+      workspace.cwd,
+    );
+    await adapter.runCommand(
+      ["config", "modie.prefix", "MYPREFIX"],
+      workspace.cwd,
+    );
 
-    expect(await adapter.getConfig("modie.prefix", workspace.cwd)).toBe("MYPREFIX");
+    expect(await adapter.getConfig("modie.prefix", workspace.cwd)).toBe(
+      "MYPREFIX",
+    );
     expect(await adapter.getConfig("non.existent", workspace.cwd)).toBeNull();
 
     // Create and commit a rule artifact
@@ -150,7 +169,11 @@ describe("MockVcsAdapter - In-Memory Unit Tests", () => {
     expect(mock.history.commits.length).toBe(1);
     expect(mock.history.commits[0]?.message).toBe("feat(TASK-1): sample");
 
-    const mergeHash = await mock.merge("task/1-sample", "dev", "merge: task into dev");
+    const mergeHash = await mock.merge(
+      "task/1-sample",
+      "dev",
+      "merge: task into dev",
+    );
     expect(mergeHash).toBe("merge2");
     expect(await mock.detectCurrentBranch()).toBe("dev");
     expect(mock.history.merges).toEqual([
@@ -208,7 +231,9 @@ describe("Hermetic Core Domain Injections with MockVcsAdapter", () => {
     // Verify MockVcs recorded the exact two-phase lifecycle
     expect(mockVcs.history.stagedAllCount).toBe(1);
     expect(mockVcs.history.commits.length).toBe(2);
-    expect(mockVcs.history.commits[0]?.message).toBe(`feat(${task200Tag}): sample-task`);
+    expect(mockVcs.history.commits[0]?.message).toBe(
+      `feat(${task200Tag}): sample-task`,
+    );
     expect(mockVcs.history.commits[1]?.message).toBe(
       `chore(task): delete completed ${task200Tag} artifact`,
     );

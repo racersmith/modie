@@ -6,11 +6,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
-import {
-  createAdr,
-  resolveAdrDirectories,
-  validateAdrScope,
-} from "./index.ts";
+import { createAdr, resolveAdrDirectories, validateAdrScope } from "./index.ts";
 
 describe("ADR Creation - Scope & Directory Resolution (RULE-8)", () => {
   // @verifies RULE-8
@@ -182,12 +178,20 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
     const expectedAdr1Tag = makeTestTag("ADR", 1);
     expect(result.id).toBe("1");
     expect(result.tag).toBe(expectedAdr1Tag);
-    expect(result.filename).toBe(`first-architecture-decision.${expectedAdr1Tag}.md`);
-    expect(result.relativePath).toContain(`.modie/adrs/first-architecture-decision.${expectedAdr1Tag}.md`);
+    expect(result.filename).toBe(
+      `first-architecture-decision.${expectedAdr1Tag}.md`,
+    );
+    expect(result.relativePath).toContain(
+      `.modie/adrs/first-architecture-decision.${expectedAdr1Tag}.md`,
+    );
 
     const onDisk = await workspace.readFile(result.filepath);
-    expect(onDisk).toContain("# Context\n\nContext description of the architecture choice.");
-    expect(onDisk).toContain("# Alternatives Considered\n\n- Alternative 1\n- Alternative 2");
+    expect(onDisk).toContain(
+      "# Context\n\nContext description of the architecture choice.",
+    );
+    expect(onDisk).toContain(
+      "# Alternatives Considered\n\n- Alternative 1\n- Alternative 2",
+    );
     expect(onDisk).toContain("# Decision\n\nWe adopt Solution A.");
 
     // Second ADR should allocate ID 2
@@ -200,7 +204,9 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
     const expectedAdr2Tag = makeTestTag("ADR", 2);
     expect(result2.id).toBe("2");
     expect(result2.tag).toBe(expectedAdr2Tag);
-    expect(result2.filename).toBe(`second-architecture-decision.${expectedAdr2Tag}.md`);
+    expect(result2.filename).toBe(
+      `second-architecture-decision.${expectedAdr2Tag}.md`,
+    );
 
     await workspace.cleanup();
   });
@@ -216,8 +222,12 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
       cwd: workspace.cwd,
     });
 
-    expect(result.relativePath).toBe(`flat-decision-record.${expectedAdr1Tag}.md`);
-    expect(result.filepath).toBe(workspace.resolve(`flat-decision-record.${expectedAdr1Tag}.md`));
+    expect(result.relativePath).toBe(
+      `flat-decision-record.${expectedAdr1Tag}.md`,
+    );
+    expect(result.filepath).toBe(
+      workspace.resolve(`flat-decision-record.${expectedAdr1Tag}.md`),
+    );
 
     const onDisk = await workspace.readFile(result.filepath);
     expect(onDisk).toContain("# Context");

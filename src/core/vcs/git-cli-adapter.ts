@@ -13,6 +13,8 @@ import type {
   IndexableSubtype,
 } from "../resolver/types.ts";
 import type {
+  GitGrepMatch,
+  GitGrepOptions,
   IVcsAdapter,
   MultiBranchOptions,
   StageFilesOptions,
@@ -66,7 +68,9 @@ export class GitCliAdapter implements IVcsAdapter {
     return output === "true";
   }
 
-  async detectCurrentBranch(cwd: string = process.cwd()): Promise<string | null> {
+  async detectCurrentBranch(
+    cwd: string = process.cwd(),
+  ): Promise<string | null> {
     const branch = await this.run(["rev-parse", "--abbrev-ref", "HEAD"], cwd);
     if (branch && branch !== "HEAD") {
       return branch;
@@ -114,7 +118,10 @@ export class GitCliAdapter implements IVcsAdapter {
     return output !== null;
   }
 
-  async checkout(branchName: string, cwd: string = process.cwd()): Promise<void> {
+  async checkout(
+    branchName: string,
+    cwd: string = process.cwd(),
+  ): Promise<void> {
     await this.runCommand(["checkout", branchName], cwd);
   }
 
@@ -208,10 +215,7 @@ export class GitCliAdapter implements IVcsAdapter {
   ): Promise<string> {
     const msg = message ?? `merge: ${sourceBranch} into ${targetBranch}`;
     await this.checkout(targetBranch, cwd);
-    await this.runCommand(
-      ["merge", "--no-ff", "-m", msg, sourceBranch],
-      cwd,
-    );
+    await this.runCommand(["merge", "--no-ff", "-m", msg, sourceBranch], cwd);
     return this.getShortHash("HEAD", cwd);
   }
 
@@ -349,7 +353,9 @@ export class GitCliAdapter implements IVcsAdapter {
           if (match && match[1]) {
             const compId = match[1];
             if (
-              !discovered.some((d) => d.id.toLowerCase() === compId.toLowerCase())
+              !discovered.some(
+                (d) => d.id.toLowerCase() === compId.toLowerCase(),
+              )
             ) {
               discovered.push({
                 id: compId,
@@ -420,6 +426,80 @@ export class GitCliAdapter implements IVcsAdapter {
     const value = await this.run(["config", key], cwd);
     return value && value.length > 0 ? value : null;
   }
+
+  async grep(
+    query: string,
+    cwd: string = process.cwd(),
+    options: GitGrepOptions = {},
+  ): Promise<GitGrepMatch[] | null> {
+    const args = ["grep", "-n", "-I", "-z"];
+    if (options.untracked !== false) {
+      args.push("--untracked", "--exclude-standard");
+    }
+    if (options.caseSensitive === false) {
+      args.push("-i");
+    }
+    if (options.fixedStrings !== false) {
+      args.push("-F");
+    }
+    args.push(query);
+
+    const ignored = options.ignoredDirectories ?? [];
+    if (ignored.length > 0) {
+      args.push("--");
+      for (const dir of ignored) {
+        args.push(`:!${dir}`);
+      }
+    }
+
+    try {
+      const { stdout } = await execFileAsync("git", args, {
+        cwd,
+        encoding: "utf8",
+        maxBuffer: 20 * 1024 * 1024,
+      });
+      return parseGitGrepZOutput(stdout);
+    } catch (error: any) {
+      // Exit code 1 means 0 matches found in git grep
+      if (error && (error.code === 1 || error.status === 1)) {
+        return [];
+      }
+      return null;
+    }
+  }
+}
+
+/**
+ * Parses null-separated output produced by `git grep -n -I -z`.
+ */
+export function parseGitGrepZOutput(stdout: string): GitGrepMatch[] {
+  if (!stdout || stdout.length === 0) {
+    return [];
+  }
+  const lines = stdout.split("\n");
+  const matches: GitGrepMatch[] = [];
+
+  for (const line of lines) {
+    if (!line) continue;
+    const firstNull = line.indexOf("\0");
+    if (firstNull === -1) continue;
+    const secondNull = line.indexOf("\0", firstNull + 1);
+    if (secondNull === -1) continue;
+
+    const relativePath = line.slice(0, firstNull);
+    const lineNumStr = line.slice(firstNull + 1, secondNull);
+    const lineNum = parseInt(lineNumStr, 10);
+    if (Number.isNaN(lineNum)) continue;
+
+    const snippet = line.slice(secondNull + 1).replace(/\r$/, "");
+    matches.push({
+      relativePath,
+      line: lineNum,
+      snippet,
+    });
+  }
+
+  return matches;
 }
 
 /**

@@ -10,7 +10,9 @@ const CHECKLIST_ITEM_REGEX = /^\s*-\s*\[([ xX])\]\s*(.+)$/;
 /**
  * Parses markdown text to extract all checklist items under the `# Acceptance Criteria` section.
  */
-export function parseAcceptanceCriteria(markdown: string): TaskAcceptanceCriteriaItem[] {
+export function parseAcceptanceCriteria(
+  markdown: string,
+): TaskAcceptanceCriteriaItem[] {
   const lines = markdown.split("\n");
   const items: TaskAcceptanceCriteriaItem[] = [];
 
@@ -46,7 +48,9 @@ export function parseAcceptanceCriteria(markdown: string): TaskAcceptanceCriteri
  * Checks whether all acceptance criteria items are completed.
  * Returns false if items list is empty or any item is incomplete (RULE-22).
  */
-export function areAllAcceptanceCriteriaCompleted(items: TaskAcceptanceCriteriaItem[]): boolean {
+export function areAllAcceptanceCriteriaCompleted(
+  items: TaskAcceptanceCriteriaItem[],
+): boolean {
   if (items.length === 0) {
     return false;
   }

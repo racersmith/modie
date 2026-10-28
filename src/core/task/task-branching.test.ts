@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { createFixtureWorkspace, makeTestTag, type FixtureWorkspace } from "../testing/index.ts";
+import {
+  createFixtureWorkspace,
+  makeTestTag,
+  type FixtureWorkspace,
+} from "../testing/index.ts";
 import {
   computeTaskBranchTopology,
   detectArtifactCollisions,
@@ -65,7 +69,9 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
       criteria: ["Item"],
     });
 
-    const topo = await computeTaskBranchTopology(task.tag, { cwd: workspace.cwd });
+    const topo = await computeTaskBranchTopology(task.tag, {
+      cwd: workspace.cwd,
+    });
     expect(topo.taskId).toBe(task.id);
     expect(topo.slug).toBe(task.slug);
     expect(topo.branchName).toBe(`task/100-${task.slug}`);
@@ -86,9 +92,9 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     // Switch to protected branch 'main'
     await Bun.$`git checkout main`.cwd(workspace.cwd).quiet();
 
-    await expect(startTaskBranch(task.tag, { cwd: workspace.cwd })).rejects.toThrow(
-      /Cannot start task from protected branch "main"/,
-    );
+    await expect(
+      startTaskBranch(task.tag, { cwd: workspace.cwd }),
+    ).rejects.toThrow(/Cannot start task from protected branch "main"/);
   });
 
   it("should create and checkout a root task branch from trunk", async () => {
@@ -104,7 +110,9 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     expect(res.baseBranch).toBe("dev");
     expect(res.created).toBe(true);
 
-    const current = await Bun.$`git branch --show-current`.cwd(workspace.cwd).text();
+    const current = await Bun.$`git branch --show-current`
+      .cwd(workspace.cwd)
+      .text();
     expect(current.trim()).toBe(expectedBranch);
   });
 
@@ -154,7 +162,9 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     expect(res.baseBranch).toBe(`task/103-${parent.slug}`);
     expect(res.isSubtask).toBe(true);
 
-    const current = await Bun.$`git branch --show-current`.cwd(workspace.cwd).text();
+    const current = await Bun.$`git branch --show-current`
+      .cwd(workspace.cwd)
+      .text();
     expect(current.trim()).toBe(`task/103-1-${subtask.slug}`);
   });
 
@@ -179,7 +189,9 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     // Mark completed in git
     await workspace.remove(subtask);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
-    await workspace.gitCommit(`chore(task): delete completed ${subtask.tag} artifact`);
+    await workspace.gitCommit(
+      `chore(task): delete completed ${subtask.tag} artifact`,
+    );
 
     // Attempting to merge subtask into dev trunk must be rejected per RULE-28
     await expect(
@@ -201,7 +213,9 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     // Complete in git
     await workspace.remove(task);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
-    await workspace.gitCommit(`chore(task): delete completed ${task.tag} artifact`);
+    await workspace.gitCommit(
+      `chore(task): delete completed ${task.tag} artifact`,
+    );
 
     // Attempting to merge into protected branch "main" must be rejected
     await expect(
@@ -237,7 +251,9 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     // Complete subtask artifact per RULE-21
     await workspace.remove(subtask);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
-    await workspace.gitCommit(`chore(task): delete completed ${subtask.tag} artifact`);
+    await workspace.gitCommit(
+      `chore(task): delete completed ${subtask.tag} artifact`,
+    );
 
     // Merge subtask branch back into parent
     const mergeRes = await mergeTaskBranch(subtask.tag, { cwd: workspace.cwd });
@@ -245,10 +261,14 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     expect(mergeRes.targetBranch).toBe(`task/106-${parent.slug}`);
     expect(mergeRes.deletedSourceBranch).toBe(true);
 
-    const curBranch = await Bun.$`git branch --show-current`.cwd(workspace.cwd).text();
+    const curBranch = await Bun.$`git branch --show-current`
+      .cwd(workspace.cwd)
+      .text();
     expect(curBranch.trim()).toBe(`task/106-${parent.slug}`);
 
-    const branchList = await Bun.$`git branch --list task/106-1-sub`.cwd(workspace.cwd).text();
+    const branchList = await Bun.$`git branch --list task/106-1-sub`
+      .cwd(workspace.cwd)
+      .text();
     expect(branchList.trim()).toBe("");
   });
 
@@ -264,7 +284,9 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     await workspace.gitCommit(`feat: add ${rule99Tag} on dev`);
 
     // Create branch feature/concurrent from HEAD~1
-    await Bun.$`git checkout -b feature/concurrent HEAD~1`.cwd(workspace.cwd).quiet();
+    await Bun.$`git checkout -b feature/concurrent HEAD~1`
+      .cwd(workspace.cwd)
+      .quiet();
     await workspace.createRule({
       id: 99,
       slug: "rule-b",
@@ -294,7 +316,9 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     await workspace.gitCommit(`feat: add ${adr50Tag} on dev`);
 
     // 2. Branch task/107-test from before ADR-50 was added
-    await Bun.$`git checkout -b task/107-test HEAD~1`.cwd(workspace.cwd).quiet();
+    await Bun.$`git checkout -b task/107-test HEAD~1`
+      .cwd(workspace.cwd)
+      .quiet();
 
     // Create completed task artifact so completion check passes
     const task = await workspace.createTask({
@@ -308,12 +332,16 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
       slug: "adr-b",
       context: "ADR 50 on Task Branch",
     });
-    await workspace.gitCommit(`feat(${task.tag}): task and conflicting ${adr50Tag}`);
+    await workspace.gitCommit(
+      `feat(${task.tag}): task and conflicting ${adr50Tag}`,
+    );
 
     // Delete task artifact per RULE-21 completion record
     await workspace.remove(task);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
-    await workspace.gitCommit(`chore(task): delete completed ${task.tag} artifact`);
+    await workspace.gitCommit(
+      `chore(task): delete completed ${task.tag} artifact`,
+    );
 
     // 3. Merging task/107-test into dev must throw artifact collision error
     await expect(
@@ -352,19 +380,30 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     });
     // Archive RULE-24 on task branch
     const archivedFilename = `explore.${rule24Tag}.ARCHIVED.md`;
-    await Bun.$`git mv ${rule24.filepath} ${workspace.resolve(".modie", "rules", archivedFilename)}`.cwd(workspace.cwd).quiet();
+    await Bun.$`git mv ${rule24.filepath} ${workspace.resolve(".modie", "rules", archivedFilename)}`
+      .cwd(workspace.cwd)
+      .quiet();
     await workspace.gitCommit(`refactor: archive ${rule24Tag}`);
 
     // Complete task artifact
     await workspace.remove(task);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
-    await workspace.gitCommit(`chore(task): delete completed ${task.tag} artifact`);
+    await workspace.gitCommit(
+      `chore(task): delete completed ${task.tag} artifact`,
+    );
 
     // 3. Merging should succeed without collision because dev did not rename RULE-24
-    const collisions = await detectArtifactCollisions("task/108-archive", "dev", workspace.cwd);
+    const collisions = await detectArtifactCollisions(
+      "task/108-archive",
+      "dev",
+      workspace.cwd,
+    );
     expect(collisions.length).toBe(0);
 
-    const mergeResult = await mergeTaskBranch(task.tag, { target: "dev", cwd: workspace.cwd });
+    const mergeResult = await mergeTaskBranch(task.tag, {
+      target: "dev",
+      cwd: workspace.cwd,
+    });
     expect(mergeResult.sourceBranch).toBe("task/108-archive");
     expect(mergeResult.targetBranch).toBe("dev");
   });
@@ -381,18 +420,36 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     await workspace.gitCommit(`feat: add ${rule30Tag} at base`);
 
     // 2. On dev, rename RULE-30 to dev-location
-    const devPath = workspace.resolve(".modie", "rules", `rule-dev.${rule30Tag}.md`);
-    await Bun.$`git mv ${rule30.filepath} ${devPath}`.cwd(workspace.cwd).quiet();
+    const devPath = workspace.resolve(
+      ".modie",
+      "rules",
+      `rule-dev.${rule30Tag}.md`,
+    );
+    await Bun.$`git mv ${rule30.filepath} ${devPath}`
+      .cwd(workspace.cwd)
+      .quiet();
     await workspace.gitCommit(`refactor: move ${rule30Tag} on dev`);
 
     // 3. Branch from HEAD~1 (base) and rename to feature-location
-    await Bun.$`git checkout -b feature/divergent HEAD~1`.cwd(workspace.cwd).quiet();
-    const featPath = workspace.resolve(".modie", "rules", `rule-feature.${rule30Tag}.md`);
-    await Bun.$`git mv ${rule30.filepath} ${featPath}`.cwd(workspace.cwd).quiet();
+    await Bun.$`git checkout -b feature/divergent HEAD~1`
+      .cwd(workspace.cwd)
+      .quiet();
+    const featPath = workspace.resolve(
+      ".modie",
+      "rules",
+      `rule-feature.${rule30Tag}.md`,
+    );
+    await Bun.$`git mv ${rule30.filepath} ${featPath}`
+      .cwd(workspace.cwd)
+      .quiet();
     await workspace.gitCommit(`refactor: move ${rule30Tag} on feature`);
 
     // 4. Collision guard should detect divergent_filepath
-    const collisions = await detectArtifactCollisions("feature/divergent", "dev", workspace.cwd);
+    const collisions = await detectArtifactCollisions(
+      "feature/divergent",
+      "dev",
+      workspace.cwd,
+    );
     expect(collisions.length).toBe(1);
     expect(collisions[0]?.tag).toBe(rule30Tag);
     expect(collisions[0]?.reason).toBe("divergent_filepath");

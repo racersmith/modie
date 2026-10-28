@@ -177,12 +177,16 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
     await workspace.gitCommit(`feat(${task.tag}): ${task.slug}`);
     await workspace.remove(task);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
-    await workspace.gitCommit(`chore(task): delete completed ${task.tag} artifact`);
+    await workspace.gitCommit(
+      `chore(task): delete completed ${task.tag} artifact`,
+    );
 
     // Without --history: fails because active file is deleted
     const withoutHistory = await workspace.captureCli(["find", task.tag]);
     expect(withoutHistory.exitCode).toBe(1);
-    expect(withoutHistory.stderr).toContain(`Artifact "${task.tag}" was not found`);
+    expect(withoutHistory.stderr).toContain(
+      `Artifact "${task.tag}" was not found`,
+    );
 
     // With --history: resolves path from Git deletion history
     const withHistory = await workspace.captureCli([

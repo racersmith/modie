@@ -4,8 +4,17 @@
  */
 
 import { readdir, readFile, stat } from "node:fs/promises";
-import { basename, extname, isAbsolute, join, relative, resolve } from "node:path";
+import {
+  basename,
+  extname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+} from "node:path";
 import { parseArtifactFilename } from "../common/filename.ts";
+import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
+import type { GitGrepMatch, IVcsAdapter } from "../vcs/types.ts";
 import { getArtifactDetails, resolveArtifactByTag } from "./artifact-query.ts";
 import type {
   ArchivalGuardResult,
@@ -100,7 +109,10 @@ function escapeRegex(str: string): string {
  * 3. Suite/test block declaration headers: `describe("...(TAG)...")`, `it("...(TAG)...")`
  * 4. Idiomatic test functions: `test_<tag>`, `def test_<tag>`, `fn test_<tag>`
  */
-export function isTestVerificationCitation(line: string, targetTag: string): boolean {
+export function isTestVerificationCitation(
+  line: string,
+  targetTag: string,
+): boolean {
   const escaped = escapeRegex(targetTag);
 
   // 1. Comment annotations: @verifies or @satisfies containing the tag
@@ -266,51 +278,60 @@ export async function findArtifactReferences(
     }
   }
 
-function parseFrontmatterList(content: string, fieldName: string): string[] {
-  const lines = content.split("\n");
-  const items: string[] = [];
-  let inField = false;
+  function parseFrontmatterList(content: string, fieldName: string): string[] {
+    const lines = content.split("\n");
+    const items: string[] = [];
+    let inField = false;
 
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (line === "---" && inField) break;
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (line === "---" && inField) break;
 
-    if (line.startsWith(`${fieldName}:`)) {
-      inField = true;
-      const inline = line.slice(fieldName.length + 1).trim();
-      if (inline.startsWith("[") && inline.endsWith("]")) {
-        const parsed = inline
-          .slice(1, -1)
-          .split(",")
-          .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
-          .filter(Boolean);
-        items.push(...parsed);
-        inField = false;
-      } else if (inline.length > 0) {
-        items.push(inline.replace(/^['"]|['"]$/g, ""));
-        inField = false;
+      if (line.startsWith(`${fieldName}:`)) {
+        inField = true;
+        const inline = line.slice(fieldName.length + 1).trim();
+        if (inline.startsWith("[") && inline.endsWith("]")) {
+          const parsed = inline
+            .slice(1, -1)
+            .split(",")
+            .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
+            .filter(Boolean);
+          items.push(...parsed);
+          inField = false;
+        } else if (inline.length > 0) {
+          items.push(inline.replace(/^['"]|['"]$/g, ""));
+          inField = false;
+        }
+        continue;
       }
-      continue;
+
+      if (inField) {
+        if (line.startsWith("- ")) {
+          const val = line
+            .slice(2)
+            .trim()
+            .replace(/^['"]|['"]$/g, "");
+          if (val) items.push(val);
+        } else if (/^[a-zA-Z0-9_-]+:/.test(line)) {
+          inField = false;
+        }
+      }
     }
 
-    if (inField) {
-      if (line.startsWith("- ")) {
-        const val = line.slice(2).trim().replace(/^['"]|['"]$/g, "");
-        if (val) items.push(val);
-      } else if (/^[a-zA-Z0-9_-]+:/.test(line)) {
-        inField = false;
-      }
-    }
+    return items;
   }
 
-  return items;
-}
-
   // Parse supersedes / superseded_by from raw content if present
-  const supersedesItems = parseFrontmatterList(details.rawContent, "supersedes");
+  const supersedesItems = parseFrontmatterList(
+    details.rawContent,
+    "supersedes",
+  );
   supersedes.push(...supersedesItems);
 
-  const supersededByItems = parseFrontmatterList(details.rawContent, "superseded_by");
+  const supersededByItems = parseFrontmatterList(
+    details.rawContent,
+    "superseded_by",
+  );
   if (supersededByItems.length > 0) {
     superseded_by = supersededByItems[0];
   }
@@ -336,153 +357,284 @@ function parseFrontmatterList(content: string, fieldName: string): string[] {
     "i",
   );
 
-  // 4. Walk workspace and gather "Found In" occurrences
+  // 4. Scan workspace and gather "Found In" occurrences
   const governanceLinks: FoundInItem[] = [];
   const governanceProse: FoundInItem[] = [];
   const code: FoundInItem[] = [];
   const tests: FoundInItem[] = [];
   const documentation: FoundInItem[] = [];
 
-  async function walk(dir: string): Promise<void> {
-    let entries;
+  const vcs = options.vcs ?? defaultVcsAdapter;
+
+  // Cache parsed governance artifact frontmatter to avoid redundant file I/O
+  const govArtifactCache = new Map<
+    string,
+    {
+      parsedArtifact: NonNullable<ReturnType<typeof parseArtifactFilename>>;
+      linkLines: Map<number, string>;
+      frontmatterEndLine: number;
+      isSupersedingSuccessor: boolean;
+    } | null
+  >();
+
+  async function getGovArtifactData(fullPath: string, fileName: string) {
+    if (govArtifactCache.has(fullPath)) {
+      return govArtifactCache.get(fullPath)!;
+    }
+    const parsedArtifact = parseArtifactFilename(fileName);
+    if (!parsedArtifact) {
+      govArtifactCache.set(fullPath, null);
+      return null;
+    }
+    let content = "";
     try {
-      entries = await readdir(dir, { withFileTypes: true });
+      content = await readFile(fullPath, "utf8");
     } catch {
+      govArtifactCache.set(fullPath, null);
+      return null;
+    }
+    const lines = content.split("\n");
+    const { linkLines, frontmatterEndLine } = parseFrontmatterLineMap(lines);
+    const candidateSupersedes = parseFrontmatterList(content, "supersedes").map(
+      (s) => s.toUpperCase(),
+    );
+    const isSupersedingSuccessor = candidateSupersedes.includes(targetTag);
+    const data = {
+      parsedArtifact,
+      linkLines,
+      frontmatterEndLine,
+      isSupersedingSuccessor,
+    };
+    govArtifactCache.set(fullPath, data);
+    return data;
+  }
+
+  function processGovernanceMatch(
+    gov: NonNullable<Awaited<ReturnType<typeof getGovArtifactData>>>,
+    fullPath: string,
+    relPath: string,
+    lineNum: number,
+    rawLine: string,
+  ) {
+    if (!tagRegex.test(rawLine)) {
+      return;
+    }
+    const snippet = rawLine.trim();
+    if (lineNum <= gov.frontmatterEndLine && gov.linkLines.has(lineNum)) {
+      const relationship = gov.linkLines.get(lineNum)!;
+      const isArchived = gov.parsedArtifact.isArchived;
+      const isBlocking =
+        !isArchived &&
+        relationship !== "supersedes" &&
+        !gov.isSupersedingSuccessor;
+
+      governanceLinks.push({
+        type: "governance-link",
+        filepath: fullPath,
+        relativePath: relPath,
+        line: lineNum,
+        snippet,
+        sourceTag: gov.parsedArtifact.tag,
+        isArchived,
+        isBlocking,
+        relationship,
+      });
+    } else {
+      governanceProse.push({
+        type: "governance-prose",
+        filepath: fullPath,
+        relativePath: relPath,
+        line: lineNum,
+        snippet,
+        sourceTag: gov.parsedArtifact.tag,
+        isArchived: gov.parsedArtifact.isArchived,
+        isBlocking: false,
+      });
+    }
+  }
+
+  function processNonGovernanceMatch(
+    fullPath: string,
+    relPath: string,
+    fileName: string,
+    ext: string,
+    lineNum: number,
+    rawLine: string,
+  ) {
+    if (!tagRegex.test(rawLine)) {
+      return;
+    }
+    const isTest =
+      TEST_FILE_REGEX.test(fileName) || fullPath.includes("/__tests__/");
+    const isCode = CODE_EXTENSIONS.has(ext);
+    const isDoc = DOC_EXTENSIONS.has(ext);
+
+    const category: "test" | "code" | "documentation" = isTest
+      ? "test"
+      : isDoc
+        ? "documentation"
+        : isCode
+          ? "code"
+          : "code";
+
+    if (
+      category === "test" &&
+      !isTestVerificationCitation(rawLine, targetTag)
+    ) {
       return;
     }
 
-    for (const entry of entries) {
-      const fullPath = join(dir, entry.name);
+    const item: FoundInItem = {
+      type: category,
+      filepath: fullPath,
+      relativePath: relPath,
+      line: lineNum,
+      snippet: rawLine.trim(),
+    };
 
-      if (entry.isDirectory()) {
-        if (!ignoredDirs.has(entry.name)) {
-          await walk(fullPath);
-        }
-      } else if (entry.isFile()) {
-        // Skip target file itself
-        if (resolve(fullPath) === targetFilepath) {
-          continue;
-        }
+    if (category === "test") {
+      tests.push(item);
+    } else if (category === "documentation") {
+      documentation.push(item);
+    } else {
+      code.push(item);
+    }
+  }
 
-        const ext = extname(entry.name).toLowerCase();
-        if (BINARY_EXTENSIONS.has(ext)) {
-          continue;
-        }
+  // Attempt git-native citation discovery via git grep / index query
+  let matches: GitGrepMatch[] | null = null;
+  const isGitRepo = await vcs.isInsideWorkTree(cwd).catch(() => false);
 
-        // Limit file reading to text files under 5MB
-        try {
-          const fileStat = await stat(fullPath);
-          if (fileStat.size > 5 * 1024 * 1024) {
+  if (isGitRepo) {
+    matches = await vcs
+      .grep(targetTag, cwd, {
+        untracked: true,
+        caseSensitive: false,
+        fixedStrings: true,
+        ignoredDirectories: Array.from(ignoredDirs),
+      })
+      .catch(() => null);
+  }
+
+  if (matches !== null) {
+    // 4a. Process results from git-native index query (covers tracked and untracked files)
+    for (const match of matches) {
+      const relPath = match.relativePath;
+      const fullPath = resolve(cwd, relPath);
+
+      // Skip target artifact file itself
+      if (fullPath === targetFilepath) {
+        continue;
+      }
+
+      // Filter ignored directories from relative path segments
+      const segments = relPath.split(/[/\\]/);
+      if (segments.some((seg) => ignoredDirs.has(seg))) {
+        continue;
+      }
+
+      const fileName = basename(relPath);
+      const ext = extname(fileName).toLowerCase();
+      if (BINARY_EXTENSIONS.has(ext)) {
+        continue;
+      }
+
+      const govData = await getGovArtifactData(fullPath, fileName);
+      if (govData) {
+        processGovernanceMatch(
+          govData,
+          fullPath,
+          relPath,
+          match.line,
+          match.snippet,
+        );
+      } else {
+        processNonGovernanceMatch(
+          fullPath,
+          relPath,
+          fileName,
+          ext,
+          match.line,
+          match.snippet,
+        );
+      }
+    }
+  } else {
+    // 4b. Fallback to recursive filesystem traversal for non-git workspaces or untracked directories
+    async function walk(dir: string): Promise<void> {
+      let entries;
+      try {
+        entries = await readdir(dir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+
+      for (const entry of entries) {
+        const fullPath = join(dir, entry.name);
+
+        if (entry.isDirectory()) {
+          if (!ignoredDirs.has(entry.name)) {
+            await walk(fullPath);
+          }
+        } else if (entry.isFile()) {
+          // Skip target file itself
+          if (resolve(fullPath) === targetFilepath) {
             continue;
           }
-        } catch {
-          continue;
-        }
 
-        let content: string;
-        try {
-          content = await readFile(fullPath, "utf8");
-        } catch {
-          continue;
-        }
-
-        if (!tagRegex.test(content)) {
-          continue;
-        }
-
-        const lines = content.split("\n");
-        const relPath = relative(cwd, fullPath);
-        const parsedArtifact = parseArtifactFilename(entry.name);
-
-        if (parsedArtifact) {
-          // This file is an indexable governance artifact (ADR, RULE, TASK, etc.)
-          const { linkLines, frontmatterEndLine } = parseFrontmatterLineMap(lines);
-          const candidateSupersedes = parseFrontmatterList(content, "supersedes").map((s) => s.toUpperCase());
-          const isSupersedingSuccessor = candidateSupersedes.includes(targetTag);
-
-          for (let i = 0; i < lines.length; i++) {
-            const lineNum = i + 1;
-            const line = lines[i]!;
-
-            if (tagRegex.test(line)) {
-              const snippet = line.trim();
-
-              if (lineNum <= frontmatterEndLine && linkLines.has(lineNum)) {
-                const relationship = linkLines.get(lineNum)!;
-                const isArchived = parsedArtifact.isArchived;
-                const isBlocking = !isArchived && relationship !== "supersedes" && !isSupersedingSuccessor;
-
-                governanceLinks.push({
-                  type: "governance-link",
-                  filepath: fullPath,
-                  relativePath: relPath,
-                  line: lineNum,
-                  snippet,
-                  sourceTag: parsedArtifact.tag,
-                  isArchived,
-                  isBlocking,
-                  relationship,
-                });
-              } else {
-                governanceProse.push({
-                  type: "governance-prose",
-                  filepath: fullPath,
-                  relativePath: relPath,
-                  line: lineNum,
-                  snippet,
-                  sourceTag: parsedArtifact.tag,
-                  isArchived: parsedArtifact.isArchived,
-                  isBlocking: false,
-                });
-              }
-            }
+          const ext = extname(entry.name).toLowerCase();
+          if (BINARY_EXTENSIONS.has(ext)) {
+            continue;
           }
-        } else {
-          // Non-governance file: classify as test, code, or documentation
-          const isTest = TEST_FILE_REGEX.test(entry.name) || fullPath.includes("/__tests__/");
-          const isCode = CODE_EXTENSIONS.has(ext);
-          const isDoc = DOC_EXTENSIONS.has(ext);
 
-          const category: "test" | "code" | "documentation" = isTest
-            ? "test"
-            : isDoc
-              ? "documentation"
-              : isCode
-                ? "code"
-                : "code";
+          // Limit file reading to text files under 5MB
+          try {
+            const fileStat = await stat(fullPath);
+            if (fileStat.size > 5 * 1024 * 1024) {
+              continue;
+            }
+          } catch {
+            continue;
+          }
+
+          let content: string;
+          try {
+            content = await readFile(fullPath, "utf8");
+          } catch {
+            continue;
+          }
+
+          if (!tagRegex.test(content)) {
+            continue;
+          }
+
+          const lines = content.split("\n");
+          const relPath = relative(cwd, fullPath);
+          const govData = await getGovArtifactData(fullPath, entry.name);
 
           for (let i = 0; i < lines.length; i++) {
             const lineNum = i + 1;
             const line = lines[i]!;
 
-            if (tagRegex.test(line)) {
-              if (category === "test" && !isTestVerificationCitation(line, targetTag)) {
-                continue;
-              }
-
-              const item: FoundInItem = {
-                type: category,
-                filepath: fullPath,
-                relativePath: relPath,
-                line: lineNum,
-                snippet: line.trim(),
-              };
-
-              if (category === "test") {
-                tests.push(item);
-              } else if (category === "documentation") {
-                documentation.push(item);
-              } else {
-                code.push(item);
-              }
+            if (govData) {
+              processGovernanceMatch(govData, fullPath, relPath, lineNum, line);
+            } else {
+              processNonGovernanceMatch(
+                fullPath,
+                relPath,
+                entry.name,
+                ext,
+                lineNum,
+                line,
+              );
             }
           }
         }
       }
     }
-  }
 
-  await walk(cwd);
+    await walk(cwd);
+  }
 
   const foundIn: ArtifactFoundIn = {
     governanceLinks,

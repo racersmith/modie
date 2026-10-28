@@ -22,7 +22,9 @@ export interface ParsedCliArgs {
  * Safely parses CLI arguments using node:util.parseArgs.
  * Emits standardized error messages to stderr upon syntax errors.
  */
-export function parseCliArgs(config: ParseCliArgsOptions): ParsedCliArgs | null {
+export function parseCliArgs(
+  config: ParseCliArgsOptions,
+): ParsedCliArgs | null {
   try {
     const result = parseArgs({
       args: config.args,

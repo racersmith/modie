@@ -52,12 +52,20 @@ export function validateTaskScope(
   }
 }
 
-export const taskDefinition: ArtifactDefinition<CreateTaskOptions, TaskArtifact> = {
+export const taskDefinition: ArtifactDefinition<
+  CreateTaskOptions,
+  TaskArtifact
+> = {
   subtype: "TASK",
   containerName: "tasks",
   validate: ({ normalizedScopeDir, options, cwd }) => {
     if (options.targetPaths && options.targetPaths.length > 0) {
-      validateTaskScope(normalizedScopeDir, options.targetPaths, options.allowBroadScope, cwd);
+      validateTaskScope(
+        normalizedScopeDir,
+        options.targetPaths,
+        options.allowBroadScope,
+        cwd,
+      );
     }
   },
   allocateId: async ({ options, cwd }) => {
@@ -78,11 +86,12 @@ export const taskDefinition: ArtifactDefinition<CreateTaskOptions, TaskArtifact>
     const rawCriteria = options.acceptanceCriteria ?? [];
     const normalizedCriteria: TaskAcceptanceCriteriaItem[] = rawCriteria.map(
       (item: string | TaskAcceptanceCriteriaItem) => {
-      if (typeof item === "string") {
-        return { text: item, completed: false };
-      }
-      return { text: item.text, completed: item.completed ?? false };
-    });
+        if (typeof item === "string") {
+          return { text: item, completed: false };
+        }
+        return { text: item.text, completed: item.completed ?? false };
+      },
+    );
 
     const renderOptions: TaskRenderOptions = {
       id,

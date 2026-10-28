@@ -8,6 +8,8 @@ import type {
   IndexableSubtype,
 } from "../resolver/types.ts";
 import type {
+  GitGrepMatch,
+  GitGrepOptions,
   IVcsAdapter,
   MultiBranchOptions,
   StageFilesOptions,
@@ -24,6 +26,7 @@ export interface MockVcsOptions {
   stagedFiles?: string[];
   shortHash?: string;
   mergeBaseResult?: string | null;
+  grepResults?: Record<string, GitGrepMatch[]> | Map<string, GitGrepMatch[]>;
 }
 
 export class MockVcsAdapter implements IVcsAdapter {
@@ -37,6 +40,7 @@ export class MockVcsAdapter implements IVcsAdapter {
   public stagedFiles: string[];
   public shortHash: string;
   public mergeBaseResult: string | null;
+  public grepResults: Map<string, GitGrepMatch[]> | null = null;
 
   // History tracking for test assertions
   public history: {
@@ -74,6 +78,12 @@ export class MockVcsAdapter implements IVcsAdapter {
     this.stagedFiles = [...(options.stagedFiles ?? [])];
     this.shortHash = options.shortHash ?? "mock001";
     this.mergeBaseResult = options.mergeBaseResult ?? "base001";
+    if (options.grepResults) {
+      this.grepResults =
+        options.grepResults instanceof Map
+          ? new Map(options.grepResults)
+          : new Map(Object.entries(options.grepResults));
+    }
 
     this.history = {
       checkouts: [],
@@ -119,7 +129,10 @@ export class MockVcsAdapter implements IVcsAdapter {
   ): Promise<void> {
     this.branches.add(branchName);
     this.currentBranch = branchName;
-    this.history.checkoutNewBranches.push({ branch: branchName, base: baseBranch });
+    this.history.checkoutNewBranches.push({
+      branch: branchName,
+      base: baseBranch,
+    });
   }
 
   async deleteBranch(
@@ -156,7 +169,10 @@ export class MockVcsAdapter implements IVcsAdapter {
     _cwd?: string,
     options?: StageFilesOptions,
   ): Promise<void> {
-    this.history.stagedFileCalls.push({ files: [...files], updateOnly: options?.updateOnly });
+    this.history.stagedFileCalls.push({
+      files: [...files],
+      updateOnly: options?.updateOnly,
+    });
     for (const f of files) {
       if (!this.stagedFiles.includes(f)) {
         this.stagedFiles.push(f);
@@ -170,16 +186,17 @@ export class MockVcsAdapter implements IVcsAdapter {
     files?: string[],
   ): Promise<string> {
     const hash = `hash${this.commitCounter++}`;
-    this.history.commits.push({ message, files: files ? [...files] : undefined, hash });
+    this.history.commits.push({
+      message,
+      files: files ? [...files] : undefined,
+      hash,
+    });
     this.shortHash = hash;
     this.stagedFiles = [];
     return hash;
   }
 
-  async getShortHash(
-    _ref: string = "HEAD",
-    _cwd?: string,
-  ): Promise<string> {
+  async getShortHash(_ref: string = "HEAD", _cwd?: string): Promise<string> {
     return this.shortHash;
   }
 
@@ -199,7 +216,12 @@ export class MockVcsAdapter implements IVcsAdapter {
   ): Promise<string> {
     await this.checkout(targetBranch);
     const hash = `merge${this.commitCounter++}`;
-    this.history.merges.push({ source: sourceBranch, target: targetBranch, message, hash });
+    this.history.merges.push({
+      source: sourceBranch,
+      target: targetBranch,
+      message,
+      hash,
+    });
     this.shortHash = hash;
     return hash;
   }
@@ -260,17 +282,22 @@ export class MockVcsAdapter implements IVcsAdapter {
     return results;
   }
 
-  async getConfig(
-    key: string,
+  async grep(
+    query: string,
     _cwd?: string,
-  ): Promise<string | null> {
+    _options?: GitGrepOptions,
+  ): Promise<GitGrepMatch[] | null> {
+    if (this.grepResults && this.grepResults.has(query)) {
+      return [...this.grepResults.get(query)!];
+    }
+    return null;
+  }
+
+  async getConfig(key: string, _cwd?: string): Promise<string | null> {
     return this.config.get(key) ?? null;
   }
 
-  async run(
-    args: string[],
-    cwd?: string,
-  ): Promise<string | null> {
+  async run(args: string[], cwd?: string): Promise<string | null> {
     this.history.rawRuns.push({ args: [...args], cwd });
     if (args[0] === "rev-parse" && args[1] === "--is-inside-work-tree") {
       return this.insideWorkTree ? "true" : "false";
@@ -281,10 +308,7 @@ export class MockVcsAdapter implements IVcsAdapter {
     return null;
   }
 
-  async runCommand(
-    args: string[],
-    cwd?: string,
-  ): Promise<string> {
+  async runCommand(args: string[], cwd?: string): Promise<string> {
     this.history.rawCommands.push({ args: [...args], cwd });
     return "ok";
   }

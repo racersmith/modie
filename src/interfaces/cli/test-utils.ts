@@ -89,7 +89,9 @@ export async function createTestWorkspace(
       ]);
       const exitCode = await proc.exited;
       if (exitCode !== 0) {
-        const error = new Error(`Command failed with exit code ${exitCode}: ${stderr}`);
+        const error = new Error(
+          `Command failed with exit code ${exitCode}: ${stderr}`,
+        );
         Object.assign(error, { code: exitCode, exitCode, stdout, stderr });
         throw error;
       }
