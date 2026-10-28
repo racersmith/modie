@@ -203,3 +203,4 @@ Final decision paragraph.
     expect(sections["Consequences"]).toBe("- Fast zero-read verification.");
   });
 });
+

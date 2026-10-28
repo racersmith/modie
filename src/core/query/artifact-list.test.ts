@@ -185,3 +185,4 @@ describe("Artifact List Service - Listing Active RULE and ADR Artifacts with Anc
     ).rejects.toThrow(/scope path must reside within the workspace root/);
   });
 });
+
