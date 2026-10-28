@@ -1,7 +1,12 @@
 /**
- * Types and interfaces for the task ID watermark resolver.
- * Complies with RULE-1, ADR-1, ADR-6, and ADR-9.
+ * Types and interfaces for the artifact ID watermark resolver.
+ * Complies with RULE-1, ADR-1, ADR-2, ADR-6, and ADR-9.
  */
+
+import type { DiscoveredArtifact, IndexableSubtype } from "../common/types.ts";
+import type { IVcsAdapter } from "../vcs/types.ts";
+
+export type { DiscoveredArtifact, IndexableSubtype };
 
 export interface DiscoveredTask {
   id: string;
@@ -14,6 +19,12 @@ export interface DiscoveredTask {
 export type AllocationStrategy = "trunk" | "subtask" | "prefixed";
 
 export interface WatermarkResolutionOptions {
+  /**
+   * Artifact subtype for watermark allocation (RULE, ADR, or TASK).
+   * Defaults to "TASK".
+   */
+  subtype?: IndexableSubtype;
+
   /**
    * Root directory of the repository/workspace to scan.
    * Defaults to process.cwd().
@@ -43,21 +54,34 @@ export interface WatermarkResolutionOptions {
   forceTrunk?: boolean;
 
   /**
-   * Pre-provided active task IDs (used for isolated unit testing without filesystem access).
+   * Pre-provided active artifact IDs (used for isolated unit testing without filesystem access).
    */
   activeIds?: string[];
 
   /**
-   * Pre-provided deleted task IDs (used for isolated unit testing without git execution).
+   * Pre-provided active artifact IDs from other branches (used for isolated unit testing).
+   */
+  otherBranchActiveIds?: string[];
+
+  /**
+   * Pre-provided deleted artifact IDs (used for isolated unit testing without git execution).
    */
   deletedIds?: string[];
+
+  /**
+   * Optional VCS adapter (defaults to defaultVcsAdapter).
+   */
+  vcs?: IVcsAdapter;
 }
 
 export interface WatermarkDetails {
   nextId: string;
+  tag: string;
   fullTaskId: string;
+  subtype: IndexableSubtype;
   strategy: AllocationStrategy;
   activeIds: string[];
+  otherBranchActiveIds?: string[];
   deletedIds: string[];
   branch?: string;
   parentId?: string;

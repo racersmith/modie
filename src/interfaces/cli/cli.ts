@@ -1,15 +1,42 @@
 /**
- * Modie CLI dispatcher.
- * Handles command routing and global flags (--help, --version).
- * Complies with RULE-27.
+ * Modie CLI dispatcher and declarative command registry.
+ * Complies with RULE-25 and RULE-27.
  */
 
-import { handleTaskCheck } from "./task-check.ts";
-import { handleTaskComplete } from "./task-complete.ts";
-import { handleTaskCreate } from "./task-create.ts";
-import type { CliIoOptions } from "./types.ts";
+import { handleFind } from "./commands/find/find.ts";
+import { handleShow } from "./commands/show/show.ts";
+import { handleReferences } from "./commands/references/references.ts";
+import { handleArchive } from "./commands/archive/archive.ts";
+import { handleLink, handleUnlink } from "./commands/link/index.ts";
+import {
+  handleRuleCreate,
+  handleRuleArchive,
+  handleRuleList,
+} from "./commands/rule/index.ts";
+import {
+  handleAdrCreate,
+  handleAdrArchive,
+  handleAdrList,
+} from "./commands/adr/index.ts";
+import {
+  handleTaskCheck,
+  handleTaskComplete,
+  handleTaskCreate,
+  handleTaskList,
+  handleTaskMerge,
+  handleTaskStart,
+  handleTaskStatus,
+} from "./commands/task/index.ts";
+import { handleMcp } from "./commands/mcp/index.ts";
+import type { CliIoOptions, CommandHandler } from "./types.ts";
 
 export const MODIE_VERSION = "0.1.0";
+
+export interface CommandNamespace {
+  help: (stderr: (msg: string) => void) => void;
+  commands: Record<string, CommandHandler>;
+  aliases?: Record<string, string>;
+}
 
 /**
  * Prints global Modie CLI usage to stderr.
@@ -21,9 +48,27 @@ Usage:
   modie <command> [subcommand] [arguments] [options]
 
 Commands:
+  find <tag> [options]         Find the file path of an artifact by tag
+  show <tag> [options]         Display artifact details or content
+  references <tag> [options]   Display citations and declared outbound links (alias: refs)
+  archive <tag> [options]      Archive a governance artifact (RULE, ADR)
+  link <source> <target>       Add a validated frontmatter link or dependency
+  unlink <source> <target>     Remove a frontmatter link or dependency
+  rule create <title>          Create a new RULE artifact
+  rule list [options]          List active RULE artifacts (alias: ls)
+  rule archive <tag>           Archive a RULE artifact
+  adr create <title>           Create a new ADR artifact
+  adr list [options]           List active ADR artifacts (alias: ls)
+  adr archive <tag>            Archive an ADR artifact
   task create <title>          Create a new TASK artifact with automatic watermark resolution
+  task start <id>              Create and checkout a hierarchical task branch
   task check <id> --item <n>   Check or uncheck an acceptance criteria item
-  task complete <id>           Complete a task and delete its artifact per RULE-21
+  task complete <id>           Complete a task and delete its artifact (alias: finish)
+  task merge <id>              Merge completed task branch back into parent or trunk
+  task list [options]          List active tasks with DAG readiness and progress
+  task status [id]             Inspect active queue or specific task status
+  backlog [options]            List active tasks with DAG readiness and progress (alias: task list)
+  mcp                          Launch Model Context Protocol server over standard I/O
   help                         Show help for a command
   version                      Show Modie version
 
@@ -32,6 +77,94 @@ Options:
   -v, --version                Show version
 `);
 }
+
+export function printTaskNamespaceHelp(stderr: (msg: string) => void): void {
+  stderr(`Usage: modie task <subcommand> [options]
+
+Subcommands:
+  create <title>               Create a new TASK artifact
+  start <id> [options]         Create and checkout a hierarchical task branch
+  check <id> --item <n>        Check or uncheck an acceptance criteria item
+  complete <id>                Verify criteria and delete completed task (alias: finish)
+  merge <id> [options]         Merge completed task branch back into parent or trunk
+  list [options]               List active tasks with DAG readiness and progress (alias: ls, backlog)
+  status [id] [options]        Inspect active queue or specific task status
+`);
+}
+
+export function printRuleNamespaceHelp(stderr: (msg: string) => void): void {
+  stderr(`Usage: modie rule <subcommand> [options]
+
+Subcommands:
+  create <title>               Create a new RULE artifact
+  list [options]               List active RULE artifacts (alias: ls)
+  archive <tag> [options]      Archive a RULE artifact
+`);
+}
+
+export function printAdrNamespaceHelp(stderr: (msg: string) => void): void {
+  stderr(`Usage: modie adr <subcommand> [options]
+
+Subcommands:
+  create <title>               Create a new ADR artifact
+  list [options]               List active ADR artifacts (alias: ls)
+  archive <tag> [options]      Archive an ADR artifact
+`);
+}
+
+const directCommands: Record<string, CommandHandler> = {
+  find: handleFind,
+  show: handleShow,
+  references: handleReferences,
+  refs: handleReferences,
+  archive: handleArchive,
+  link: handleLink,
+  unlink: handleUnlink,
+  backlog: handleTaskList,
+  mcp: handleMcp,
+};
+
+const namespaces: Record<string, CommandNamespace> = {
+  task: {
+    help: printTaskNamespaceHelp,
+    commands: {
+      create: handleTaskCreate,
+      start: handleTaskStart,
+      check: handleTaskCheck,
+      complete: handleTaskComplete,
+      merge: handleTaskMerge,
+      list: handleTaskList,
+      status: handleTaskStatus,
+    },
+    aliases: {
+      ls: "list",
+      finish: "complete",
+      backlog: "list",
+    },
+  },
+  rule: {
+    help: printRuleNamespaceHelp,
+    commands: {
+      create: handleRuleCreate,
+      list: handleRuleList,
+      archive: handleRuleArchive,
+    },
+    aliases: {
+      ls: "list",
+    },
+  },
+  adr: {
+    help: printAdrNamespaceHelp,
+    commands: {
+      create: handleAdrCreate,
+      list: handleAdrList,
+      archive: handleAdrArchive,
+    },
+    aliases: {
+      ls: "list",
+    },
+  },
+};
 
 /**
  * Main CLI entrypoint router.
@@ -62,39 +195,36 @@ export async function runCli(
 
   const [command, ...subArgs] = args;
 
-  if (command === "task") {
+  // Direct root commands (find, show)
+  const directHandler = directCommands[command!];
+  if (directHandler) {
+    return directHandler(subArgs, options);
+  }
+
+  // Namespaced command groups (task, rule)
+  const ns = namespaces[command!];
+  if (ns) {
     if (
       subArgs.length === 0 ||
       subArgs[0] === "-h" ||
       subArgs[0] === "--help" ||
       subArgs[0] === "help"
     ) {
-      stderr(`Usage: modie task <subcommand> [options]
-
-Subcommands:
-  create <title>               Create a new TASK artifact
-  check <id> --item <n>        Check or uncheck an acceptance criteria item
-  complete <id>                Verify criteria and delete completed task per RULE-21
-`);
+      ns.help(stderr);
       return 0;
     }
 
-    const [subcommand, ...taskArgs] = subArgs;
+    const [rawSubcommand, ...cmdArgs] = subArgs;
+    const subcommand = ns.aliases?.[rawSubcommand!] ?? rawSubcommand!;
+    const handler = ns.commands[subcommand];
 
-    if (subcommand === "create") {
-      return handleTaskCreate(taskArgs, options);
+    if (handler) {
+      return handler(cmdArgs, options);
     }
 
-    if (subcommand === "check") {
-      return handleTaskCheck(taskArgs, options);
-    }
-
-    if (subcommand === "complete") {
-      return handleTaskComplete(taskArgs, options);
-    }
-
+    const available = Object.keys(ns.commands).join(", ");
     stderr(
-      `Error: Unknown task subcommand "${subcommand}". Available: create, check, complete`,
+      `Error: Unknown ${command} subcommand "${rawSubcommand}". Available: ${available}`,
     );
     return 1;
   }

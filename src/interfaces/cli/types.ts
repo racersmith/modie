@@ -25,3 +25,8 @@ export interface CliCommandResult {
   stdout: string;
   stderr: string;
 }
+
+export type CommandHandler = (
+  args: string[],
+  options?: CliIoOptions,
+) => Promise<number>;

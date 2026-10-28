@@ -1,16 +1,20 @@
 /**
- * Monotonic watermark calculation and branch-aware task ID allocation.
- * Complies with RULE-1, ADR-1, ADR-6, and ADR-9.
+ * Monotonic watermark calculation and branch-aware ID allocation.
+ * Complies with RULE-1, RULE-33, ADR-1, ADR-2, ADR-6, and ADR-9.
  */
 
-import { scanActiveTaskIds } from "./active-scanner.ts";
+import { registerArtifactSubtype } from "../common/filename.ts";
+import { scanActiveArtifactIds } from "./active-scanner.ts";
 import {
   detectGitBranch,
   getGitConfigPrefix,
-  inspectGitDeletedTaskIds,
+  inspectGitDeletedArtifactIds,
+  inspectMultiBranchActiveArtifactIds,
 } from "./git-inspector.ts";
+import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
 import type {
   AllocationStrategy,
+  IndexableSubtype,
   WatermarkDetails,
   WatermarkResolutionOptions,
 } from "./types.ts";
@@ -23,7 +27,8 @@ import type {
  * Example: `task/2-1-subtask` -> parentId = "2-1", slug = "subtask"
  * Example: `task/J101-auth` -> parentId = "J101", slug = "auth"
  */
-const TASK_BRANCH_REGEX = /^task\/([0-9]+(?:-[0-9]+)*|[A-Za-z]+[0-9]+)(?:-(.+))?$/;
+const TASK_BRANCH_REGEX =
+  /^task\/([0-9]+(?:-[0-9]+)*|[A-Za-z]+[0-9]+)(?:-(.+))?$/;
 
 /**
  * Escapes regex special characters in dynamic strings.
@@ -35,7 +40,9 @@ function escapeRegex(str: string): string {
 /**
  * Parses a branch name to extract the parent task ID if it is a task branch.
  */
-export function parseTaskBranch(branch: string): { parentId: string; slug?: string } | null {
+export function parseTaskBranch(
+  branch: string,
+): { parentId: string; slug?: string } | null {
   const match = branch.match(TASK_BRANCH_REGEX);
   if (!match || !match[1]) {
     return null;
@@ -47,56 +54,116 @@ export function parseTaskBranch(branch: string): { parentId: string; slug?: stri
 }
 
 /**
- * Resolves comprehensive watermark details and calculates the next unique, collision-free task ID.
- * Follows the Hierarchical Branch & Author Namespaced Allocation Model defined in ADR-9.
+ * Resolves comprehensive watermark details and calculates the next unique, collision-free ID
+ * for any indexable artifact subtype (RULE, ADR, TASK, or custom subtype).
+ *
+ * - For non-TASK subtypes (RULE, ADR, custom): Uses strict monotonic integer progression per RULE-1.
+ * - For TASK: Follows the Hierarchical Branch & Author Namespaced Allocation Model defined in ADR-9.
  */
 export async function resolveWatermark(
   options: WatermarkResolutionOptions = {},
 ): Promise<WatermarkDetails> {
   const cwd = options.cwd ?? process.cwd();
+  const vcs = options.vcs ?? defaultVcsAdapter;
+  const subtype: IndexableSubtype =
+    (options.subtype?.toUpperCase() as IndexableSubtype) ?? "TASK";
+  registerArtifactSubtype(subtype);
 
   // 1. Gather active IDs from disk (or use provided overrides for testing)
   const activeIds =
-    options.activeIds !== undefined ? options.activeIds : await scanActiveTaskIds(cwd);
+    options.activeIds !== undefined
+      ? options.activeIds
+      : await scanActiveArtifactIds(cwd, subtype);
 
-  // 2. Gather deleted IDs from Git history (or use provided overrides for testing)
+  // 2. Gather active IDs from other git branches (RULE-33)
+  const otherBranchActiveIds =
+    options.otherBranchActiveIds !== undefined
+      ? options.otherBranchActiveIds
+      : options.activeIds !== undefined
+        ? []
+        : await inspectMultiBranchActiveArtifactIds(
+            cwd,
+            subtype,
+            { excludeCurrent: true },
+            vcs,
+          );
+
+  // 3. Gather deleted IDs from Git history (or use provided overrides for testing)
   const deletedIds =
-    options.deletedIds !== undefined ? options.deletedIds : await inspectGitDeletedTaskIds(cwd);
+    options.deletedIds !== undefined
+      ? options.deletedIds
+      : await inspectGitDeletedArtifactIds(cwd, subtype, vcs);
 
-  // 3. Aggregate all known historical and active task IDs
-  const allKnownIds = Array.from(new Set([...activeIds, ...deletedIds]));
+  // 4. Aggregate all known historical and active IDs (including active on other branches)
+  const allKnownIds = Array.from(
+    new Set([...activeIds, ...otherBranchActiveIds, ...deletedIds]),
+  );
   const allKnownIdSet = new Set(allKnownIds);
 
   // 4. Resolve branch context
   const detectedBranch =
     options.branch !== undefined
       ? options.branch
-      : (await detectGitBranch(cwd)) ?? "dev";
+      : ((await detectGitBranch(cwd, vcs)) ?? "dev");
 
-  // 5. Resolve prefix context (CLI flag > options > git config)
+  // 5. Allocation Strategy: Non-TASK subtypes always follow pure monotonic progression (RULE-1)
+  if (subtype !== "TASK") {
+    const pureIntegerIds = allKnownIds
+      .map((id) => (/^[0-9]+$/.test(id) ? parseInt(id, 10) : null))
+      .filter((n): n is number => n !== null);
+
+    const maxInt = pureIntegerIds.length > 0 ? Math.max(...pureIntegerIds) : 0;
+    let candidateInt = maxInt + 1;
+
+    while (allKnownIdSet.has(String(candidateInt))) {
+      candidateInt++;
+    }
+
+    const nextId = String(candidateInt);
+    const tag = `${subtype}-${nextId}`;
+
+    return {
+      nextId,
+      tag,
+      fullTaskId: tag,
+      subtype,
+      strategy: "trunk",
+      activeIds,
+      otherBranchActiveIds,
+      deletedIds,
+      branch: detectedBranch,
+      sequence: candidateInt,
+    };
+  }
+
+  // 6. TASK subtype branch-aware allocation strategy selection (ADR-9)
   let resolvedPrefix: string | undefined = options.prefix;
   if (!resolvedPrefix && options.gitConfigPrefix !== undefined) {
     resolvedPrefix = options.gitConfigPrefix;
   }
   if (!resolvedPrefix && !options.prefix) {
-    const gitPrefix = await getGitConfigPrefix(cwd);
+    const gitPrefix = await getGitConfigPrefix(cwd, vcs);
     if (gitPrefix) {
       resolvedPrefix = gitPrefix;
     }
   }
 
-  // 6. Branch-aware allocation strategy selection (ADR-9)
   let strategy: AllocationStrategy = "trunk";
   let nextId: string;
   let parentId: string | undefined;
   let sequence: number;
 
-  const taskBranchInfo = !options.forceTrunk ? parseTaskBranch(detectedBranch) : null;
+  const taskBranchInfo = !options.forceTrunk
+    ? parseTaskBranch(detectedBranch)
+    : null;
 
   if (!options.forceTrunk && resolvedPrefix) {
     // Strategy 3: Feature Branch & Agent/Author Namespacing (TASK-<prefix><sequence>)
     strategy = "prefixed";
-    const prefixRegex = new RegExp(`^${escapeRegex(resolvedPrefix)}([0-9]+)$`, "i");
+    const prefixRegex = new RegExp(
+      `^${escapeRegex(resolvedPrefix)}([0-9]+)$`,
+      "i",
+    );
 
     const existingSeqs = allKnownIds
       .map((id) => {
@@ -108,7 +175,6 @@ export async function resolveWatermark(
     const maxSeq = existingSeqs.length > 0 ? Math.max(...existingSeqs) : 0;
     let candidateSeq = maxSeq + 1;
 
-    // Safety: ensure no collision with any known ID
     while (allKnownIdSet.has(`${resolvedPrefix}${candidateSeq}`)) {
       candidateSeq++;
     }
@@ -131,7 +197,6 @@ export async function resolveWatermark(
     const maxSeq = existingSeqs.length > 0 ? Math.max(...existingSeqs) : 0;
     let candidateSeq = maxSeq + 1;
 
-    // Safety: ensure no collision with any known ID
     while (allKnownIdSet.has(`${parentId}-${candidateSeq}`)) {
       candidateSeq++;
     }
@@ -149,7 +214,6 @@ export async function resolveWatermark(
     const maxInt = pureIntegerIds.length > 0 ? Math.max(...pureIntegerIds) : 0;
     let candidateInt = maxInt + 1;
 
-    // Safety: ensure no collision with any known ID
     while (allKnownIdSet.has(String(candidateInt))) {
       candidateInt++;
     }
@@ -158,11 +222,16 @@ export async function resolveWatermark(
     nextId = String(candidateInt);
   }
 
+  const tag = `TASK-${nextId}`;
+
   return {
     nextId,
-    fullTaskId: `TASK-${nextId}`,
+    tag,
+    fullTaskId: tag,
+    subtype: "TASK",
     strategy,
     activeIds,
+    otherBranchActiveIds,
     deletedIds,
     branch: detectedBranch,
     parentId,
@@ -172,12 +241,22 @@ export async function resolveWatermark(
 }
 
 /**
+ * Resolves the next unique ID string for a specific indexable artifact subtype.
+ */
+export async function resolveNextArtifactId(
+  subtype: IndexableSubtype,
+  options: WatermarkResolutionOptions = {},
+): Promise<string> {
+  const details = await resolveWatermark({ ...options, subtype });
+  return details.nextId;
+}
+
+/**
  * Resolves the next unique task ID string according to the branch-aware watermark model.
  * Convenience wrapper returning strictly `nextId`.
  */
 export async function resolveNextTaskId(
   options: WatermarkResolutionOptions = {},
 ): Promise<string> {
-  const details = await resolveWatermark(options);
-  return details.nextId;
+  return resolveNextArtifactId("TASK", options);
 }

@@ -1,14 +1,16 @@
 /**
- * Git history inspector for deleted tasks and branch context.
- * Complies with ADR-6, ADR-9, and RULE-21.
+ * Git history inspector for deleted artifacts and branch context.
+ * Complies with ADR-6, ADR-9, RULE-21, and RULE-33.
+ * Delegates to IVcsAdapter to decouple process execution from domain logic.
  */
 
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-import { parseTaskFilename } from "../primitives/task/filename.ts";
-import type { DiscoveredTask } from "./types.ts";
-
-const execFileAsync = promisify(execFile);
+import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
+import type { IVcsAdapter } from "../vcs/types.ts";
+import type {
+  DiscoveredArtifact,
+  DiscoveredTask,
+  IndexableSubtype,
+} from "./types.ts";
 
 /**
  * Safely executes a git command, returning stdout trimmed or null on error.
@@ -16,17 +18,21 @@ const execFileAsync = promisify(execFile);
 export async function runGit(
   args: string[],
   cwd: string = process.cwd(),
+  vcs: IVcsAdapter = defaultVcsAdapter,
 ): Promise<string | null> {
-  try {
-    const { stdout } = await execFileAsync("git", args, {
-      cwd,
-      encoding: "utf8",
-      maxBuffer: 10 * 1024 * 1024,
-    });
-    return stdout.trim();
-  } catch {
-    return null;
-  }
+  return vcs.run(args, cwd);
+}
+
+/**
+ * Executes a git command and returns trimmed stdout.
+ * Throws a descriptive Error containing git stderr/message if execution fails.
+ */
+export async function runGitCommand(
+  args: string[],
+  cwd: string = process.cwd(),
+  vcs: IVcsAdapter = defaultVcsAdapter,
+): Promise<string> {
+  return vcs.runCommand(args, cwd);
 }
 
 /**
@@ -35,27 +41,9 @@ export async function runGit(
  */
 export async function detectGitBranch(
   cwd: string = process.cwd(),
+  vcs: IVcsAdapter = defaultVcsAdapter,
 ): Promise<string | null> {
-  const branch = await runGit(["rev-parse", "--abbrev-ref", "HEAD"], cwd);
-  if (branch && branch !== "HEAD") {
-    return branch;
-  }
-
-  const showCurrent = await runGit(["branch", "--show-current"], cwd);
-  if (showCurrent && showCurrent.length > 0) {
-    return showCurrent;
-  }
-
-  // Fallback to CI environment variables if running in detached HEAD
-  const envBranch =
-    process.env.GITHUB_REF_NAME ||
-    process.env.GIT_BRANCH ||
-    process.env.CI_COMMIT_REF_NAME;
-  if (envBranch && envBranch.length > 0) {
-    return envBranch;
-  }
-
-  return null;
+  return vcs.detectCurrentBranch(cwd);
 }
 
 /**
@@ -63,84 +51,121 @@ export async function detectGitBranch(
  */
 export async function getGitConfigPrefix(
   cwd: string = process.cwd(),
+  vcs: IVcsAdapter = defaultVcsAdapter,
 ): Promise<string | null> {
-  const prefix = await runGit(["config", "modie.prefix"], cwd);
-  return prefix && prefix.length > 0 ? prefix : null;
+  return vcs.getConfig("modie.prefix", cwd);
+}
+
+/**
+ * Queries git commit history for deleted artifact files across reachable branches:
+ * `git log --all --diff-filter=D --format= --name-only -- *.<SUBTYPE>-*.md`
+ */
+export async function inspectGitDeletedArtifacts(
+  cwd: string = process.cwd(),
+  subtype?: IndexableSubtype,
+  vcs: IVcsAdapter = defaultVcsAdapter,
+): Promise<DiscoveredArtifact[]> {
+  return vcs.inspectDeletedArtifacts(cwd, subtype);
+}
+
+/**
+ * Returns a deduplicated list of artifact IDs that were deleted in git history for a given subtype.
+ */
+export async function inspectGitDeletedArtifactIds(
+  cwd: string = process.cwd(),
+  subtype?: IndexableSubtype,
+  vcs: IVcsAdapter = defaultVcsAdapter,
+): Promise<string[]> {
+  const artifacts = await inspectGitDeletedArtifacts(cwd, subtype, vcs);
+  return Array.from(new Set(artifacts.map((a) => a.id)));
 }
 
 /**
  * Queries git commit history for deleted task files across reachable branches:
  * `git log --all --diff-filter=D --format= --name-only -- *.TASK-*.md`
+ * Backward compatibility wrapper around inspectGitDeletedArtifacts.
  */
 export async function inspectGitDeletedTasks(
   cwd: string = process.cwd(),
+  vcs: IVcsAdapter = defaultVcsAdapter,
 ): Promise<DiscoveredTask[]> {
-  // First attempt multi-ref global search
-  let output = await runGit(
-    [
-      "log",
-      "--all",
-      "--diff-filter=D",
-      "--format=",
-      "--name-only",
-      "--",
-      "*.TASK-*.md",
-    ],
-    cwd,
-  );
-
-  // If --all fails (e.g. shallow clone or fresh branch with no reflogs), fall back to HEAD log
-  if (output === null) {
-    output = await runGit(
-      [
-        "log",
-        "--diff-filter=D",
-        "--format=",
-        "--name-only",
-        "--",
-        "*.TASK-*.md",
-      ],
-      cwd,
-    );
-  }
-
-  if (!output) {
-    return [];
-  }
-
-  const lines = output
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean);
-
-  const discovered: DiscoveredTask[] = [];
-  const seenPaths = new Set<string>();
-
-  for (const line of lines) {
-    if (seenPaths.has(line)) continue;
-    seenPaths.add(line);
-
-    const parsed = parseTaskFilename(line);
-    if (parsed) {
-      discovered.push({
-        id: parsed.id,
-        slug: parsed.slug,
-        filename: parsed.filename,
-        filepath: line,
-        status: "deleted",
-      });
-    }
-  }
-
-  return discovered;
+  const artifacts = await inspectGitDeletedArtifacts(cwd, "TASK", vcs);
+  return artifacts.map((a) => ({
+    id: a.id,
+    slug: a.slug,
+    filename: a.filename,
+    filepath: a.filepath,
+    status: "deleted",
+  }));
 }
 
 /**
  * Returns a deduplicated list of task IDs that were deleted in git history.
+ * Backward compatibility wrapper around inspectGitDeletedArtifactIds.
  */
 export async function inspectGitDeletedTaskIds(
   cwd: string = process.cwd(),
+  vcs: IVcsAdapter = defaultVcsAdapter,
 ): Promise<string[]> {
-  const tasks = await inspectGitDeletedTasks(cwd);
-  return Array.from(new Set(tasks.map((t) => t.id)));
+  return inspectGitDeletedArtifactIds(cwd, "TASK", vcs);
+}
+
+/**
+ * Lists all local branch names in the git repository.
+ */
+export async function listGitBranches(
+  cwd: string = process.cwd(),
+  vcs: IVcsAdapter = defaultVcsAdapter,
+): Promise<string[]> {
+  return vcs.listBranches(cwd);
+}
+
+/**
+ * Inspects all active indexable artifact files tracked in a git tree ref.
+ */
+export async function inspectGitTreeArtifacts(
+  ref: string,
+  cwd: string = process.cwd(),
+  subtype?: IndexableSubtype,
+  vcs: IVcsAdapter = defaultVcsAdapter,
+): Promise<DiscoveredArtifact[]> {
+  return vcs.inspectTreeArtifacts(ref, cwd, subtype);
+}
+
+/**
+ * Discovers active artifacts across other git branches using git tree queries (RULE-33).
+ */
+export async function inspectMultiBranchActiveArtifacts(
+  cwd: string = process.cwd(),
+  subtype?: IndexableSubtype,
+  options: {
+    excludeCurrent?: boolean;
+    excludeBranch?: string;
+    branches?: string[];
+  } = {},
+  vcs: IVcsAdapter = defaultVcsAdapter,
+): Promise<DiscoveredArtifact[]> {
+  return vcs.inspectMultiBranchActiveArtifacts(cwd, subtype, options);
+}
+
+/**
+ * Returns a deduplicated list of active artifact IDs across other git branches (RULE-33).
+ */
+export async function inspectMultiBranchActiveArtifactIds(
+  cwd: string = process.cwd(),
+  subtype?: IndexableSubtype,
+  options: {
+    excludeCurrent?: boolean;
+    excludeBranch?: string;
+    branches?: string[];
+  } = {},
+  vcs: IVcsAdapter = defaultVcsAdapter,
+): Promise<string[]> {
+  const artifacts = await inspectMultiBranchActiveArtifacts(
+    cwd,
+    subtype,
+    options,
+    vcs,
+  );
+  return Array.from(new Set(artifacts.map((a) => a.id)));
 }
