@@ -7,6 +7,7 @@ import { handleFind } from "./commands/find/find.ts";
 import { handleShow } from "./commands/show/show.ts";
 import { handleReferences } from "./commands/references/references.ts";
 import { handleArchive } from "./commands/archive/archive.ts";
+import { handleLink, handleUnlink } from "./commands/link/index.ts";
 import {
   handleRuleCreate,
   handleRuleArchive,
@@ -51,6 +52,8 @@ Commands:
   show <tag> [options]         Display artifact details or content
   references <tag> [options]   Display citations and declared outbound links (alias: refs)
   archive <tag> [options]      Archive a governance artifact (RULE, ADR)
+  link <source> <target>       Add a validated frontmatter link or dependency
+  unlink <source> <target>     Remove a frontmatter link or dependency
   rule create <title>          Create a new RULE artifact
   rule list [options]          List active RULE artifacts (alias: ls)
   rule archive <tag>           Archive a RULE artifact
@@ -115,6 +118,8 @@ const directCommands: Record<string, CommandHandler> = {
   references: handleReferences,
   refs: handleReferences,
   archive: handleArchive,
+  link: handleLink,
+  unlink: handleUnlink,
   backlog: handleTaskList,
   mcp: handleMcp,
 };

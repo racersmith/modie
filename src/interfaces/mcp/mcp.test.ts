@@ -78,6 +78,8 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     expect(toolNames).toContain("show");
     expect(toolNames).toContain("references");
     expect(toolNames).toContain("archive");
+    expect(toolNames).toContain("link_artifact");
+    expect(toolNames).toContain("unlink_artifact");
     expect(toolNames).toContain("rule_create");
     expect(toolNames).toContain("rule_list");
     expect(toolNames).toContain("rule_archive");
@@ -303,6 +305,59 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     expect(getTextContent(invalidScopeRes)).toContain(
       "scope path must reside within the workspace root",
     );
+  });
+
+  // @verifies ADR-5, RULE-13, RULE-16, RULE-18, RULE-25, RULE-26, RULE-36
+  it("[ADR-5][RULE-13][RULE-16][RULE-18][RULE-25][RULE-26][RULE-36] should execute link_artifact and unlink_artifact tools and return informative validation errors on violations", async () => {
+    const adr105Tag = makeTestTag("ADR", 105);
+    await workspace.createAdr({
+      id: 105,
+      slug: "root-linking-adr",
+      links: [],
+      context: "Root linking ADR.",
+    });
+
+    // 1. Valid link_artifact from RULE -> ADR
+    const linkRes = await client.callTool({
+      name: "link_artifact",
+      arguments: {
+        source: ruleTag,
+        target: adr105Tag,
+      },
+    });
+    expect(linkRes.isError).toBeFalsy();
+    const linked = JSON.parse(getTextContent(linkRes));
+    expect(linked.action).toBe("link");
+    expect(linked.relationship).toBe("links");
+    expect(linked.changed).toBe(true);
+    expect(linked.links).toEqual([adr105Tag]);
+
+    // 2. Reject circular task dependency via link_artifact (task102 already depends_on task101)
+    const cycleRes = await client.callTool({
+      name: "link_artifact",
+      arguments: {
+        source: task101Tag,
+        target: task102Tag,
+      },
+    });
+    expect(cycleRes.isError).toBe(true);
+    expect(getTextContent(cycleRes)).toContain("Circular task dependency detected");
+    expect(getTextContent(cycleRes)).toContain("RULE-18");
+
+    // 3. Valid unlink_artifact removing RULE -> ADR link
+    const unlinkRes = await client.callTool({
+      name: "unlink_artifact",
+      arguments: {
+        source: ruleTag,
+        target: adr105Tag,
+      },
+    });
+    expect(unlinkRes.isError).toBeFalsy();
+    const unlinked = JSON.parse(getTextContent(unlinkRes));
+    expect(unlinked.action).toBe("unlink");
+    expect(unlinked.relationship).toBe("links");
+    expect(unlinked.changed).toBe(true);
+    expect(unlinked.links).toEqual([]);
   });
 });
 
