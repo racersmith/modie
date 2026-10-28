@@ -18,6 +18,19 @@ export interface StageFilesOptions {
   updateOnly?: boolean;
 }
 
+export interface GitGrepMatch {
+  relativePath: string;
+  line: number;
+  snippet: string;
+}
+
+export interface GitGrepOptions {
+  untracked?: boolean;
+  ignoredDirectories?: string[];
+  caseSensitive?: boolean;
+  fixedStrings?: boolean;
+}
+
 /**
  * Universal interface for version control operations.
  * Decouples domain logic from direct process execution and enables hermetic unit testing.
@@ -89,6 +102,13 @@ export interface IVcsAdapter {
     subtype?: IndexableSubtype,
     options?: MultiBranchOptions,
   ): Promise<DiscoveredArtifact[]>;
+
+  // Search & Index Query
+  grep(
+    query: string,
+    cwd?: string,
+    options?: GitGrepOptions,
+  ): Promise<GitGrepMatch[] | null>;
 
   // Configuration & Raw Execution (Escape Hatch)
   getConfig(key: string, cwd?: string): Promise<string | null>;

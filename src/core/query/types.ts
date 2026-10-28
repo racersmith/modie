@@ -354,4 +354,9 @@ export interface FindArtifactReferencesOptions {
    * Custom directory ignore list.
    */
   ignoredDirectories?: string[];
+
+  /**
+   * Optional VCS adapter for git operations (defaults to defaultVcsAdapter).
+   */
+  vcs?: IVcsAdapter;
 }

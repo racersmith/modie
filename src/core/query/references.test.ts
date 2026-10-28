@@ -6,6 +6,7 @@
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { createFixtureWorkspace, makeTestTag, type FixtureWorkspace } from "../testing/index.ts";
+import { MockVcsAdapter } from "../vcs/index.ts";
 import {
   findArtifactReferences,
   isTestVerificationCitation,
@@ -208,6 +209,118 @@ links:
     expect(result.target.slug).toBe("interface-core-decoupling");
     expect(result.foundIn.code.length).toBe(1);
     expect(result.foundIn.total).toBe(1);
+  });
+
+  // @verifies RULE-25, RULE-31, RULE-34
+  it("[RULE-25][RULE-31][RULE-34] should discover citations using git-native grep index and include untracked working-tree files", async () => {
+    await workspace.initGit();
+    const ruleTag = makeTestTag("RULE", 801);
+
+    await workspace.createRule({
+      id: 801,
+      slug: "git-scanner-rule",
+      body: "Core invariant.\n",
+    });
+
+    // 1. Committed file referencing the rule
+    await workspace.writeFile("committed.ts", `// Implements ${ruleTag}\n`);
+    await workspace.gitCommit("feat: add committed file");
+
+    // 2. Untracked file referencing the rule (not committed, not staged)
+    await workspace.writeFile("untracked.ts", `// Fallback reference to ${ruleTag}\n`);
+
+    const result = await findArtifactReferences(ruleTag, { cwd: workspace.cwd });
+
+    expect(result.target.tag).toBe(ruleTag);
+    expect(result.foundIn.code.length).toBe(2);
+    expect(result.foundIn.code.some((c) => c.relativePath === "committed.ts")).toBe(true);
+    expect(result.foundIn.code.some((c) => c.relativePath === "untracked.ts")).toBe(true);
+  });
+
+  // @verifies RULE-25, RULE-31, RULE-34, RULE-35
+  it("[RULE-25][RULE-31][RULE-34][RULE-35] should produce identical citation discovery results between git-native query and filesystem fallback", async () => {
+    await workspace.initGit();
+    const targetTag = makeTestTag("RULE", 802);
+    const linkingTag = makeTestTag("RULE", 803);
+
+    await workspace.createRule({
+      id: 802,
+      slug: "target-rule",
+      body: "Target rule.\n",
+    });
+
+    await workspace.createRule({
+      id: 803,
+      slug: "linking-rule",
+      links: [targetTag],
+      body: "Links to target.\n",
+    });
+
+    await workspace.writeFile("service.ts", `// Implements ${targetTag}\n`);
+    await workspace.writeFile(
+      "service.test.ts",
+      `// @verifies ${targetTag}\nit("[${targetTag}] should verify", () => {});\n`,
+    );
+    await workspace.writeFile("untracked.md", `# Docs\nSee ${targetTag} for details.\n`);
+
+    // Run with git-native scanner
+    const gitResult = await findArtifactReferences(targetTag, { cwd: workspace.cwd });
+
+    // Run with non-git mock adapter forcing fallback walk
+    const mockVcs = new MockVcsAdapter({ insideWorkTree: false });
+    const fallbackResult = await findArtifactReferences(targetTag, {
+      cwd: workspace.cwd,
+      vcs: mockVcs,
+    });
+
+    expect(gitResult.foundIn.total).toBe(fallbackResult.foundIn.total);
+    expect(gitResult.foundIn.governanceLinks.length).toBe(fallbackResult.foundIn.governanceLinks.length);
+    expect(gitResult.foundIn.code.length).toBe(fallbackResult.foundIn.code.length);
+    expect(gitResult.foundIn.tests.length).toBe(fallbackResult.foundIn.tests.length);
+    expect(gitResult.foundIn.documentation.length).toBe(fallbackResult.foundIn.documentation.length);
+    expect(gitResult.archivalGuard).toEqual(fallbackResult.archivalGuard);
+  });
+
+  // @verifies RULE-25, RULE-31, RULE-34
+  it("[RULE-25][RULE-31][RULE-34] should benchmark git-native query execution against synthetic fixture tree", async () => {
+    await workspace.initGit();
+    const targetTag = makeTestTag("RULE", 804);
+
+    await workspace.createRule({
+      id: 804,
+      slug: "perf-rule",
+      body: "Performance target rule.\n",
+    });
+
+    // Generate synthetic files across multiple directories
+    for (let i = 0; i < 40; i++) {
+      await workspace.writeFile(`src/module-${i}/file-${i}.ts`, `// Module ${i} file\nexport const x = ${i};\n`);
+    }
+
+    // Add files with citations
+    await workspace.writeFile("src/module-10/cite.ts", `// Implements ${targetTag}\n`);
+    await workspace.writeFile("docs/guide.md", `# Guide\nSee ${targetTag}.\n`);
+    await workspace.gitCommit("chore: add synthetic fixture files");
+
+    // Untracked file
+    await workspace.writeFile("src/module-20/untracked.ts", `// Untracked ${targetTag}\n`);
+
+    const startGit = performance.now();
+    const gitResult = await findArtifactReferences(targetTag, { cwd: workspace.cwd });
+    const gitDuration = performance.now() - startGit;
+
+    const mockVcs = new MockVcsAdapter({ insideWorkTree: false });
+    const startFallback = performance.now();
+    const fallbackResult = await findArtifactReferences(targetTag, {
+      cwd: workspace.cwd,
+      vcs: mockVcs,
+    });
+    const fallbackDuration = performance.now() - startFallback;
+
+    expect(gitResult.foundIn.total).toBe(fallbackResult.foundIn.total);
+    expect(gitResult.foundIn.total).toBe(3);
+    expect(gitDuration).toBeGreaterThan(0);
+    expect(fallbackDuration).toBeGreaterThan(0);
   });
 });
 

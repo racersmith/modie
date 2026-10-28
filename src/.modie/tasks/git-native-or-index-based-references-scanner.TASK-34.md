@@ -14,7 +14,7 @@ Replace linear filesystem directory crawling in findArtifactReferences with git-
 
 # Acceptance Criteria
 
-- [ ] Implement git-native citation discovery using git grep / index query
-- [ ] Maintain fallback for untracked files in the working directory
-- [ ] Benchmark and optimize query execution
-- [ ] Verify all references tests pass with identical citation discovery results
+- [x] Implement git-native citation discovery using git grep / index query
+- [x] Maintain fallback for untracked files in the working directory
+- [x] Benchmark and optimize query execution
+- [x] Verify all references tests pass with identical citation discovery results

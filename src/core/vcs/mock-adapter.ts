@@ -8,6 +8,8 @@ import type {
   IndexableSubtype,
 } from "../resolver/types.ts";
 import type {
+  GitGrepMatch,
+  GitGrepOptions,
   IVcsAdapter,
   MultiBranchOptions,
   StageFilesOptions,
@@ -24,6 +26,7 @@ export interface MockVcsOptions {
   stagedFiles?: string[];
   shortHash?: string;
   mergeBaseResult?: string | null;
+  grepResults?: Record<string, GitGrepMatch[]> | Map<string, GitGrepMatch[]>;
 }
 
 export class MockVcsAdapter implements IVcsAdapter {
@@ -37,6 +40,7 @@ export class MockVcsAdapter implements IVcsAdapter {
   public stagedFiles: string[];
   public shortHash: string;
   public mergeBaseResult: string | null;
+  public grepResults: Map<string, GitGrepMatch[]> | null = null;
 
   // History tracking for test assertions
   public history: {
@@ -74,6 +78,12 @@ export class MockVcsAdapter implements IVcsAdapter {
     this.stagedFiles = [...(options.stagedFiles ?? [])];
     this.shortHash = options.shortHash ?? "mock001";
     this.mergeBaseResult = options.mergeBaseResult ?? "base001";
+    if (options.grepResults) {
+      this.grepResults =
+        options.grepResults instanceof Map
+          ? new Map(options.grepResults)
+          : new Map(Object.entries(options.grepResults));
+    }
 
     this.history = {
       checkouts: [],
@@ -258,6 +268,17 @@ export class MockVcsAdapter implements IVcsAdapter {
     }
 
     return results;
+  }
+
+  async grep(
+    query: string,
+    _cwd?: string,
+    _options?: GitGrepOptions,
+  ): Promise<GitGrepMatch[] | null> {
+    if (this.grepResults && this.grepResults.has(query)) {
+      return [...this.grepResults.get(query)!];
+    }
+    return null;
   }
 
   async getConfig(
