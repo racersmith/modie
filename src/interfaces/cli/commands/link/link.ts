@@ -147,3 +147,4 @@ export const handleLink: (
 export function printLinkHelp(stderr: (msg: string) => void): void {
   stderr(generateCommandHelp(linkCommand));
 }
+

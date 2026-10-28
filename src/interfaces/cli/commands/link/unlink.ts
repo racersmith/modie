@@ -146,3 +146,4 @@ export const handleUnlink: (
 export function printUnlinkHelp(stderr: (msg: string) => void): void {
   stderr(generateCommandHelp(unlinkCommand));
 }
+

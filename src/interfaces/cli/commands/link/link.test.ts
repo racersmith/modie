@@ -172,3 +172,4 @@ describe("CLI `modie link` and `modie unlink` Commands (ADR-5, RULE-27, RULE-36)
     );
   });
 });
+

@@ -528,3 +528,4 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     expect(onDiskAfterUnlink).toBe(`---\nlinks: []\n---\n\n${bareBody}`);
   });
 });
+
