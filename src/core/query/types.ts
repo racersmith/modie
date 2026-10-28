@@ -1,10 +1,173 @@
 /**
- * Types and schema for artifact queries, references, and archival guard.
- * Complies with RULE-25, RULE-27, and RULE-31.
+ * Types and schema for artifact queries, listing, references, and archival guard.
+ * Complies with ADR-1, ADR-2, ADR-4, RULE-9, RULE-25, RULE-27, and RULE-31.
  */
 
 import type { IndexableSubtype } from "../common/types.ts";
-import type { ResolvedArtifact } from "./artifact-query.ts";
+import type { TaskAcceptanceCriteriaItem } from "../task/types.ts";
+
+export interface ResolvedArtifact {
+  /**
+   * Canonical uppercase tag, e.g. "RULE-1", "ADR-6", "TASK-12".
+   */
+  tag: string;
+
+  /**
+   * Indexable subtype: "RULE", "ADR", or "TASK".
+   */
+  subtype: IndexableSubtype;
+
+  /**
+   * Monotonic unpadded integer or namespaced ID token.
+   */
+  id: string;
+
+  /**
+   * Kebab-case slug.
+   */
+  slug: string;
+
+  /**
+   * Basename of the file.
+   */
+  filename: string;
+
+  /**
+   * Absolute filepath on disk.
+   */
+  filepath: string;
+
+  /**
+   * Path relative to cwd.
+   */
+  relativePath: string;
+
+  /**
+   * Whether the artifact has a .ARCHIVED marker.
+   */
+  isArchived: boolean;
+}
+
+export interface ArtifactDetails extends ResolvedArtifact {
+  /**
+   * Frontmatter links list (target ADR or RULE tags).
+   */
+  links: string[];
+
+  /**
+   * Frontmatter depends_on list (target TASK tags, if present).
+   */
+  depends_on?: string[];
+
+  /**
+   * Document body content excluding frontmatter.
+   */
+  body: string;
+
+  /**
+   * Full unparsed raw content of the markdown file.
+   */
+  rawContent: string;
+
+  /**
+   * Content under # Context section, if present.
+   */
+  context?: string;
+
+  /**
+   * Map of level-1 section headings to their section content.
+   */
+  sections: Record<string, string>;
+
+  /**
+   * Parsed acceptance criteria items (for TASK artifacts).
+   */
+  acceptanceCriteria?: TaskAcceptanceCriteriaItem[];
+}
+
+export interface ResolveArtifactOptions {
+  /**
+   * Workspace root directory (defaults to process.cwd()).
+   */
+  cwd?: string;
+
+  /**
+   * Explicit subtype filter.
+   */
+  subtype?: IndexableSubtype;
+
+  /**
+   * Whether to include archived artifacts (.ARCHIVED.md).
+   * Defaults to true.
+   */
+  includeArchived?: boolean;
+}
+
+export interface ListedArtifact {
+  /**
+   * Canonical uppercase tag, e.g. "RULE-9", "ADR-4".
+   */
+  tag: string;
+
+  /**
+   * Indexable subtype: "RULE" or "ADR" (or IndexableSubtype).
+   */
+  subtype: IndexableSubtype;
+
+  /**
+   * Monotonic unpadded integer or namespaced ID token.
+   */
+  id: string;
+
+  /**
+   * Kebab-case slug.
+   */
+  slug: string;
+
+  /**
+   * Human-readable title derived from slug.
+   */
+  title: string;
+
+  /**
+   * Basename of the file.
+   */
+  filename: string;
+
+  /**
+   * Absolute filepath on disk.
+   */
+  filepath: string;
+
+  /**
+   * Path relative to cwd.
+   */
+  relativePath: string;
+
+  /**
+   * Normalized scope directory relative to cwd (e.g. "." or "src/interfaces/cli").
+   */
+  scope: string;
+
+  /**
+   * Frontmatter links list (target ADR or RULE tags).
+   */
+  links: string[];
+}
+
+export interface ListArtifactsOptions {
+  /**
+   * Workspace root directory (defaults to process.cwd()).
+   */
+  cwd?: string;
+
+  /**
+   * Optional target directory or file scope for ancestral scope traversal (RULE-9).
+   * When specified, returns only active artifacts residing in the ancestry path vector
+   * A = [R, ..., P] walking from target scope P up to workspace root R.
+   */
+  scope?: string;
+}
 
 export type ReferenceCategory =
   | "governance-link"
