@@ -5,23 +5,28 @@
 
 /**
  * Splits markdown content into frontmatter and body string blocks.
+ * Requires standalone `---` delimiter lines so mid-line `---` in comments or values
+ * does not prematurely terminate frontmatter.
  */
 export function splitMarkdownFrontmatter(content: string): {
   frontmatter: string;
   body: string;
 } {
   const trimmed = content.trim();
-  if (!trimmed.startsWith("---")) {
+  const openMatch = trimmed.match(/^---[ \t]*\r?\n/);
+  if (!openMatch) {
     return { frontmatter: "", body: content };
   }
 
-  const endIdx = trimmed.indexOf("---", 3);
-  if (endIdx === -1) {
+  const afterOpen = trimmed.slice(openMatch[0].length);
+  const closeRegex = /(?:^|\r?\n)---[ \t]*(?:\r?\n|$)/;
+  const closeMatch = closeRegex.exec(afterOpen);
+  if (!closeMatch) {
     return { frontmatter: "", body: content };
   }
 
-  const frontmatter = trimmed.slice(3, endIdx).trim();
-  const body = trimmed.slice(endIdx + 3).trim();
+  const frontmatter = afterOpen.slice(0, closeMatch.index).trim();
+  const body = afterOpen.slice(closeMatch.index + closeMatch[0].length).trim();
   return { frontmatter, body };
 }
 
@@ -32,7 +37,7 @@ export function parseFrontmatterFields(frontmatterStr: string): {
   links: string[];
   depends_on?: string[];
 } {
-  const lines = frontmatterStr.split("\n");
+  const lines = frontmatterStr.split(/\r?\n/);
   const links: string[] = [];
   const depends_on: string[] = [];
   let currentKey: "links" | "depends_on" | null = null;
@@ -43,7 +48,7 @@ export function parseFrontmatterFields(frontmatterStr: string): {
 
     if (line.startsWith("links:")) {
       currentKey = "links";
-      const inline = line.replace("links:", "").trim();
+      const inline = line.slice("links:".length).trim();
       if (inline.startsWith("[") && inline.endsWith("]")) {
         const items = inline
           .slice(1, -1)
@@ -58,7 +63,7 @@ export function parseFrontmatterFields(frontmatterStr: string): {
 
     if (line.startsWith("depends_on:")) {
       currentKey = "depends_on";
-      const inline = line.replace("depends_on:", "").trim();
+      const inline = line.slice("depends_on:".length).trim();
       if (inline.startsWith("[") && inline.endsWith("]")) {
         const items = inline
           .slice(1, -1)
@@ -71,14 +76,16 @@ export function parseFrontmatterFields(frontmatterStr: string): {
       continue;
     }
 
-    if (line.startsWith("- ")) {
-      const val = line.slice(2).trim().replace(/^['"]|['"]$/g, "");
-      if (currentKey === "links") links.push(val);
-      if (currentKey === "depends_on") depends_on.push(val);
+    if (line.startsWith("- ") || line === "-") {
+      const val = line.slice(1).trim().replace(/^['"]|['"]$/g, "");
+      if (val) {
+        if (currentKey === "links") links.push(val);
+        if (currentKey === "depends_on") depends_on.push(val);
+      }
       continue;
     }
 
-    if (/^[a-zA-Z_]+:/.test(line)) {
+    if (/^[a-zA-Z0-9_-]+:/.test(line)) {
       currentKey = null;
     }
   }
@@ -90,28 +97,53 @@ export function parseFrontmatterFields(frontmatterStr: string): {
 }
 
 /**
- * Parses Markdown sections starting with `# <Heading>`.
+ * Parses level-1 Markdown sections starting with `# <Heading>`, ignoring `#` lines
+ * that appear inside fenced code blocks (` ``` ` or ` ~~~ `).
  */
 export function parseMarkdownSections(body: string): Record<string, string> {
   const sections: Record<string, string> = {};
-  const headingRegex = /^#\s+([^\n]+)/gm;
-  let match: RegExpExecArray | null;
-  const indices: Array<{ heading: string; index: number }> = [];
+  const lines = body.split(/\r?\n/);
 
-  while ((match = headingRegex.exec(body)) !== null) {
-    if (match[1]) {
-      indices.push({ heading: match[1].trim(), index: match.index });
+  let currentHeading: string | null = null;
+  let currentLines: string[] = [];
+  let activeFence: string | null = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Track fenced code blocks (e.g. ```, ````, ~~~)
+    const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
+    if (fenceMatch && fenceMatch[1]) {
+      const fenceToken = fenceMatch[1];
+      if (!activeFence) {
+        activeFence = fenceToken;
+      } else if (
+        trimmed.startsWith(activeFence[0]!.repeat(activeFence.length)) &&
+        new RegExp(`^${activeFence[0]}+\\s*$`).test(trimmed)
+      ) {
+        activeFence = null;
+      }
+    }
+
+    if (!activeFence) {
+      const headingMatch = line.match(/^#\s+(.+)$/);
+      if (headingMatch && headingMatch[1]) {
+        if (currentHeading !== null) {
+          sections[currentHeading] = currentLines.join("\n").trim();
+        }
+        currentHeading = headingMatch[1].trim();
+        currentLines = [];
+        continue;
+      }
+    }
+
+    if (currentHeading !== null) {
+      currentLines.push(line);
     }
   }
 
-  for (let i = 0; i < indices.length; i++) {
-    const cur = indices[i]!;
-    const next = indices[i + 1];
-    const startIndex = cur.index + cur.heading.length + 2; // skip "# " and heading line
-    const sectionText = next
-      ? body.slice(startIndex, next.index).trim()
-      : body.slice(startIndex).trim();
-    sections[cur.heading] = sectionText;
+  if (currentHeading !== null) {
+    sections[currentHeading] = currentLines.join("\n").trim();
   }
 
   return sections;
