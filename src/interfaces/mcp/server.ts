@@ -47,7 +47,7 @@ export interface ModieMcpServerOptions {
 /**
  * Strips unrequested raw content and formatting to enforce RULE-26 token economy.
  */
-export function sanitizePayloadForRule26(
+export function sanitizePayload(
   commandId: string,
   args: Record<string, any>,
   result: any,
@@ -125,7 +125,7 @@ export function createModieMcpServer(
           };
 
           const rawResult = await executeFn(args, context);
-          const cleanResult = sanitizePayloadForRule26(
+          const cleanResult = sanitizePayload(
             toolName,
             args,
             rawResult,
