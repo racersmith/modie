@@ -26,12 +26,12 @@ describe("Watermark Resolver - Active Task Scanner (RULE-1, ADR-6, RULE-34, RULE
     await workspace.createTask({
       id: 1,
       slug: "create-task-cli",
-      subDir: "src/.modie/tasks",
+      scopeDir: "src",
     });
     await workspace.createTask({
       id: 4,
       slug: "watermark-resolver",
-      subDir: "src/core/.modie/tasks",
+      scopeDir: "src/core",
     });
 
     const ignoredTaskTag = makeTestTag("TASK", 999);

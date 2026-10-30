@@ -100,22 +100,21 @@ describe("CLI Rule List - Execution, Scope Filtering & Stream Separation (ADR-4,
     const rootRule = await workspace.createRule({
       id: 1,
       slug: "root-rule",
-      subDir: ".modie/rules",
     });
     const srcRule = await workspace.createRule({
       id: 2,
       slug: "src-rule",
-      subDir: "src/.modie/rules",
+      scopeDir: "src",
     });
     const cliRule = await workspace.createRule({
       id: 3,
       slug: "cli-rule",
-      subDir: "src/interfaces/cli/.modie/rules",
+      scopeDir: "src/interfaces/cli",
     });
     await workspace.createRule({
       id: 4,
       slug: "mcp-sibling-rule",
-      subDir: "src/interfaces/mcp/.modie/rules",
+      scopeDir: "src/interfaces/mcp",
     });
 
     const { exitCode, stdout, stderr } = await workspace.captureCli([

@@ -12,8 +12,8 @@ Core creation domain services (createRule, createAdr, createTask) accept a logic
 
 # Acceptance Criteria
 
-- [ ] Update CreateFixtureArtifactOptions, CreateRuleOptions, CreateAdrOptions, and CreateTaskOptions in FixtureWorkspace to accept scopeDir
-- [ ] Automatically resolve target container subdirectories via resolveArtifactDirectories when scopeDir is provided
-- [ ] Maintain backwards compatibility for explicit subDir overrides
-- [ ] Verify artifact placement across root and nested scopes in fixture workspace test suite
-- [ ] User Review
+- [x] Update CreateFixtureArtifactOptions, CreateRuleOptions, CreateAdrOptions, and CreateTaskOptions in FixtureWorkspace to accept scopeDir
+- [x] Automatically resolve target container subdirectories via resolveArtifactDirectories when scopeDir is provided
+- [x] Restrict subDir exclusively to low-level createArtifact and remove subDir from createRule, createAdr, and createTask in favor of scopeDir
+- [x] Verify artifact placement across root and nested scopes in fixture workspace test suite
+- [x] User Review

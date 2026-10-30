@@ -18,40 +18,35 @@ describe("Core Scope Resolution Service (RULE-6, RULE-8, RULE-9, RULE-12, RULE-2
     workspace = await createFixtureWorkspace("modie-scope-test-");
 
     // Root scope setup
-    await workspace.mkdir(".modie");
     await workspace.createRule({
       id: 1,
       title: "Root Architecture Invariant",
-      subDir: ".modie/rules",
     });
 
     // src scope setup
-    await workspace.mkdir("src/.modie");
     await workspace.createRule({
       id: 2,
       title: "Source Layer Policy",
-      subDir: "src/.modie/rules",
+      scopeDir: "src",
     });
 
     // src/interfaces scope setup
-    await workspace.mkdir("src/interfaces/.modie");
     await workspace.createRule({
       id: 3,
       title: "Interface Decoupling Rule",
-      subDir: "src/interfaces/.modie/rules",
+      scopeDir: "src/interfaces",
     });
 
     // src/interfaces/cli scope setup with rule and task
-    await workspace.mkdir("src/interfaces/cli/.modie");
     await workspace.createRule({
       id: 4,
       title: "CLI Stream Separation Rule",
-      subDir: "src/interfaces/cli/.modie/rules",
+      scopeDir: "src/interfaces/cli",
     });
     await workspace.createTask({
       id: 1,
       title: "CLI Command Polish Task",
-      subDir: "src/interfaces/cli/.modie/tasks",
+      scopeDir: "src/interfaces/cli",
     });
   });
 

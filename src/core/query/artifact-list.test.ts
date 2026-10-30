@@ -65,7 +65,7 @@ describe("Artifact List Service - Listing Active RULE and ADR Artifacts with Anc
     await workspace.createRule({
       id: 2,
       slug: "cli-invariant-rule",
-      subDir: "src/interfaces/cli/.modie/rules",
+      scopeDir: "src/interfaces/cli",
       links: [],
       body: "CLI rule body",
     });
@@ -116,32 +116,31 @@ describe("Artifact List Service - Listing Active RULE and ADR Artifacts with Anc
     await workspace.createRule({
       id: 1,
       slug: "root-rule",
-      subDir: ".modie/rules",
     });
     await workspace.createRule({
       id: 2,
       slug: "src-rule",
-      subDir: "src/.modie/rules",
+      scopeDir: "src",
     });
     await workspace.createRule({
       id: 3,
       slug: "interfaces-rule",
-      subDir: "src/interfaces/.modie/rules",
+      scopeDir: "src/interfaces",
     });
     await workspace.createRule({
       id: 4,
       slug: "cli-rule",
-      subDir: "src/interfaces/cli/.modie/rules",
+      scopeDir: "src/interfaces/cli",
     });
     await workspace.createRule({
       id: 5,
       slug: "mcp-sibling-rule",
-      subDir: "src/interfaces/mcp/.modie/rules",
+      scopeDir: "src/interfaces/mcp",
     });
     await workspace.createRule({
       id: 6,
       slug: "deep-cli-commands-rule",
-      subDir: "src/interfaces/cli/commands/.modie/rules",
+      scopeDir: "src/interfaces/cli/commands",
     });
 
     // 1. Scope at src/interfaces/cli collects [., src, src/interfaces, src/interfaces/cli]

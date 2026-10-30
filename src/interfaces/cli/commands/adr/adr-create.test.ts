@@ -213,7 +213,6 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
       slug: "root-rule",
       title: "Root Rule",
       body: "Root rule assertion.",
-      subDir: ".rules",
     });
 
     // Scoped ADR inside "sub" linking to root rule violates RULE-17 (rootRule is ancestor, not descendant)

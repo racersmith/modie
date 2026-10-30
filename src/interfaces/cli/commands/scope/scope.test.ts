@@ -17,24 +17,21 @@ describe("CLI Scope - Execution & Stream Separation (RULE-6, RULE-8, RULE-9, RUL
     workspace = await createTestWorkspace("modie-cli-scope-");
 
     // Root scope setup
-    await workspace.mkdir(".modie");
     await workspace.createRule({
       id: "TEST-1",
       title: "Root Architecture Invariant",
-      subDir: ".modie/rules",
     });
 
     // src/interfaces/cli scope setup
-    await workspace.mkdir("src/interfaces/cli/.modie");
     await workspace.createRule({
       id: "TEST-2",
       title: "CLI Stream Separation Rule",
-      subDir: "src/interfaces/cli/.modie/rules",
+      scopeDir: "src/interfaces/cli",
     });
     await workspace.createTask({
       id: "TEST-1",
       title: "CLI Scope Verification Task",
-      subDir: "src/interfaces/cli/.modie/tasks",
+      scopeDir: "src/interfaces/cli",
     });
   });
 

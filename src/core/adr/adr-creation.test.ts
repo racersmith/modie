@@ -68,7 +68,7 @@ describe("ADR Creation - Frontmatter Validation & Rule Scope (RULE-14, RULE-17, 
       id: 202,
       slug: "sub-invariant",
       body: "Sub invariant claim\n",
-      subDir: "submodule/.modie/rules",
+      scopeDir: "submodule",
     });
 
     // ADR scoped in workspace.cwd (ancestor of submodule where RULE resides)
@@ -105,7 +105,7 @@ describe("ADR Creation - Frontmatter Validation & Rule Scope (RULE-14, RULE-17, 
       id: 204,
       slug: "sibling-invariant",
       body: "Sibling invariant claim\n",
-      subDir: "sibling-module/.modie/rules",
+      scopeDir: "sibling-module",
     });
 
     // ADR scoped in workspace.cwd/target-module
@@ -125,7 +125,7 @@ describe("ADR Creation - Frontmatter Validation & Rule Scope (RULE-14, RULE-17, 
       id: 205,
       slug: "prior-decision",
       context: "Prior decision",
-      subDir: "other/.modie/adrs",
+      scopeDir: "other",
     });
 
     const localScope = await workspace.mkdir("local");
