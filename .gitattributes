@@ -1,0 +1,2 @@
+# Auto-merge concurrent appends to Modie spark ledgers within .modie containers
+**/.modie/**/SPARKS.md merge=union
