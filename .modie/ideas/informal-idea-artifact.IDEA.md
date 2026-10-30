@@ -50,4 +50,6 @@ Inside `<dir>/.modie/ideas/`, we separate **fleeting capture** from **active inc
 # Open Questions
 
 - **Frictionless Effort/Impact in `SPARKS.md`:** How should loose Effort/Impact be represented so it feels completely natural when editing `SPARKS.md` by hand (e.g., Markdown section headers like `## Quick Wins`, ultra-short `[H/L]` prefix, or only evaluated during triage)?
+  - No, in practice this will not be populated and will just be extra overhead to a task that should be as quick as possible so that ideas don't get lost.
 - **Idea $\rightarrow$ Task/ADR Graduation Tooling:** Should there also be a programmatic `modie idea graduate <slug>` helper that deletes the `.IDEA.md` once its target `ADR`/`TASK` is created?
+  - Yes, for both sparks and ideas. Sometimes a spark can be directly translated to work, othertimes more it needs to be expanded in an idea first.
