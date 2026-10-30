@@ -56,7 +56,7 @@ export function sanitizePayload(
     return { success: true };
   }
 
-  if (commandId === "show" && typeof result === "object") {
+  if (commandId === "read" && typeof result === "object") {
     // Per RULE-26, omit unsolicited raw document contents unless explicitly requested
     if (!args.raw && "rawContent" in result) {
       const { rawContent, ...rest } = result;

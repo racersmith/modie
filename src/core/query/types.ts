@@ -44,6 +44,11 @@ export interface ResolvedArtifact {
   relativePath: string;
 
   /**
+   * Normalized scope directory relative to cwd (e.g. "." or "src/interfaces/cli").
+   */
+  scope: string;
+
+  /**
    * Whether the artifact has a .ARCHIVED marker.
    */
   isArchived: boolean;

@@ -4,7 +4,7 @@
  */
 
 import { handleFind } from "./commands/find/find.ts";
-import { handleShow } from "./commands/show/show.ts";
+import { handleRead } from "./commands/read/read.ts";
 import { handleReferences } from "./commands/references/references.ts";
 import { handleArchive } from "./commands/archive/archive.ts";
 import { handleLink, handleUnlink } from "./commands/link/index.ts";
@@ -49,7 +49,7 @@ Usage:
 
 Commands:
   find <tag> [options]         Find the file path of an artifact by tag
-  show <tag> [options]         Display artifact details or content
+  read <tag> [options]         Display artifact details or content
   references <tag> [options]   Display citations and declared outbound links (alias: refs)
   archive <tag> [options]      Archive a governance artifact (RULE, ADR)
   link <source> <target>       Add a validated frontmatter link or dependency
@@ -114,7 +114,7 @@ Subcommands:
 
 const directCommands: Record<string, CommandHandler> = {
   find: handleFind,
-  show: handleShow,
+  read: handleRead,
   references: handleReferences,
   refs: handleReferences,
   archive: handleArchive,
@@ -195,7 +195,7 @@ export async function runCli(
 
   const [command, ...subArgs] = args;
 
-  // Direct root commands (find, show)
+  // Direct root commands (find, read)
   const directHandler = directCommands[command!];
   if (directHandler) {
     return directHandler(subArgs, options);
