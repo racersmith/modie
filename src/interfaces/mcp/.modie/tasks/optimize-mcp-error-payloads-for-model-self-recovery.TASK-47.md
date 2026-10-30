@@ -16,3 +16,4 @@ Format tool validation and execution error messages to return isError: true with
 - [ ] Include parameter name, invalid value, and expected format or allowed enumeration values for input validation failures
 - [ ] Include suggested lookup tools such as task_list, rule_list, or find when requested artifact identifiers or tags are not found
 - [ ] Verify model-recoverable error messages are returned with isError: true across invalid arguments and missing artifact scenarios in test suite
+- [ ] User Review

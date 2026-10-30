@@ -22,3 +22,4 @@ Introduce a dedicated `motive create` command and core domain creation service t
 - [ ] Validate initial motive content against RULE-10 asserting rejection if artifact tags or cross-document references are present
 - [ ] Expose declarative motive create CLI command and MCP tool conforming to interface decoupling and structured output contracts
 - [ ] Verify motive creation, template scaffolding, collision protection, and reference rejection across test suites
+- [ ] User Review

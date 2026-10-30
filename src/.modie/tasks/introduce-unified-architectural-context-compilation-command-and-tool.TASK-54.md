@@ -29,3 +29,4 @@ Implement a unified `context` command and core compilation service that synthesi
 - [ ] Expose declarative modie context CLI command with stdout/stderr separation (RULE-27) and --raw/--json rendering options
 - [ ] Register primary context MCP tool delivering token-efficient structured payloads optimized for agent prompt injection (RULE-25, RULE-26)
 - [ ] Verify context compilation across root, intermediate, and leaf scopes with comprehensive test coverage
+- [ ] User Review

@@ -17,3 +17,4 @@ Support outputSchema contracts on command definitions and project them into MCP 
 - [ ] Format tool execution returns to deliver structured content matching declared output schemas alongside text block fallbacks
 - [ ] Migrate hardcoded payload sanitizers in McpServer to consume declarative command definition hooks (RULE-26)
 - [ ] Verify tools/list exposes outputSchema and tool call responses conform to declared output schemas in test suite
+- [ ] User Review

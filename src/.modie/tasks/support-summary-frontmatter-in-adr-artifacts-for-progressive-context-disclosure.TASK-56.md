@@ -23,3 +23,4 @@ Introduce a standardized `summary` frontmatter field for ADR artifacts to suppor
 - [ ] Expose --summary <text> flag in modie adr create CLI command and accept summary parameter in adr_create MCP tool
 - [ ] Backfill existing repository ADRs with concise summary frontmatter fields
 - [ ] Verify ADR creation, parsing, roundtrip serialization, and CLI/MCP interfaces in test suite
+- [ ] User Review

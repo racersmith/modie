@@ -16,3 +16,4 @@ Core creation domain services (createRule, createAdr, createTask) accept a logic
 - [ ] Automatically resolve target container subdirectories via resolveArtifactDirectories when scopeDir is provided
 - [ ] Maintain backwards compatibility for explicit subDir overrides
 - [ ] Verify artifact placement across root and nested scopes in fixture workspace test suite
+- [ ] User Review

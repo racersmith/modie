@@ -18,3 +18,4 @@ Align the MCP tool registration registry with agent cognitive friendliness by pr
 - [ ] Prune redundant subtype-specific archive aliases (rule_archive, adr_archive) from MCP registration in favor of unified archive tool
 - [ ] Register read and scope as primary MCP inspection tools with rich agent guidance and token-efficient schemas
 - [ ] Verify client tool listing exhibits no duplicate or conflicting tools and test suite validates clean registration
+- [ ] User Review

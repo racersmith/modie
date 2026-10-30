@@ -17,3 +17,4 @@ Register distinct, scoped MCP Resource Templates (modie://rules/{tag}, modie://a
 - [ ] Register dynamic resource template modie://tasks/{id} delivering task details and acceptance criteria with application/json MIME type
 - [ ] Return descriptive errors when requested artifact identifiers or tags do not exist on disk
 - [ ] Verify client resource template discovery and parameterized reading for rules, ADRs, and tasks in test suite
+- [ ] User Review

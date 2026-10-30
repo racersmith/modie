@@ -17,3 +17,4 @@ Declare tool annotations (readOnlyHint, destructiveHint, idempotentHint) on regi
 - [ ] Annotate mutating and deletion commands with destructiveHint hints
 - [ ] Project declared annotations into MCP tool registration configuration so tools/list reflects annotation metadata
 - [ ] Verify tool listing integration tests assert presence of expected annotations on query and mutation tools
+- [ ] User Review

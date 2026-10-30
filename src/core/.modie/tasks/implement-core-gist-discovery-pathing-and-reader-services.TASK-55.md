@@ -24,3 +24,4 @@ Establish the foundational GIST domain module in src/core/gist providing canonic
 - [ ] Implement shallow signpost discovery service to locate immediate child directory GIST summaries (depth=1) per ADR-8
 - [ ] Export public GIST discovery and pathing APIs from core index
 - [ ] Verify resolution and discovery across nested directories and edge cases with test coverage
+- [ ] User Review

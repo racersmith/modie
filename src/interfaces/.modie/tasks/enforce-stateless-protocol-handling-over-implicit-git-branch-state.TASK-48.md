@@ -17,3 +17,4 @@ Enforce stateless MCP server operation by requiring or strongly prioritizing exp
 - [ ] Update agent guidance across task tools to explicitly direct agents to pass task IDs rather than relying on active branch state
 - [ ] Return a clear isError: true recovery message when task ID is omitted and active branch is not a task branch, directing the agent to supply an explicit identifier
 - [ ] Verify server ignores incoming session headers and operates statelessly across interleaved tool invocations in test suite
+- [ ] User Review

@@ -16,3 +16,4 @@ While the MCP server dynamically projects tools by iterating over allCliCommands
 - [ ] Generate printGlobalHelp usage text dynamically using command metadata (name, description, aliases)
 - [ ] Eliminate manual command routing dictionaries in src/interfaces/cli/cli.ts
 - [ ] Verify help emission, root command dispatch, namespace subcommand dispatch, and unknown command handling across CLI test suites
+- [ ] User Review

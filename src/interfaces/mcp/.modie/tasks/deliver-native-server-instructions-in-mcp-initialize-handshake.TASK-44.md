@@ -16,3 +16,4 @@ Deliver agent governance instructions during the MCP protocol initialize handsha
 - [ ] Expose instructions string on the McpServerOptions configuration object so it is transmitted in the initialize protocol handshake response
 - [ ] Verify client receives populated instructions in initialize response without requiring explicit resource reads
 - [ ] Maintain modie://instructions read-only resource for backwards compatibility and standalone resource browsing
+- [ ] User Review
