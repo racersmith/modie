@@ -58,7 +58,8 @@ export const taskCheckCommand: CliCommandDefinition<
   usage: "modie task check [id-or-path] --item <index> [options]",
   description: "Check or uncheck an acceptance criteria item",
   agentGuidance:
-    "Call this tool to mark an acceptance criteria item as completed (or incomplete). All checklist items must be satisfied before completing a task.",
+    "Call this tool to mark an acceptance criteria item as completed (or incomplete). All checklist items must be satisfied before completing a task. " +
+    "NOTE: Do not check items designated for human sign-off (e.g. 'User Review') autonomously—wait for explicit user confirmation.",
   helpUsage: "modie task check --help",
   schema: taskCheckSchema,
   positionals: [

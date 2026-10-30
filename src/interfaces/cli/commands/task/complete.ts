@@ -74,7 +74,11 @@ export const taskCompleteCommand: CliCommandDefinition<
   description:
     "Verify criteria and delete completed task artifact (alias: finish)",
   agentGuidance:
-    "Call this tool only when all acceptance criteria are satisfied, all planned governance artifacts (rules/ADRs) are authored and verified on disk, and tests pass. Executes the atomic two-phase commit ceremony and deletes the ephemeral task file per RULE-21 and ADR-6.\n\n" +
+    "CRITICAL: Do NOT invoke this tool autonomously upon completing implementation. " +
+    "When all technical criteria and test suites pass, HALT and present a concise summary of changes and test outcomes to the user for review. " +
+    "If the task contains a 'User Review' acceptance criterion, it must not be checked without explicit user sign-off. " +
+    "Only call this tool when the user has reviewed and explicitly instructed you to complete the task.\n\n" +
+    "Executes the atomic two-phase commit ceremony and deletes the ephemeral task file per RULE-21 and ADR-6.\n\n" +
     "EPHEMERAL TASK INVARIANT: Once a task is completed, it is permanently deleted. Never leave test headers or code comments citing this completed task ID (cite durable RULEs or ADRs instead).",
   helpUsage: "modie task complete --help",
   schema: taskCompleteSchema,

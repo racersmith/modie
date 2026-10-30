@@ -190,13 +190,36 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
 
     expect(exitCode).toBe(0);
     const parsed = JSON.parse(stdout.trim());
-    expect(parsed.acceptanceCriteria.length).toBe(2);
+    expect(parsed.acceptanceCriteria.length).toBe(3);
     expect(parsed.acceptanceCriteria[0].text).toBe(
       "Export checkTaskItem from index.ts, including all types",
     );
     expect(parsed.acceptanceCriteria[1].text).toBe(
       `Ensure stdout and stderr separation, per ${rule27Tag}`,
     );
+    expect(parsed.acceptanceCriteria[2].text).toBe("User Review");
+  });
+
+  // @verifies RULE-25, RULE-27, RULE-34
+  it("[RULE-25][RULE-27][RULE-34] should omit User Review criterion when --no-review is passed", async () => {
+    const { exitCode, stdout } = await workspace.captureCli([
+      "task",
+      "create",
+      "No Review CLI Task",
+      "--scope",
+      workspace.cwd,
+      "--branch",
+      "dev",
+      "--no-review",
+      "-a",
+      "Automated step only",
+      "--json",
+    ]);
+
+    expect(exitCode).toBe(0);
+    const parsed = JSON.parse(stdout.trim());
+    expect(parsed.acceptanceCriteria.length).toBe(1);
+    expect(parsed.acceptanceCriteria[0].text).toBe("Automated step only");
   });
 
   // @verifies RULE-15, RULE-25, RULE-34, RULE-35

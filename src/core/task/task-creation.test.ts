@@ -163,6 +163,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
       "- [ ] Create task file in .tasks directory",
     );
     expect(fileContents).toContain("- [ ] Verify valid frontmatter parsing");
+    expect(fileContents).toContain("- [ ] User Review");
 
     // Roundtrip verification using TaskPrimitive parser
     const parsed = TaskPrimitive.parseTaskMarkdown(
@@ -173,9 +174,43 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     expect(parsed.slug).toBe("task-service-integration-verification");
     expect(parsed.depends_on).toEqual([depTask3, depTask4]);
     expect(parsed.links).toEqual([linkAdr6, linkRule25]);
-    expect(parsed.acceptanceCriteria.length).toBe(2);
+    expect(parsed.acceptanceCriteria.length).toBe(3);
+    expect(parsed.acceptanceCriteria[2].text).toBe("User Review");
     expect(result.artifact.depends_on).toEqual([depTask3, depTask4]);
     expect(result.artifact.links).toEqual([linkAdr6, linkRule25]);
+  });
+
+  // @verifies RULE-22, RULE-25, RULE-34
+  it("[RULE-22][RULE-25][RULE-34] should omit User Review acceptance criterion when review is false", async () => {
+    const result = await createTask({
+      title: "No Review Core Task",
+      scopeDir: "src/core",
+      acceptanceCriteria: ["Automated criterion"],
+      review: false,
+      branch: "dev",
+      cwd: workspace.cwd,
+    });
+
+    expect(result.artifact.acceptanceCriteria).toHaveLength(1);
+    expect(result.artifact.acceptanceCriteria[0].text).toBe(
+      "Automated criterion",
+    );
+    const fileContents = await workspace.readFile(result.filepath);
+    expect(fileContents).not.toContain("User Review");
+  });
+
+  // @verifies RULE-22, RULE-25, RULE-34
+  it("[RULE-22][RULE-25][RULE-34] should not duplicate User Review if explicitly passed in acceptanceCriteria", async () => {
+    const result = await createTask({
+      title: "Explicit Review Task",
+      scopeDir: "src/core",
+      acceptanceCriteria: ["Automated criterion", "User Review"],
+      branch: "dev",
+      cwd: workspace.cwd,
+    });
+
+    expect(result.artifact.acceptanceCriteria).toHaveLength(2);
+    expect(result.artifact.acceptanceCriteria[1].text).toBe("User Review");
   });
 
   // @verifies ADR-9, RULE-34, RULE-35

@@ -174,6 +174,12 @@ export interface CreateTaskOptions {
    * If true, bypasses strict least-scope common ancestor enforcement when targetPaths are provided.
    */
   allowBroadScope?: boolean;
+
+  /**
+   * Whether to automatically include a 'User Review' acceptance criterion.
+   * Defaults to true unless explicitly set to false.
+   */
+  review?: boolean;
 }
 
 export interface CreateTaskResult {
