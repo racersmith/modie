@@ -3,171 +3,206 @@
  * Complies with RULE-25 and RULE-27.
  */
 
-import { handleFind } from "./commands/find/find.ts";
-import { handleRead } from "./commands/read/read.ts";
-import { handleScope } from "./commands/scope/scope.ts";
-import { handleReferences } from "./commands/references/references.ts";
-import { handleArchive } from "./commands/archive/archive.ts";
-import { handleLink, handleUnlink } from "./commands/link/index.ts";
-import {
-  handleRuleCreate,
-  handleRuleArchive,
-  handleRuleList,
-} from "./commands/rule/index.ts";
-import {
-  handleAdrCreate,
-  handleAdrArchive,
-  handleAdrList,
-} from "./commands/adr/index.ts";
-import {
-  handleTaskCheck,
-  handleTaskComplete,
-  handleTaskCreate,
-  handleTaskList,
-  handleTaskMerge,
-  handleTaskStart,
-  handleTaskStatus,
-} from "./commands/task/index.ts";
-import { handleMcp } from "./commands/mcp/index.ts";
+import { allCliCommands } from "./commands/index.ts";
+import { createCommandHandler } from "./framework/execute.ts";
+import type { CliCommandDefinition } from "./framework/types.ts";
 import type { CliIoOptions, CommandHandler } from "./types.ts";
 
 export const MODIE_VERSION = "0.1.0";
 
 export interface CommandNamespace {
-  help: (stderr: (msg: string) => void) => void;
+  name: string;
   commands: Record<string, CommandHandler>;
-  aliases?: Record<string, string>;
+  aliases: Record<string, string>;
+  commandDefs: CliCommandDefinition[];
+  help: (stderr: (msg: string) => void) => void;
+}
+
+export interface CliRouter {
+  directCommands: Record<string, CommandHandler>;
+  namespaces: Record<string, CommandNamespace>;
+  allCommands: CliCommandDefinition[];
 }
 
 /**
- * Prints global Modie CLI usage to stderr.
+ * Builds the CLI command dispatch table and namespace registry dynamically from declared commands.
  */
-export function printGlobalHelp(stderr: (msg: string) => void): void {
-  stderr(`Modie: Architectural Governance Engine & Context Compiler
+export function buildCliRouter(
+  commands: CliCommandDefinition[] = allCliCommands,
+): CliRouter {
+  const directCommands: Record<string, CommandHandler> = {};
+  const namespaces: Record<string, CommandNamespace> = {};
 
-Usage:
-  modie <command> [subcommand] [arguments] [options]
+  for (const cmd of commands) {
+    const handler = createCommandHandler(cmd);
 
-Commands:
-  find <tag> [options]         Find the file path of an artifact by tag
-  read <tag> [options]         Display artifact details or content
-  scope [target] [options]     Resolve architectural scope boundaries and rule chains
-  references <tag> [options]   Display citations and declared outbound links (alias: refs)
-  archive <tag> [options]      Archive a governance artifact (RULE, ADR)
-  link <source> <target>       Add a validated frontmatter link or dependency
-  unlink <source> <target>     Remove a frontmatter link or dependency
-  rule create <title>          Create a new RULE artifact
-  rule list [options]          List active RULE artifacts (alias: ls)
-  rule archive <tag>           Archive a RULE artifact
-  adr create <title>           Create a new ADR artifact
-  adr list [options]           List active ADR artifacts (alias: ls)
-  adr archive <tag>            Archive an ADR artifact
-  task create <title>          Create a new TASK artifact with automatic watermark resolution
-  task start <id>              Create and checkout a hierarchical task branch
-  task check <id> --item <n>   Check or uncheck an acceptance criteria item
-  task complete <id>           Complete a task and delete its artifact (alias: finish)
-  task merge <id>              Merge completed task branch back into parent or trunk
-  task list [options]          List active tasks with DAG readiness and progress
-  task status [id]             Inspect active queue or specific task status
-  backlog [options]            List active tasks with DAG readiness and progress (alias: task list)
-  mcp                          Launch Model Context Protocol server over standard I/O
-  help                         Show help for a command
-  version                      Show Modie version
+    if (cmd.namespace) {
+      const ns = (namespaces[cmd.namespace] ??= {
+        name: cmd.namespace,
+        commands: {},
+        aliases: {},
+        commandDefs: [],
+        help: (stderr) => printNamespaceHelp(cmd.namespace!, commands, stderr),
+      });
 
-Options:
-  -h, --help                   Show this help message
-  -v, --version                Show version
-`);
+      ns.commands[cmd.name] = handler;
+      ns.commandDefs.push(cmd);
+
+      if (cmd.aliases) {
+        for (const alias of cmd.aliases) {
+          ns.aliases[alias] = cmd.name;
+        }
+      }
+
+      if (cmd.rootAliases) {
+        for (const rootAlias of cmd.rootAliases) {
+          directCommands[rootAlias] = handler;
+        }
+      }
+    } else {
+      directCommands[cmd.name] = handler;
+
+      if (cmd.aliases) {
+        for (const alias of cmd.aliases) {
+          directCommands[alias] = handler;
+        }
+      }
+
+      if (cmd.rootAliases) {
+        for (const rootAlias of cmd.rootAliases) {
+          directCommands[rootAlias] = handler;
+        }
+      }
+    }
+  }
+
+  return { directCommands, namespaces, allCommands: commands };
 }
 
+/**
+ * Formats help text for a specific command namespace dynamically.
+ */
+export function printNamespaceHelp(
+  namespace: string,
+  commands: CliCommandDefinition[] | ((msg: string) => void) = allCliCommands,
+  maybeStderr?: (msg: string) => void,
+): void {
+  const stderr =
+    typeof commands === "function"
+      ? commands
+      : (maybeStderr ?? ((msg: string) => process.stderr.write(msg + "\n")));
+  const commandList = Array.isArray(commands) ? commands : allCliCommands;
+
+  const nsCommands = commandList.filter((cmd) => cmd.namespace === namespace);
+  const rows: Array<{ invocation: string; description: string }> = [];
+
+  for (const cmd of nsCommands) {
+    const summary = cmd.summaryUsage ? ` ${cmd.summaryUsage}` : "";
+    const invocation = `${cmd.name}${summary}`;
+    let desc = cmd.description ?? "";
+    if (cmd.aliases && cmd.aliases.length > 0) {
+      desc += ` (alias: ${cmd.aliases.join(", ")})`;
+    }
+    rows.push({ invocation, description: desc });
+  }
+
+  const padWidth = Math.max(29, ...rows.map((r) => r.invocation.length + 2));
+  const lines: string[] = [
+    `Usage: modie ${namespace} <subcommand> [options]`,
+    "",
+    "Subcommands:",
+    ...rows.map(
+      (r) => `  ${r.invocation.padEnd(padWidth)}${r.description}`,
+    ),
+    "",
+  ];
+
+  stderr(lines.join("\n"));
+}
+
+/**
+ * Prints task namespace usage to stderr.
+ */
 export function printTaskNamespaceHelp(stderr: (msg: string) => void): void {
-  stderr(`Usage: modie task <subcommand> [options]
-
-Subcommands:
-  create <title>               Create a new TASK artifact
-  start <id> [options]         Create and checkout a hierarchical task branch
-  check <id> --item <n>        Check or uncheck an acceptance criteria item
-  complete <id>                Verify criteria and delete completed task (alias: finish)
-  merge <id> [options]         Merge completed task branch back into parent or trunk
-  list [options]               List active tasks with DAG readiness and progress (alias: ls, backlog)
-  status [id] [options]        Inspect active queue or specific task status
-`);
+  printNamespaceHelp("task", allCliCommands, stderr);
 }
 
+/**
+ * Prints rule namespace usage to stderr.
+ */
 export function printRuleNamespaceHelp(stderr: (msg: string) => void): void {
-  stderr(`Usage: modie rule <subcommand> [options]
-
-Subcommands:
-  create <title>               Create a new RULE artifact
-  list [options]               List active RULE artifacts (alias: ls)
-  archive <tag> [options]      Archive a RULE artifact
-`);
+  printNamespaceHelp("rule", allCliCommands, stderr);
 }
 
+/**
+ * Prints ADR namespace usage to stderr.
+ */
 export function printAdrNamespaceHelp(stderr: (msg: string) => void): void {
-  stderr(`Usage: modie adr <subcommand> [options]
-
-Subcommands:
-  create <title>               Create a new ADR artifact
-  list [options]               List active ADR artifacts (alias: ls)
-  archive <tag> [options]      Archive an ADR artifact
-`);
+  printNamespaceHelp("adr", allCliCommands, stderr);
 }
 
-const directCommands: Record<string, CommandHandler> = {
-  find: handleFind,
-  read: handleRead,
-  scope: handleScope,
-  references: handleReferences,
-  refs: handleReferences,
-  archive: handleArchive,
-  link: handleLink,
-  unlink: handleUnlink,
-  backlog: handleTaskList,
-  mcp: handleMcp,
-};
+/**
+ * Prints global Modie CLI usage dynamically from declared command registry to stderr.
+ */
+export function printGlobalHelp(
+  stderr: (msg: string) => void = (msg: string) => process.stderr.write(msg + "\n"),
+  commands: CliCommandDefinition[] = allCliCommands,
+): void {
+  const rows: Array<{ invocation: string; description: string }> = [];
 
-const namespaces: Record<string, CommandNamespace> = {
-  task: {
-    help: printTaskNamespaceHelp,
-    commands: {
-      create: handleTaskCreate,
-      start: handleTaskStart,
-      check: handleTaskCheck,
-      complete: handleTaskComplete,
-      merge: handleTaskMerge,
-      list: handleTaskList,
-      status: handleTaskStatus,
-    },
-    aliases: {
-      ls: "list",
-      finish: "complete",
-      backlog: "list",
-    },
-  },
-  rule: {
-    help: printRuleNamespaceHelp,
-    commands: {
-      create: handleRuleCreate,
-      list: handleRuleList,
-      archive: handleRuleArchive,
-    },
-    aliases: {
-      ls: "list",
-    },
-  },
-  adr: {
-    help: printAdrNamespaceHelp,
-    commands: {
-      create: handleAdrCreate,
-      list: handleAdrList,
-      archive: handleAdrArchive,
-    },
-    aliases: {
-      ls: "list",
-    },
-  },
-};
+  for (const cmd of commands) {
+    const summary = cmd.summaryUsage ? ` ${cmd.summaryUsage}` : "";
+    const namePrefix = cmd.namespace ? `${cmd.namespace} ` : "";
+    const invocation = `${namePrefix}${cmd.name}${summary}`;
+    let desc = cmd.description ?? "";
+    if (cmd.aliases && cmd.aliases.length > 0) {
+      desc += ` (alias: ${cmd.aliases.join(", ")})`;
+    }
+    rows.push({ invocation, description: desc });
+
+    if (cmd.rootAliases) {
+      for (const rootAlias of cmd.rootAliases) {
+        const rootSummary = cmd.summaryUsage ? ` ${cmd.summaryUsage}` : "";
+        const aliasInvocation = `${rootAlias}${rootSummary}`;
+        const targetCommand = `${namePrefix}${cmd.name}`;
+        const aliasDesc = `${cmd.description ?? ""} (alias: ${targetCommand})`;
+        rows.push({ invocation: aliasInvocation, description: aliasDesc });
+      }
+    }
+  }
+
+  rows.push({ invocation: "help", description: "Show help for a command" });
+  rows.push({ invocation: "version", description: "Show Modie version" });
+
+  const padWidth = Math.max(29, ...rows.map((r) => r.invocation.length + 2));
+  const lines: string[] = [
+    "Modie: Architectural Governance Engine & Context Compiler",
+    "",
+    "Usage:",
+    "  modie <command> [subcommand] [arguments] [options]",
+    "",
+    "Commands:",
+    ...rows.map(
+      (r) => `  ${r.invocation.padEnd(padWidth)}${r.description}`,
+    ),
+    "",
+    "Options:",
+    "  -h, --help                   Show this help message",
+    "  -v, --version                Show version",
+    "",
+  ];
+
+  stderr(lines.join("\n"));
+}
+
+let defaultRouter: CliRouter | null = null;
+
+function getDefaultRouter(): CliRouter {
+  if (!defaultRouter) {
+    defaultRouter = buildCliRouter(allCliCommands);
+  }
+  return defaultRouter;
+}
 
 /**
  * Main CLI entrypoint router.
@@ -175,11 +210,14 @@ const namespaces: Record<string, CommandNamespace> = {
 export async function runCli(
   args: string[],
   options: CliIoOptions = {},
+  commands?: CliCommandDefinition[],
 ): Promise<number> {
   const stdout =
     options.stdout ?? ((msg: string) => process.stdout.write(msg + "\n"));
   const stderr =
     options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
+
+  const cmdList = commands ?? allCliCommands;
 
   if (
     args.length === 0 ||
@@ -187,7 +225,7 @@ export async function runCli(
     args[0] === "--help" ||
     args[0] === "help"
   ) {
-    printGlobalHelp(stderr);
+    printGlobalHelp(stderr, cmdList);
     return 0;
   }
 
@@ -196,16 +234,17 @@ export async function runCli(
     return 0;
   }
 
+  const router = commands ? buildCliRouter(commands) : getDefaultRouter();
   const [command, ...subArgs] = args;
 
-  // Direct root commands (find, read)
-  const directHandler = directCommands[command!];
+  // Direct root commands (find, read, references, refs, backlog, mcp, etc.)
+  const directHandler = router.directCommands[command!];
   if (directHandler) {
     return directHandler(subArgs, options);
   }
 
-  // Namespaced command groups (task, rule)
-  const ns = namespaces[command!];
+  // Namespaced command groups (task, rule, adr)
+  const ns = router.namespaces[command!];
   if (ns) {
     if (
       subArgs.length === 0 ||
@@ -218,7 +257,7 @@ export async function runCli(
     }
 
     const [rawSubcommand, ...cmdArgs] = subArgs;
-    const subcommand = ns.aliases?.[rawSubcommand!] ?? rawSubcommand!;
+    const subcommand = ns.aliases[rawSubcommand!] ?? rawSubcommand!;
     const handler = ns.commands[subcommand];
 
     if (handler) {

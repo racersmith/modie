@@ -50,6 +50,7 @@ import {
   taskMergeCommand,
   handleTaskMerge,
 } from "./task/index.ts";
+import { mcpCommand, handleMcp } from "./mcp/index.ts";
 
 export * from "./find/index.ts";
 export * from "./read/index.ts";
@@ -60,6 +61,7 @@ export * from "./link/index.ts";
 export * from "./rule/index.ts";
 export * from "./adr/index.ts";
 export * from "./task/index.ts";
+export * from "./mcp/index.ts";
 
 /**
  * Complete list of all registered declarative commands.
@@ -74,16 +76,17 @@ export const allCliCommands: CliCommandDefinition<any, any, any>[] = [
   linkCommand,
   unlinkCommand,
   ruleCreateCommand,
-  ruleArchiveCommand,
   ruleListCommand,
+  ruleArchiveCommand,
   adrCreateCommand,
-  adrArchiveCommand,
   adrListCommand,
+  adrArchiveCommand,
   taskCreateCommand,
-  taskListCommand,
-  taskStatusCommand,
-  taskCheckCommand,
   taskStartCommand,
+  taskCheckCommand,
   taskCompleteCommand,
   taskMergeCommand,
+  taskListCommand,
+  taskStatusCommand,
+  mcpCommand,
 ];

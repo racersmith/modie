@@ -37,8 +37,7 @@ export function computeAncestralScopes(
   const segments = targetScope.split("/").filter(Boolean);
   let accumulated = "";
 
-  for (let i = 0; i < segments.length; i++) {
-    const seg = segments[i];
+  for (const seg of segments) {
     accumulated = accumulated ? `${accumulated}/${seg}` : seg;
     const abs = resolve(normCwd, accumulated);
     const modieDir = join(abs, ".modie");

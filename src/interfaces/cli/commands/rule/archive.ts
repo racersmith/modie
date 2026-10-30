@@ -36,10 +36,11 @@ export const ruleArchiveCommand: CliCommandDefinition<
   typeof ruleArchiveSchema
 > = defineCommand({
   id: "rule_archive",
+  namespace: "rule",
   name: "archive",
+  summaryUsage: "<tag>",
   usage: "modie rule archive <tag-or-path> [options]",
-  description:
-    "Archive a RULE artifact enforcing zero active incoming references (alias for 'modie archive')",
+  description: "Archive a RULE artifact",
   agentGuidance:
     "Call this tool to archive an invariant RULE. Verifies that zero active artifacts reference it before renaming to *.ARCHIVED.md.",
   helpUsage: "modie rule archive --help",

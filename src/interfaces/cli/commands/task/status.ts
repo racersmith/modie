@@ -53,10 +53,11 @@ export const taskStatusCommand: CliCommandDefinition<
   typeof taskStatusSchema
 > = defineCommand({
   id: "task_status",
+  namespace: "task",
   name: "status",
+  summaryUsage: "[id]",
   usage: "modie task status [id-or-path] [options]",
-  description:
-    "Inspect active task queue status or deep inspection of a specific task.",
+  description: "Inspect active queue or specific task status",
   agentGuidance:
     "Call this tool to inspect detailed progress, dependencies, blockers, and acceptance criteria checklist for a specific task.",
   helpUsage: "modie task status --help",

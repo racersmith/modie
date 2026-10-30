@@ -60,9 +60,9 @@ export const linkCommand: CliCommandDefinition<
 > = defineCommand({
   id: "link_artifact",
   name: "link",
+  summaryUsage: "<source> <target>",
   usage: "modie link <source> <target> [options]",
-  description:
-    "Add a validated frontmatter link or dependency from a source artifact to a target artifact",
+  description: "Add a validated frontmatter link or dependency",
   agentGuidance:
     "Call this tool to add a frontmatter 'links' reference or 'depends_on' task dependency between two artifacts. Automatically infers 'depends_on' for task-to-task edges and 'links' for governance references, while strictly enforcing subtype compatibility, spatial ancestry/subtree scoping, and DAG acyclicity.",
   helpUsage: "modie link --help",

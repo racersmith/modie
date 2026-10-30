@@ -12,8 +12,8 @@ While the MCP server dynamically projects tools by iterating over allCliCommands
 
 # Acceptance Criteria
 
-- [ ] Derive root CLI dispatch table and namespace subcommand routing dynamically from allCliCommands registry
-- [ ] Generate printGlobalHelp usage text dynamically using command metadata (name, description, aliases)
-- [ ] Eliminate manual command routing dictionaries in src/interfaces/cli/cli.ts
-- [ ] Verify help emission, root command dispatch, namespace subcommand dispatch, and unknown command handling across CLI test suites
-- [ ] User Review
+- [x] Derive root CLI dispatch table and namespace subcommand routing dynamically from allCliCommands registry
+- [x] Generate printGlobalHelp usage text dynamically using command metadata (name, description, aliases)
+- [x] Eliminate manual command routing dictionaries in src/interfaces/cli/cli.ts
+- [x] Verify help emission, root command dispatch, namespace subcommand dispatch, and unknown command handling across CLI test suites
+- [x] User Review

@@ -136,9 +136,12 @@ export const taskCreateCommand: CliCommandDefinition<
   typeof taskCreateSchema
 > = defineCommand({
   id: "task_create",
+  namespace: "task",
   name: "create",
+  summaryUsage: "<title>",
   usage: "modie task create <title> [options]",
-  description: "Create a new TASK artifact",
+  description:
+    "Create a new TASK artifact with automatic watermark resolution",
   agentGuidance:
     "Call this tool to generate a new TASK artifact with automatic sequence watermark resolution, link validation, and least-scope directory placement.\n\n" +
     "TASK AUTHORING BEST PRACTICES & INVARIANTS:\n" +

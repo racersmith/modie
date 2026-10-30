@@ -68,10 +68,12 @@ export const ruleListCommand: CliCommandDefinition<
   typeof ruleListSchema
 > = defineCommand({
   id: "rule_list",
+  namespace: "rule",
   name: "list",
+  aliases: ["ls"],
+  summaryUsage: "[options]",
   usage: "modie rule list [options]",
-  description:
-    "List active RULE artifacts with titles, tags, relative paths, and links.",
+  description: "List active RULE artifacts",
   agentGuidance:
     "Call this tool to discover active governance rules across the repository or governing a specific directory scope (honoring ancestral scope traversal per RULE-9).",
   helpUsage: "modie rule list --help",

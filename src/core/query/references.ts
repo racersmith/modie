@@ -673,6 +673,7 @@ export async function findArtifactReferences(
       filename: details.filename,
       filepath: details.filepath,
       relativePath: details.relativePath,
+      scope: details.scope,
       isArchived: details.isArchived,
     },
     linksTo,

@@ -47,9 +47,9 @@ export const archiveCommand: CliCommandDefinition<
 > = defineCommand({
   id: "archive",
   name: "archive",
+  summaryUsage: "<tag> [options]",
   usage: "modie archive <tag-or-path> [options]",
-  description:
-    "Archive an indexable governance artifact (ADR, RULE) enforcing zero active incoming references",
+  description: "Archive a governance artifact (RULE, ADR)",
   agentGuidance:
     "Call this tool to archive a superseded governance artifact (ADR or RULE). Verifies that zero active artifacts reference it before renaming to *.ARCHIVED.md.",
   helpUsage: "modie archive --help",

@@ -138,6 +138,29 @@ export interface CliCommandDefinition<
   name: string;
 
   /**
+   * Optional logical namespace for grouping subcommands (e.g. "task", "rule", "adr").
+   * Omitted for root-level direct commands.
+   */
+  namespace?: string;
+
+  /**
+   * Command name aliases within its namespace or root scope (e.g. ["ls"] for "list", ["finish"] for "complete").
+   */
+  aliases?: string[];
+
+  /**
+   * Top-level root command aliases that route directly to this command
+   * (e.g. ["backlog"] routing directly to `task list`).
+   */
+  rootAliases?: string[];
+
+  /**
+   * Short argument summary used when formatting command tables in help outputs
+   * (e.g. "<title>", "<tag> [options]", "<id> --item <n>").
+   */
+  summaryUsage?: string;
+
+  /**
    * Canonical action identifier (e.g. "task_create", "find").
    * Used as the tool name when projected into protocol interfaces (MCP).
    */

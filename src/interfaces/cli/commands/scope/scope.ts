@@ -100,9 +100,9 @@ export const scopeCommand: CliCommandDefinition<
 > = defineCommand({
   id: "scope",
   name: "scope",
+  summaryUsage: "[target] [options]",
   usage: "modie scope [target-or-identifier] [options]",
-  description:
-    "Resolve architectural scope boundaries, enclosing .modie root, and ancestral rule chains.",
+  description: "Resolve architectural scope boundaries and rule chains",
   agentGuidance:
     "Call this tool to bidirectionally resolve architectural scope boundaries, enclosing .modie root, ancestral governance rules, and active tasks for an artifact tag or codebase path.",
   helpUsage: "modie scope --help",

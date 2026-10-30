@@ -70,7 +70,9 @@ export const ruleCreateCommand: CliCommandDefinition<
   typeof ruleCreateSchema
 > = defineCommand({
   id: "rule_create",
+  namespace: "rule",
   name: "create",
+  summaryUsage: "<title>",
   usage: "modie rule create <title> [options]",
   description: "Create a new RULE artifact",
   agentGuidance:

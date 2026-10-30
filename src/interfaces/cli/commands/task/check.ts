@@ -54,7 +54,9 @@ export const taskCheckCommand: CliCommandDefinition<
   typeof taskCheckSchema
 > = defineCommand({
   id: "task_check",
+  namespace: "task",
   name: "check",
+  summaryUsage: "<id> --item <n>",
   usage: "modie task check [id-or-path] --item <index> [options]",
   description: "Check or uncheck an acceptance criteria item",
   agentGuidance:

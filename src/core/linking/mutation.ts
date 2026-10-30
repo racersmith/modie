@@ -285,6 +285,7 @@ export async function unlinkArtifact(
       filename: `${parsedTag.tag.toLowerCase()}.${parsedTag.tag}.md`,
       filepath: "",
       relativePath: "",
+      scope: ".",
       isArchived: false,
     };
   }

@@ -59,9 +59,10 @@ export const referencesCommandDefinition: CliCommandDefinition<
 > = defineCommand({
   id: "references",
   name: "references",
+  aliases: ["refs"],
+  summaryUsage: "<tag> [options]",
   usage: "modie references <tag> [options] (alias: refs)",
-  description:
-    "Discover all citations found across governance, code, and tests ('Found In') and declared outbound links ('Links To').",
+  description: "Display citations and declared outbound links",
   helpUsage: "modie references --help",
   schema: referencesSchema,
   positionals: [
