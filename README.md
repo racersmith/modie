@@ -87,7 +87,7 @@ Modie ships an MCP server, so Claude Code, Gemini/Antigravity, Cursor, Windsurf 
 task_list  →  task_start  →  (work, task_check as criteria pass)  →  task_complete  →  task_merge
 ```
 
-The agent can also author `rule_create` / `adr_create` when it discovers a convention worth keeping, and look up what exists with `find`, `show`, and `references`. The server also exposes read-only resources (`modie://tasks/ready`, `modie://rules`, `modie://instructions`) so agents can orient themselves cheaply. Tool output is intentionally terse, since tokens are the budget.
+The agent can also author `rule_create` / `adr_create` when it discovers a convention worth keeping, and look up what exists with `find`, `read`, and `references`. The server also exposes read-only resources (`modie://tasks/ready`, `modie://rules`, `modie://instructions`) so agents can orient themselves cheaply. Tool output is intentionally terse, since tokens are the budget.
 
 ```json
 {
@@ -158,7 +158,7 @@ modie archive RULE-3                # refuses if still cited
 
 # Discovery
 modie find "references-scanner"
-modie show RULE-34
+modie read RULE-34
 modie references ADR-6
 ```
 
@@ -170,7 +170,7 @@ modie references ADR-6
 | `task_create` / `task_start` / `task_check` / `task_complete` / `task_merge` | The task lifecycle                                |
 | `rule_create` / `adr_create`                                                 | Author governance                                 |
 | `rule_archive` / `adr_archive` / `archive`                                   | Retire governance with citation checks            |
-| `find` / `show` / `references`                                               | Look things up                                    |
+| `find` / `read` / `references`                                               | Look things up                                    |
 
 ---
 

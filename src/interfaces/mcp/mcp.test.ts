@@ -87,7 +87,8 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     const toolNames = response.tools.map((t) => t.name);
 
     expect(toolNames).toContain("find");
-    expect(toolNames).toContain("show");
+    expect(toolNames).toContain("read");
+    expect(toolNames).not.toContain("show");
     expect(toolNames).toContain("references");
     expect(toolNames).toContain("archive");
     expect(toolNames).toContain("link_artifact");
@@ -184,27 +185,28 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     expect(status.criteriaProgress).toBe("1/2");
   });
 
-  it("[RULE-26] should enforce token economy by omitting unsolicited rawContent in show tool", async () => {
-    // 1. Without raw flag: rawContent must be omitted
-    const normalShow = await client.callTool({
-      name: "show",
+  it("[RULE-26] should enforce token economy by omitting unsolicited rawContent and delivering scope in read tool", async () => {
+    // 1. Without raw flag: rawContent must be omitted, scope must be present
+    const normalRead = await client.callTool({
+      name: "read",
       arguments: { tag: task101Tag },
     });
 
-    expect(normalShow.isError).toBeFalsy();
-    const normalData = JSON.parse(getTextContent(normalShow));
+    expect(normalRead.isError).toBeFalsy();
+    const normalData = JSON.parse(getTextContent(normalRead));
     expect(normalData.tag).toBe(task101Tag);
     expect(normalData.slug).toBe("sample-ready");
+    expect(normalData.scope).toBe(".");
     expect(normalData.rawContent).toBeUndefined(); // Token economy enforced!
 
     // 2. With raw flag: rawContent is solicited, therefore returned
-    const rawShow = await client.callTool({
-      name: "show",
+    const rawRead = await client.callTool({
+      name: "read",
       arguments: { tag: task101Tag, raw: true },
     });
 
-    expect(rawShow.isError).toBeFalsy();
-    const rawData = JSON.parse(getTextContent(rawShow));
+    expect(rawRead.isError).toBeFalsy();
+    const rawData = JSON.parse(getTextContent(rawRead));
     expect(rawData.rawContent).toBeDefined();
     expect(rawData.rawContent).toContain("# Acceptance Criteria");
   });

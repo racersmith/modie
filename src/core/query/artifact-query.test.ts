@@ -122,6 +122,7 @@ describe("Artifact Query Service - Resolution by Tag (RULE-25, RULE-29, RULE-34,
     expect(resolvedRule.id).toBe("50");
     expect(resolvedRule.slug).toBe("sample-rule");
     expect(resolvedRule.filepath).toBe(rule.filepath);
+    expect(resolvedRule.scope).toBe(".");
     expect(resolvedRule.isArchived).toBe(false);
 
     const resolvedAdr = await resolveArtifactByTag(adrTag.toLowerCase(), {
@@ -130,6 +131,7 @@ describe("Artifact Query Service - Resolution by Tag (RULE-25, RULE-29, RULE-34,
     expect(resolvedAdr.tag).toBe(adrTag);
     expect(resolvedAdr.subtype).toBe("ADR");
     expect(resolvedAdr.filepath).toBe(adr.filepath);
+    expect(resolvedAdr.scope).toBe(".");
 
     const resolvedTask = await resolveArtifactByTag(taskTag, {
       cwd: workspace.cwd,
@@ -137,6 +139,7 @@ describe("Artifact Query Service - Resolution by Tag (RULE-25, RULE-29, RULE-34,
     expect(resolvedTask.tag).toBe(taskTag);
     expect(resolvedTask.subtype).toBe("TASK");
     expect(resolvedTask.filepath).toBe(task.filepath);
+    expect(resolvedTask.scope).toBe(".");
   });
 
   // @verifies RULE-1, RULE-29, RULE-34, RULE-35
@@ -310,6 +313,7 @@ describe("Artifact Query Service - Deep Inspection (RULE-26, RULE-29, RULE-34, R
     });
     expect(details.tag).toBe(targetAdrTag);
     expect(details.subtype).toBe("ADR");
+    expect(details.scope).toBe(".");
     expect(details.links).toEqual([linkRuleTag, linkAdrTag]);
     expect(details.context).toBe("Context explanation text.");
     expect(details.sections["Context"]).toBe("Context explanation text.");
@@ -317,6 +321,27 @@ describe("Artifact Query Service - Deep Inspection (RULE-26, RULE-29, RULE-34, R
       "Alternative A and Alternative B.",
     );
     expect(details.sections["Decision"]).toBe("We decided on solution X.");
+  });
+
+  // @verifies RULE-8, RULE-12, RULE-25, RULE-29, RULE-34
+  it("[RULE-8][RULE-12][RULE-25][RULE-29][RULE-34] should resolve governing directory scope for scoped artifacts", async () => {
+    const scopedRule = await workspace.createArtifact({
+      subtype: "RULE",
+      id: "TEST-SCOPE-1",
+      slug: "scoped-rule",
+      subDir: "src/interfaces/cli/.modie/rules",
+      body: "Scoped rule content",
+    });
+
+    const resolved = await resolveArtifactByTag(scopedRule.tag, {
+      cwd: workspace.cwd,
+    });
+    expect(resolved.scope).toBe("src/interfaces/cli");
+
+    const details = await getArtifactDetails(scopedRule.tag, {
+      cwd: workspace.cwd,
+    });
+    expect(details.scope).toBe("src/interfaces/cli");
   });
 
   // @verifies RULE-22, RULE-26, RULE-29, RULE-34, RULE-35

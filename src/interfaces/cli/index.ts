@@ -5,7 +5,7 @@
 
 export * from "./types.ts";
 export * from "./commands/find/index.ts";
-export * from "./commands/show/index.ts";
+export * from "./commands/read/index.ts";
 export * from "./commands/task/index.ts";
 export * from "./commands/rule/index.ts";
 export * from "./commands/references/index.ts";

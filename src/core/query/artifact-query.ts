@@ -4,7 +4,8 @@
  */
 
 import { readFile, stat } from "node:fs/promises";
-import { isAbsolute, relative, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { resolveArtifactDirectories } from "../common/directories.ts";
 import { parseArtifactFilename } from "../common/filename.ts";
 import type { IndexableSubtype } from "../common/types.ts";
 import { scanActiveArtifacts } from "../resolver/active-scanner.ts";
@@ -55,6 +56,25 @@ export function parseCanonicalTag(
 }
 
 /**
+ * Resolves the governing codebase directory scope relative to cwd (RULE-8, RULE-12).
+ * Returns the directory containing the artifact's .modie container relative to workspace root.
+ */
+function computeArtifactScope(
+  filepath: string,
+  subtype: IndexableSubtype,
+  cwd: string,
+): string {
+  const { normalizedScopeDir } = resolveArtifactDirectories(
+    subtype,
+    dirname(filepath),
+    true,
+    cwd,
+  );
+  const rel = relative(cwd, normalizedScopeDir).replace(/\\/g, "/");
+  return rel === "" ? "." : rel;
+}
+
+/**
  * Resolves an indexable artifact (RULE, ADR, or TASK) by its canonical tag,
  * filename, or filepath across the repository workspace.
  *
@@ -81,7 +101,12 @@ export async function resolveArtifactByTag(
     try {
       const fileStat = await stat(candidatePath);
       if (fileStat.isFile()) {
-        const rel = relative(cwd, candidatePath);
+        const rel = relative(cwd, candidatePath).replace(/\\/g, "/");
+        const scope = computeArtifactScope(
+          candidatePath,
+          parsedFromPath.subtype,
+          cwd,
+        );
         return {
           tag: parsedFromPath.tag,
           subtype: parsedFromPath.subtype,
@@ -90,6 +115,7 @@ export async function resolveArtifactByTag(
           filename: parsedFromPath.filename,
           filepath: candidatePath,
           relativePath: rel,
+          scope,
           isArchived: parsedFromPath.isArchived,
         };
       }
@@ -130,6 +156,7 @@ export async function resolveArtifactByTag(
     const activeMatch = matches.find((a) => !a.isArchived);
     const selected = activeMatch ?? matches[0]!;
 
+    const scope = computeArtifactScope(selected.filepath, selected.subtype, cwd);
     return {
       tag: selected.tag,
       subtype: selected.subtype,
@@ -137,7 +164,8 @@ export async function resolveArtifactByTag(
       slug: selected.slug,
       filename: selected.filename,
       filepath: selected.filepath,
-      relativePath: relative(cwd, selected.filepath),
+      relativePath: relative(cwd, selected.filepath).replace(/\\/g, "/"),
+      scope,
       isArchived: selected.isArchived,
     };
   }
@@ -214,6 +242,7 @@ export async function resolveArtifactByTag(
         ? selectedHist.filepath
         : resolve(cwd, relPath);
 
+      const scope = computeArtifactScope(absPath, selectedHist.subtype, cwd);
       return {
         tag: selectedHist.tag,
         subtype: selectedHist.subtype,
@@ -221,7 +250,8 @@ export async function resolveArtifactByTag(
         slug,
         filename,
         filepath: absPath,
-        relativePath: relPath,
+        relativePath: relPath.replace(/\\/g, "/"),
+        scope,
         isArchived: selectedHist.isArchived,
         isHistorical: true,
       };
