@@ -145,12 +145,6 @@ export interface CreateTaskOptions {
   plannedGovernance?: PlannedGovernanceDeclaration;
 
   /**
-   * Whether to place in a `.tasks/` subtype container directory (RULE-8).
-   * Defaults to true.
-   */
-  useSubtypeContainer?: boolean;
-
-  /**
    * Workspace root directory. Defaults to process.cwd().
    */
   cwd?: string;

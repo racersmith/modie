@@ -17,7 +17,6 @@ describe("Rule Creation - Scope & Directory Resolution (RULE-8)", () => {
   it("[RULE-8] should resolve target container inside normalized scope", () => {
     const { normalizedScopeDir, targetDir } = resolveRuleDirectories(
       "src/interfaces",
-      true,
       "/mock/root",
     );
     expect(normalizedScopeDir).toBe("/mock/root/src/interfaces");
@@ -28,33 +27,10 @@ describe("Rule Creation - Scope & Directory Resolution (RULE-8)", () => {
   it("[RULE-8] should strip .modie/rules container when already present in input", () => {
     const { normalizedScopeDir, targetDir } = resolveRuleDirectories(
       "src/interfaces/.modie/rules",
-      true,
       "/mock/root",
     );
     expect(normalizedScopeDir).toBe("/mock/root/src/interfaces");
     expect(targetDir).toBe("/mock/root/src/interfaces/.modie/rules");
-  });
-
-  // @verifies RULE-8
-  it("[RULE-8] should strip legacy .rules container when already present in input", () => {
-    const { normalizedScopeDir, targetDir } = resolveRuleDirectories(
-      "src/interfaces/.rules",
-      true,
-      "/mock/root",
-    );
-    expect(normalizedScopeDir).toBe("/mock/root/src/interfaces");
-    expect(targetDir).toBe("/mock/root/src/interfaces/.rules");
-  });
-
-  // @verifies RULE-8
-  it("[RULE-8] should return flat directory when useSubtypeContainer is false", () => {
-    const { normalizedScopeDir, targetDir } = resolveRuleDirectories(
-      "src/interfaces",
-      false,
-      "/mock/root",
-    );
-    expect(normalizedScopeDir).toBe("/mock/root/src/interfaces");
-    expect(targetDir).toBe("/mock/root/src/interfaces");
   });
 });
 
@@ -117,7 +93,7 @@ describe("Rule Creation - Frontmatter Validation & Ancestry (RULE-13, RULE-16, R
       id: 102,
       slug: "core-decision",
       context: "Core decision ADR",
-      subDir: "src/core/.adrs",
+      subDir: "src/core/.modie/adrs",
     });
 
     // Rule scoped in workspace.cwd/src/interfaces
@@ -138,7 +114,7 @@ describe("Rule Creation - Frontmatter Validation & Ancestry (RULE-13, RULE-16, R
       id: 103,
       slug: "cli-decision",
       context: "CLI decision ADR",
-      subDir: "src/interfaces/cli/.adrs",
+      subDir: "src/interfaces/cli/.modie/adrs",
     });
 
     // Rule scoped at workspace.cwd/src/interfaces (parent of CLI)
@@ -190,31 +166,6 @@ describe("Rule Creation - Execution & Disk Writing (RULE-1, RULE-3, RULE-8, RULE
     expect(result2.filename).toBe(
       `second-invariant-rule.${expectedRule2Tag}.md`,
     );
-
-    await workspace.cleanup();
-  });
-
-  // @verifies RULE-8, RULE-34
-  it("[RULE-8][RULE-34] should create flat rule file when useSubtypeContainer is false", async () => {
-    const workspace = await createFixtureWorkspace("rule-flat-");
-    const expectedRule1Tag = makeTestTag("RULE", 1);
-
-    const result = await createRule({
-      title: "Flat Invariant Rule",
-      assertion: "Flat placement rule assertion.",
-      useSubtypeContainer: false,
-      cwd: workspace.cwd,
-    });
-
-    expect(result.relativePath).toBe(
-      `flat-invariant-rule.${expectedRule1Tag}.md`,
-    );
-    expect(result.filepath).toBe(
-      workspace.resolve(`flat-invariant-rule.${expectedRule1Tag}.md`),
-    );
-
-    const onDisk = await workspace.readFile(result.filepath);
-    expect(onDisk).toBe("Flat placement rule assertion.\n");
 
     await workspace.cleanup();
   });

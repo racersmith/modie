@@ -74,10 +74,9 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
     expect(parsed.assertion).toBe("JSON payload must go to stdout.");
   });
 
-  // @verifies RULE-8
-  it("[RULE-8] should support --flat flag to create file without .modie/rules directory", async () => {
+  // @verifies RULE-8, ADR-12
+  it("[RULE-8][ADR-12] should reject retired --flat flag with error to stderr", async () => {
     await using workspace = await createTestWorkspace("modie-cli-rule-flat-");
-    const expectedTag = makeTestTag("RULE", 1);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "rule",
       "create",
@@ -85,9 +84,9 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
       "--flat",
     ]);
 
-    expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(`flat-file-rule.${expectedTag}.md`);
-    expect(stderr).toContain(`✓ Created rule ${expectedTag}`);
+    expect(exitCode).toBe(1);
+    expect(stdout).toBe("");
+    expect(stderr).toContain('Error: Unknown flag "--flat"');
   });
 
   // @verifies RULE-13, RULE-16

@@ -40,7 +40,7 @@ export async function validateAdrScope(
 
     const ruleDir = dirname(rule.filepath);
     const { normalizedScopeDir: ruleNormalizedScope } =
-      resolveArtifactDirectories("RULE", ruleDir, true, cwd);
+      resolveArtifactDirectories("RULE", ruleDir, cwd);
 
     const relFromAdrToRule = relative(normalizedScopeDir, ruleNormalizedScope);
     const isDescendantOrEqual =

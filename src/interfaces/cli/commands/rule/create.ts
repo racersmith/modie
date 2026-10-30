@@ -35,10 +35,6 @@ export const ruleCreateSchema = z.object({
     .describe(
       "Target RULE tag(s) superseded by this rule (repeat flag or use comma-separated list)",
     ),
-  flat: z
-    .boolean()
-    .default(false)
-    .describe("Create flat rule file without .rules container"),
 });
 
 export type RuleCreateInput = z.infer<typeof ruleCreateSchema>;
@@ -50,7 +46,6 @@ export interface RuleCreateFlags {
   link?: string[];
   links?: string[];
   supersedes?: string[];
-  flat?: boolean;
 }
 
 export interface RuleCreateResultPayload {
@@ -128,10 +123,6 @@ export const ruleCreateCommand: CliCommandDefinition<
         "Target RULE tag(s) superseded by this rule (repeat flag or use comma-separated list)",
       property: "supersedes",
     },
-    flat: {
-      type: "boolean",
-      description: "Create flat rule file without .rules container",
-    },
   },
   execute: async (input, context): Promise<RuleCreateResultPayload> => {
     const ruleOptions: CreateRuleOptions = {
@@ -140,7 +131,6 @@ export const ruleCreateCommand: CliCommandDefinition<
       context: input.context,
       links: input.links.length > 0 ? input.links : undefined,
       supersedes: input.supersedes.length > 0 ? input.supersedes : undefined,
-      useSubtypeContainer: !input.flat,
       cwd: context.cwd,
     };
 

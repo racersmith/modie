@@ -138,3 +138,4 @@ export const handleScope: (
 export function printScopeHelp(stderr: (msg: string) => void): void {
   stderr(generateCommandHelp(scopeCommand));
 }
+
