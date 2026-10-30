@@ -115,7 +115,7 @@ describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, AD
   it("[RULE-1][RULE-35][ADR-1][ADR-2] should parse valid filenames across all subtypes", () => {
     const rule29Tag = makeTestTag("RULE", 29);
     const parsedRule = parseArtifactFilename(
-      `src/.rules/artifact-tag-resolution.${rule29Tag}.md`,
+      `src/.modie/rules/artifact-tag-resolution.${rule29Tag}.md`,
     );
     expect(parsedRule).not.toBeNull();
     expect(parsedRule?.slug).toBe("artifact-tag-resolution");
@@ -126,7 +126,7 @@ describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, AD
 
     const adr6Tag = makeTestTag("ADR", 6);
     const parsedAdr = parseArtifactFilename(
-      `src/.adrs/ephemeral-task-lifecycle.${adr6Tag}.md`,
+      `src/.modie/adrs/ephemeral-task-lifecycle.${adr6Tag}.md`,
     );
     expect(parsedAdr).not.toBeNull();
     expect(parsedAdr?.subtype).toBe("ADR");
@@ -205,7 +205,6 @@ describe("Common Primitives - Subtype Directory Resolution (RULE-8, RULE-34, ADR
     const ruleRes = resolveArtifactDirectories(
       "RULE",
       "src/interfaces",
-      true,
       cwd,
     );
     expect(ruleRes.normalizedScopeDir).toBe(
@@ -216,19 +215,14 @@ describe("Common Primitives - Subtype Directory Resolution (RULE-8, RULE-34, ADR
     );
 
     // ADR resolution
-    const adrRes = resolveArtifactDirectories("ADR", "src", true, cwd);
+    const adrRes = resolveArtifactDirectories("ADR", "src", cwd);
     expect(adrRes.normalizedScopeDir).toBe(workspace.resolve("src"));
     expect(adrRes.targetDir).toBe(workspace.resolve("src/.modie/adrs"));
 
     // TASK resolution
-    const taskRes = resolveArtifactDirectories("TASK", "src", true, cwd);
+    const taskRes = resolveArtifactDirectories("TASK", "src", cwd);
     expect(taskRes.normalizedScopeDir).toBe(workspace.resolve("src"));
     expect(taskRes.targetDir).toBe(workspace.resolve("src/.modie/tasks"));
-
-    // Flat placement (--flat / useSubtypeContainer: false)
-    const flatRes = resolveArtifactDirectories("RULE", "src", false, cwd);
-    expect(flatRes.normalizedScopeDir).toBe(workspace.resolve("src"));
-    expect(flatRes.targetDir).toBe(workspace.resolve("src"));
   });
 
   // @verifies RULE-8, RULE-34, ADR-10
@@ -239,7 +233,6 @@ describe("Common Primitives - Subtype Directory Resolution (RULE-8, RULE-34, ADR
     const ruleModieRes = resolveArtifactDirectories(
       "RULE",
       "src/.modie/rules",
-      true,
       cwd,
     );
     expect(ruleModieRes.normalizedScopeDir).toBe(workspace.resolve("src"));
@@ -248,7 +241,6 @@ describe("Common Primitives - Subtype Directory Resolution (RULE-8, RULE-34, ADR
     const adrModieRes = resolveArtifactDirectories(
       "ADR",
       "src/.modie/adrs",
-      true,
       cwd,
     );
     expect(adrModieRes.normalizedScopeDir).toBe(workspace.resolve("src"));
@@ -257,7 +249,6 @@ describe("Common Primitives - Subtype Directory Resolution (RULE-8, RULE-34, ADR
     const taskModieRes = resolveArtifactDirectories(
       "TASK",
       "src/.modie/tasks",
-      true,
       cwd,
     );
     expect(taskModieRes.normalizedScopeDir).toBe(workspace.resolve("src"));
@@ -267,39 +258,10 @@ describe("Common Primitives - Subtype Directory Resolution (RULE-8, RULE-34, ADR
     const rootModieRes = resolveArtifactDirectories(
       "RULE",
       "src/.modie",
-      true,
       cwd,
     );
     expect(rootModieRes.normalizedScopeDir).toBe(workspace.resolve("src"));
     expect(rootModieRes.targetDir).toBe(workspace.resolve("src/.modie/rules"));
-
-    // Legacy dot-container inputs
-    const ruleLegacyRes = resolveArtifactDirectories(
-      "RULE",
-      "src/.rules",
-      true,
-      cwd,
-    );
-    expect(ruleLegacyRes.normalizedScopeDir).toBe(workspace.resolve("src"));
-    expect(ruleLegacyRes.targetDir).toBe(workspace.resolve("src/.rules"));
-
-    const adrLegacyRes = resolveArtifactDirectories(
-      "ADR",
-      "src/.adrs",
-      true,
-      cwd,
-    );
-    expect(adrLegacyRes.normalizedScopeDir).toBe(workspace.resolve("src"));
-    expect(adrLegacyRes.targetDir).toBe(workspace.resolve("src/.adrs"));
-
-    const taskLegacyRes = resolveArtifactDirectories(
-      "TASK",
-      "src/.tasks",
-      true,
-      cwd,
-    );
-    expect(taskLegacyRes.normalizedScopeDir).toBe(workspace.resolve("src"));
-    expect(taskLegacyRes.targetDir).toBe(workspace.resolve("src/.tasks"));
   });
 });
 

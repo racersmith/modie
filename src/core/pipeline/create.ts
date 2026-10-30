@@ -57,7 +57,6 @@ export async function createArtifact<
   const { normalizedScopeDir, targetDir } = resolveArtifactDirectories(
     definition.subtype as IndexableSubtype,
     options.scopeDir,
-    options.useSubtypeContainer ?? true,
     cwd,
   );
 

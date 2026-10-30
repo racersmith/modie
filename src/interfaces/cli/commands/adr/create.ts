@@ -47,10 +47,6 @@ export const adrCreateSchema = z.object({
     .describe(
       "Target ADR tag(s) superseded by this decision (repeat flag or use comma-separated list)",
     ),
-  flat: z
-    .boolean()
-    .default(false)
-    .describe("Create flat ADR file without .adrs container"),
 });
 
 export type AdrCreateInput = z.infer<typeof adrCreateSchema>;
@@ -63,7 +59,6 @@ export interface AdrCreateFlags {
   link?: string[];
   links?: string[];
   supersedes?: string[];
-  flat?: boolean;
 }
 
 export interface AdrCreateResultPayload {
@@ -155,10 +150,6 @@ export const adrCreateCommand: CliCommandDefinition<
         "Target ADR tag(s) superseded by this decision (repeat flag or use comma-separated list)",
       property: "supersedes",
     },
-    flat: {
-      type: "boolean",
-      description: "Create flat ADR file without .adrs container",
-    },
   },
   execute: async (input, context): Promise<AdrCreateResultPayload> => {
     const adrOptions: CreateAdrOptions = {
@@ -169,7 +160,6 @@ export const adrCreateCommand: CliCommandDefinition<
       decision: input.decision,
       links: input.links.length > 0 ? input.links : undefined,
       supersedes: input.supersedes.length > 0 ? input.supersedes : undefined,
-      useSubtypeContainer: !input.flat,
       cwd: context.cwd,
     };
 

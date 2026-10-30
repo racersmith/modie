@@ -18,15 +18,9 @@ export { validateRuleAncestry } from "./definition.ts";
  */
 export function resolveRuleDirectories(
   scopeDirInput: string | undefined,
-  useSubtypeContainer: boolean = true,
   cwd: string = process.cwd(),
 ): { normalizedScopeDir: string; targetDir: string } {
-  return resolveArtifactDirectories(
-    "RULE",
-    scopeDirInput,
-    useSubtypeContainer,
-    cwd,
-  );
+  return resolveArtifactDirectories("RULE", scopeDirInput, cwd);
 }
 
 /**

@@ -19,12 +19,6 @@ export interface BaseCreateArtifactOptions {
   scopeDir?: string;
 
   /**
-   * Whether to place in a subtype container directory (e.g. .rules/, .adrs/, .tasks/).
-   * Defaults to true. If false, placed flat in target directory.
-   */
-  useSubtypeContainer?: boolean;
-
-  /**
    * Workspace root directory. Defaults to process.cwd().
    */
   cwd?: string;

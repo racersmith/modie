@@ -13,7 +13,6 @@ describe("ADR Creation - Scope & Directory Resolution (RULE-8)", () => {
   it("[RULE-8] should resolve target container inside normalized scope", () => {
     const { normalizedScopeDir, targetDir } = resolveAdrDirectories(
       "src/core",
-      true,
       "/mock/root",
     );
     expect(normalizedScopeDir).toBe("/mock/root/src/core");
@@ -24,33 +23,10 @@ describe("ADR Creation - Scope & Directory Resolution (RULE-8)", () => {
   it("[RULE-8] should strip .modie/adrs container when already present in input", () => {
     const { normalizedScopeDir, targetDir } = resolveAdrDirectories(
       "src/core/.modie/adrs",
-      true,
       "/mock/root",
     );
     expect(normalizedScopeDir).toBe("/mock/root/src/core");
     expect(targetDir).toBe("/mock/root/src/core/.modie/adrs");
-  });
-
-  // @verifies RULE-8
-  it("[RULE-8] should strip legacy .adrs container when already present in input", () => {
-    const { normalizedScopeDir, targetDir } = resolveAdrDirectories(
-      "src/core/.adrs",
-      true,
-      "/mock/root",
-    );
-    expect(normalizedScopeDir).toBe("/mock/root/src/core");
-    expect(targetDir).toBe("/mock/root/src/core/.adrs");
-  });
-
-  // @verifies RULE-8
-  it("[RULE-8] should return flat directory when useSubtypeContainer is false", () => {
-    const { normalizedScopeDir, targetDir } = resolveAdrDirectories(
-      "src/core",
-      false,
-      "/mock/root",
-    );
-    expect(normalizedScopeDir).toBe("/mock/root/src/core");
-    expect(targetDir).toBe("/mock/root/src/core");
   });
 });
 
@@ -92,7 +68,7 @@ describe("ADR Creation - Frontmatter Validation & Rule Scope (RULE-14, RULE-17, 
       id: 202,
       slug: "sub-invariant",
       body: "Sub invariant claim\n",
-      subDir: "submodule/.rules",
+      subDir: "submodule/.modie/rules",
     });
 
     // ADR scoped in workspace.cwd (ancestor of submodule where RULE resides)
@@ -129,7 +105,7 @@ describe("ADR Creation - Frontmatter Validation & Rule Scope (RULE-14, RULE-17, 
       id: 204,
       slug: "sibling-invariant",
       body: "Sibling invariant claim\n",
-      subDir: "sibling-module/.rules",
+      subDir: "sibling-module/.modie/rules",
     });
 
     // ADR scoped in workspace.cwd/target-module
@@ -149,7 +125,7 @@ describe("ADR Creation - Frontmatter Validation & Rule Scope (RULE-14, RULE-17, 
       id: 205,
       slug: "prior-decision",
       context: "Prior decision",
-      subDir: "other/.adrs",
+      subDir: "other/.modie/adrs",
     });
 
     const localScope = await workspace.mkdir("local");
@@ -207,30 +183,6 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
     expect(result2.filename).toBe(
       `second-architecture-decision.${expectedAdr2Tag}.md`,
     );
-
-    await workspace.cleanup();
-  });
-
-  // @verifies RULE-8, RULE-34
-  it("[RULE-8][RULE-34] should create flat ADR file when useSubtypeContainer is false", async () => {
-    const workspace = await createFixtureWorkspace("adr-flat-");
-    const expectedAdr1Tag = makeTestTag("ADR", 1);
-
-    const result = await createAdr({
-      title: "Flat Decision Record",
-      useSubtypeContainer: false,
-      cwd: workspace.cwd,
-    });
-
-    expect(result.relativePath).toBe(
-      `flat-decision-record.${expectedAdr1Tag}.md`,
-    );
-    expect(result.filepath).toBe(
-      workspace.resolve(`flat-decision-record.${expectedAdr1Tag}.md`),
-    );
-
-    const onDisk = await workspace.readFile(result.filepath);
-    expect(onDisk).toContain("# Context");
 
     await workspace.cleanup();
   });

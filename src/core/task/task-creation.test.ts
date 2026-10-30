@@ -21,40 +21,18 @@ describe("Task Creation Service - Scope Directory & Subtype Placement (RULE-8)",
   it("[RULE-8] should resolve default placement inside .modie/tasks container", () => {
     const { normalizedScopeDir, targetDir } = resolveTaskDirectories(
       "/app/src/core",
-      true,
     );
     expect(normalizedScopeDir).toBe("/app/src/core");
     expect(targetDir).toBe("/app/src/core/.modie/tasks");
-  });
-
-  // @verifies RULE-8
-  it("[RULE-8] should resolve flat placement when useSubtypeContainer is false", () => {
-    const { normalizedScopeDir, targetDir } = resolveTaskDirectories(
-      "/app/src/core",
-      false,
-    );
-    expect(normalizedScopeDir).toBe("/app/src/core");
-    expect(targetDir).toBe("/app/src/core");
   });
 
   // @verifies RULE-8
   it("[RULE-8] should normalize scope to parent when .modie/tasks directory is explicitly passed", () => {
     const { normalizedScopeDir, targetDir } = resolveTaskDirectories(
       "/app/src/core/.modie/tasks",
-      true,
     );
     expect(normalizedScopeDir).toBe("/app/src/core");
     expect(targetDir).toBe("/app/src/core/.modie/tasks");
-  });
-
-  // @verifies RULE-8
-  it("[RULE-8] should normalize scope to parent when legacy .tasks directory is explicitly passed", () => {
-    const { normalizedScopeDir, targetDir } = resolveTaskDirectories(
-      "/app/src/core/.tasks",
-      true,
-    );
-    expect(normalizedScopeDir).toBe("/app/src/core");
-    expect(targetDir).toBe("/app/src/core/.tasks");
   });
 });
 

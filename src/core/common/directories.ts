@@ -47,18 +47,9 @@ export function resolveGoverningScope(
   const relInput = relative(normCwd, resolved).replace(/\\/g, "/");
   const isWithinCwd = !relInput.startsWith("..") && !isAbsolute(relInput);
 
-  // Check if inside recognized .modie or legacy container segments
+  // Check if inside recognized .modie container segments
   const segments = resolved.split("/");
-  const legacyContainers = new Set([".rules", ".adrs", ".tasks"]);
-
-  let containerIdx = -1;
-  for (let i = 0; i < segments.length; i++) {
-    const seg = segments[i];
-    if (seg === ".modie" || legacyContainers.has(seg)) {
-      containerIdx = i;
-      break;
-    }
-  }
+  const containerIdx = segments.indexOf(".modie");
 
   if (containerIdx !== -1) {
     const scopeDir = segments.slice(0, containerIdx).join("/") || "/";
@@ -91,16 +82,8 @@ export function resolveGoverningScope(
 
   while (checkDir.length >= normCwd.length) {
     const modiePath = join(checkDir, ".modie");
-    const rulesPath = join(checkDir, ".rules");
-    const adrsPath = join(checkDir, ".adrs");
-    const tasksPath = join(checkDir, ".tasks");
 
-    if (
-      existsSync(modiePath) ||
-      existsSync(rulesPath) ||
-      existsSync(adrsPath) ||
-      existsSync(tasksPath)
-    ) {
+    if (existsSync(modiePath)) {
       foundScopeDir = checkDir;
       break;
     }
@@ -140,24 +123,6 @@ export function getSubtypeContainerName(subtype: IndexableSubtype): string {
 }
 
 /**
- * Returns the legacy dot-prefixed container directory name for an indexable subtype (ADR-3).
- */
-export function getLegacySubtypeContainerName(
-  subtype: IndexableSubtype,
-): string {
-  switch (subtype.toUpperCase()) {
-    case "RULE":
-      return ".rules";
-    case "ADR":
-      return ".adrs";
-    case "TASK":
-      return ".tasks";
-    default:
-      return `.${subtype.toLowerCase()}s`;
-  }
-}
-
-/**
  * Computes the deepest common ancestor directory from a list of paths (RULE-6, RULE-12).
  */
 export function findDeepestCommonAncestor(
@@ -191,34 +156,28 @@ export function findDeepestCommonAncestor(
 }
 
 /**
- * Resolves normalized scope directory and target directory for an indexable artifact per RULE-8 and ADR-10.
+ * Resolves normalized scope directory and target directory for an indexable artifact per RULE-8, and ADR-10.
  *
  * Normalizes architectural scope by stripping recognized container segments:
  * - `<dir>/.modie/rules/` -> Scope: `<dir>`, Target: `<dir>/.modie/rules`
  * - `<dir>/.modie/adrs/`  -> Scope: `<dir>`, Target: `<dir>/.modie/adrs`
  * - `<dir>/.modie/tasks/` -> Scope: `<dir>`, Target: `<dir>/.modie/tasks`
  * - `<dir>/.modie/`       -> Scope: `<dir>`, Target: `<dir>/.modie/<subtype>`
- * - `<dir>/.rules/`       -> Scope: `<dir>`, Target: `<dir>/.rules` (legacy ADR-3)
- * - `<dir>/.adrs/`        -> Scope: `<dir>`, Target: `<dir>/.adrs` (legacy ADR-3)
- * - `<dir>/.tasks/`       -> Scope: `<dir>`, Target: `<dir>/.tasks` (legacy ADR-3)
  * - `<dir>/`              -> Scope: `<dir>`, Target: `<dir>/.modie/<subtype>` (default)
  *
  * @param subtype Subtype of the artifact (RULE, ADR, TASK).
  * @param scopeDirInput Explicit directory passed by user or caller.
- * @param useSubtypeContainer Whether to place within recognized subtype container directory (default: true).
  * @param cwd Current working directory.
  */
 export function resolveArtifactDirectories(
   subtype: IndexableSubtype,
   scopeDirInput: string | undefined,
-  useSubtypeContainer: boolean = true,
   cwd: string = process.cwd(),
 ): { normalizedScopeDir: string; targetDir: string } {
   const resolvedPath = scopeDirInput ? resolve(cwd, scopeDirInput) : cwd;
   const normalized = normalize(resolvedPath);
 
   const containerName = getSubtypeContainerName(subtype);
-  const legacyContainerName = getLegacySubtypeContainerName(subtype);
   const base = basename(normalized);
   const parent = dirname(normalized);
   const parentBase = basename(parent);
@@ -242,26 +201,9 @@ export function resolveArtifactDirectories(
     };
   }
 
-  // 3. Path is legacy dot-container `<dir>/.<subtype>s` (ADR-3)
-  if (
-    base === legacyContainerName ||
-    base === ".rules" ||
-    base === ".adrs" ||
-    base === ".tasks"
-  ) {
-    return {
-      normalizedScopeDir: parent,
-      targetDir: normalized,
-    };
-  }
-
-  // 4. Standard directory `<dir>`: place in `.modie/<subtype>` unless flat requested
-  const targetDir = useSubtypeContainer
-    ? join(normalized, ".modie", containerName)
-    : normalized;
-
+  // 3. Standard directory `<dir>`: place in `<dir>/.modie/<subtype>`
   return {
     normalizedScopeDir: normalized,
-    targetDir,
+    targetDir: join(normalized, ".modie", containerName),
   };
 }

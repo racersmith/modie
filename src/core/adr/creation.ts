@@ -34,15 +34,9 @@ export async function updateSupersededAdrFrontmatter(
  */
 export function resolveAdrDirectories(
   scopeDirInput: string | undefined,
-  useSubtypeContainer: boolean = true,
   cwd: string = process.cwd(),
 ): { normalizedScopeDir: string; targetDir: string } {
-  return resolveArtifactDirectories(
-    "ADR",
-    scopeDirInput,
-    useSubtypeContainer,
-    cwd,
-  );
+  return resolveArtifactDirectories("ADR", scopeDirInput, cwd);
 }
 
 /**
