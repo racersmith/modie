@@ -17,6 +17,7 @@ import {
 import { parseAcceptanceCriteria } from "../task/checklist.ts";
 import type { TaskAcceptanceCriteriaItem } from "../task/types.ts";
 import {
+  extractAdrSummary,
   parseFrontmatterFields,
   parseMarkdownSections,
   splitMarkdownFrontmatter,
@@ -100,6 +101,15 @@ export async function resolveArtifactByTag(
           parsedFromPath.subtype,
           cwd,
         );
+        let summary: string | undefined;
+        if (parsedFromPath.subtype === "ADR") {
+          try {
+            const rawContent = await readFile(candidatePath, "utf8");
+            summary = extractAdrSummary(rawContent, parsedFromPath.slug);
+          } catch {
+            summary = parsedFromPath.slug.replace(/-/g, " ");
+          }
+        }
         return {
           tag: parsedFromPath.tag,
           subtype: parsedFromPath.subtype,
@@ -110,6 +120,7 @@ export async function resolveArtifactByTag(
           relativePath: rel,
           scope,
           isArchived: parsedFromPath.isArchived,
+          ...(summary ? { summary } : {}),
         };
       }
     } catch {
@@ -150,6 +161,15 @@ export async function resolveArtifactByTag(
     const selected = activeMatch ?? matches[0]!;
 
     const scope = computeArtifactScope(selected.filepath, selected.subtype, cwd);
+    let summary: string | undefined;
+    if (selected.subtype === "ADR") {
+      try {
+        const rawContent = await readFile(selected.filepath, "utf8");
+        summary = extractAdrSummary(rawContent, selected.slug);
+      } catch {
+        summary = selected.slug.replace(/-/g, " ");
+      }
+    }
     return {
       tag: selected.tag,
       subtype: selected.subtype,
@@ -160,6 +180,7 @@ export async function resolveArtifactByTag(
       relativePath: relative(cwd, selected.filepath).replace(/\\/g, "/"),
       scope,
       isArchived: selected.isArchived,
+      ...(summary ? { summary } : {}),
     };
   }
 
@@ -269,9 +290,14 @@ export async function getArtifactDetails(
   const rawContent = await readFile(resolved.filepath, "utf8");
 
   const { frontmatter, body } = splitMarkdownFrontmatter(rawContent);
-  const { links, depends_on } = parseFrontmatterFields(frontmatter);
+  const { links, depends_on, summary: fmSummary } =
+    parseFrontmatterFields(frontmatter);
   const sections = parseMarkdownSections(body);
 
+  const summary =
+    resolved.subtype === "ADR"
+      ? extractAdrSummary(rawContent, resolved.slug)
+      : fmSummary;
   const context = sections["Context"];
   let acceptanceCriteria: TaskAcceptanceCriteriaItem[] | undefined;
 
@@ -281,6 +307,7 @@ export async function getArtifactDetails(
 
   return {
     ...resolved,
+    ...(summary ? { summary } : {}),
     links,
     depends_on,
     body,

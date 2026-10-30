@@ -1,4 +1,5 @@
 ---
+summary: Allow governance artifacts to reside either flat in a directory or inside subtype-specific dot-prefixed folders.
 links:
   - RULE-8
 superseded_by:

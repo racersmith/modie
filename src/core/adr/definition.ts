@@ -55,7 +55,9 @@ export async function validateAdrScope(
   }
 }
 
-export const adrDefinition: ArtifactDefinition<CreateAdrOptions, AdrArtifact> =
+export type AdrDefinition = ArtifactDefinition<CreateAdrOptions, AdrArtifact>;
+
+export const adrDefinition: AdrDefinition =
   {
     subtype: "ADR",
     containerName: "adrs",
@@ -65,6 +67,7 @@ export const adrDefinition: ArtifactDefinition<CreateAdrOptions, AdrArtifact> =
     },
     render: ({ id, slug, title, options, filepath }) => {
       const links = options.links ?? [];
+      const summary = options.summary?.trim() || undefined;
       const supersedesRaw = options.supersedes
         ? Array.isArray(options.supersedes)
           ? options.supersedes
@@ -78,6 +81,7 @@ export const adrDefinition: ArtifactDefinition<CreateAdrOptions, AdrArtifact> =
         id,
         slug,
         title,
+        summary,
         links,
         supersedes: supersedes.length > 0 ? supersedes : undefined,
         context: options.context?.trim(),
@@ -89,6 +93,7 @@ export const adrDefinition: ArtifactDefinition<CreateAdrOptions, AdrArtifact> =
         id,
         slug,
         title,
+        summary,
         links,
         supersedes: supersedes.length > 0 ? supersedes : undefined,
         context: options.context?.trim(),

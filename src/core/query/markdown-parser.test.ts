@@ -6,6 +6,7 @@
 import { describe, expect, it } from "bun:test";
 import { makeTestTag } from "../testing/index.ts";
 import {
+  extractAdrSummary,
   parseFrontmatterFields,
   parseMarkdownSections,
   splitMarkdownFrontmatter,
@@ -131,6 +132,86 @@ superseded_by: []
     const parsed = parseFrontmatterFields(frontmatter);
     expect(parsed.links).toEqual([adr1Tag]);
     expect(parsed.depends_on).toBeUndefined();
+  });
+
+  // @verifies ADR-8, RULE-25, RULE-26
+  it("[ADR-8][RULE-25][RULE-26] should parse inline, quoted, and folded block summary fields from frontmatter", () => {
+    const adr1Tag = makeTestTag("ADR", 1);
+
+    const inlineParsed = parseFrontmatterFields(
+      `summary: Adopt flat self-indexing filenames.\nlinks:\n  - ${adr1Tag}`,
+    );
+    expect(inlineParsed.summary).toBe("Adopt flat self-indexing filenames.");
+    expect(inlineParsed.links).toEqual([adr1Tag]);
+
+    const quotedParsed = parseFrontmatterFields(
+      `summary: "Quoted summary: with colon"\nlinks: []`,
+    );
+    expect(quotedParsed.summary).toBe("Quoted summary: with colon");
+
+    const blockParsed = parseFrontmatterFields(
+      `summary: >\n  First sentence of summary.\n  Second sentence of summary.\nlinks:\n  - ${adr1Tag}`,
+    );
+    expect(blockParsed.summary).toBe(
+      "First sentence of summary. Second sentence of summary.",
+    );
+  });
+});
+
+describe("Markdown Parser - extractAdrSummary (ADR-4, ADR-8, RULE-26)", () => {
+  // @verifies ADR-4, ADR-8, RULE-26
+  it("[ADR-4][ADR-8][RULE-26] should prefer explicit frontmatter summary and fallback to Decision or Context when omitted", () => {
+    const withExplicit = `---
+summary: Explicit frontmatter summary.
+links: []
+---
+
+# Context
+
+Context paragraph.
+
+# Decision
+
+Decision paragraph.
+`;
+    expect(extractAdrSummary(withExplicit, "test-adr")).toBe(
+      "Explicit frontmatter summary.",
+    );
+
+    const withDecision = `---
+links: []
+---
+
+# Context
+
+Context paragraph.
+
+# Decision
+
+We adopt the Signpost Model with Progressive On-Demand Disclosure.
+
+Additional details in second paragraph.
+`;
+    expect(extractAdrSummary(withDecision, "test-adr")).toBe(
+      "We adopt the Signpost Model with Progressive On-Demand Disclosure.",
+    );
+
+    const withContextOnly = `---
+links: []
+---
+
+# Context
+
+Fallback context description when Decision is absent.
+`;
+    expect(extractAdrSummary(withContextOnly, "test-adr")).toBe(
+      "Fallback context description when Decision is absent.",
+    );
+
+    const emptyDoc = `---\nlinks: []\n---\n`;
+    expect(extractAdrSummary(emptyDoc, "fallback-slug-title")).toBe(
+      "fallback slug title",
+    );
   });
 });
 

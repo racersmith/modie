@@ -1,4 +1,5 @@
 ---
+summary: Define five distinct primitive artifact subtypes (MOTIVE, RULE, ADR, GIST, TASK) governed by least-scope placement to minimize upward context bloat and blast radius.
 links:
   - ADR-2
   - RULE-1

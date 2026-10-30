@@ -57,6 +57,10 @@ export function renderArtifactDetails(
   context.stderr(`Scope:       ${details.scope}`);
   context.stderr(`Status:      ${statusLabel}`);
 
+  if (details.summary) {
+    context.stderr(`Summary:     ${details.summary}`);
+  }
+
   if (details.depends_on && details.depends_on.length > 0) {
     context.stderr(`Depends On:  ${details.depends_on.join(", ")}`);
   }
@@ -109,6 +113,10 @@ export function renderArtifactDetailsJson(
     isArchived: details.isArchived,
     links: details.links,
   };
+
+  if (details.summary) {
+    payload.summary = details.summary;
+  }
 
   if (details.depends_on) {
     payload.depends_on = details.depends_on;

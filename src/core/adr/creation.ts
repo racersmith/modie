@@ -8,11 +8,19 @@
 import { resolveArtifactDirectories } from "../common/index.ts";
 import { createArtifact } from "../pipeline/create.ts";
 import { updateSupersededArtifactFrontmatter } from "../pipeline/supersession.ts";
-import { adrDefinition, validateAdrScope } from "./definition.ts";
+import {
+  adrDefinition,
+  validateAdrScope,
+  type AdrDefinition,
+} from "./definition.ts";
 import type { CreateAdrOptions, CreateAdrResult } from "./types.ts";
 
 export type { CreateAdrOptions, CreateAdrResult } from "./types.ts";
-export { validateAdrScope } from "./definition.ts";
+export {
+  adrDefinition,
+  validateAdrScope,
+  type AdrDefinition,
+} from "./definition.ts";
 
 /**
  * Updates a superseded ADR artifact file on disk to append superseded_by frontmatter link.

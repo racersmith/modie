@@ -30,21 +30,57 @@ export function splitMarkdownFrontmatter(content: string): {
   return { frontmatter, body };
 }
 
+function unquoteYamlScalar(raw: string): string {
+  const trimmed = raw.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed
+      .slice(1, -1)
+      .replace(/\\"/g, '"')
+      .replace(/\\'/g, "'")
+      .trim();
+  }
+  return trimmed;
+}
+
 /**
- * Parses links and depends_on from frontmatter text.
+ * Parses links, depends_on, and summary from frontmatter text.
  */
 export function parseFrontmatterFields(frontmatterStr: string): {
   links: string[];
   depends_on?: string[];
+  summary?: string;
 } {
   const lines = frontmatterStr.split(/\r?\n/);
   const links: string[] = [];
   const depends_on: string[] = [];
-  let currentKey: "links" | "depends_on" | null = null;
+  const summaryParts: string[] = [];
+  let currentKey: "links" | "depends_on" | "summary" | null = null;
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
     if (!line || line.startsWith("#")) continue;
+
+    if (line.startsWith("summary:")) {
+      summaryParts.length = 0;
+      const inline = line.slice("summary:".length).trim();
+      if (
+        inline &&
+        inline !== ">" &&
+        inline !== "|" &&
+        inline !== ">-" &&
+        inline !== "|-"
+      ) {
+        const unquoted = unquoteYamlScalar(inline);
+        if (unquoted) {
+          summaryParts.push(unquoted);
+        }
+      }
+      currentKey = "summary";
+      continue;
+    }
 
     if (line.startsWith("links:")) {
       currentKey = "links";
@@ -88,15 +124,85 @@ export function parseFrontmatterFields(frontmatterStr: string): {
       continue;
     }
 
+    if (/^[a-zA-Z0-9_-]+:/.test(rawLine.trimStart()) && !/^\s+/.test(rawLine)) {
+      currentKey = null;
+      continue;
+    }
+
+    if (currentKey === "summary" && /^\s+/.test(rawLine)) {
+      summaryParts.push(unquoteYamlScalar(line));
+      continue;
+    }
+
     if (/^[a-zA-Z0-9_-]+:/.test(line)) {
       currentKey = null;
     }
   }
 
+  const summary =
+    summaryParts.length > 0 ? summaryParts.join(" ").trim() : undefined;
+
   return {
     links,
     depends_on: depends_on.length > 0 ? depends_on : undefined,
+    ...(summary ? { summary } : {}),
   };
+}
+
+/**
+ * Extracts a concise summary from an ADR markdown document.
+ * Prefers the explicit `summary:` YAML frontmatter field; falls back to the first
+ * substantive paragraph of `# Decision`, `# Context`, or document body, and finally
+ * the human-readable title derived from `fallbackSlug`.
+ */
+export function extractAdrSummary(
+  rawContent: string,
+  fallbackSlug?: string,
+): string {
+  const { frontmatter, body } = splitMarkdownFrontmatter(rawContent);
+  const { summary } = parseFrontmatterFields(frontmatter);
+  if (summary) {
+    return summary;
+  }
+
+  const sections = parseMarkdownSections(body);
+  const candidates = [sections["Decision"], sections["Context"], body];
+
+  for (const candidate of candidates) {
+    if (!candidate || !candidate.trim()) continue;
+    const paragraphs = candidate
+      .split(/\r?\n\s*\r?\n/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+
+    for (const para of paragraphs) {
+      if (/^#+\s+/.test(para) && !para.includes("\n")) {
+        continue;
+      }
+      if (/^(`{3,}|~{3,})/.test(para)) {
+        continue;
+      }
+      const cleaned = para
+        .split(/\r?\n/)
+        .filter((l) => !/^#+\s+/.test(l.trim()))
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (cleaned) {
+        return cleaned;
+      }
+    }
+
+    const headingCleaned = paragraphs[0]!
+      .replace(/^#+\s+/, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (headingCleaned) {
+      return headingCleaned;
+    }
+  }
+
+  return fallbackSlug ? fallbackSlug.replace(/-/g, " ").trim() : "";
 }
 
 /**

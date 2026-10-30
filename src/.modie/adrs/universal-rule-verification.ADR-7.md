@@ -1,4 +1,5 @@
 ---
+summary: Enforce rule verification across polyglot codebases using a language-agnostic regex scanner matching rule tags in test headers and code annotations.
 links:
   - ADR-4
   - RULE-3

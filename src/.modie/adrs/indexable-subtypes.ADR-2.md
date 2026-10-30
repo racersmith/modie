@@ -1,4 +1,5 @@
 ---
+summary: Partition artifacts into ID-indexed subtypes (ADR, RULE, TASK) for cross-document referencing and unindexed discoverable subtypes (MOTIVE, GIST) resolved by directory structure.
 links:
   - RULE-1
   - ADR-1

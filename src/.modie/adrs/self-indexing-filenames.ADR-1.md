@@ -1,4 +1,5 @@
 ---
+summary: Adopt flat self-indexing filenames ([slug].[SUBTYPE]-[ID][.ARCHIVED].md) with unpadded IDs to enable zero-read glob filtering and archive segregation.
 links:
   - RULE-1
   - ADR-4

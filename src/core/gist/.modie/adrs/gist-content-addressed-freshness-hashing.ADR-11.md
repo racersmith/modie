@@ -1,4 +1,5 @@
 ---
+summary: Track GIST freshness using a semantic Merkle tree and line-delimited .gists ledgers with Git-compatible blob hashes for zero-read staleness verification and conflict-free merges.
 links:
   - ADR-2
   - ADR-4

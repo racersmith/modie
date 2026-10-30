@@ -65,6 +65,7 @@ export interface CreateAdrOptions {
   id?: number | string;
   slug?: string;
   title?: string;
+  summary?: string;
   context?: string;
   alternatives?: string;
   decision?: string;
@@ -83,6 +84,7 @@ export interface CreateFixtureArtifactOptions {
   subtype: "RULE" | "ADR" | "TASK" | string;
   id?: number | string;
   slug?: string;
+  summary?: string;
   links?: string[];
   depends_on?: string[];
   supersedes?: string | string[];
@@ -200,6 +202,9 @@ export async function createFixtureWorkspace(
       let content = options.rawContent;
       if (content === undefined) {
         const frontmatterLines: string[] = ["---"];
+        if (options.summary?.trim()) {
+          frontmatterLines.push(`summary: ${options.summary.trim()}`);
+        }
         if (options.depends_on !== undefined) {
           if (options.depends_on.length > 0) {
             frontmatterLines.push("depends_on:");
@@ -376,6 +381,7 @@ export async function createFixtureWorkspace(
           (options.title
             ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
             : undefined),
+        summary: options.summary,
         context:
           options.context ??
           (options.title ? `Context for ${options.title}` : undefined),

@@ -122,6 +122,7 @@ export {
   listRules,
 } from "./query/artifact-list.ts";
 export {
+  extractAdrSummary,
   parseFrontmatterFields,
   parseMarkdownSections,
   splitMarkdownFrontmatter,
@@ -135,6 +136,7 @@ export {
   createAdr,
   resolveAdrDirectories,
   validateAdrScope,
+  type AdrDefinition,
 } from "./adr/creation.ts";
 export { archiveAdr } from "./adr/archive.ts";
 export type { ArchiveAdrOptions } from "./adr/archive.ts";

@@ -5,6 +5,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { getArtifactDetails, resolveArtifactByTag } from "../query/index.ts";
 import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
 import { createAdr, resolveAdrDirectories, validateAdrScope } from "./index.ts";
 
@@ -193,5 +194,45 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
         title: "   ",
       }),
     ).rejects.toThrow("ADR title must be a non-empty string.");
+  });
+
+  // @verifies ADR-4, ADR-8, RULE-25, RULE-26, RULE-34
+  it("[ADR-4][ADR-8][RULE-25][RULE-26][RULE-34] should persist summary frontmatter and support roundtrip parsing via query services", async () => {
+    const workspace = await createFixtureWorkspace("adr-summary-roundtrip-");
+
+    const result = await createAdr({
+      title: "Progressive Context Disclosure",
+      summary:
+        "Include concise frontmatter summary on ADRs for token-efficient context compilation.",
+      context: "Detailed problem statement.",
+      alternatives: "- Inject full ADR markdown\n- Omit ADRs completely",
+      decision: "Emit concise summary signpost in compiled context.",
+      cwd: workspace.cwd,
+    });
+
+    expect(result.artifact.summary).toBe(
+      "Include concise frontmatter summary on ADRs for token-efficient context compilation.",
+    );
+
+    const onDisk = await workspace.readFile(result.filepath);
+    expect(onDisk).toContain(
+      "summary: Include concise frontmatter summary on ADRs for token-efficient context compilation.",
+    );
+
+    const resolved = await resolveArtifactByTag(result.tag, {
+      cwd: workspace.cwd,
+    });
+    expect(resolved.summary).toBe(
+      "Include concise frontmatter summary on ADRs for token-efficient context compilation.",
+    );
+
+    const details = await getArtifactDetails(result.tag, {
+      cwd: workspace.cwd,
+    });
+    expect(details.summary).toBe(
+      "Include concise frontmatter summary on ADRs for token-efficient context compilation.",
+    );
+
+    await workspace.cleanup();
   });
 });
