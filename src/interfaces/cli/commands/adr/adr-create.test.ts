@@ -97,10 +97,9 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
     expect(parsed.context).toBe("JSON payload must go to stdout.");
   });
 
-  // @verifies RULE-8
-  it("[RULE-8] should support --flat flag to create file without .modie/adrs directory", async () => {
+  // @verifies RULE-8, ADR-12
+  it("[RULE-8][ADR-12] should reject retired --flat flag with error to stderr", async () => {
     await using workspace = await createTestWorkspace("modie-cli-adr-flat-");
-    const expectedTag = makeTestTag("ADR", 1);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "adr",
       "create",
@@ -108,9 +107,9 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
       "--flat",
     ]);
 
-    expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(`flat-file-adr.${expectedTag}.md`);
-    expect(stderr).toContain(`✓ Created ADR ${expectedTag}`);
+    expect(exitCode).toBe(1);
+    expect(stdout).toBe("");
+    expect(stderr).toContain('Error: Unknown flag "--flat"');
   });
 
   // @verifies RULE-8

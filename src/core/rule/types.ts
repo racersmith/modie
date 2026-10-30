@@ -122,12 +122,6 @@ export interface CreateRuleOptions {
   supersedes?: string | string[];
 
   /**
-   * Whether to place in a `.rules/` subtype container directory (RULE-8).
-   * Defaults to true. If false (e.g. --flat), placed flat in target directory.
-   */
-  useSubtypeContainer?: boolean;
-
-  /**
    * Workspace root directory. Defaults to process.cwd().
    */
   cwd?: string;

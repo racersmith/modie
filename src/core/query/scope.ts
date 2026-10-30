@@ -42,13 +42,8 @@ export function computeAncestralScopes(
     accumulated = accumulated ? `${accumulated}/${seg}` : seg;
     const abs = resolve(normCwd, accumulated);
     const modieDir = join(abs, ".modie");
-    const rulesDir = join(abs, ".rules");
 
-    if (
-      existsSync(modieDir) ||
-      existsSync(rulesDir) ||
-      accumulated === targetScope
-    ) {
+    if (existsSync(modieDir) || accumulated === targetScope) {
       if (!scopes.includes(accumulated)) {
         scopes.push(accumulated);
       }
@@ -240,3 +235,4 @@ export async function resolveScope(
     tasks,
   };
 }
+

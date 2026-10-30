@@ -18,15 +18,9 @@ export { findDeepestCommonAncestor } from "../common/directories.ts";
  */
 export function resolveTaskDirectories(
   scopeDirInput: string | undefined,
-  useSubtypeContainer: boolean = true,
   cwd: string = process.cwd(),
 ): { normalizedScopeDir: string; targetDir: string } {
-  return resolveArtifactDirectories(
-    "TASK",
-    scopeDirInput,
-    useSubtypeContainer,
-    cwd,
-  );
+  return resolveArtifactDirectories("TASK", scopeDirInput, cwd);
 }
 
 /**

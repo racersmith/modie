@@ -69,10 +69,6 @@ export const taskCreateSchema = z.object({
     .describe(
       "Planned ADR artifacts to author before completing this task (repeat flag or use comma-separated list)",
     ),
-  flat: z
-    .boolean()
-    .default(false)
-    .describe("Create flat task file without .tasks container"),
   forceTrunk: z
     .boolean()
     .default(false)
@@ -103,7 +99,6 @@ export interface TaskCreateFlags {
   "plan-adrs"?: string[];
   prefix?: string;
   branch?: string;
-  flat?: boolean;
   "force-trunk"?: boolean;
   "allow-broad-scope"?: boolean;
 }
@@ -275,10 +270,6 @@ export const taskCreateCommand: CliCommandDefinition<
       placeholder: "<name>",
       description: "Git branch override for ID allocation",
     },
-    flat: {
-      type: "boolean",
-      description: "Create flat task file without .tasks container",
-    },
     "force-trunk": {
       type: "boolean",
       description: "Force trunk monotonic integer sequence",
@@ -307,7 +298,6 @@ export const taskCreateCommand: CliCommandDefinition<
               adrs: input.plan_adrs,
             }
           : undefined,
-      useSubtypeContainer: !input.flat,
       prefix: input.prefix,
       branch: input.branch,
       forceTrunk: Boolean(input.forceTrunk),

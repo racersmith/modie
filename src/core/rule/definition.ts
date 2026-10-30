@@ -34,7 +34,7 @@ export async function validateRuleAncestry(
 
     const adrDir = dirname(adr.filepath);
     const { normalizedScopeDir: adrNormalizedScope } =
-      resolveArtifactDirectories("ADR", adrDir, true, cwd);
+      resolveArtifactDirectories("ADR", adrDir, cwd);
 
     const relFromAdrToRule = relative(adrNormalizedScope, normalizedScopeDir);
     const isAncestorOrEqual =
