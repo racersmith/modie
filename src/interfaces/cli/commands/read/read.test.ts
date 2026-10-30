@@ -170,7 +170,7 @@ Detailed test context for read command.
     const scopedRule = await workspace.createRule({
       id: "TEST-SCOPE-1",
       slug: "scoped-rule",
-      subDir: "src/interfaces/cli/.modie/rules",
+      scopeDir: "src/interfaces/cli",
       body: "Scoped rule content",
     });
 

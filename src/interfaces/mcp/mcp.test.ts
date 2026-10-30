@@ -299,7 +299,7 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     await workspace.createAdr({
       id: 102,
       slug: "mcp-subsystem-decision",
-      subDir: "src/interfaces/mcp/.modie/adrs",
+      scopeDir: "src/interfaces/mcp",
       links: [],
       context: "MCP decision context.",
     });
@@ -307,14 +307,14 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     await workspace.createRule({
       id: 102,
       slug: "mcp-subsystem-rule",
-      subDir: "src/interfaces/mcp/.modie/rules",
+      scopeDir: "src/interfaces/mcp",
       links: [adr101Tag],
       body: "MCP subsystem rule body.",
     });
     await workspace.createRule({
       id: 103,
       slug: "cli-sibling-rule",
-      subDir: "src/interfaces/cli/.modie/rules",
+      scopeDir: "src/interfaces/cli",
       links: [],
       body: "CLI sibling rule body.",
     });

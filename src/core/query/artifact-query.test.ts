@@ -329,7 +329,7 @@ describe("Artifact Query Service - Deep Inspection (RULE-26, RULE-29, RULE-34, R
       subtype: "RULE",
       id: "TEST-SCOPE-1",
       slug: "scoped-rule",
-      subDir: "src/interfaces/cli/.modie/rules",
+      scopeDir: "src/interfaces/cli",
       body: "Scoped rule content",
     });
 

@@ -100,22 +100,21 @@ describe("CLI ADR List - Execution, Scope Filtering & Stream Separation (ADR-4, 
     const rootAdr = await workspace.createAdr({
       id: 1,
       slug: "root-decision",
-      subDir: ".modie/adrs",
     });
     const coreAdr = await workspace.createAdr({
       id: 2,
       slug: "core-decision",
-      subDir: "src/core/.modie/adrs",
+      scopeDir: "src/core",
     });
     const gistAdr = await workspace.createAdr({
       id: 3,
       slug: "gist-decision",
-      subDir: "src/core/gist/.modie/adrs",
+      scopeDir: "src/core/gist",
     });
     await workspace.createAdr({
       id: 4,
       slug: "cli-sibling-decision",
-      subDir: "src/interfaces/cli/.modie/adrs",
+      scopeDir: "src/interfaces/cli",
     });
 
     const { exitCode, stdout, stderr } = await workspace.captureCli([

@@ -104,7 +104,6 @@ describe("GitCliAdapter - Real Subprocess Fixture Tests", () => {
       slug: "sample-rule",
       title: "Sample Rule",
       body: "Rule test",
-      subDir: "",
     });
     await adapter.stageAll(workspace.cwd);
     await adapter.commit("feat: add rule 10", workspace.cwd);

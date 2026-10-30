@@ -61,21 +61,21 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     await workspace.createAdr({
       id: 503,
       slug: "core-subsystem-adr",
-      subDir: "src/core/.modie/adrs",
+      scopeDir: "src/core",
       links: [],
       context: "Core subsystem decision.",
     });
     await workspace.createAdr({
       id: 504,
       slug: "cli-subsystem-adr",
-      subDir: "src/interfaces/cli/.modie/adrs",
+      scopeDir: "src/interfaces/cli",
       links: [],
       context: "CLI subsystem decision.",
     });
     await workspace.createAdr({
       id: 505,
       slug: "mcp-subsystem-adr",
-      subDir: "src/interfaces/mcp/.modie/adrs",
+      scopeDir: "src/interfaces/mcp",
       links: [],
       context: "MCP subsystem decision.",
     });
@@ -90,21 +90,21 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     await workspace.createRule({
       id: 502,
       slug: "core-subsystem-rule",
-      subDir: "src/core/.modie/rules",
+      scopeDir: "src/core",
       links: [],
       body: "Core subsystem invariant assertion.",
     });
     await workspace.createRule({
       id: 503,
       slug: "cli-subsystem-rule",
-      subDir: "src/interfaces/cli/.modie/rules",
+      scopeDir: "src/interfaces/cli",
       links: [],
       body: "CLI subsystem invariant assertion.",
     });
     await workspace.createRule({
       id: 504,
       slug: "mcp-subsystem-rule",
-      subDir: "src/interfaces/mcp/.modie/rules",
+      scopeDir: "src/interfaces/mcp",
       links: [],
       body: "MCP subsystem invariant assertion.",
     });
@@ -120,21 +120,21 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
       id: 502,
       slug: "task-beta",
       title: "Task Beta",
-      subDir: "src/core/.modie/tasks",
+      scopeDir: "src/core",
       criteria: ["Beta criterion"],
     });
     await workspace.createTask({
       id: 503,
       slug: "task-gamma",
       title: "Task Gamma",
-      subDir: "src/interfaces/mcp/.modie/tasks",
+      scopeDir: "src/interfaces/mcp",
       criteria: ["Gamma criterion"],
     });
     await workspace.createTask({
       id: 504,
       slug: "cli-scoped-task",
       title: "CLI Scoped Task",
-      subDir: "src/interfaces/cli/.modie/tasks",
+      scopeDir: "src/interfaces/cli",
       criteria: ["CLI criterion"],
     });
   });

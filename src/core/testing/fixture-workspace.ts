@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { promisify } from "node:util";
 import { formatArtifactFilename } from "../common/filename.ts";
+import { resolveArtifactDirectories } from "../common/directories.ts";
 import type { IndexableSubtype } from "../common/types.ts";
 
 const execFileAsync = promisify(execFile);
@@ -43,7 +44,7 @@ export interface CreateTaskOptions {
     rules?: TaskCriterionItem[];
     adrs?: TaskCriterionItem[];
   };
-  subDir?: string;
+  scopeDir?: string;
   rawContent?: string;
 }
 
@@ -56,7 +57,7 @@ export interface CreateRuleOptions {
   supersedes?: string | string[];
   superseded_by?: string | string[];
   isArchived?: boolean;
-  subDir?: string;
+  scopeDir?: string;
   rawContent?: string;
 }
 
@@ -71,7 +72,7 @@ export interface CreateAdrOptions {
   supersedes?: string | string[];
   superseded_by?: string | string[];
   isArchived?: boolean;
-  subDir?: string;
+  scopeDir?: string;
   rawContent?: string;
 }
 
@@ -95,6 +96,7 @@ export interface CreateFixtureArtifactOptions {
   };
   isArchived?: boolean;
   rawContent?: string;
+  scopeDir?: string;
   subDir?: string;
 }
 
@@ -170,15 +172,27 @@ export async function createFixtureWorkspace(
         isArchived,
       });
 
-      const subDir =
-        options.subDir ??
-        (upperSubtype === "RULE"
-          ? ".modie/rules"
-          : upperSubtype === "ADR"
-            ? ".modie/adrs"
-            : ".modie/tasks");
+      let targetDir: string;
+      if (options.subDir !== undefined) {
+        targetDir = join(cwd, options.subDir);
+      } else if (options.scopeDir !== undefined) {
+        const resolved = resolveArtifactDirectories(
+          upperSubtype,
+          options.scopeDir,
+          cwd,
+        );
+        targetDir = resolved.targetDir;
+      } else {
+        targetDir = join(
+          cwd,
+          upperSubtype === "RULE"
+            ? ".modie/rules"
+            : upperSubtype === "ADR"
+              ? ".modie/adrs"
+              : ".modie/tasks",
+        );
+      }
 
-      const targetDir = join(cwd, subDir);
       await mkdir(targetDir, { recursive: true });
 
       const filepath = join(targetDir, filename);
@@ -312,7 +326,7 @@ export async function createFixtureWorkspace(
         plannedGovernance: options.plannedGovernance,
         depends_on: options.depends_on,
         links: options.links,
-        subDir: options.subDir,
+        scopeDir: options.scopeDir,
         rawContent: options.rawContent,
       });
     },
@@ -337,7 +351,7 @@ export async function createFixtureWorkspace(
         supersedes: options.supersedes,
         superseded_by: options.superseded_by,
         isArchived: options.isArchived,
-        subDir: options.subDir,
+        scopeDir: options.scopeDir,
         rawContent: options.rawContent,
       });
     },
@@ -370,7 +384,7 @@ export async function createFixtureWorkspace(
         supersedes: options.supersedes,
         superseded_by: options.superseded_by,
         isArchived: options.isArchived,
-        subDir: options.subDir,
+        scopeDir: options.scopeDir,
         rawContent: options.rawContent,
       });
     },

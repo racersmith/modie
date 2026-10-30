@@ -38,7 +38,7 @@ describe("CLI `modie link` and `modie unlink` Commands (ADR-5, RULE-27, RULE-36)
     await workspace.createAdr({
       id: 602,
       slug: "sub-adr",
-      subDir: "src/core/.modie/adrs",
+      scopeDir: "src/core",
       links: [],
       context: "Sub ADR context.",
     });
@@ -52,7 +52,7 @@ describe("CLI `modie link` and `modie unlink` Commands (ADR-5, RULE-27, RULE-36)
     await workspace.createRule({
       id: 602,
       slug: "sub-rule",
-      subDir: "src/core/.modie/rules",
+      scopeDir: "src/core",
       links: [],
       body: "Sub rule assertion.",
     });

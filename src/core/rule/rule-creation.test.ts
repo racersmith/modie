@@ -93,7 +93,7 @@ describe("Rule Creation - Frontmatter Validation & Ancestry (RULE-13, RULE-16, R
       id: 102,
       slug: "core-decision",
       context: "Core decision ADR",
-      subDir: "src/core/.modie/adrs",
+      scopeDir: "src/core",
     });
 
     // Rule scoped in workspace.cwd/src/interfaces
@@ -114,7 +114,7 @@ describe("Rule Creation - Frontmatter Validation & Ancestry (RULE-13, RULE-16, R
       id: 103,
       slug: "cli-decision",
       context: "CLI decision ADR",
-      subDir: "src/interfaces/cli/.modie/adrs",
+      scopeDir: "src/interfaces/cli",
     });
 
     // Rule scoped at workspace.cwd/src/interfaces (parent of CLI)
