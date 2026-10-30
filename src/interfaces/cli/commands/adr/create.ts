@@ -85,7 +85,9 @@ export const adrCreateCommand: CliCommandDefinition<
   typeof adrCreateSchema
 > = defineCommand({
   id: "adr_create",
+  namespace: "adr",
   name: "create",
+  summaryUsage: "<title>",
   usage: "modie adr create <title> [options]",
   description: "Create a new ADR artifact",
   agentGuidance:

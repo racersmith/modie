@@ -58,7 +58,9 @@ export const taskMergeCommand: CliCommandDefinition<
   typeof taskMergeSchema
 > = defineCommand({
   id: "task_merge",
+  namespace: "task",
   name: "merge",
+  summaryUsage: "<id>",
   usage: "modie task merge [id-or-path] [options]",
   description: "Merge completed task branch back into parent or trunk",
   agentGuidance:

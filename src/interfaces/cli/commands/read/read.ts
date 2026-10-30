@@ -141,9 +141,9 @@ export const readCommand: CliCommandDefinition<
 > = defineCommand({
   id: "read",
   name: "read",
+  summaryUsage: "<tag> [options]",
   usage: "modie read <tag-or-identifier> [options]",
-  description:
-    "Display artifact details, scope, or content in human or agent-optimized format.",
+  description: "Display artifact details or content",
   helpUsage: "modie read --help",
   schema: readSchema,
   positionals: [

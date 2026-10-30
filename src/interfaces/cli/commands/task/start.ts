@@ -48,7 +48,9 @@ export const taskStartCommand: CliCommandDefinition<
   typeof taskStartSchema
 > = defineCommand({
   id: "task_start",
+  namespace: "task",
   name: "start",
+  summaryUsage: "<id>",
   usage: "modie task start <id-or-path> [options]",
   description: "Create and checkout a hierarchical task branch",
   agentGuidance:

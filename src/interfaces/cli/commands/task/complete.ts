@@ -69,10 +69,12 @@ export const taskCompleteCommand: CliCommandDefinition<
   typeof taskCompleteSchema
 > = defineCommand({
   id: "task_complete",
+  namespace: "task",
   name: "complete",
+  aliases: ["finish"],
+  summaryUsage: "<id>",
   usage: "modie task complete [id-or-path] [options] (alias: finish)",
-  description:
-    "Verify criteria and delete completed task artifact (alias: finish)",
+  description: "Complete a task and delete its artifact",
   agentGuidance:
     "CRITICAL: Do NOT invoke this tool autonomously upon completing implementation. " +
     "When all technical criteria and test suites pass, HALT and present a concise summary of changes and test outcomes to the user for review. " +

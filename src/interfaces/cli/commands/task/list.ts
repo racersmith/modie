@@ -97,10 +97,13 @@ export const taskListCommand: CliCommandDefinition<
   typeof taskListSchema
 > = defineCommand({
   id: "task_list",
+  namespace: "task",
   name: "list",
+  aliases: ["ls", "backlog"],
+  rootAliases: ["backlog"],
+  summaryUsage: "[options]",
   usage: "modie task list [options]",
-  description:
-    "List active tasks in the working tree with DAG dependency readiness and progress.",
+  description: "List active tasks with DAG readiness and progress",
   agentGuidance:
     "Call this tool to inspect active tasks in the repository DAG. Filter by ready: true to discover unblocked tasks ready for execution.",
   helpUsage: "modie task list --help",

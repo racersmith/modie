@@ -175,7 +175,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     expect(parsed.depends_on).toEqual([depTask3, depTask4]);
     expect(parsed.links).toEqual([linkAdr6, linkRule25]);
     expect(parsed.acceptanceCriteria.length).toBe(3);
-    expect(parsed.acceptanceCriteria[2].text).toBe("User Review");
+    expect(parsed.acceptanceCriteria[2]?.text).toBe("User Review");
     expect(result.artifact.depends_on).toEqual([depTask3, depTask4]);
     expect(result.artifact.links).toEqual([linkAdr6, linkRule25]);
   });
@@ -192,7 +192,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     });
 
     expect(result.artifact.acceptanceCriteria).toHaveLength(1);
-    expect(result.artifact.acceptanceCriteria[0].text).toBe(
+    expect(result.artifact.acceptanceCriteria[0]?.text).toBe(
       "Automated criterion",
     );
     const fileContents = await workspace.readFile(result.filepath);
@@ -210,7 +210,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     });
 
     expect(result.artifact.acceptanceCriteria).toHaveLength(2);
-    expect(result.artifact.acceptanceCriteria[1].text).toBe("User Review");
+    expect(result.artifact.acceptanceCriteria[1]?.text).toBe("User Review");
   });
 
   // @verifies ADR-9, RULE-34, RULE-35

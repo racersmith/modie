@@ -68,10 +68,12 @@ export const adrListCommand: CliCommandDefinition<
   typeof adrListSchema
 > = defineCommand({
   id: "adr_list",
+  namespace: "adr",
   name: "list",
+  aliases: ["ls"],
+  summaryUsage: "[options]",
   usage: "modie adr list [options]",
-  description:
-    "List active ADR artifacts with titles, tags, relative paths, and links.",
+  description: "List active ADR artifacts",
   agentGuidance:
     "Call this tool to discover active architectural decision records (ADRs) across the repository or governing a specific directory scope (honoring ancestral scope traversal per RULE-9).",
   helpUsage: "modie adr list --help",

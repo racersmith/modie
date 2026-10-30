@@ -59,9 +59,9 @@ export const unlinkCommand: CliCommandDefinition<
 > = defineCommand({
   id: "unlink_artifact",
   name: "unlink",
+  summaryUsage: "<source> <target>",
   usage: "modie unlink <source> <target> [options]",
-  description:
-    "Remove a frontmatter link or dependency from a source artifact to a target artifact",
+  description: "Remove a frontmatter link or dependency",
   agentGuidance:
     "Call this tool to remove a frontmatter 'links' reference or 'depends_on' task dependency from a source artifact without modifying its Markdown body or corrupting YAML structure.",
   helpUsage: "modie unlink --help",

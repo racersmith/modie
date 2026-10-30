@@ -51,9 +51,9 @@ export const findCommand: CliCommandDefinition<
 > = defineCommand({
   id: "find",
   name: "find",
+  summaryUsage: "<tag> [options]",
   usage: "modie find <tag-or-identifier> [options]",
-  description:
-    "Find the filesystem path of an indexable artifact by canonical tag.",
+  description: "Find the file path of an artifact by tag",
   helpUsage: "modie find --help",
   schema: findSchema,
   positionals: [
