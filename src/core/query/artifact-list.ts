@@ -9,6 +9,7 @@ import { resolveGoverningScope } from "../common/directories.ts";
 import type { IndexableSubtype } from "../common/types.ts";
 import { scanActiveArtifacts } from "../resolver/active-scanner.ts";
 import {
+  extractAdrSummary,
   parseFrontmatterFields,
   splitMarkdownFrontmatter,
 } from "./markdown-parser.ts";
@@ -85,11 +86,17 @@ export async function listActiveArtifacts(
     }
 
     let links: string[] = [];
+    let summary: string | undefined;
     try {
       const rawContent = await readFile(disc.filepath, "utf8");
       const { frontmatter } = splitMarkdownFrontmatter(rawContent);
       const parsedFields = parseFrontmatterFields(frontmatter);
       links = parsedFields.links;
+      if (disc.subtype === "ADR") {
+        summary = extractAdrSummary(rawContent, disc.slug);
+      } else if (parsedFields.summary) {
+        summary = parsedFields.summary;
+      }
     } catch {
       // Skip if file became unreadable
       continue;
@@ -109,6 +116,7 @@ export async function listActiveArtifacts(
       relativePath: relPath,
       scope: scopeDisplay,
       links,
+      ...(summary ? { summary } : {}),
     });
   }
 

@@ -1,4 +1,5 @@
 ---
+summary: Constrain frontmatter links by subtype compatibility and ancestral/descendant directory topology while isolating cross-scope task sequencing in depends_on.
 links:
   - ADR-4
   - RULE-7

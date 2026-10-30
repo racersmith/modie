@@ -81,4 +81,37 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14)", () => {
       "Adopted decision regarding Defaulted Decision.",
     );
   });
+
+  // @verifies ADR-4, ADR-8, RULE-26
+  it("[ADR-4][ADR-8][RULE-26] should render summary in canonical YAML frontmatter when provided", () => {
+    const rendered = renderAdrMarkdown({
+      title: "Signpost Progressive Disclosure",
+      summary:
+        "Emit 1-2 sentence ADR summaries during context compilation to prevent prompt bloat.",
+      links: ["ADR-4", "RULE-26"],
+      context: "Full ADR bodies bloat upward context compilation.",
+      decision: "Adopt frontmatter summary field.",
+    });
+
+    expect(rendered).toContain(
+      "---\nsummary: Emit 1-2 sentence ADR summaries during context compilation to prevent prompt bloat.\nlinks:\n  - ADR-4\n  - RULE-26\n---",
+    );
+  });
+
+  // @verifies ADR-4, ADR-8
+  it("[ADR-4][ADR-8] should collapse multi-line summary into single-line YAML frontmatter and omit blank summary", () => {
+    const multiLine = renderAdrMarkdown({
+      title: "Multi-line Summary ADR",
+      summary: "First sentence.\n  Second sentence.",
+    });
+    expect(multiLine).toContain(
+      "---\nsummary: First sentence. Second sentence.\nlinks: []\n---",
+    );
+
+    const blankSummary = renderAdrMarkdown({
+      title: "Blank Summary ADR",
+      summary: "   ",
+    });
+    expect(blankSummary).not.toContain("summary:");
+  });
 });

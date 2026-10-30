@@ -58,9 +58,19 @@ export interface ResolvedArtifact {
    * Whether the artifact was resolved from Git history or another branch (--history).
    */
   isHistorical?: boolean;
+
+  /**
+   * Concise summary of the artifact (for ADR artifacts, extracted from frontmatter with fallback).
+   */
+  summary?: string;
 }
 
 export interface ArtifactDetails extends ResolvedArtifact {
+  /**
+   * Concise summary of the artifact (for ADR artifacts, extracted from frontmatter with fallback).
+   */
+  summary?: string;
+
   /**
    * Frontmatter links list (target ADR or RULE tags).
    */
@@ -176,6 +186,11 @@ export interface ListedArtifact {
    * Frontmatter links list (target ADR or RULE tags).
    */
   links: string[];
+
+  /**
+   * Concise summary of the artifact (extracted from frontmatter with fallback for ADRs).
+   */
+  summary?: string;
 }
 
 export interface ListArtifactsOptions {

@@ -414,6 +414,48 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     expect(unlinked.changed).toBe(true);
     expect(unlinked.links).toEqual([]);
   });
+
+  // @verifies ADR-4, ADR-8, RULE-14, RULE-25, RULE-26, RULE-34
+  it("[ADR-4][ADR-8][RULE-14][RULE-25][RULE-26][RULE-34] should accept summary parameter in adr_create MCP tool and expose summary in read and adr_list", async () => {
+    const createRes = await client.callTool({
+      name: "adr_create",
+      arguments: {
+        title: "MCP Summary Decision",
+        summary:
+          "Provide 1-2 sentence ADR summaries in frontmatter for progressive disclosure.",
+        context: "Full ADR bodies bloat agent prompts.",
+        decision: "Store summary in YAML frontmatter.",
+        links: [ruleTag],
+      },
+    });
+
+    expect(createRes.isError).toBeFalsy();
+    const created = JSON.parse(getTextContent(createRes));
+    expect(created.summary).toBe(
+      "Provide 1-2 sentence ADR summaries in frontmatter for progressive disclosure.",
+    );
+
+    const readRes = await client.callTool({
+      name: "read",
+      arguments: { tag: created.tag },
+    });
+    expect(readRes.isError).toBeFalsy();
+    const readData = JSON.parse(getTextContent(readRes));
+    expect(readData.summary).toBe(
+      "Provide 1-2 sentence ADR summaries in frontmatter for progressive disclosure.",
+    );
+
+    const listRes = await client.callTool({
+      name: "adr_list",
+      arguments: {},
+    });
+    expect(listRes.isError).toBeFalsy();
+    const listData = JSON.parse(getTextContent(listRes));
+    const matched = listData.find((a: any) => a.tag === created.tag);
+    expect(matched?.summary).toBe(
+      "Provide 1-2 sentence ADR summaries in frontmatter for progressive disclosure.",
+    );
+  });
 });
 
 describe("Modie MCP Server - Read-Only Resources (Criterion 4)", () => {

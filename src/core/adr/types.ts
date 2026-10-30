@@ -4,6 +4,7 @@
  */
 
 export interface AdrFrontmatter {
+  summary?: string;
   links?: string[];
   supersedes?: string[];
   superseded_by?: string[] | string;
@@ -24,6 +25,11 @@ export interface AdrArtifact {
    * Human-readable title.
    */
   title: string;
+
+  /**
+   * Concise 1-2 sentence signpost summary of the decision for progressive disclosure (ADR-8, RULE-26).
+   */
+  summary?: string;
 
   /**
    * Frontmatter links (ADR or RULE tags) per RULE-14 and RULE-17.
@@ -83,6 +89,11 @@ export interface AdrRenderOptions {
   title?: string;
 
   /**
+   * Concise 1-2 sentence signpost summary of the decision for progressive disclosure (ADR-8, RULE-26).
+   */
+  summary?: string;
+
+  /**
    * Frontmatter link targets (ADR or RULE) per RULE-14.
    */
   links?: string[];
@@ -125,6 +136,11 @@ export interface CreateAdrOptions {
    * Defaults to workspace root (cwd).
    */
   scopeDir?: string;
+
+  /**
+   * Concise 1-2 sentence signpost summary of the decision for progressive disclosure (ADR-8, RULE-26).
+   */
+  summary?: string;
 
   /**
    * Context / problem statement (ADR-4).

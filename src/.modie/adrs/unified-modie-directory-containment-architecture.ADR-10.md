@@ -1,4 +1,5 @@
 ---
+summary: Encapsulate all governance, intent, and GIST artifacts for a directory within a single unified .modie container directory.
 links:
   - ADR-4
   - RULE-8

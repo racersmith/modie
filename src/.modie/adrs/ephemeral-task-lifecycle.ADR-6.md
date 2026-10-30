@@ -1,4 +1,5 @@
 ---
+summary: Manage tasks as active-only working tree files that are permanently deleted upon completion via an atomic two-phase Git commit ceremony.
 links:
   - ADR-4
   - ADR-5

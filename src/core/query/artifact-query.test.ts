@@ -321,6 +321,56 @@ describe("Artifact Query Service - Deep Inspection (RULE-26, RULE-29, RULE-34, R
       "Alternative A and Alternative B.",
     );
     expect(details.sections["Decision"]).toBe("We decided on solution X.");
+    expect(details.summary).toBe("We decided on solution X.");
+  });
+
+  // @verifies ADR-4, ADR-8, RULE-25, RULE-26, RULE-29, RULE-34
+  it("[ADR-4][ADR-8][RULE-25][RULE-26][RULE-29][RULE-34] should extract explicit ADR frontmatter summary in resolveArtifactByTag and getArtifactDetails with sensible fallback", async () => {
+    const explicitAdrTag = makeTestTag("ADR", "TEST-62");
+    const fallbackAdrTag = makeTestTag("ADR", "TEST-63");
+
+    await workspace.createAdr({
+      id: "TEST-62",
+      slug: "explicit-summary-adr",
+      summary: "Concise explicit frontmatter summary.",
+      context: "Problem context.",
+      decision: "Detailed decision prose.",
+    });
+
+    await workspace.createAdr({
+      id: "TEST-63",
+      slug: "fallback-summary-adr",
+      context: "Problem context.",
+      decision: "Fallback decision summary from first paragraph.",
+    });
+
+    const resolvedExplicit = await resolveArtifactByTag(explicitAdrTag, {
+      cwd: workspace.cwd,
+    });
+    expect(resolvedExplicit.summary).toBe(
+      "Concise explicit frontmatter summary.",
+    );
+
+    const detailsExplicit = await getArtifactDetails(explicitAdrTag, {
+      cwd: workspace.cwd,
+    });
+    expect(detailsExplicit.summary).toBe(
+      "Concise explicit frontmatter summary.",
+    );
+
+    const resolvedFallback = await resolveArtifactByTag(fallbackAdrTag, {
+      cwd: workspace.cwd,
+    });
+    expect(resolvedFallback.summary).toBe(
+      "Fallback decision summary from first paragraph.",
+    );
+
+    const detailsFallback = await getArtifactDetails(fallbackAdrTag, {
+      cwd: workspace.cwd,
+    });
+    expect(detailsFallback.summary).toBe(
+      "Fallback decision summary from first paragraph.",
+    );
   });
 
   // @verifies RULE-8, RULE-12, RULE-25, RULE-29, RULE-34

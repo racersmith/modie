@@ -26,12 +26,24 @@ export function validateAdrLinks(links: string[] = []): void {
  * sections (# Context, # Alternatives Considered, # Decision) per ADR-4.
  */
 export function renderAdrMarkdown(options: AdrRenderOptions): string {
-  const { title, links = [], context, alternatives, decision } = options;
+  const {
+    title,
+    summary,
+    links = [],
+    context,
+    alternatives,
+    decision,
+  } = options;
 
   // Validate frontmatter boundaries per RULE-14
   validateAdrLinks(links);
 
   const frontmatterLines: string[] = ["---"];
+
+  const trimmedSummary = summary?.trim().replace(/\s*\r?\n\s*/g, " ");
+  if (trimmedSummary) {
+    frontmatterLines.push(`summary: ${trimmedSummary}`);
+  }
 
   if (links.length > 0) {
     frontmatterLines.push("links:");

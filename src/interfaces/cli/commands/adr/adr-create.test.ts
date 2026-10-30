@@ -307,4 +307,37 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
     expect(parsed.tag).toBe(expectedTag);
     expect(parsed.slug).toBe("subprocess-adr");
   });
+
+  // @verifies ADR-4, ADR-8, RULE-25, RULE-26, RULE-27, RULE-34
+  it("[ADR-4][ADR-8][RULE-25][RULE-26][RULE-27][RULE-34] should support --summary flag and write summary to YAML frontmatter and JSON output", async () => {
+    await using workspace = await createTestWorkspace(
+      "modie-cli-adr-summary-",
+    );
+    const expectedTag = makeTestTag("ADR", 1);
+    const { exitCode, stdout, stderr } = await workspace.captureCli([
+      "adr",
+      "create",
+      "Summary Enabled ADR",
+      "--summary",
+      "Concise signpost summary for progressive context disclosure.",
+      "--context",
+      "Detailed context.",
+      "--decision",
+      "Adopted decision.",
+      "--json",
+    ]);
+
+    expect(exitCode).toBe(0);
+    expect(stderr).toContain(`✓ Created ADR ${expectedTag}`);
+
+    const parsed = JSON.parse(stdout.trim());
+    expect(parsed.summary).toBe(
+      "Concise signpost summary for progressive context disclosure.",
+    );
+
+    const content = await workspace.readFile(parsed.relativePath);
+    expect(content).toContain(
+      "---\nsummary: Concise signpost summary for progressive context disclosure.\nlinks: []\n---",
+    );
+  });
 });

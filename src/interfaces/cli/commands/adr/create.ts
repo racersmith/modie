@@ -24,6 +24,12 @@ export const adrCreateSchema = z.object({
     .string()
     .optional()
     .describe("Target scope directory (defaults to current working directory)"),
+  summary: z
+    .string()
+    .optional()
+    .describe(
+      "Concise 1-2 sentence signpost summary of the core decision for progressive disclosure",
+    ),
   context: z
     .string()
     .optional()
@@ -53,6 +59,7 @@ export type AdrCreateInput = z.infer<typeof adrCreateSchema>;
 
 export interface AdrCreateFlags {
   scope?: string;
+  summary?: string;
   context?: string;
   alternatives?: string;
   decision?: string;
@@ -69,6 +76,7 @@ export interface AdrCreateResultPayload {
   filepath: string;
   relativePath: string;
   title: string;
+  summary?: string;
   links: string[];
   supersedes?: string[];
   context?: string;
@@ -115,6 +123,12 @@ export const adrCreateCommand: CliCommandDefinition<
       description:
         "Target scope directory (defaults to current working directory)",
     },
+    summary: {
+      type: "string",
+      placeholder: "<text>",
+      description:
+        "Concise 1-2 sentence signpost summary of the core decision for progressive disclosure",
+    },
     context: {
       type: "string",
       short: "c",
@@ -157,6 +171,7 @@ export const adrCreateCommand: CliCommandDefinition<
     const adrOptions: CreateAdrOptions = {
       title: input.title,
       scopeDir: input.scope,
+      summary: input.summary,
       context: input.context,
       alternatives: input.alternatives,
       decision: input.decision,
@@ -175,6 +190,7 @@ export const adrCreateCommand: CliCommandDefinition<
       filepath: result.filepath,
       relativePath: result.relativePath,
       title: result.artifact.title,
+      summary: result.artifact.summary,
       links: result.artifact.links,
       supersedes: result.artifact.supersedes,
       context: result.artifact.context,

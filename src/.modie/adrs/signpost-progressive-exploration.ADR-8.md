@@ -1,4 +1,5 @@
 ---
+summary: Compile lean initial context from upward ancestral motives and rules alongside immediate child GIST signposts for progressive on-demand territory exploration.
 links:
   - ADR-4
   - RULE-2

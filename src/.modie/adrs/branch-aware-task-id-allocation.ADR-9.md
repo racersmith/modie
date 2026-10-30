@@ -1,4 +1,5 @@
 ---
+summary: Prevent concurrent task ID collisions using hierarchical branch-aware namespacing for subtasks and global multi-ref Git watermark scanning.
 links:
   - ADR-1
   - ADR-6
