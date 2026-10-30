@@ -62,7 +62,7 @@ export const taskMergeCommand: CliCommandDefinition<
   usage: "modie task merge [id-or-path] [options]",
   description: "Merge completed task branch back into parent or trunk",
   agentGuidance:
-    "Call this tool to merge a completed task branch back into its parent branch or trunk according to hierarchical task branch topology.",
+    "Call this tool only when the task has been completed and the user explicitly requests to merge the task branch back into its parent branch or trunk.",
   helpUsage: "modie task merge --help",
   schema: taskMergeSchema,
   positionals: [

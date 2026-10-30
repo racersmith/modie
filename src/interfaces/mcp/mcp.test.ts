@@ -122,9 +122,16 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     );
     expect(createTool?.description).toContain("Ephemeral Task Decoupling");
     expect(createTool?.description).toContain("Upfront Planned Governance");
+    expect(createTool?.description).toContain("Human-in-the-Loop Review Gate");
 
     const completeTool = response.tools.find((t) => t.name === "task_complete");
     expect(completeTool?.description).toContain("EPHEMERAL TASK INVARIANT");
+    expect(completeTool?.description).toContain("CRITICAL: Do NOT invoke this tool autonomously");
+
+    expect(checkTool?.description).toContain("Do not check items designated for human sign-off");
+
+    const mergeTool = response.tools.find((t) => t.name === "task_merge");
+    expect(mergeTool?.description).toContain("Call this tool only when the task has been completed and the user explicitly requests");
   });
 
   it("[RULE-26] should execute task_list tool and return strictly actionable schema payloads", async () => {
@@ -257,6 +264,22 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     const created = JSON.parse(getTextContent(createResult));
     expect(created.id).toBeDefined();
     expect(created.slug).toBe("agent-created-task");
+    expect(created.acceptanceCriteria).toHaveLength(3);
+    expect(created.acceptanceCriteria[2].text).toBe("User Review");
+  });
+
+  it("[RULE-25] should create a new task with noReview via task_create tool", async () => {
+    const createResult = await client.callTool({
+      name: "task_create",
+      arguments: {
+        title: "Agent Automated Task",
+        criteria: ["Item A", "Item B"],
+        noReview: true,
+      },
+    });
+
+    expect(createResult.isError).toBeFalsy();
+    const created = JSON.parse(getTextContent(createResult));
     expect(created.acceptanceCriteria).toHaveLength(2);
   });
 

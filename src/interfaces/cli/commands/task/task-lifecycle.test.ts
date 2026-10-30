@@ -418,12 +418,12 @@ describe("CLI Task Lifecycle - End-to-End Subprocess via bin.ts (RULE-21, RULE-2
     expect(check1.stderr).toContain("✓ Checked item 1");
     expect(check1.stdout.trim()).toBe(taskPath);
 
-    // 3. Attempt to complete (should fail because item 2 is incomplete)
+    // 3. Attempt to complete (should fail because items 2 and 3 remain unchecked)
     try {
       await workspace.execBin(["task", "complete", taskPath]);
       expect(true).toBe(false); // should not reach here
     } catch (err: any) {
-      expect(err.stderr).toContain("1 acceptance criteria remain unchecked");
+      expect(err.stderr).toContain("2 acceptance criteria remain unchecked");
     }
 
     // 4. Check item 2
@@ -434,9 +434,27 @@ describe("CLI Task Lifecycle - End-to-End Subprocess via bin.ts (RULE-21, RULE-2
       "--item",
       "2",
     ]);
-    expect(check2.stderr).toContain("✓ All acceptance criteria");
+    expect(check2.stderr).toContain("✓ Checked item 2");
 
-    // 5. Complete task inside the hermetic git repository
+    // 5. Attempt to complete (should fail because item 3 "User Review" remains unchecked)
+    try {
+      await workspace.execBin(["task", "complete", taskPath]);
+      expect(true).toBe(false); // should not reach here
+    } catch (err: any) {
+      expect(err.stderr).toContain("1 acceptance criteria remain unchecked");
+    }
+
+    // 6. Check item 3 (User Review)
+    const check3 = await workspace.execBin([
+      "task",
+      "check",
+      taskPath,
+      "--item",
+      "3",
+    ]);
+    expect(check3.stderr).toContain("✓ All acceptance criteria");
+
+    // 7. Complete task inside the hermetic git repository
     const completeResult = await workspace.execBin([
       "task",
       "complete",

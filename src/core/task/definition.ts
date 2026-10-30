@@ -93,6 +93,16 @@ export const taskDefinition: ArtifactDefinition<
       },
     );
 
+    // Human-in-the-loop review gate: default to appending "User Review" unless review is explicitly false
+    // or already included in criteria.
+    const shouldIncludeReview = options.review !== false;
+    const hasUserReview = normalizedCriteria.some(
+      (item) => item.text.trim().toLowerCase() === "user review",
+    );
+    if (shouldIncludeReview && !hasUserReview) {
+      normalizedCriteria.push({ text: "User Review", completed: false });
+    }
+
     const renderOptions: TaskRenderOptions = {
       id,
       slug,

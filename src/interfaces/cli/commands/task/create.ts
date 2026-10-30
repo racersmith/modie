@@ -77,6 +77,14 @@ export const taskCreateSchema = z.object({
     .boolean()
     .default(false)
     .describe("Allow placing task above deepest common ancestor"),
+  review: z
+    .boolean()
+    .default(true)
+    .describe("Automatically include a 'User Review' acceptance criterion (default: true)"),
+  noReview: z
+    .boolean()
+    .default(false)
+    .describe("Disable the automatic 'User Review' acceptance criterion"),
 });
 
 export type TaskCreateInput = z.infer<typeof taskCreateSchema>;
@@ -101,6 +109,8 @@ export interface TaskCreateFlags {
   branch?: string;
   "force-trunk"?: boolean;
   "allow-broad-scope"?: boolean;
+  review?: boolean;
+  "no-review"?: boolean;
 }
 
 export interface TaskCreateResultPayload {
@@ -135,7 +145,8 @@ export const taskCreateCommand: CliCommandDefinition<
     "1. Contract-Based Acceptance Criteria (RULE-30): Define deliverables in terms of component roles, behavioral contracts, and testable outcomes rather than concrete filesystem paths that rot during refactorings.\n" +
     "2. Ephemeral Task Decoupling: ANTI-PATTERN WARNING: Never reference ephemeral TASK IDs (e.g. `[TASK-XX]`, `@verifies TASK-XX`) in tests or code implementation comments. Tasks are ephemeral and deleted upon completion (ADR-6, RULE-21). Tests and code must ONLY reference durable `RULE-` and `ADR-` artifacts. If you find yourself wanting to cite a TASK in code or tests, STOP and author a new `RULE` or `ADR` instead.\n" +
     "3. Upfront Planned Governance: Front-load candidate rules and architectural decisions in `--plan-rule` and `--plan-adr` before starting implementation. All planned governance artifacts must be authored and satisfied before the task can be completed.\n" +
-    "4. Atomic Scope & Blast Radius (RULE-6, RULE-12): Tasks must represent a single, cohesive unit of work scoped at the deepest common ancestor.",
+    "4. Atomic Scope & Blast Radius (RULE-6, RULE-12): Tasks must represent a single, cohesive unit of work scoped at the deepest common ancestor.\n" +
+    "5. Human-in-the-Loop Review Gate: By default, a 'User Review' acceptance criterion is automatically appended to enforce a review checkpoint before completion. Use --no-review only for automated pipelines where human verification is unnecessary.",
   helpUsage: "modie task create --help",
   schema: taskCreateSchema,
   positionals: [
@@ -280,6 +291,18 @@ export const taskCreateCommand: CliCommandDefinition<
       description: "Allow placing task above deepest common ancestor",
       property: "allowBroadScope",
     },
+    review: {
+      type: "boolean",
+      description:
+        "Include a 'User Review' acceptance criterion (default: true)",
+      property: "review",
+    },
+    "no-review": {
+      type: "boolean",
+      description:
+        "Do not include the default 'User Review' acceptance criterion",
+      property: "noReview",
+    },
   },
   execute: async (input, context) => {
     const taskOptions: CreateTaskOptions = {
@@ -302,6 +325,7 @@ export const taskCreateCommand: CliCommandDefinition<
       branch: input.branch,
       forceTrunk: Boolean(input.forceTrunk),
       allowBroadScope: Boolean(input.allowBroadScope),
+      review: input.noReview ? false : (input.review ?? true),
       cwd: context.cwd,
     };
 
