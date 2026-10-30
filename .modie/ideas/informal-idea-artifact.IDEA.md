@@ -59,7 +59,9 @@ To prevent sprawl across deep leaf directories while empowering monorepos and mu
    - Like `TASK` (ADR-6), ideas are strictly **ephemeral**.
    - **Direct Spark Graduation (`modie spark task <id>`):** Actionable sparks can graduate directly into a formal `TASK` without requiring an intermediate idea file.
    - **Idea Graduation (`modie idea graduate <slug>`):** Once all spawned artifacts declared in `outputs:` are created on disk, graduation reports the generated artifacts and safely deletes the `.IDEA.md` file.
-   - **The Rejection Graveyard (`.modie/ideas/.rejected/`):** Rejected ideas are moved to `.rejected/[slug].IDEA.md` with a brief `# Rationale for Rejection` rather than permanently deleted. This prevents recurring amnesia where the same discarded idea is repeatedly proposed weeks later.
+   - **Two-Tier Rejection Graveyard (`.modie/ideas/.rejected/`):**
+     - **Rejected Sparks (`.rejected/SPARKS.md`):** Discarded sparks that were never converted into ideas are archived into `.rejected/SPARKS.md` with an inline rationale (e.g. `- My thought — *Rejected 2026-10-30: Rationale*`). This preserves institutional memory of settled non-goals and eliminates repetitive re-proposals while keeping active `SPARKS.md` lean.
+     - **Rejected Ideas (`.rejected/[slug].IDEA.md`):** Promoted ideas that are abandoned are moved to `.rejected/[slug].IDEA.md` with a `# Rationale for Rejection` section rather than permanently deleted.
 
 # Authoring, Promotion & Discovery Ergonomics
 
@@ -71,15 +73,18 @@ To prevent sprawl across deep leaf directories while empowering monorepos and mu
   - List: `modie sparks` (shows numbered list).
   - Promote to Idea: `modie spark promote 1,4 --title "Clickable IDE Tags"`.
   - Graduate to Task: `modie spark task 2 "Add summary to ADR frontmatter" --scope src`.
+  - Reject Spark: `modie spark reject 3 "Conflicts with plain-text DAG (ADR-4)"`.
 - **Idea Lifecycle:**
   - Create: `modie idea create "My Concept"` (scaffolds sections and frontmatter).
   - Link Output: `modie idea link <slug> TASK-54 --output`.
   - Graduate: `modie idea graduate <slug>`.
   - Reject: `modie idea graduate <slug> --reject "Rationale for abandonment"`.
+- **Git Merge Resilience:**
+  - `.gitattributes` declares `**/.modie/ideas/**/SPARKS.md merge=union` to allow concurrent appends to both active and rejected spark ledgers to auto-resolve across branches without merge conflicts.
 
 # Resolved Questions
 
 - **Frictionless Effort/Impact in `SPARKS.md`:** Resolved against inline complexity. Adding tagging overhead to raw sparks defeats the purpose of rapid, zero-friction capture. Triage happens during promotion.
 - **Idea $\rightarrow$ Task/ADR Graduation Tooling:** Resolved in favor of explicit graduation commands for both sparks (`modie spark task`) and ideas (`modie idea graduate`), backed by explicit `outputs:` verification.
 - **Scope Proliferation:** Resolved via explicit initialization (`modie ideas init [path]`) with upward nearest-ancestor bubble-up traversal.
-- **Rejection Amnesia:** Resolved by preserving rejected ideas in a `.rejected/` subfolder with documented rationale rather than silent deletion.
+- **Rejection Amnesia:** Resolved via a symmetrical two-tier rejection graveyard: `.rejected/SPARKS.md` for raw sparks with inline rationales, and `.rejected/[slug].IDEA.md` for developed concepts.
