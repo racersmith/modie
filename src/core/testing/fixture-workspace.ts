@@ -19,7 +19,7 @@ const execFileAsync = promisify(execFile);
 (Symbol as any).asyncDispose ??= Symbol("Symbol.asyncDispose");
 
 /**
- * Programmatically constructs a canonical artifact tag (e.g. `makeTestTag("ADR", 123)` -> `"ADR-123"`).
+ * Programmatically constructs a canonical artifact tag (e.g. `makeTestTag("ABC", 123)` -> `"ABC-123"`).
  * Prevents literal tag strings from appearing in test source code, ensuring dogfooding citation
  * scans never match test fixture data as active repository artifacts while maintaining 100%
  * runtime parity with production tag formats.
