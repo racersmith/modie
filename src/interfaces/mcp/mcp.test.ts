@@ -88,6 +88,7 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
 
     expect(toolNames).toContain("find");
     expect(toolNames).toContain("read");
+    expect(toolNames).toContain("scope");
     expect(toolNames).not.toContain("show");
     expect(toolNames).toContain("references");
     expect(toolNames).toContain("archive");
@@ -209,6 +210,19 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     const rawData = JSON.parse(getTextContent(rawRead));
     expect(rawData.rawContent).toBeDefined();
     expect(rawData.rawContent).toContain("# Acceptance Criteria");
+  });
+
+  it("[RULE-25][RULE-26] should execute scope tool and resolve boundaries and rules via MCP", async () => {
+    const scopeResult = await client.callTool({
+      name: "scope",
+      arguments: { target: ruleTag },
+    });
+    expect(scopeResult.isError).toBeFalsy();
+    const data = JSON.parse(getTextContent(scopeResult));
+    expect(data.type).toBe("artifact");
+    expect(data.scope).toBe(".");
+    expect(data.enclosingModieDir).toBe(".modie");
+    expect(data.rules.length).toBeGreaterThanOrEqual(1);
   });
 
   it("[RULE-26] should return isError: true on input validation failure or unknown artifact", async () => {

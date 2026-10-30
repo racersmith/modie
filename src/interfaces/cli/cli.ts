@@ -5,6 +5,7 @@
 
 import { handleFind } from "./commands/find/find.ts";
 import { handleRead } from "./commands/read/read.ts";
+import { handleScope } from "./commands/scope/scope.ts";
 import { handleReferences } from "./commands/references/references.ts";
 import { handleArchive } from "./commands/archive/archive.ts";
 import { handleLink, handleUnlink } from "./commands/link/index.ts";
@@ -50,6 +51,7 @@ Usage:
 Commands:
   find <tag> [options]         Find the file path of an artifact by tag
   read <tag> [options]         Display artifact details or content
+  scope [target] [options]     Resolve architectural scope boundaries and rule chains
   references <tag> [options]   Display citations and declared outbound links (alias: refs)
   archive <tag> [options]      Archive a governance artifact (RULE, ADR)
   link <source> <target>       Add a validated frontmatter link or dependency
@@ -115,6 +117,7 @@ Subcommands:
 const directCommands: Record<string, CommandHandler> = {
   find: handleFind,
   read: handleRead,
+  scope: handleScope,
   references: handleReferences,
   refs: handleReferences,
   archive: handleArchive,

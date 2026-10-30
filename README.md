@@ -159,6 +159,7 @@ modie archive RULE-3                # refuses if still cited
 # Discovery
 modie find "references-scanner"
 modie read RULE-34
+modie scope src/interfaces/cli
 modie references ADR-6
 ```
 
@@ -170,7 +171,7 @@ modie references ADR-6
 | `task_create` / `task_start` / `task_check` / `task_complete` / `task_merge` | The task lifecycle                                |
 | `rule_create` / `adr_create`                                                 | Author governance                                 |
 | `rule_archive` / `adr_archive` / `archive`                                   | Retire governance with citation checks            |
-| `find` / `read` / `references`                                               | Look things up                                    |
+| `find` / `read` / `scope` / `references`                                     | Look things up & inspect scope boundaries         |
 
 ---
 

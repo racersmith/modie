@@ -4,6 +4,7 @@
  */
 
 import type { IndexableSubtype } from "../common/types.ts";
+import type { TaskReadiness } from "../task/query.ts";
 import type { TaskAcceptanceCriteriaItem } from "../task/types.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
 
@@ -360,4 +361,98 @@ export interface FindArtifactReferencesOptions {
    * Optional VCS adapter for git operations (defaults to defaultVcsAdapter).
    */
   vcs?: IVcsAdapter;
+}
+
+export interface ScopeRuleItem {
+  tag: string;
+  id: string;
+  slug: string;
+  title: string;
+  relativePath: string;
+  scope: string;
+}
+
+export interface ScopeTaskItem {
+  id: string;
+  tag: string;
+  title: string;
+  slug: string;
+  relativePath: string;
+  scope: string;
+  readiness: TaskReadiness;
+  criteriaProgress: string;
+}
+
+export interface AncestralRuleChainNode {
+  scope: string;
+  rules: ScopeRuleItem[];
+}
+
+export interface ScopeResolutionResult {
+  /**
+   * Input target or artifact identifier.
+   */
+  target: string;
+
+  /**
+   * Resolution target type: "artifact" | "path".
+   */
+  type: "artifact" | "path";
+
+  /**
+   * Relative target path from workspace root (e.g. "." or "src/interfaces/cli").
+   */
+  targetPath: string;
+
+  /**
+   * Absolute target path on disk.
+   */
+  targetAbsolutePath: string;
+
+  /**
+   * Normalized relative governing scope directory (e.g. "." or "src/interfaces/cli").
+   */
+  scope: string;
+
+  /**
+   * Absolute path to the governing scope directory.
+   */
+  scopeDir: string;
+
+  /**
+   * Relative path to the enclosing .modie directory (e.g. ".modie" or "src/interfaces/cli/.modie").
+   */
+  enclosingModieDir: string;
+
+  /**
+   * Ancestral scopes along the upward path vector from root down to governing scope.
+   */
+  ancestralScopes: string[];
+
+  /**
+   * Ancestral rule chains grouped by scope node.
+   */
+  ancestralRuleChains: AncestralRuleChainNode[];
+
+  /**
+   * Applicable ancestral governance rules in accordance with RULE-9.
+   */
+  rules: ScopeRuleItem[];
+
+  /**
+   * Active tasks residing in this governing scope.
+   */
+  tasks: ScopeTaskItem[];
+
+  /**
+   * Metadata of the resolved artifact (if input is an artifact).
+   */
+  artifact?: ResolvedArtifact;
+}
+
+export interface ResolveScopeOptions {
+  /**
+   * Workspace root directory (defaults to process.cwd()).
+   */
+  cwd?: string;
 }

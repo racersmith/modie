@@ -5,7 +5,7 @@
 
 import { readFile, stat } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
-import { resolveArtifactDirectories } from "../common/directories.ts";
+import { resolveGoverningScope } from "../common/directories.ts";
 import { parseArtifactFilename } from "../common/filename.ts";
 import type { IndexableSubtype } from "../common/types.ts";
 import { scanActiveArtifacts } from "../resolver/active-scanner.ts";
@@ -61,17 +61,10 @@ export function parseCanonicalTag(
  */
 function computeArtifactScope(
   filepath: string,
-  subtype: IndexableSubtype,
+  _subtype: IndexableSubtype,
   cwd: string,
 ): string {
-  const { normalizedScopeDir } = resolveArtifactDirectories(
-    subtype,
-    dirname(filepath),
-    true,
-    cwd,
-  );
-  const rel = relative(cwd, normalizedScopeDir).replace(/\\/g, "/");
-  return rel === "" ? "." : rel;
+  return resolveGoverningScope(filepath, cwd).relativeScope;
 }
 
 /**

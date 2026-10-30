@@ -18,6 +18,7 @@ import {
   isValidSlug,
   parseArtifactFilename,
   resolveArtifactDirectories,
+  resolveGoverningScope,
 } from "./index.ts";
 
 describe("Common Primitives - Slug Generation & Validation (RULE-1, RULE-35)", () => {
@@ -331,5 +332,78 @@ describe("Common Primitives - Deepest Common Ancestor (RULE-6, RULE-12, RULE-34)
 
   it("should return null for empty path arrays", () => {
     expect(findDeepestCommonAncestor([])).toBeNull();
+  });
+});
+
+describe("Common Primitives - Centralized Governing Scope Resolution (RULE-8, RULE-9, RULE-12, ADR-10)", () => {
+  let workspace: FixtureWorkspace;
+
+  beforeEach(async () => {
+    workspace = await createFixtureWorkspace("modie-governing-scope-");
+    await workspace.mkdir(".modie");
+    await workspace.mkdir("src/.modie");
+    await workspace.mkdir("src/interfaces/cli/.modie");
+  });
+
+  afterEach(async () => {
+    await workspace.cleanup();
+  });
+
+  // @verifies RULE-8, RULE-12, ADR-10
+  it("[RULE-8][RULE-12][ADR-10] should resolve governing scope for artifacts and container directories", () => {
+    const cwd = workspace.cwd;
+
+    // Artifact file inside .modie/rules
+    const ruleFileScope = resolveGoverningScope(
+      "src/interfaces/cli/.modie/rules/rule-1.RULE-1.md",
+      cwd,
+    );
+    expect(ruleFileScope.relativeScope).toBe("src/interfaces/cli");
+    expect(ruleFileScope.scopeDir).toBe(
+      workspace.resolve("src/interfaces/cli"),
+    );
+
+    // .modie container directory
+    const modieDirScope = resolveGoverningScope(
+      "src/.modie/rules",
+      cwd,
+    );
+    expect(modieDirScope.relativeScope).toBe("src");
+    expect(modieDirScope.scopeDir).toBe(workspace.resolve("src"));
+
+    // .modie root container
+    const rootModieScope = resolveGoverningScope(".modie", cwd);
+    expect(rootModieScope.relativeScope).toBe(".");
+    expect(rootModieScope.scopeDir).toBe(workspace.resolve("."));
+  });
+
+  // @verifies RULE-8, RULE-9, RULE-12
+  it("[RULE-8][RULE-9][RULE-12] should resolve nearest ancestor scope for arbitrary source files and deep paths", async () => {
+    const cwd = workspace.cwd;
+
+    // Deep source file without its own .modie
+    await workspace.writeFile(
+      "src/interfaces/cli/commands/read/read.ts",
+      "export const x = 1;",
+    );
+    const deepFileScope = resolveGoverningScope(
+      "src/interfaces/cli/commands/read/read.ts",
+      cwd,
+    );
+    expect(deepFileScope.relativeScope).toBe("src/interfaces/cli");
+    expect(deepFileScope.scopeDir).toBe(
+      workspace.resolve("src/interfaces/cli"),
+    );
+
+    // File at workspace root
+    await workspace.writeFile("package.json", "{}");
+    const rootFileScope = resolveGoverningScope("package.json", cwd);
+    expect(rootFileScope.relativeScope).toBe(".");
+    expect(rootFileScope.scopeDir).toBe(workspace.resolve("."));
+
+    // Directory having its own .modie
+    const cliDirScope = resolveGoverningScope("src/interfaces/cli", cwd);
+    expect(cliDirScope.relativeScope).toBe("src/interfaces/cli");
+    expect(cliDirScope.scopeDir).toBe(workspace.resolve("src/interfaces/cli"));
   });
 });
