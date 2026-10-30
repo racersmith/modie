@@ -21,6 +21,8 @@ export {
   getLegacySubtypeContainerName,
   getSubtypeContainerName,
   resolveArtifactDirectories,
+  resolveGoverningScope,
+  type GoverningScope,
 } from "./common/directories.ts";
 
 // Declarative artifact pipeline module
@@ -105,6 +107,10 @@ export {
 export * as QueryPrimitive from "./query/index.ts";
 export * from "./query/types.ts";
 export { findArtifactReferences } from "./query/references.ts";
+export {
+  computeAncestralScopes,
+  resolveScope,
+} from "./query/scope.ts";
 export {
   getArtifactDetails,
   parseCanonicalTag,

@@ -8,7 +8,7 @@
 
 import { readFile } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
-import { resolveArtifactDirectories } from "../common/directories.ts";
+import { resolveGoverningScope } from "../common/directories.ts";
 import type { IndexableSubtype } from "../common/types.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
 import {
@@ -115,14 +115,6 @@ export async function detectTaskDependencyCycle(
 }
 
 /**
- * Formats a normalized scope directory for human-readable error reporting relative to cwd.
- */
-function formatScopeDisplay(scopeDir: string, cwd: string): string {
-  const rel = relative(cwd, scopeDir).replace(/\\/g, "/");
-  return rel === "" ? "." : rel;
-}
-
-/**
  * Checks whether `candidateAncestor` is an ancestor of or equal to `targetDir`.
  */
 function isAncestorOrSelfDir(
@@ -173,21 +165,10 @@ export async function validateArtifactLink(
   }
 
   // 3. Normalize architectural scopes (RULE-8)
-  const { normalizedScopeDir: sourceScopeDir } = resolveArtifactDirectories(
-    source.subtype,
-    dirname(source.filepath),
-    true,
-    cwd,
-  );
-  const { normalizedScopeDir: targetScopeDir } = resolveArtifactDirectories(
-    target.subtype,
-    dirname(target.filepath),
-    true,
-    cwd,
-  );
-
-  const sourceScopeDisplay = formatScopeDisplay(sourceScopeDir, cwd);
-  const targetScopeDisplay = formatScopeDisplay(targetScopeDir, cwd);
+  const { scopeDir: sourceScopeDir, relativeScope: sourceScopeDisplay } =
+    resolveGoverningScope(source.filepath, cwd);
+  const { scopeDir: targetScopeDir, relativeScope: targetScopeDisplay } =
+    resolveGoverningScope(target.filepath, cwd);
 
   // 4. Validate `depends_on` relationship (RULE-18)
   if (relationship === "depends_on") {

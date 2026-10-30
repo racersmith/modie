@@ -14,8 +14,8 @@ Implement a dedicated scope command and core resolution service that bidirection
 
 # Acceptance Criteria
 
-- [ ] Centralize governing scope resolution utility (`resolveGoverningScope`) in core directories service and refactor artifact-query, artifact-list, and linking validators to consume it
-- [ ] Implement core domain resolver to compute bidirectional scope mappings for both artifact identifiers and arbitrary filesystem paths
-- [ ] Create declarative scope command definition exposing structured scope boundaries, enclosing .modie root, and ancestral rule chains
-- [ ] Ensure command adheres to interface-core decoupling (RULE-25) and emits actionable schema payloads
-- [ ] Verify bidirectional resolution for root, nested, and deep path scenarios in test suite
+- [x] Centralize governing scope resolution utility (`resolveGoverningScope`) in core directories service and refactor artifact-query, artifact-list, and linking validators to consume it
+- [x] Implement core domain resolver to compute bidirectional scope mappings for both artifact identifiers and arbitrary filesystem paths
+- [x] Create declarative scope command definition exposing structured scope boundaries, enclosing .modie root, and ancestral rule chains
+- [x] Ensure command adheres to interface-core decoupling (RULE-25) and emits actionable schema payloads
+- [x] Verify bidirectional resolution for root, nested, and deep path scenarios in test suite

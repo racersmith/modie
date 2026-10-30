@@ -5,7 +5,7 @@
 
 import { readFile, stat } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
-import { resolveArtifactDirectories } from "../common/directories.ts";
+import { resolveGoverningScope } from "../common/directories.ts";
 import type { IndexableSubtype } from "../common/types.ts";
 import { scanActiveArtifacts } from "../resolver/active-scanner.ts";
 import {
@@ -48,22 +48,7 @@ export async function listActiveArtifacts(
 
   if (trimmedScope) {
     const rawTarget = resolve(cwd, trimmedScope);
-    let scopeInput = rawTarget;
-    try {
-      const stats = await stat(rawTarget);
-      if (stats.isFile()) {
-        scopeInput = dirname(rawTarget);
-      }
-    } catch {
-      // If path does not exist on disk yet, treat as directory path
-    }
-
-    const { normalizedScopeDir } = resolveArtifactDirectories(
-      normalizedSubtype,
-      scopeInput,
-      true,
-      cwd,
-    );
+    const { scopeDir: normalizedScopeDir } = resolveGoverningScope(rawTarget, cwd);
 
     const relFromRoot = relative(cwd, normalizedScopeDir);
     if (relFromRoot.startsWith("..") || isAbsolute(relFromRoot)) {
@@ -81,12 +66,8 @@ export async function listActiveArtifacts(
   const listed: ListedArtifact[] = [];
 
   for (const disc of activeItems) {
-    const { normalizedScopeDir: artifactScopeDir } = resolveArtifactDirectories(
-      disc.subtype,
-      dirname(disc.filepath),
-      true,
-      cwd,
-    );
+    const { scopeDir: artifactScopeDir, relativeScope: scopeDisplay } =
+      resolveGoverningScope(disc.filepath, cwd);
 
     if (targetScopeDir !== undefined) {
       // Enforce RULE-9 ancestral scope traversal: artifactScopeDir must be in A = [R, ..., P]
@@ -115,8 +96,6 @@ export async function listActiveArtifacts(
     }
 
     const relPath = relative(cwd, disc.filepath).replace(/\\/g, "/");
-    const relScope = relative(cwd, artifactScopeDir).replace(/\\/g, "/");
-    const scopeDisplay = relScope === "" ? "." : relScope;
     const title = disc.slug.replace(/-/g, " ");
 
     listed.push({

@@ -3,8 +3,124 @@
  * Complies with RULE-6, RULE-8, RULE-12, and ADR-10.
  */
 
-import { basename, dirname, join, normalize, resolve } from "node:path";
+import { existsSync, statSync } from "node:fs";
+import {
+  basename,
+  dirname,
+  isAbsolute,
+  join,
+  normalize,
+  relative,
+  resolve,
+} from "node:path";
 import type { IndexableSubtype } from "./types.ts";
+
+export interface GoverningScope {
+  /**
+   * Absolute path to the governing scope directory.
+   */
+  scopeDir: string;
+
+  /**
+   * Relative path from workspace root (e.g. "." or "src/interfaces").
+   */
+  relativeScope: string;
+}
+
+/**
+ * Resolves the governing architectural scope directory for an artifact file,
+ * container directory, or arbitrary filesystem path (RULE-8, RULE-9, RULE-12, ADR-10).
+ *
+ * For paths inside a `.modie/` or legacy dot-container, normalizes to the enclosing directory `<dir>`.
+ * For arbitrary files or directories, traverses upward to find the nearest ancestor directory containing `.modie`.
+ * Falls back to the workspace root `cwd` if no nested `.modie` is found.
+ */
+export function resolveGoverningScope(
+  pathInput: string,
+  cwd: string = process.cwd(),
+): GoverningScope {
+  const normCwd = normalize(resolve(cwd));
+  const resolved = isAbsolute(pathInput)
+    ? normalize(pathInput)
+    : resolve(normCwd, pathInput);
+
+  const relInput = relative(normCwd, resolved).replace(/\\/g, "/");
+  const isWithinCwd = !relInput.startsWith("..") && !isAbsolute(relInput);
+
+  // Check if inside recognized .modie or legacy container segments
+  const segments = resolved.split("/");
+  const legacyContainers = new Set([".rules", ".adrs", ".tasks"]);
+
+  let containerIdx = -1;
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    if (seg === ".modie" || legacyContainers.has(seg)) {
+      containerIdx = i;
+      break;
+    }
+  }
+
+  if (containerIdx !== -1) {
+    const scopeDir = segments.slice(0, containerIdx).join("/") || "/";
+    const rel = relative(normCwd, scopeDir).replace(/\\/g, "/");
+    const relativeScope = rel === "" ? "." : rel;
+    return { scopeDir, relativeScope };
+  }
+
+  if (!isWithinCwd) {
+    return { scopeDir: resolved, relativeScope: relInput };
+  }
+
+  // Not inside a container segment - arbitrary file or directory path
+  let currentDir = resolved;
+  try {
+    const st = statSync(resolved);
+    if (st.isFile()) {
+      currentDir = dirname(resolved);
+    }
+  } catch {
+    // If not existing on disk, check if basename has a file extension
+    if (basename(resolved).includes(".")) {
+      currentDir = dirname(resolved);
+    }
+  }
+
+  // Walk up from currentDir towards normCwd to find nearest directory with .modie
+  let checkDir = currentDir;
+  let foundScopeDir: string | null = null;
+
+  while (checkDir.length >= normCwd.length) {
+    const modiePath = join(checkDir, ".modie");
+    const rulesPath = join(checkDir, ".rules");
+    const adrsPath = join(checkDir, ".adrs");
+    const tasksPath = join(checkDir, ".tasks");
+
+    if (
+      existsSync(modiePath) ||
+      existsSync(rulesPath) ||
+      existsSync(adrsPath) ||
+      existsSync(tasksPath)
+    ) {
+      foundScopeDir = checkDir;
+      break;
+    }
+
+    if (
+      checkDir === normCwd ||
+      checkDir === "/" ||
+      dirname(checkDir) === checkDir
+    ) {
+      break;
+    }
+    checkDir = dirname(checkDir);
+  }
+
+  const scopeDir = foundScopeDir ?? normCwd;
+  const rel = relative(normCwd, scopeDir).replace(/\\/g, "/");
+  const relativeScope = rel === "" ? "." : rel;
+
+  return { scopeDir, relativeScope };
+}
 
 /**
  * Returns the standard container subdirectory name for an indexable subtype (RULE-8, ADR-10).
