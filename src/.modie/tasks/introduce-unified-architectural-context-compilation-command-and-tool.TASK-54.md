@@ -23,10 +23,10 @@ Implement a unified `context` command and core compilation service that synthesi
 
 # Acceptance Criteria
 
-- [ ] Implement core context compilation service synthesizing upward ancestral motives (RULE-2), active governing rules (RULE-9), and linked ADR summaries for any target path or task identifier
-- [ ] Incorporate task-scoped metadata when given a task tag, including context, acceptance criteria, dependency status, and directory blast radius boundaries (RULE-6)
-- [ ] Collect all local directory and file-level GISTs at target scope <dir>/.modie/gists/ (RULE-9, RULE-20) and attach shallow downward signposts (<child>/.modie/gists/GIST.md) for immediate child subdirectories (ADR-8)
-- [ ] Expose declarative modie context CLI command with stdout/stderr separation (RULE-27) and --raw/--json rendering options
-- [ ] Register primary context MCP tool delivering token-efficient structured payloads optimized for agent prompt injection (RULE-25, RULE-26)
-- [ ] Verify context compilation across root, intermediate, and leaf scopes with comprehensive test coverage
-- [ ] User Review
+- [x] Implement core context compilation service synthesizing upward ancestral motives (RULE-2), active governing rules (RULE-9), and linked ADR summaries for any target path or task identifier
+- [x] Incorporate task-scoped metadata when given a task tag, including context, acceptance criteria, dependency status, and directory blast radius boundaries (RULE-6)
+- [x] Collect all local directory and file-level GISTs at target scope <dir>/.modie/gists/ (RULE-9, RULE-20) and attach shallow downward signposts (<child>/.modie/gists/GIST.md) for immediate child subdirectories (ADR-8)
+- [x] Expose declarative modie context CLI command with stdout/stderr separation (RULE-27) and --raw/--json rendering options
+- [x] Register primary context MCP tool delivering token-efficient structured payloads optimized for agent prompt injection (RULE-25, RULE-26)
+- [x] Verify context compilation across root, intermediate, and leaf scopes with comprehensive test coverage
+- [x] User Review

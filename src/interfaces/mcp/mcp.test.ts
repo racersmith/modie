@@ -89,6 +89,7 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     expect(toolNames).toContain("find");
     expect(toolNames).toContain("read");
     expect(toolNames).toContain("scope");
+    expect(toolNames).toContain("context");
     expect(toolNames).not.toContain("show");
     expect(toolNames).toContain("references");
     expect(toolNames).toContain("archive");
@@ -498,6 +499,94 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     expect(getTextContent(invalidRes)).toContain(
       "prohibited in MOTIVE.md per RULE-10",
     );
+  });
+
+  // @verifies RULE-2, RULE-6, RULE-9, RULE-20, RULE-25, RULE-26, RULE-34, RULE-35, ADR-8, ADR-10
+  it("[RULE-2][RULE-6][RULE-9][RULE-20][RULE-25][RULE-26][RULE-34][RULE-35][ADR-8][ADR-10] should execute primary context MCP tool for path and task targets with token economy", async () => {
+    const adrTag = makeTestTag("ADR", 110);
+    const scopedRuleTag = makeTestTag("RULE", 110);
+    const scopedTaskTag = makeTestTag("TASK", 110);
+
+    await workspace.createMotive({
+      content: "Workspace root motive.",
+    });
+    await workspace.createMotive({
+      scopeDir: "src/core",
+      content: "Core domain motive.",
+    });
+    await workspace.createAdr({
+      id: 110,
+      slug: "signpost-context-decision",
+      scopeDir: "src/core",
+      summary: "Compile concise ADR summaries and shallow GIST signposts.",
+      context: "Long ADR context that must be omitted from context payload.",
+    });
+    await workspace.createRule({
+      id: 110,
+      slug: "core-context-rule",
+      scopeDir: "src/core",
+      body: "Synthesize upward motives, rules, and local GISTs.",
+      links: [adrTag],
+    });
+    await workspace.createGist({
+      scopeDir: "src/core",
+      content: "Core directory GIST summary.",
+    });
+    await workspace.createGist({
+      scopeDir: "src/core",
+      filename: "index.ts",
+      content: "Core public barrel file summary.",
+    });
+    await workspace.createGist({
+      scopeDir: "src/core/query",
+      content: "Query and context compilation child signpost.",
+    });
+    await workspace.createTask({
+      id: 110,
+      slug: "verify-mcp-context-tool",
+      scopeDir: "src/core",
+      context: "Verify MCP context tool output.",
+      criteria: ["Check payload structure"],
+      links: [scopedRuleTag, adrTag],
+    });
+
+    // 1. Call context tool for a task target (default: raw omitted -> no rawContent per RULE-26)
+    const taskCtxRes = await client.callTool({
+      name: "context",
+      arguments: { target: scopedTaskTag },
+    });
+    expect(taskCtxRes.isError).toBeFalsy();
+    const taskCtx = JSON.parse(getTextContent(taskCtxRes));
+    expect(taskCtx.type).toBe("task");
+    expect(taskCtx.scope).toBe("src/core");
+    expect(taskCtx.rawContent).toBeUndefined();
+    expect(taskCtx.task.tag).toBe(scopedTaskTag);
+    expect(taskCtx.task.blastRadius.scope).toBe("src/core");
+    expect(taskCtx.motives.map((m: any) => m.scope)).toEqual(["src/core", "."]);
+    expect(taskCtx.rules.map((r: any) => r.tag)).toEqual([
+      ruleTag,
+      scopedRuleTag,
+    ]);
+    expect(taskCtx.adrs.map((a: any) => a.tag)).toEqual([adrTag]);
+    expect(taskCtx.adrs[0].summary).toBe(
+      "Compile concise ADR summaries and shallow GIST signposts.",
+    );
+    expect(taskCtx.adrs[0].body).toBeUndefined();
+    expect(taskCtx.gists.directoryGist.content).toBe(
+      "Core directory GIST summary.",
+    );
+    expect(taskCtx.gists.fileGists).toHaveLength(1);
+    expect(taskCtx.signposts).toHaveLength(1);
+    expect(taskCtx.signposts[0].childScope).toBe("src/core/query");
+
+    // 2. Call context tool with raw: true -> rawContent markdown is included
+    const rawCtxRes = await client.callTool({
+      name: "context",
+      arguments: { target: "src/core", raw: true },
+    });
+    expect(rawCtxRes.isError).toBeFalsy();
+    const rawCtx = JSON.parse(getTextContent(rawCtxRes));
+    expect(rawCtx.rawContent).toContain("# Architectural Context: src/core");
   });
 });
 

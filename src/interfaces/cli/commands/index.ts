@@ -7,6 +7,7 @@ import type { CliCommandDefinition } from "../framework/index.ts";
 import { findCommand, handleFind } from "./find/index.ts";
 import { readCommand, handleRead } from "./read/index.ts";
 import { scopeCommand, handleScope } from "./scope/index.ts";
+import { contextCommand, handleContext } from "./context/index.ts";
 import {
   referencesCommandDefinition,
   handleReferences,
@@ -59,6 +60,7 @@ import { mcpCommand, handleMcp } from "./mcp/index.ts";
 export * from "./find/index.ts";
 export * from "./read/index.ts";
 export * from "./scope/index.ts";
+export * from "./context/index.ts";
 export * from "./references/index.ts";
 export * from "./archive/index.ts";
 export * from "./link/index.ts";
@@ -76,6 +78,7 @@ export const allCliCommands: CliCommandDefinition<any, any, any>[] = [
   findCommand,
   readCommand,
   scopeCommand,
+  contextCommand,
   referencesCommandDefinition,
   archiveCommand,
   linkCommand,
