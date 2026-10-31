@@ -185,33 +185,23 @@ export const contextCommand: CliCommandDefinition<
   positionals: [
     {
       name: "target-or-identifier",
-      property: "target",
-      description:
-        "Target directory/file path, task tag, or artifact identifier (default: '.')",
       required: false,
     },
   ],
   flags: {
     scope: {
-      type: "string",
       short: "s",
       placeholder: "<dir>",
       description: "Target directory scope (alias for positional target)",
-      property: "scope",
     },
     task: {
-      type: "string",
       short: "t",
       placeholder: "<id>",
       description: "Target task identifier (alias for positional target)",
-      property: "task",
     },
     raw: {
-      type: "boolean",
       short: "r",
-      description: "Emit synthesized raw Markdown context document to stdout",
       aliases: ["markdown"],
-      property: "raw",
     },
   },
   execute: async (input, context) => {

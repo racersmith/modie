@@ -67,24 +67,17 @@ export const taskCheckCommand: CliCommandDefinition<
   positionals: [
     {
       name: "id-or-path",
-      property: "id",
-      description:
-        "Task ID (e.g. TASK-7-1, 7-1), slug, or file path (optional when on a task branch)",
       required: false,
     },
   ],
   flags: {
     item: {
-      type: "string",
       short: "i",
       placeholder: "<index>",
-      description: "1-based index of the acceptance criteria item (required)",
       aliases: ["index"],
     },
     uncheck: {
-      type: "boolean",
       short: "u",
-      description: "Uncheck the item (mark incomplete)",
     },
   },
   execute: async (input, context) => {

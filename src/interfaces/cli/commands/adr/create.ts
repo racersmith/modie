@@ -106,9 +106,6 @@ export const adrCreateCommand: CliCommandDefinition<
   positionals: [
     {
       name: "title",
-      property: "title",
-      description:
-        'Title of the architectural decision record (e.g. "Subtype Directory Partitioning")',
       required: true,
       variadic: true,
       missingError:
@@ -117,54 +114,32 @@ export const adrCreateCommand: CliCommandDefinition<
   ],
   flags: {
     scope: {
-      type: "string",
       short: "s",
       placeholder: "<dir>",
-      description:
-        "Target scope directory (defaults to current working directory)",
     },
     summary: {
-      type: "string",
       placeholder: "<text>",
-      description:
-        "Concise 1-2 sentence signpost summary of the core decision for progressive disclosure",
     },
     context: {
-      type: "string",
       short: "c",
       placeholder: "<text>",
-      description: "Problem statement and architectural motivation",
     },
     alternatives: {
-      type: "string",
       short: "a",
       placeholder: "<text>",
-      description: "Alternatives considered and trade-off evaluations",
     },
     decision: {
-      type: "string",
       short: "d",
       placeholder: "<text>",
-      description: "Adopted decision specification",
     },
     link: {
-      type: "string",
       short: "l",
-      multiple: true,
       placeholder: "<targets>",
-      description:
-        "ADR and RULE link targets (repeat flag or use comma-separated list)",
       aliases: ["links"],
-      property: "links",
     },
     supersedes: {
-      type: "string",
       short: "S",
-      multiple: true,
       placeholder: "<targets>",
-      description:
-        "Target ADR tag(s) superseded by this decision (repeat flag or use comma-separated list)",
-      property: "supersedes",
     },
   },
   execute: async (input, context): Promise<AdrCreateResultPayload> => {

@@ -7,7 +7,11 @@ import { dirname, isAbsolute, relative } from "node:path";
 import { resolveArtifactDirectories } from "../common/index.ts";
 import type { ArtifactDefinition } from "../pipeline/types.ts";
 import { resolveArtifactByTag } from "../query/index.ts";
-import { renderAdrMarkdown, validateAdrLinks } from "./template.ts";
+import {
+  parseAdrFromContext,
+  renderAdrMarkdown,
+  validateAdrLinks,
+} from "./template.ts";
 import type { AdrArtifact, CreateAdrOptions } from "./types.ts";
 
 /**
@@ -105,4 +109,5 @@ export const adrDefinition: AdrDefinition =
 
       return { markdown, artifact };
     },
+    parse: (context) => parseAdrFromContext(context),
   };

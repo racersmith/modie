@@ -1,4 +1,9 @@
 import { generateSlug, parseArtifactFilename } from "../common/index.ts";
+import type { ArtifactParseContext } from "../pipeline/types.ts";
+import {
+  parseMarkdownDocument,
+  parseMarkdownSections,
+} from "../query/markdown-parser.ts";
 import { parseAcceptanceCriteria } from "./checklist.ts";
 import type {
   ParsedPlannedGovernance,
@@ -7,124 +12,21 @@ import type {
 } from "./types.ts";
 
 /**
- * Parses YAML frontmatter string block into depends_on and links lists.
- */
-function parseTaskFrontmatter(frontmatterStr: string): {
-  depends_on: string[];
-  links: string[];
-} {
-  const lines = frontmatterStr.split("\n");
-  const depends_on: string[] = [];
-  const links: string[] = [];
-
-  let currentKey: "depends_on" | "links" | null = null;
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-
-    if (!line || line.startsWith("#")) {
-      continue;
-    }
-
-    if (line.startsWith("depends_on:")) {
-      currentKey = "depends_on";
-      const inline = line.replace("depends_on:", "").trim();
-      if (inline.startsWith("[") && inline.endsWith("]")) {
-        const items = inline
-          .slice(1, -1)
-          .split(",")
-          .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
-          .filter(Boolean);
-        depends_on.push(...items);
-        currentKey = null;
-      }
-      continue;
-    }
-
-    if (line.startsWith("links:")) {
-      currentKey = "links";
-      const inline = line.replace("links:", "").trim();
-      if (inline.startsWith("[") && inline.endsWith("]")) {
-        const items = inline
-          .slice(1, -1)
-          .split(",")
-          .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
-          .filter(Boolean);
-        links.push(...items);
-        currentKey = null;
-      }
-      continue;
-    }
-
-    if (line.startsWith("- ")) {
-      const value = line
-        .slice(2)
-        .trim()
-        .replace(/^['"]|['"]$/g, "");
-      if (currentKey === "depends_on") {
-        depends_on.push(value);
-      } else if (currentKey === "links") {
-        links.push(value);
-      }
-      continue;
-    }
-
-    if (/^[a-zA-Z_]+:/.test(line)) {
-      currentKey = null;
-    }
-  }
-
-  return { depends_on, links };
-}
-
-/**
- * Extracts frontmatter string and markdown body from a document.
- */
-function splitFrontmatter(content: string): {
-  frontmatter: string;
-  body: string;
-} {
-  const trimmed = content.trim();
-  if (!trimmed.startsWith("---")) {
-    return { frontmatter: "", body: content };
-  }
-
-  const endIdx = trimmed.indexOf("---", 3);
-  if (endIdx === -1) {
-    return { frontmatter: "", body: content };
-  }
-
-  const frontmatter = trimmed.slice(3, endIdx).trim();
-  const body = trimmed.slice(endIdx + 3).trim();
-
-  return { frontmatter, body };
-}
-
-/**
- * Extracts the content under `# Context` section.
- */
-function parseContextSection(body: string): string | undefined {
-  const match = body.match(/^#\s+Context\b([\s\S]*?)(?=^#\s+|$(?![\s\S]))/im);
-  if (!match || !match[1]) {
-    return undefined;
-  }
-  return match[1].trim();
-}
-
-/**
  * Extracts and parses `# Planned Governance` section into structured items.
  */
 export function parsePlannedGovernanceSection(
   body: string,
 ): ParsedPlannedGovernance | undefined {
-  const match = body.match(
-    /^#\s+Planned Governance\b([\s\S]*?)(?=^#\s+|$(?![\s\S]))/im,
-  );
-  if (!match || !match[1]) {
+  const sections = parseMarkdownSections(body);
+  const sectionText =
+    sections["Planned Governance"] ??
+    Object.entries(sections).find(
+      ([k]) => k.toLowerCase() === "planned governance",
+    )?.[1];
+  if (!sectionText) {
     return undefined;
   }
 
-  const sectionText = match[1];
   const rules: PlannedGovernanceItem[] = [];
   const adrs: PlannedGovernanceItem[] = [];
 
@@ -209,18 +111,41 @@ export function parsePlannedGovernanceSection(
 }
 
 /**
+ * Reconstructs a strongly-typed TaskArtifact from a standardized ArtifactParseContext.
+ */
+export function parseTaskFromContext(
+  context: ArtifactParseContext,
+): TaskArtifact {
+  const contextSection =
+    context.sections["Context"] ??
+    Object.entries(context.sections).find(
+      ([k]) => k.toLowerCase() === "context",
+    )?.[1];
+  const plannedGovernance = parsePlannedGovernanceSection(context.body);
+  const acceptanceCriteria = parseAcceptanceCriteria(context.body);
+
+  return {
+    id: context.id,
+    slug: context.slug,
+    ...(context.title ? { title: context.title } : {}),
+    depends_on: context.frontmatterFields.depends_on ?? [],
+    links: context.frontmatterFields.links,
+    context: contextSection,
+    plannedGovernance,
+    acceptanceCriteria,
+    rawContent: context.rawContent,
+    filePath: context.filepath,
+  };
+}
+
+/**
  * Parses task markdown text into a strongly-typed TaskArtifact object.
  */
 export function parseTaskMarkdown(
   content: string,
   filePathOrFilename?: string,
 ): TaskArtifact {
-  const { frontmatter, body } = splitFrontmatter(content);
-  const { depends_on, links } = parseTaskFrontmatter(frontmatter);
-  const context = parseContextSection(body);
-  const plannedGovernance = parsePlannedGovernanceSection(body);
-  const acceptanceCriteria = parseAcceptanceCriteria(body);
-
+  const doc = parseMarkdownDocument(content);
   let id = "";
   let slug = "";
 
@@ -232,15 +157,16 @@ export function parseTaskMarkdown(
     }
   }
 
-  return {
+  return parseTaskFromContext({
     id,
     slug,
-    depends_on,
-    links,
-    context,
-    plannedGovernance,
-    acceptanceCriteria,
+    title: slug ? slug.replace(/-/g, " ") : "",
+    filepath: filePathOrFilename,
+    filename: filePathOrFilename,
     rawContent: content,
-    filePath: filePathOrFilename,
-  };
+    frontmatter: doc.frontmatter,
+    body: doc.body,
+    frontmatterFields: doc.frontmatterFields,
+    sections: doc.sections,
+  });
 }

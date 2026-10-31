@@ -7,7 +7,11 @@ import { dirname, isAbsolute, relative } from "node:path";
 import { resolveArtifactDirectories } from "../common/index.ts";
 import type { ArtifactDefinition } from "../pipeline/types.ts";
 import { resolveArtifactByTag } from "../query/index.ts";
-import { renderRuleMarkdown, validateRuleLinks } from "./template.ts";
+import {
+  parseRuleFromContext,
+  renderRuleMarkdown,
+  validateRuleLinks,
+} from "./template.ts";
 import type { CreateRuleOptions, RuleArtifact } from "./types.ts";
 
 /**
@@ -94,4 +98,5 @@ export const ruleDefinition: ArtifactDefinition<
 
     return { markdown, artifact };
   },
+  parse: (context) => parseRuleFromContext(context),
 };

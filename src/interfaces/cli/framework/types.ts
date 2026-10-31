@@ -9,8 +9,9 @@ import type { CliIoOptions } from "../types.ts";
 export interface CliFlagDefinition {
   /**
    * Data type for the option flag.
+   * When omitted, automatically inferred from the matching Zod schema property.
    */
-  type: "string" | "boolean";
+  type?: "string" | "boolean";
 
   /**
    * Single-character short alias (e.g. "s" for -s).
@@ -19,8 +20,9 @@ export interface CliFlagDefinition {
 
   /**
    * Human-readable description printed in command help.
+   * When omitted, automatically inferred from the matching Zod schema property `.describe(...)`.
    */
-  description: string;
+  description?: string;
 
   /**
    * Whether the flag can be passed multiple times (accumulates array of values).
@@ -62,8 +64,9 @@ export interface CliPositionalDefinition {
 
   /**
    * Description shown in command help.
+   * When omitted, automatically inferred from the matching Zod schema property `.describe(...)`.
    */
-  description: string;
+  description?: string;
 
   /**
    * Whether the positional argument is mandatory.

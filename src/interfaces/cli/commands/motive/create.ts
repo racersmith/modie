@@ -81,7 +81,6 @@ export const motiveCreateCommand: CliCommandDefinition<
   positionals: [
     {
       name: "content",
-      property: "content",
       description:
         "Initial motive prose content (when omitted, scaffolds a default template)",
       required: false,
@@ -90,28 +89,21 @@ export const motiveCreateCommand: CliCommandDefinition<
   ],
   flags: {
     scope: {
-      type: "string",
       short: "s",
       placeholder: "<dir>",
-      description:
-        "Target scope directory (defaults to current working directory)",
     },
     content: {
-      type: "string",
       short: "c",
       placeholder: "<text>",
       description:
         "Motive prose expressing directory-level purpose and trajectory",
       aliases: ["context", "purpose"],
-      property: "content",
     },
     overwrite: {
-      type: "boolean",
       short: "f",
       description:
         "Overwrite an existing MOTIVE.md in the target scope",
       aliases: ["force"],
-      property: "overwrite",
     },
   },
   execute: async (input, context): Promise<MotiveCreateResultPayload> => {

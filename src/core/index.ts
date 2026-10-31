@@ -28,7 +28,10 @@ export {
 export * as PipelinePrimitive from "./pipeline/index.ts";
 export * from "./pipeline/types.ts";
 export {
+  buildArtifactParseContext,
   createArtifact,
+  getArtifactDefinition,
+  parseArtifact,
   updateSupersededArtifactFrontmatter,
   ruleDefinition,
   adrDefinition,
@@ -95,7 +98,12 @@ export type {
 // Rule domain module
 export * as RulePrimitive from "./rule/index.ts";
 export * from "./rule/types.ts";
-export { renderRuleMarkdown, validateRuleLinks } from "./rule/template.ts";
+export {
+  parseRuleFromContext,
+  parseRuleMarkdown,
+  renderRuleMarkdown,
+  validateRuleLinks,
+} from "./rule/template.ts";
 export {
   createRule,
   resolveRuleDirectories,
@@ -128,6 +136,8 @@ export {
 export {
   extractAdrSummary,
   parseFrontmatterFields,
+  parseFrontmatterLineMap,
+  parseMarkdownDocument,
   parseMarkdownSections,
   splitMarkdownFrontmatter,
 } from "./query/markdown-parser.ts";
@@ -135,7 +145,12 @@ export {
 // ADR domain module
 export * as AdrPrimitive from "./adr/index.ts";
 export * from "./adr/types.ts";
-export { renderAdrMarkdown, validateAdrLinks } from "./adr/template.ts";
+export {
+  parseAdrFromContext,
+  parseAdrMarkdown,
+  renderAdrMarkdown,
+  validateAdrLinks,
+} from "./adr/template.ts";
 export {
   createAdr,
   resolveAdrDirectories,

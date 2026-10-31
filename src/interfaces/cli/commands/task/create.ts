@@ -155,8 +155,6 @@ export const taskCreateCommand: CliCommandDefinition<
   positionals: [
     {
       name: "title",
-      property: "title",
-      description: 'Title of the task to create (e.g. "Create CLI Harness")',
       required: true,
       variadic: true,
       missingError:
@@ -165,146 +163,78 @@ export const taskCreateCommand: CliCommandDefinition<
   ],
   flags: {
     scope: {
-      type: "string",
       short: "s",
       placeholder: "<dir>",
-      description:
-        "Target scope directory (defaults to current working directory)",
     },
     context: {
-      type: "string",
       short: "c",
       placeholder: "<text>",
-      description: "Context / problem statement for the task",
     },
     "depends-on": {
-      type: "string",
       short: "d",
-      multiple: true,
       placeholder: "<ids>",
-      description:
-        "Prerequisite TASK IDs (repeat flag or use comma-separated list)",
       aliases: ["depend-on"],
-      property: "depends_on",
     },
     "depend-on": {
-      type: "string",
-      multiple: true,
       description: "Prerequisite TASK ID (verbatim)",
-      property: "depends_on",
       splitCommas: false,
     },
     link: {
-      type: "string",
       short: "l",
-      multiple: true,
       placeholder: "<targets>",
       description:
         "ADR and RULE link targets (repeat flag for verbatim targets)",
-      property: "links",
       splitCommas: false,
     },
     links: {
-      type: "string",
-      multiple: true,
       placeholder: "<targets>",
       description: "ADR and RULE link targets (comma-separated list)",
-      property: "links",
       splitCommas: true,
     },
     criterion: {
-      type: "string",
       short: "a",
-      multiple: true,
       placeholder: "<items>",
-      description:
-        "Acceptance criteria items (repeat -a/--criterion for verbatim items with punctuation)",
-      property: "criteria",
       splitCommas: false,
     },
     criteria: {
-      type: "string",
-      multiple: true,
       placeholder: "<items>",
       description: "Acceptance criteria items (comma-separated list)",
-      property: "criteria",
       splitCommas: true,
     },
     "acceptance-criteria": {
-      type: "string",
-      multiple: true,
       description: "Alias for --criteria",
-      property: "criteria",
       splitCommas: true,
     },
     "plan-rule": {
-      type: "string",
-      multiple: true,
       aliases: ["planned-rule"],
-      property: "plan_rules",
       splitCommas: false,
       placeholder: "<rule-title>",
       description:
         "Planned RULE artifact to author before completing this task",
     },
     "plan-rules": {
-      type: "string",
-      multiple: true,
-      property: "plan_rules",
       splitCommas: true,
       placeholder: "<rule-titles>",
       description: "Planned RULE artifacts (comma-separated list)",
     },
     "plan-adr": {
-      type: "string",
-      multiple: true,
       aliases: ["planned-adr"],
-      property: "plan_adrs",
       splitCommas: false,
       placeholder: "<adr-title>",
       description: "Planned ADR artifact to author before completing this task",
     },
     "plan-adrs": {
-      type: "string",
-      multiple: true,
-      property: "plan_adrs",
       splitCommas: true,
       placeholder: "<adr-titles>",
       description: "Planned ADR artifacts (comma-separated list)",
     },
     prefix: {
-      type: "string",
       short: "p",
       placeholder: "<tag>",
-      description: 'Custom task ID prefix tag (e.g. "J" for TASK-J1)',
     },
     branch: {
-      type: "string",
       short: "b",
       placeholder: "<name>",
-      description: "Git branch override for ID allocation",
-    },
-    "force-trunk": {
-      type: "boolean",
-      description: "Force trunk monotonic integer sequence",
-      property: "forceTrunk",
-    },
-    "allow-broad-scope": {
-      type: "boolean",
-      description: "Allow placing task above deepest common ancestor",
-      property: "allowBroadScope",
-    },
-    review: {
-      type: "boolean",
-      description:
-        "Include a 'User Review' acceptance criterion (default: true)",
-      property: "review",
-    },
-    "no-review": {
-      type: "boolean",
-      description:
-        "Do not include the default 'User Review' acceptance criterion",
-      property: "noReview",
     },
   },
   execute: async (input, context) => {

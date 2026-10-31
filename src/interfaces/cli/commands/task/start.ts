@@ -60,8 +60,6 @@ export const taskStartCommand: CliCommandDefinition<
   positionals: [
     {
       name: "id-or-path",
-      property: "id",
-      description: "Task ID (e.g. TASK-11, 11-1), slug, or file path",
       required: true,
       missingError:
         "Error: Missing required task identifier. Usage: modie task start <id-or-path> [options]",
@@ -69,16 +67,11 @@ export const taskStartCommand: CliCommandDefinition<
   ],
   flags: {
     base: {
-      type: "string",
       short: "b",
       placeholder: "<branch>",
-      description:
-        "Base branch to branch from (default: parent task branch or trunk)",
     },
     force: {
-      type: "boolean",
       short: "f",
-      description: "Bypass branch protection checks",
     },
   },
   execute: async (input, context) => {

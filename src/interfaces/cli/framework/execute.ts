@@ -25,12 +25,13 @@ function buildParseOptions(
   const optionsMap: NonNullable<ParseArgsConfig["options"]> = {};
 
   for (const [flagName, flagDef] of Object.entries(declaredFlags)) {
+    const flagType = flagDef.type ?? "string";
     const entry: {
       type: "string" | "boolean";
       short?: string;
       multiple?: boolean;
     } = {
-      type: flagDef.type,
+      type: flagType,
     };
     if (flagDef.short !== undefined) {
       entry.short = flagDef.short;
@@ -43,7 +44,7 @@ function buildParseOptions(
     if (flagDef.aliases) {
       for (const alias of flagDef.aliases) {
         const aliasEntry: { type: "string" | "boolean"; multiple?: boolean } = {
-          type: flagDef.type,
+          type: flagType,
         };
         if (flagDef.multiple !== undefined) {
           aliasEntry.multiple = flagDef.multiple;

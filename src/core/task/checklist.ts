@@ -61,9 +61,13 @@ export function areAllAcceptanceCriteriaCompleted(
  * Formats acceptance criteria items into a Markdown checklist section.
  */
 export function renderAcceptanceCriteria(
-  items: (string | TaskAcceptanceCriteriaItem)[] = [],
+  items: Array<string | { text: string; completed?: boolean }> = [],
+  options?: { allowEmpty?: boolean },
 ): string {
   if (items.length === 0) {
+    if (options?.allowEmpty) {
+      return "# Acceptance Criteria\n";
+    }
     return "# Acceptance Criteria\n\n- [ ] Deliverable defined\n";
   }
 

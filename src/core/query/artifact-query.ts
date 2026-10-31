@@ -8,20 +8,18 @@ import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { resolveGoverningScope } from "../common/directories.ts";
 import { parseArtifactFilename } from "../common/filename.ts";
 import type { IndexableSubtype } from "../common/types.ts";
+import {
+  buildArtifactParseContext,
+  getArtifactDefinition,
+} from "../pipeline/create.ts";
 import { scanActiveArtifacts } from "../resolver/active-scanner.ts";
 import {
   inspectGitDeletedArtifacts,
   inspectMultiBranchActiveArtifacts,
   listGitBranches,
 } from "../resolver/git-inspector.ts";
-import { parseAcceptanceCriteria } from "../task/checklist.ts";
 import type { TaskAcceptanceCriteriaItem } from "../task/types.ts";
-import {
-  extractAdrSummary,
-  parseFrontmatterFields,
-  parseMarkdownSections,
-  splitMarkdownFrontmatter,
-} from "./markdown-parser.ts";
+import { extractAdrSummary } from "./markdown-parser.ts";
 import type {
   ArtifactDetails,
   ResolveArtifactOptions,
@@ -289,31 +287,54 @@ export async function getArtifactDetails(
   const resolved = await resolveArtifactByTag(tagOrIdentifier, options);
   const rawContent = await readFile(resolved.filepath, "utf8");
 
-  const { frontmatter, body } = splitMarkdownFrontmatter(rawContent);
-  const { links, depends_on, summary: fmSummary } =
-    parseFrontmatterFields(frontmatter);
-  const sections = parseMarkdownSections(body);
+  const context = buildArtifactParseContext(rawContent, {
+    id: resolved.id,
+    slug: resolved.slug,
+    filepath: resolved.filepath,
+    filename: resolved.filename,
+  });
+
+  const {
+    links,
+    depends_on,
+    supersedes,
+    superseded_by,
+    summary: fmSummary,
+  } = context.frontmatterFields;
+  const sections = context.sections;
+
+  const definition = getArtifactDefinition(resolved.subtype);
+  const parsedSubtypeArtifact = definition?.parse
+    ? definition.parse(context)
+    : undefined;
 
   const summary =
     resolved.subtype === "ADR"
-      ? extractAdrSummary(rawContent, resolved.slug)
+      ? (parsedSubtypeArtifact?.summary ??
+          extractAdrSummary(rawContent, resolved.slug))
       : fmSummary;
-  const context = sections["Context"];
-  let acceptanceCriteria: TaskAcceptanceCriteriaItem[] | undefined;
-
-  if (resolved.subtype === "TASK") {
-    acceptanceCriteria = parseAcceptanceCriteria(body);
-  }
+  const contextSection = parsedSubtypeArtifact?.context ?? sections["Context"];
+  const acceptanceCriteria: TaskAcceptanceCriteriaItem[] | undefined =
+    resolved.subtype === "TASK"
+      ? parsedSubtypeArtifact?.acceptanceCriteria
+      : undefined;
+  const plannedGovernance =
+    resolved.subtype === "TASK"
+      ? parsedSubtypeArtifact?.plannedGovernance
+      : undefined;
 
   return {
     ...resolved,
     ...(summary ? { summary } : {}),
     links,
     depends_on,
-    body,
+    ...(supersedes ? { supersedes } : {}),
+    ...(superseded_by ? { superseded_by } : {}),
+    body: context.body,
     rawContent,
-    context,
+    context: contextSection,
     sections,
     acceptanceCriteria,
+    ...(plannedGovernance ? { plannedGovernance } : {}),
   };
 }

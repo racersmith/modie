@@ -83,9 +83,6 @@ export const ruleCreateCommand: CliCommandDefinition<
   positionals: [
     {
       name: "title",
-      property: "title",
-      description:
-        'Title of the rule to create (e.g. "Rule Verification Tagging")',
       required: true,
       variadic: true,
       missingError:
@@ -94,36 +91,22 @@ export const ruleCreateCommand: CliCommandDefinition<
   ],
   flags: {
     scope: {
-      type: "string",
       short: "s",
       placeholder: "<dir>",
-      description:
-        "Target scope directory (defaults to current working directory)",
     },
     context: {
-      type: "string",
       short: "c",
       placeholder: "<text>",
-      description: "Invariant assertion claim text",
       aliases: ["assertion"],
     },
     link: {
-      type: "string",
       short: "l",
-      multiple: true,
       placeholder: "<targets>",
-      description: "ADR link targets (repeat flag or use comma-separated list)",
       aliases: ["links"],
-      property: "links",
     },
     supersedes: {
-      type: "string",
       short: "S",
-      multiple: true,
       placeholder: "<targets>",
-      description:
-        "Target RULE tag(s) superseded by this rule (repeat flag or use comma-separated list)",
-      property: "supersedes",
     },
   },
   execute: async (input, context): Promise<RuleCreateResultPayload> => {

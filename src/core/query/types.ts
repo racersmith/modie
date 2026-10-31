@@ -10,7 +10,10 @@ import type {
   GistSignpost,
 } from "../gist/types.ts";
 import type { TaskReadiness } from "../task/query.ts";
-import type { TaskAcceptanceCriteriaItem } from "../task/types.ts";
+import type {
+  ParsedPlannedGovernance,
+  TaskAcceptanceCriteriaItem,
+} from "../task/types.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
 
 export interface ResolvedArtifact {
@@ -87,6 +90,16 @@ export interface ArtifactDetails extends ResolvedArtifact {
   depends_on?: string[];
 
   /**
+   * Frontmatter supersedes list (predecessor artifact tags, if present).
+   */
+  supersedes?: string[];
+
+  /**
+   * Frontmatter superseded_by list (successor artifact tags, if present).
+   */
+  superseded_by?: string[];
+
+  /**
    * Document body content excluding frontmatter.
    */
   body: string;
@@ -110,6 +123,11 @@ export interface ArtifactDetails extends ResolvedArtifact {
    * Parsed acceptance criteria items (for TASK artifacts).
    */
   acceptanceCriteria?: TaskAcceptanceCriteriaItem[];
+
+  /**
+   * Parsed planned governance declarations (for TASK artifacts, if present).
+   */
+  plannedGovernance?: ParsedPlannedGovernance;
 }
 
 export interface ResolveArtifactOptions {

@@ -13,6 +13,10 @@ import { promisify } from "node:util";
 import { formatArtifactFilename } from "../common/filename.ts";
 import { resolveArtifactDirectories } from "../common/directories.ts";
 import type { IndexableSubtype } from "../common/types.ts";
+import { renderAdrMarkdown } from "../adr/template.ts";
+import { parseMarkdownSections } from "../query/markdown-parser.ts";
+import { renderRuleMarkdown } from "../rule/template.ts";
+import { renderTaskMarkdown } from "../task/template.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -131,12 +135,15 @@ export interface CreateFixtureArtifactOptions {
   subtype: "RULE" | "ADR" | "TASK" | string;
   id?: number | string;
   slug?: string;
+  title?: string;
   summary?: string;
   links?: string[];
   depends_on?: string[];
   supersedes?: string | string[];
   superseded_by?: string | string[];
   context?: string;
+  alternatives?: string;
+  decision?: string;
   body?: string;
   acceptanceCriteria?: TaskCriterionItem[];
   plannedGovernance?: {
@@ -252,102 +259,85 @@ export async function createFixtureWorkspace(
 
       let content = options.rawContent;
       if (content === undefined) {
-        const frontmatterLines: string[] = ["---"];
-        if (options.summary?.trim()) {
-          frontmatterLines.push(`summary: ${options.summary.trim()}`);
-        }
-        if (options.depends_on !== undefined) {
-          if (options.depends_on.length > 0) {
-            frontmatterLines.push("depends_on:");
-            for (const d of options.depends_on) {
-              frontmatterLines.push(`  - ${d}`);
-            }
-          } else {
-            frontmatterLines.push("depends_on: []");
-          }
-        }
-        if (options.links && options.links.length > 0) {
-          frontmatterLines.push("links:");
-          for (const l of options.links) {
-            frontmatterLines.push(`  - ${l}`);
-          }
-        } else {
-          frontmatterLines.push("links: []");
-        }
-        if (options.supersedes) {
-          frontmatterLines.push("supersedes:");
-          const list = Array.isArray(options.supersedes)
+        const supersedesList = options.supersedes
+          ? Array.isArray(options.supersedes)
             ? options.supersedes
-            : [options.supersedes];
-          for (const s of list) {
-            frontmatterLines.push(`  - ${s}`);
-          }
-        }
-        if (options.superseded_by) {
-          frontmatterLines.push("superseded_by:");
-          const list = Array.isArray(options.superseded_by)
+            : [options.supersedes]
+          : undefined;
+        const supersededByList = options.superseded_by
+          ? Array.isArray(options.superseded_by)
             ? options.superseded_by
-            : [options.superseded_by];
-          for (const s of list) {
-            frontmatterLines.push(`  - ${s}`);
-          }
-        }
-        frontmatterLines.push("---");
-        frontmatterLines.push("");
+            : [options.superseded_by]
+          : undefined;
 
-        const bodySections: string[] = [];
-        if (options.context) {
-          bodySections.push(`# Context\n\n${options.context}`);
-        }
-        if (options.plannedGovernance) {
-          const govLines: string[] = ["# Planned Governance\n"];
-          if (
-            options.plannedGovernance.rules &&
-            options.plannedGovernance.rules.length > 0
-          ) {
-            govLines.push("## Rules\n");
-            for (const r of options.plannedGovernance.rules) {
-              const text = typeof r === "string" ? r : r.text;
-              const box = typeof r === "object" && r.completed ? "x" : " ";
-              govLines.push(`- [${box}] ${text}`);
-            }
-            govLines.push("");
-          }
-          if (
-            options.plannedGovernance.adrs &&
-            options.plannedGovernance.adrs.length > 0
-          ) {
-            govLines.push("## ADRs\n");
-            for (const a of options.plannedGovernance.adrs) {
-              const text = typeof a === "string" ? a : a.text;
-              const box = typeof a === "object" && a.completed ? "x" : " ";
-              govLines.push(`- [${box}] ${text}`);
-            }
-            govLines.push("");
-          }
-          bodySections.push(govLines.join("\n").trim());
-        }
-        if (
-          options.acceptanceCriteria &&
-          options.acceptanceCriteria.length > 0
-        ) {
-          const criteriaLines = options.acceptanceCriteria.map((c) => {
-            if (typeof c === "string") {
-              return `- [ ] ${c}`;
-            }
-            return `- [${c.completed ? "x" : " "}] ${c.text}`;
+        if (upperSubtype === "RULE") {
+          const assertionText =
+            options.body ??
+            (options.context
+              ? `# Context\n\n${options.context}`
+              : options.title
+                ? `# Invariant\n\nRule body for ${options.title}.`
+                : "Fixture RULE invariant body.");
+          content = renderRuleMarkdown({
+            id,
+            slug,
+            title: options.title,
+            links: options.links ?? [],
+            supersedes: supersedesList,
+            superseded_by: supersededByList,
+            assertion: assertionText,
+            skipValidation: true,
           });
-          bodySections.push(
-            `# Acceptance Criteria\n\n${criteriaLines.join("\n")}`,
-          );
+        } else if (upperSubtype === "ADR") {
+          const parsedBodySections = options.body
+            ? parseMarkdownSections(options.body)
+            : {};
+          const alternatives =
+            options.alternatives ??
+            parsedBodySections["Alternatives Considered"];
+          const decision =
+            options.decision ??
+            parsedBodySections["Decision"] ??
+            (!parsedBodySections["Alternatives Considered"] && options.body
+              ? options.body
+              : undefined);
+          const contextText =
+            options.context ??
+            parsedBodySections["Context"] ??
+            (options.title ? `Context for ${options.title}` : undefined);
+
+          content = renderAdrMarkdown({
+            id,
+            slug,
+            title: options.title,
+            summary: options.summary,
+            links: options.links ?? [],
+            supersedes: supersedesList,
+            superseded_by: supersededByList,
+            context: contextText,
+            alternatives,
+            decision,
+            skipValidation: true,
+          });
+        } else {
+          content = renderTaskMarkdown({
+            id,
+            slug,
+            title: options.title,
+            context:
+              options.context ??
+              options.body ??
+              (options.title
+                ? `Context for ${options.title}`
+                : "Fixture TASK invariant body."),
+            depends_on: options.depends_on ?? [],
+            links: options.links ?? [],
+            plannedGovernance: options.plannedGovernance,
+            acceptanceCriteria: options.acceptanceCriteria ?? [],
+            skipValidation: true,
+            allowEmptyCriteria: true,
+          });
         }
-        if (options.body) {
-          bodySections.push(options.body);
-        }
-        if (bodySections.length === 0) {
-          bodySections.push(`Fixture ${upperSubtype} invariant body.`);
-        }
-        content = `${frontmatterLines.join("\n")}\n${bodySections.join("\n\n")}\n`;
       }
 
       await writeFile(filepath, content, "utf8");
@@ -370,14 +360,13 @@ export async function createFixtureWorkspace(
       return workspace.createArtifact({
         subtype: "TASK",
         id: options.id,
+        title: options.title,
         slug:
           options.slug ??
           (options.title
             ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
             : undefined),
-        context:
-          options.context ??
-          (options.title ? `Context for ${options.title}` : undefined),
+        context: options.context,
         acceptanceCriteria: options.criteria,
         plannedGovernance: options.plannedGovernance,
         depends_on: options.depends_on,
@@ -393,16 +382,13 @@ export async function createFixtureWorkspace(
       return workspace.createArtifact({
         subtype: "RULE",
         id: options.id,
+        title: options.title,
         slug:
           options.slug ??
           (options.title
             ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
             : undefined),
-        body:
-          options.body ??
-          (options.title
-            ? `# Invariant\n\nRule body for ${options.title}.`
-            : undefined),
+        body: options.body,
         links: options.links,
         supersedes: options.supersedes,
         superseded_by: options.superseded_by,
@@ -415,28 +401,19 @@ export async function createFixtureWorkspace(
     async createAdr(
       options: CreateAdrOptions = {},
     ): Promise<CreatedFixtureArtifact> {
-      const bodySections: string[] = [];
-      if (options.alternatives) {
-        bodySections.push(
-          `# Alternatives Considered\n\n${options.alternatives}`,
-        );
-      }
-      if (options.decision) {
-        bodySections.push(`# Decision\n\n${options.decision}`);
-      }
       return workspace.createArtifact({
         subtype: "ADR",
         id: options.id,
+        title: options.title,
         slug:
           options.slug ??
           (options.title
             ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
             : undefined),
         summary: options.summary,
-        context:
-          options.context ??
-          (options.title ? `Context for ${options.title}` : undefined),
-        body: bodySections.length > 0 ? bodySections.join("\n\n") : undefined,
+        context: options.context,
+        alternatives: options.alternatives,
+        decision: options.decision,
         links: options.links,
         supersedes: options.supersedes,
         superseded_by: options.superseded_by,
