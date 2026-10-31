@@ -19,6 +19,7 @@ import {
 import type { ResolvedArtifact } from "../query/types.ts";
 import type {
   ArtifactLinkRelationship,
+  FrontmatterListField,
   LinkMutationResult,
   MutateArtifactLinkOptions,
 } from "./types.ts";
@@ -26,12 +27,12 @@ import { inferLinkRelationship, validateArtifactLink } from "./validator.ts";
 
 /**
  * Pure helper that adds or removes `targetTag` in the specified frontmatter list
- * field (`links` or `depends_on`) within `rawContent`, preserving the Markdown
- * document body and unrelated frontmatter fields byte-for-byte (RULE-36).
+ * field (`links`, `depends_on`, `supersedes`, or `superseded_by`) within `rawContent`,
+ * preserving the Markdown document body and unrelated frontmatter fields byte-for-byte (RULE-36).
  */
 export function mutateFrontmatterListField(
   rawContent: string,
-  field: ArtifactLinkRelationship,
+  field: FrontmatterListField,
   action: "add" | "remove",
   targetTag: string,
 ): { updatedContent: string; changed: boolean } {

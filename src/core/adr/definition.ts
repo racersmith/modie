@@ -3,59 +3,35 @@
  * Complies with ADR-1, ADR-2, ADR-4, RULE-1, RULE-4, RULE-8, RULE-14, and RULE-17.
  */
 
-import { dirname, isAbsolute, relative } from "node:path";
-import { resolveArtifactDirectories } from "../common/index.ts";
+import { validateLinkTarget } from "../linking/validator.ts";
 import type { ArtifactDefinition } from "../pipeline/types.ts";
-import { resolveArtifactByTag } from "../query/index.ts";
 import {
   parseAdrFromContext,
   renderAdrMarkdown,
-  validateAdrLinks,
 } from "./template.ts";
 import type { AdrArtifact, CreateAdrOptions } from "./types.ts";
 
 /**
- * Validates frontmatter links per RULE-14 and descendant rule scope per RULE-17.
+ * Validates frontmatter links per RULE-14, descendant rule scope per RULE-17,
+ * and ancestor ADR scope per RULE-19.
  *
  * - An ADR's frontmatter links must exclusively reference ADR or RULE artifacts (RULE-14).
  * - An ADR artifact referencing a RULE must target a RULE residing in the ADR's
  *   directory or within its descendant subtree (RULE-17).
+ * - An ADR artifact referencing an ADR must target an ancestor or self ADR (RULE-19).
  *
- * @throws Error if any link is not ADR/RULE (RULE-14) or targets an ancestor/sibling RULE (RULE-17).
+ * @throws Error if any link is not ADR/RULE (RULE-14) or violates spatial scope (RULE-17, RULE-19).
  */
 export async function validateAdrScope(
   normalizedScopeDir: string,
   links: string[] = [],
   cwd: string = process.cwd(),
 ): Promise<void> {
-  // 1. Enforce RULE-14: only ADR or RULE targets allowed
-  validateAdrLinks(links);
-
-  if (links.length === 0) return;
-
-  // 2. Enforce RULE-17: referenced RULEs must reside in ADR directory or descendant subtree
   for (const link of links) {
-    if (!link.toUpperCase().startsWith("RULE-")) {
-      // RULE-17 only applies to referenced RULE artifacts
-      continue;
-    }
-
-    const rule = await resolveArtifactByTag(link, { cwd });
-
-    const ruleDir = dirname(rule.filepath);
-    const { normalizedScopeDir: ruleNormalizedScope } =
-      resolveArtifactDirectories("RULE", ruleDir, cwd);
-
-    const relFromAdrToRule = relative(normalizedScopeDir, ruleNormalizedScope);
-    const isDescendantOrEqual =
-      !relFromAdrToRule.startsWith("..") && !isAbsolute(relFromAdrToRule);
-
-    if (!isDescendantOrEqual) {
-      const adrScopeDisplay = relative(cwd, normalizedScopeDir) || ".";
-      throw new Error(
-        `ADR rule scope violation: linked RULE "${link}" at "${rule.relativePath}" does not reside in ADR directory "${adrScopeDisplay}" or a descendant subtree (RULE-17).`,
-      );
-    }
+    await validateLinkTarget("ADR", normalizedScopeDir, "links", link, {
+      cwd,
+      sourceTag: "ADR",
+    });
   }
 }
 

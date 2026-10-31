@@ -123,7 +123,12 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     const depTask4 = makeTestTag("TASK", 4);
     const linkAdr6 = makeTestTag("ADR", 6);
     const linkRule25 = makeTestTag("RULE", 25);
-    const expectedTaskTag = makeTestTag("TASK", 1);
+    const expectedTaskTag = makeTestTag("TASK", 5);
+
+    await workspace.createTask({ id: 3, slug: "dep-task-three" });
+    await workspace.createTask({ id: 4, slug: "dep-task-four" });
+    await workspace.createAdr({ id: 6, slug: "link-adr-six" });
+    await workspace.createRule({ id: 25, slug: "link-rule-twenty-five" });
 
     const result = await createTask({
       title: testTitle,
@@ -141,7 +146,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
 
     expect(result.artifact.title).toBe(testTitle);
     expect(result.artifact.slug).toBe("task-service-integration-verification");
-    expect(result.artifact.id).toBe("1");
+    expect(result.artifact.id).toBe("5");
     expect(result.filename).toBe(
       `task-service-integration-verification.${expectedTaskTag}.md`,
     );

@@ -10,10 +10,14 @@ import { readFile, writeFile } from "node:fs/promises";
 import {
   detectTaskDependencyCycle,
   inferLinkRelationship,
+  isValidAdrLinkTag,
+  isValidGovernanceLinkTag,
+  isValidTaskDependencyTag,
   linkArtifact,
   mutateFrontmatterListField,
   unlinkArtifact,
   validateArtifactLink,
+  validateLinkTarget,
 } from "../index.ts";
 import {
   createFixtureWorkspace,
@@ -227,6 +231,14 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     // Self-reference on RULE, ADR, and TASK
     await expect(
       validateArtifactLink(rootAdrTag, rootAdrTag, { cwd: workspace.cwd }),
+    ).rejects.toThrow(/Self-referential link violation/);
+
+    await expect(
+      validateArtifactLink(
+        rootAdrTag,
+        `.modie/adrs/root-gov-adr.${rootAdrTag}.md`,
+        { cwd: workspace.cwd },
+      ),
     ).rejects.toThrow(/Self-referential link violation/);
 
     await expect(
@@ -525,5 +537,241 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
 
     const onDiskAfterUnlink = await readFile(rulePath, "utf8");
     expect(onDiskAfterUnlink).toBe(`---\nlinks: []\n---\n\n${bareBody}`);
+  });
+
+  // @verifies ADR-4, RULE-4, RULE-36
+  it("[ADR-4][RULE-4][RULE-36] should safely mutate supersedes and superseded_by frontmatter fields", () => {
+    // 1. Add to existing inline empty array
+    const docWithEmptyInline = "---\nsuperseded_by: []\n---\n\n# Body\n";
+    const res1 = mutateFrontmatterListField(
+      docWithEmptyInline,
+      "superseded_by",
+      "add",
+      "ADR-10",
+    );
+    expect(res1.changed).toBe(true);
+    expect(res1.updatedContent).toContain("superseded_by:\n  - ADR-10");
+
+    // 2. Add to existing list idempotently
+    const res2 = mutateFrontmatterListField(
+      res1.updatedContent,
+      "superseded_by",
+      "add",
+      "adr-10",
+    );
+    expect(res2.changed).toBe(false);
+
+    // 3. Append second tag to block list
+    const res3 = mutateFrontmatterListField(
+      res1.updatedContent,
+      "superseded_by",
+      "add",
+      "ADR-11",
+    );
+    expect(res3.changed).toBe(true);
+    expect(res3.updatedContent).toContain(
+      "superseded_by:\n  - ADR-10\n  - ADR-11",
+    );
+
+    // 4. Remove from list
+    const res4 = mutateFrontmatterListField(
+      res3.updatedContent,
+      "superseded_by",
+      "remove",
+      "ADR-10",
+    );
+    expect(res4.changed).toBe(true);
+    expect(res4.updatedContent).toContain("superseded_by:\n  - ADR-11");
+    expect(res4.updatedContent).not.toContain("ADR-10");
+
+    // 5. Remove until empty collapses to superseded_by: []
+    const res5 = mutateFrontmatterListField(
+      res4.updatedContent,
+      "superseded_by",
+      "remove",
+      "ADR-11",
+    );
+    expect(res5.changed).toBe(true);
+    expect(res5.updatedContent).toContain("superseded_by: []");
+
+    // 6. Mutate supersedes field in document without frontmatter
+    const bareDoc = "# Decision\n\nContent without frontmatter.";
+    const res6 = mutateFrontmatterListField(
+      bareDoc,
+      "supersedes",
+      "add",
+      "ADR-1",
+    );
+    expect(res6.changed).toBe(true);
+    expect(res6.updatedContent).toBe(
+      "---\nsupersedes:\n  - ADR-1\n---\n\n# Decision\n\nContent without frontmatter.",
+    );
+  });
+
+  // @verifies ADR-5, RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, RULE-17, RULE-18, RULE-19, RULE-36
+  it("[ADR-5][RULE-7][RULE-13..19][RULE-36] should validate link targets via shared validation primitive across subtypes and scopes", async () => {
+    // 1. Prohibit self-referential linking
+    await expect(
+      validateLinkTarget("RULE", workspace.cwd, "links", rootRuleTag, {
+        cwd: workspace.cwd,
+        sourceTag: rootRuleTag,
+      }),
+    ).rejects.toThrow(/Self-referential link violation/);
+
+    await expect(
+      validateLinkTarget("ADR", workspace.cwd, "links", rootAdrTag, {
+        cwd: workspace.cwd,
+        sourceTag: rootAdrTag,
+      }),
+    ).rejects.toThrow(/Self-referential link violation/);
+
+    // 1.5 Verify tag syntax validation predicates
+    expect(isValidAdrLinkTag("ADR-10")).toBe(true);
+    expect(isValidAdrLinkTag("adr-10")).toBe(true);
+    expect(isValidAdrLinkTag("RULE-1")).toBe(false);
+    expect(isValidAdrLinkTag("TASK-1")).toBe(false);
+
+    expect(isValidGovernanceLinkTag("ADR-10")).toBe(true);
+    expect(isValidGovernanceLinkTag("RULE-10")).toBe(true);
+    expect(isValidGovernanceLinkTag("TASK-10")).toBe(false);
+
+    expect(isValidTaskDependencyTag("TASK-10")).toBe(true);
+    expect(isValidTaskDependencyTag("TASK-10-1")).toBe(true);
+    expect(isValidTaskDependencyTag("ADR-10")).toBe(false);
+    expect(isValidTaskDependencyTag("RULE-10")).toBe(false);
+
+    // 2. Reject incompatible subtypes
+    // RULE -> TASK (RULE-13)
+    await expect(
+      validateLinkTarget("RULE", workspace.cwd, "links", "TASK-99", {
+        cwd: workspace.cwd,
+      }),
+    ).rejects.toThrow(/RULE-13/);
+
+    // ADR -> TASK (RULE-14)
+    await expect(
+      validateLinkTarget("ADR", workspace.cwd, "links", "TASK-99", {
+        cwd: workspace.cwd,
+      }),
+    ).rejects.toThrow(/RULE-14/);
+
+    // TASK links -> TASK (RULE-15)
+    await expect(
+      validateLinkTarget("TASK", workspace.cwd, "links", "TASK-99", {
+        cwd: workspace.cwd,
+      }),
+    ).rejects.toThrow(/RULE-15/);
+
+    // TASK depends_on -> RULE (RULE-18)
+    await expect(
+      validateLinkTarget("TASK", workspace.cwd, "depends_on", "RULE-99", {
+        cwd: workspace.cwd,
+      }),
+    ).rejects.toThrow(/RULE-18/);
+
+    // 3. RULE -> ADR ancestry checks (RULE-16, RULE-19)
+    // Core rule -> Root ADR (valid ancestor)
+    const validRuleLink = await validateLinkTarget(
+      "RULE",
+      "src/core",
+      "links",
+      rootAdrTag,
+      { cwd: workspace.cwd },
+    );
+    expect(validRuleLink.target.tag).toBe(rootAdrTag);
+
+    // Root rule -> Core ADR (descendant violation)
+    await expect(
+      validateLinkTarget("RULE", workspace.cwd, "links", coreAdrTag, {
+        cwd: workspace.cwd,
+      }),
+    ).rejects.toThrow(/RULE-16/);
+
+    // CLI rule -> MCP ADR (sideways sibling violation)
+    await expect(
+      validateLinkTarget("RULE", "src/interfaces/cli", "links", mcpAdrTag, {
+        cwd: workspace.cwd,
+      }),
+    ).rejects.toThrow(/RULE-16/);
+
+    // 4. ADR -> RULE scope checks (RULE-17, RULE-19)
+    // Root ADR -> Core rule (valid descendant)
+    const validAdrRuleLink = await validateLinkTarget(
+      "ADR",
+      workspace.cwd,
+      "links",
+      coreRuleTag,
+      { cwd: workspace.cwd },
+    );
+    expect(validAdrRuleLink.target.tag).toBe(coreRuleTag);
+
+    // Core ADR -> Root rule (ancestor violation)
+    await expect(
+      validateLinkTarget("ADR", "src/core", "links", rootRuleTag, {
+        cwd: workspace.cwd,
+      }),
+    ).rejects.toThrow(/RULE-17/);
+
+    // CLI ADR -> MCP rule (sideways sibling violation)
+    await expect(
+      validateLinkTarget("ADR", "src/interfaces/cli", "links", mcpRuleTag, {
+        cwd: workspace.cwd,
+      }),
+    ).rejects.toThrow(/RULE-17/);
+
+    // 5. ADR -> ADR ancestry checks (ADR-5, RULE-19)
+    // Core ADR -> Root ADR (valid ancestor)
+    const validAdrAdrLink = await validateLinkTarget(
+      "ADR",
+      "src/core",
+      "links",
+      rootAdrTag,
+      { cwd: workspace.cwd },
+    );
+    expect(validAdrAdrLink.target.tag).toBe(rootAdrTag);
+
+    // Root ADR -> Core ADR (descendant violation)
+    await expect(
+      validateLinkTarget("ADR", workspace.cwd, "links", coreAdrTag, {
+        cwd: workspace.cwd,
+      }),
+    ).rejects.toThrow(/RULE-19/);
+
+    // CLI ADR -> MCP ADR (sideways sibling violation)
+    await expect(
+      validateLinkTarget("ADR", "src/interfaces/cli", "links", mcpAdrTag, {
+        cwd: workspace.cwd,
+      }),
+    ).rejects.toThrow(/RULE-19/);
+
+    // 6. TASK -> ADR/RULE governance scope checks (RULE-7, RULE-19)
+    // CLI task -> Root ADR (valid ancestor)
+    const validTaskAdrLink = await validateLinkTarget(
+      "TASK",
+      "src/interfaces/cli",
+      "links",
+      rootAdrTag,
+      { cwd: workspace.cwd },
+    );
+    expect(validTaskAdrLink.target.tag).toBe(rootAdrTag);
+
+    // CLI task -> MCP Rule (sideways sibling violation)
+    await expect(
+      validateLinkTarget("TASK", "src/interfaces/cli", "links", mcpRuleTag, {
+        cwd: workspace.cwd,
+      }),
+    ).rejects.toThrow(/RULE-7/);
+
+    // 7. TASK -> TASK dependency checks (RULE-18)
+    // Valid dependency
+    const validDep = await validateLinkTarget(
+      "TASK",
+      "src/interfaces/cli",
+      "depends_on",
+      taskATag,
+      { cwd: workspace.cwd, sourceTag: cliTaskTag },
+    );
+    expect(validDep.target.tag).toBe(taskATag);
+    expect(validDep.relationship).toBe("depends_on");
   });
 });

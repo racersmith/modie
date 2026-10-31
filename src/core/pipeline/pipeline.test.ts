@@ -9,6 +9,7 @@ import {
   type FixtureWorkspace,
 } from "../testing/index.ts";
 import {
+  ARTIFACT_DEFINITIONS,
   adrDefinition,
   createArtifact,
   getArtifactDefinition,
@@ -18,6 +19,11 @@ import {
   type ArtifactDefinition,
   type BaseCreateArtifactOptions,
 } from "./index.ts";
+import {
+  createAdr,
+  createRule,
+  createTask,
+} from "../index.ts";
 import { getArtifactDetails } from "../query/artifact-query.ts";
 
 describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-35, ADR-1, ADR-4)", () => {
@@ -288,5 +294,64 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
     expect(getArtifactDefinition("RULE")).toBe(ruleDefinition);
     expect(getArtifactDefinition("ADR")).toBe(adrDefinition);
     expect(getArtifactDefinition("TASK")).toBe(taskDefinition);
+    expect(ARTIFACT_DEFINITIONS["RULE"]).toBe(ruleDefinition);
+    expect(ARTIFACT_DEFINITIONS["ADR"]).toBe(adrDefinition);
+    expect(ARTIFACT_DEFINITIONS["TASK"]).toBe(taskDefinition);
+  });
+
+  // @verifies ADR-1, ADR-2, ADR-4, RULE-1, RULE-8, RULE-25, RULE-34, RULE-35
+  it("[ADR-1][ADR-4][RULE-1][RULE-8][RULE-25][RULE-34] should return standardized CreateArtifactResult from createRule, createAdr, and createTask", async () => {
+    // 1. Create predecessor ADR
+    const adr1 = await createAdr({
+      title: "Predecessor Architecture Decision",
+      context: "Initial decision.",
+      cwd: workspace.cwd,
+    });
+    expect(adr1.id).toBe("1");
+    expect(adr1.tag).toBe("ADR-1");
+    expect(adr1.filename).toBe("predecessor-architecture-decision.ADR-1.md");
+    expect(adr1.relativePath).toContain(".modie/adrs/predecessor-architecture-decision.ADR-1.md");
+    expect(adr1.artifact.title).toBe("Predecessor Architecture Decision");
+
+    // 2. Create superseding ADR
+    const adr2 = await createAdr({
+      title: "Successor Architecture Decision",
+      context: "Superseding decision.",
+      supersedes: [adr1.tag],
+      cwd: workspace.cwd,
+    });
+    expect(adr2.id).toBe("2");
+    expect(adr2.tag).toBe("ADR-2");
+    expect(adr2.supersedes).toEqual([adr1.tag]);
+    expect(adr2.artifact.supersedes).toEqual([adr1.tag]);
+
+    // 3. Create RULE
+    const rule1 = await createRule({
+      title: "Standardized Creation Rule",
+      assertion: "All domain creation services return unified CreateArtifactResult payloads.",
+      links: [adr1.tag],
+      cwd: workspace.cwd,
+    });
+    expect(rule1.id).toBe("1");
+    expect(rule1.tag).toBe("RULE-1");
+    expect(rule1.filename).toBe("standardized-creation-rule.RULE-1.md");
+    expect(rule1.artifact.assertion).toBe(
+      "All domain creation services return unified CreateArtifactResult payloads.",
+    );
+
+    // 4. Create TASK
+    const task1 = await createTask({
+      title: "Verify Creation Payload Pipeline",
+      context: "Verifies domain creation results conforming to CreateArtifactResult.",
+      links: [adr1.tag, rule1.tag],
+      acceptanceCriteria: ["Ensure unified result structure"],
+      branch: "dev",
+      cwd: workspace.cwd,
+    });
+    expect(task1.id).toBe("1");
+    expect(task1.tag).toBe("TASK-1");
+    expect(task1.filename).toBe("verify-creation-payload-pipeline.TASK-1.md");
+    expect(task1.watermark).toBeDefined();
+    expect(task1.artifact.links).toEqual([adr1.tag, rule1.tag]);
   });
 });

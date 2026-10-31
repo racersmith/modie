@@ -2,6 +2,8 @@
  * Domain types and schemas for TASK primitive artifacts.
  */
 
+import type { CreateArtifactResult } from "../pipeline/types.ts";
+
 export interface TaskFrontmatter {
   depends_on?: string[];
   links?: string[];
@@ -190,11 +192,6 @@ export interface CreateTaskOptions {
   review?: boolean;
 }
 
-export interface CreateTaskResult {
-  artifact: TaskArtifact;
-  filename: string;
-  filepath: string;
-  relativePath: string;
-  markdown: string;
+export type CreateTaskResult = CreateArtifactResult<TaskArtifact> & {
   watermark: import("../resolver/types.ts").WatermarkDetails;
-}
+};

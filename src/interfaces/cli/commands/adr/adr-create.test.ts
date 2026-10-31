@@ -137,22 +137,26 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
   // @verifies RULE-14
   it("[RULE-14] should support linking to other ADRs via --link", async () => {
     await using workspace = await createTestWorkspace("modie-cli-adr-link-");
-    const targetAdrTag = makeTestTag("ADR", 10);
+    const targetAdr = await workspace.createAdr({
+      id: 10,
+      slug: "target-adr",
+      title: "Target ADR",
+    });
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "adr",
       "create",
       "Linked ADR",
       "--link",
-      targetAdrTag,
+      targetAdr.tag,
       "--json",
     ]);
 
     expect(exitCode).toBe(0);
     const parsed = JSON.parse(stdout.trim());
-    expect(parsed.links).toEqual([targetAdrTag]);
+    expect(parsed.links).toEqual([targetAdr.tag]);
 
     const content = await workspace.readFile(parsed.relativePath);
-    expect(content.startsWith(`---\nlinks:\n  - ${targetAdrTag}\n---`)).toBe(
+    expect(content.startsWith(`---\nlinks:\n  - ${targetAdr.tag}\n---`)).toBe(
       true,
     );
   });

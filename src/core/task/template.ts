@@ -3,21 +3,22 @@
  * Enforces RULE-15, RULE-18, and RULE-22.
  */
 
+import {
+  isValidGovernanceLinkTag,
+  isValidTaskDependencyTag,
+} from "../linking/validator.ts";
 import { renderAcceptanceCriteria } from "./checklist.ts";
 import type {
   PlannedGovernanceDeclaration,
   TaskRenderOptions,
 } from "./types.ts";
 
-const ADR_RULE_LINK_REGEX = /^(?:ADR|RULE)-[A-Za-z0-9_-]+$/;
-const TASK_DEPENDENCY_REGEX = /^TASK-[A-Za-z0-9_.-]+$/;
-
 /**
  * Validates links per RULE-15: TASK links must only reference ADR and RULE artifacts.
  */
 export function validateTaskLinks(links: string[] = []): void {
   for (const link of links) {
-    if (!ADR_RULE_LINK_REGEX.test(link)) {
+    if (!isValidGovernanceLinkTag(link)) {
       throw new Error(
         `Invalid task link target: "${link}". A TASK artifact's frontmatter links must exclusively reference ADR and RULE artifacts (RULE-15).`,
       );
@@ -30,7 +31,7 @@ export function validateTaskLinks(links: string[] = []): void {
  */
 export function validateTaskDependencies(dependsOn: string[] = []): void {
   for (const dep of dependsOn) {
-    if (!TASK_DEPENDENCY_REGEX.test(dep)) {
+    if (!isValidTaskDependencyTag(dep)) {
       throw new Error(
         `Invalid task dependency: "${dep}". A TASK artifact's frontmatter depends_on must exclusively reference other TASK artifacts (RULE-18).`,
       );

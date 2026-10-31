@@ -9,6 +9,11 @@ import type { ResolvedArtifact } from "../query/types.ts";
 
 export type ArtifactLinkRelationship = "links" | "depends_on";
 
+export type FrontmatterListField =
+  | ArtifactLinkRelationship
+  | "supersedes"
+  | "superseded_by";
+
 export interface ValidateLinkOptions {
   /**
    * Workspace root directory (defaults to process.cwd()).

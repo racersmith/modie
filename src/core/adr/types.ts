@@ -3,6 +3,8 @@
  * Complies with ADR-1, ADR-2, ADR-4, RULE-1, RULE-4, RULE-14, and RULE-17.
  */
 
+import type { CreateArtifactResult } from "../pipeline/types.ts";
+
 export interface AdrFrontmatter {
   summary?: string;
   links?: string[];
@@ -180,12 +182,4 @@ export interface CreateAdrOptions {
   cwd?: string;
 }
 
-export interface CreateAdrResult {
-  artifact: AdrArtifact;
-  filename: string;
-  filepath: string;
-  relativePath: string;
-  markdown: string;
-  id: string;
-  tag: string;
-}
+export type CreateAdrResult = CreateArtifactResult<AdrArtifact>;

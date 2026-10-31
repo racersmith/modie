@@ -1,5 +1,6 @@
 ---
-depends_on: []
+depends_on:
+  - TASK-47
 
 links:
   - RULE-25

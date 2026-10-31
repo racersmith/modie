@@ -54,15 +54,5 @@ export function resolveAdrDirectories(
 export async function createAdr(
   options: CreateAdrOptions,
 ): Promise<CreateAdrResult> {
-  const result = await createArtifact(adrDefinition, options);
-
-  return {
-    artifact: result.artifact,
-    filename: result.filename,
-    filepath: result.filepath,
-    relativePath: result.relativePath,
-    markdown: result.markdown,
-    id: result.id,
-    tag: result.tag,
-  };
+  return createArtifact(adrDefinition, options);
 }

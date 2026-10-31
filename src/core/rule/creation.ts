@@ -30,15 +30,5 @@ export function resolveRuleDirectories(
 export async function createRule(
   options: CreateRuleOptions,
 ): Promise<CreateRuleResult> {
-  const result = await createArtifact(ruleDefinition, options);
-  return {
-    artifact: result.artifact,
-    filename: result.filename,
-    filepath: result.filepath,
-    relativePath: result.relativePath,
-    markdown: result.markdown,
-    id: result.id,
-    tag: result.tag,
-    supersedes: result.artifact.supersedes,
-  };
+  return createArtifact(ruleDefinition, options);
 }

@@ -4,6 +4,7 @@
  */
 
 import { parseArtifactFilename } from "../common/filename.ts";
+import { isValidGovernanceLinkTag } from "../linking/validator.ts";
 import type { ArtifactParseContext } from "../pipeline/types.ts";
 import {
   extractAdrSummary,
@@ -11,15 +12,13 @@ import {
 } from "../query/markdown-parser.ts";
 import type { AdrArtifact, AdrRenderOptions } from "./types.ts";
 
-export const ADR_OR_RULE_LINK_REGEX = /^(?:ADR|RULE)-[A-Za-z0-9_-]+$/;
-
 /**
  * Validates frontmatter links per RULE-14:
  * An ADR artifact's frontmatter links must exclusively reference ADR or RULE artifacts.
  */
 export function validateAdrLinks(links: string[] = []): void {
   for (const link of links) {
-    if (!ADR_OR_RULE_LINK_REGEX.test(link)) {
+    if (!isValidGovernanceLinkTag(link)) {
       throw new Error(
         `Invalid ADR link target: "${link}". An ADR artifact's frontmatter links must exclusively reference ADR or RULE artifacts (RULE-14).`,
       );

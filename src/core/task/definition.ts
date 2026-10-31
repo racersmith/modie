@@ -5,6 +5,7 @@
 
 import { isAbsolute, relative, resolve } from "node:path";
 import { findDeepestCommonAncestor } from "../common/index.ts";
+import { validateLinkTarget } from "../linking/validator.ts";
 import type { ArtifactDefinition } from "../pipeline/types.ts";
 import { resolveWatermark } from "../resolver/watermark.ts";
 import { assertNotZombieTask } from "./completion.ts";
@@ -59,7 +60,7 @@ export const taskDefinition: ArtifactDefinition<
 > = {
   subtype: "TASK",
   containerName: "tasks",
-  validate: ({ normalizedScopeDir, options, cwd }) => {
+  validate: async ({ normalizedScopeDir, options, cwd }) => {
     if (options.targetPaths && options.targetPaths.length > 0) {
       validateTaskScope(
         normalizedScopeDir,
@@ -67,6 +68,30 @@ export const taskDefinition: ArtifactDefinition<
         options.allowBroadScope,
         cwd,
       );
+    }
+
+    if (options.links && options.links.length > 0) {
+      for (const link of options.links) {
+        await validateLinkTarget("TASK", normalizedScopeDir, "links", link, {
+          cwd,
+          sourceTag: "TASK",
+        });
+      }
+    }
+
+    if (options.depends_on && options.depends_on.length > 0) {
+      for (const dep of options.depends_on) {
+        await validateLinkTarget(
+          "TASK",
+          normalizedScopeDir,
+          "depends_on",
+          dep,
+          {
+            cwd,
+            sourceTag: "TASK",
+          },
+        );
+      }
     }
   },
   allocateId: async ({ options, cwd }) => {

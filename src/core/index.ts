@@ -28,6 +28,7 @@ export {
 export * as PipelinePrimitive from "./pipeline/index.ts";
 export * from "./pipeline/types.ts";
 export {
+  ARTIFACT_DEFINITIONS,
   buildArtifactParseContext,
   createArtifact,
   getArtifactDefinition,
@@ -216,9 +217,16 @@ export type { ArchiveRuleOptions } from "./rule/archive.ts";
 export * as LinkingPrimitive from "./linking/index.ts";
 export * from "./linking/types.ts";
 export {
+  ADR_LINK_TAG_REGEX,
+  GOVERNANCE_LINK_TAG_REGEX,
+  TASK_DEPENDENCY_TAG_REGEX,
   detectTaskDependencyCycle,
   inferLinkRelationship,
+  isValidAdrLinkTag,
+  isValidGovernanceLinkTag,
+  isValidTaskDependencyTag,
   validateArtifactLink,
+  validateLinkTarget,
 } from "./linking/validator.ts";
 export {
   linkArtifact,
