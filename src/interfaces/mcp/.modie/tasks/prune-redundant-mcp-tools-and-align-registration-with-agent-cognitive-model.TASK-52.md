@@ -2,6 +2,7 @@
 depends_on:
   - TASK-50
   - TASK-51
+  - TASK-62
 
 links:
   - RULE-25
