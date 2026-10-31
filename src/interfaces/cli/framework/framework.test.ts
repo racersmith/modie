@@ -17,7 +17,7 @@ import { taskStartCommand } from "../commands/task/start.ts";
 import { taskCompleteCommand } from "../commands/task/complete.ts";
 import { taskMergeCommand } from "../commands/task/merge.ts";
 
-describe("Declarative CLI Subcommand Framework (TASK-19, RULE-25, RULE-27)", () => {
+describe("Declarative CLI Subcommand Framework (ADR-4, RULE-25, RULE-27)", () => {
   it("should generate standardized aligned help output from command metadata", () => {
     const testCommand: CliCommandDefinition = {
       name: "frobnicate",
@@ -410,5 +410,93 @@ describe("Declarative CLI Subcommand Framework (TASK-19, RULE-25, RULE-27)", () 
 
     expect(exitCode).toBe(1);
     expect(stderrOutput).toContain("Error: Missing required --target flag");
+  });
+
+  it("should automatically infer flag types, multiplicity, property bindings, and descriptions from Zod schema", async () => {
+    const z = (await import("zod")).z;
+    const { defineCommand, executeCliCommand, generateCommandHelp } =
+      await import("./index.ts");
+
+    const inferredSchema = z.object({
+      targetId: z.string().describe("Target artifact identifier"),
+      scope: z.string().optional().describe("Target directory scope"),
+      labels: z
+        .array(z.string())
+        .default([])
+        .describe("Classification labels"),
+      dryRun: z
+        .boolean()
+        .default(false)
+        .describe("Perform a dry-run simulation without writing files"),
+    });
+
+    let captured: any = null;
+    const cmd = defineCommand({
+      id: "inferred_op",
+      name: "inferred",
+      usage: "modie inferred <target-id> [options]",
+      schema: inferredSchema,
+      positionals: [
+        {
+          name: "target-id",
+          required: true,
+        },
+      ],
+      flags: {
+        scope: {
+          short: "s",
+          placeholder: "<dir>",
+        },
+        label: {
+          short: "l",
+          aliases: ["labels"],
+          property: "labels",
+        },
+      },
+      execute: (input) => {
+        captured = input;
+        return { ok: true };
+      },
+    });
+
+    // Verify inferred metadata on positionals and flags (including auto-synthesized --dry-run)
+    expect(cmd.positionals?.[0]?.property).toBe("targetId");
+    expect(cmd.positionals?.[0]?.description).toBe(
+      "Target artifact identifier",
+    );
+    expect(cmd.flags?.scope?.type).toBe("string");
+    expect(cmd.flags?.scope?.description).toBe("Target directory scope");
+    expect(cmd.flags?.label?.type).toBe("string");
+    expect(cmd.flags?.label?.multiple).toBe(true);
+    expect(cmd.flags?.label?.description).toBe("Classification labels");
+    expect(cmd.flags?.["dry-run"]?.type).toBe("boolean");
+    expect(cmd.flags?.["dry-run"]?.property).toBe("dryRun");
+    expect(cmd.flags?.["dry-run"]?.description).toBe(
+      "Perform a dry-run simulation without writing files",
+    );
+
+    const helpText = generateCommandHelp(cmd);
+    expect(helpText).toContain("Target artifact identifier");
+    expect(helpText).toContain("-s, --scope <dir>");
+    expect(helpText).toContain("Target directory scope");
+    expect(helpText).toContain("-l, --label, --labels");
+    expect(helpText).toContain("Classification labels");
+    expect(helpText).toContain("--dry-run");
+    expect(helpText).toContain(
+      "Perform a dry-run simulation without writing files",
+    );
+
+    const exitCode = await executeCliCommand(
+      cmd,
+      ["ITEM-1", "-s", "src/core", "-l", "one,two", "--dry-run"],
+      {},
+    );
+    expect(exitCode).toBe(0);
+    expect(captured).toEqual({
+      targetId: "ITEM-1",
+      scope: "src/core",
+      labels: ["one", "two"],
+      dryRun: true,
+    });
   });
 });

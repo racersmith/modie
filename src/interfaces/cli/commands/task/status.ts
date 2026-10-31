@@ -65,20 +65,12 @@ export const taskStatusCommand: CliCommandDefinition<
   positionals: [
     {
       name: "id-or-path",
-      property: "id",
-      description: "Task ID (e.g. TASK-9, 9), slug, or file path (optional)",
       required: false,
     },
   ],
   flags: {
     current: {
-      type: "boolean",
       short: "c",
-      description: "Resolve and display current task from active git branch",
-    },
-    history: {
-      type: "boolean",
-      description: "Query completed task history and branches in Git per ADR-6",
     },
   },
   execute: async (input, context) => {

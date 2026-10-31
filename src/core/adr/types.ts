@@ -122,6 +122,11 @@ export interface AdrRenderOptions {
    * Decision description (ADR-4).
    */
   decision?: string;
+
+  /**
+   * When true, skips frontmatter link validation (used by test fixtures).
+   */
+  skipValidation?: boolean;
 }
 
 export interface CreateAdrOptions {

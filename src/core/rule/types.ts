@@ -85,6 +85,11 @@ export interface RuleRenderOptions {
    * Invariant assertion claim text (RULE-3, RULE-11).
    */
   assertion?: string;
+
+  /**
+   * When true, skips frontmatter link validation (used by test fixtures).
+   */
+  skipValidation?: boolean;
 }
 
 export interface CreateRuleOptions {

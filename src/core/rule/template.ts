@@ -1,9 +1,12 @@
 /**
- * Rule markdown template generator and renderer.
+ * Rule markdown template generator, renderer, and parser.
  * Enforces RULE-3, RULE-11, and RULE-13.
  */
 
-import type { RuleRenderOptions } from "./types.ts";
+import { parseArtifactFilename } from "../common/filename.ts";
+import type { ArtifactParseContext } from "../pipeline/types.ts";
+import { parseMarkdownDocument } from "../query/markdown-parser.ts";
+import type { RuleArtifact, RuleRenderOptions } from "./types.ts";
 
 export const ADR_LINK_REGEX = /^ADR-[A-Za-z0-9_-]+$/;
 
@@ -26,10 +29,12 @@ export function validateRuleLinks(links: string[] = []): void {
  * and a single invariant assertion per RULE-3 and RULE-11.
  */
 export function renderRuleMarkdown(options: RuleRenderOptions): string {
-  const { title, slug, links = [], assertion } = options;
+  const { title, slug, links = [], assertion, skipValidation } = options;
 
   // Validate frontmatter boundaries per RULE-13
-  validateRuleLinks(links);
+  if (!skipValidation) {
+    validateRuleLinks(links);
+  }
 
   const assertionText =
     assertion?.trim() ||
@@ -79,4 +84,59 @@ export function renderRuleMarkdown(options: RuleRenderOptions): string {
   }
 
   return `${assertionText}\n`;
+}
+
+/**
+ * Reconstructs a strongly-typed RuleArtifact from a standardized ArtifactParseContext.
+ */
+export function parseRuleFromContext(
+  context: ArtifactParseContext,
+): RuleArtifact {
+  return {
+    id: context.id,
+    slug: context.slug,
+    title: context.title,
+    links: context.frontmatterFields.links,
+    ...(context.frontmatterFields.supersedes
+      ? { supersedes: context.frontmatterFields.supersedes }
+      : {}),
+    ...(context.frontmatterFields.superseded_by
+      ? { superseded_by: context.frontmatterFields.superseded_by }
+      : {}),
+    assertion: context.body.trim(),
+    filePath: context.filepath ?? "",
+    rawContent: context.rawContent,
+  };
+}
+
+/**
+ * Parses a RULE markdown document into a structured RuleArtifact object.
+ */
+export function parseRuleMarkdown(
+  content: string,
+  filePathOrFilename?: string,
+): RuleArtifact {
+  const doc = parseMarkdownDocument(content);
+  let id = "";
+  let slug = "";
+  if (filePathOrFilename) {
+    const parsed = parseArtifactFilename(filePathOrFilename);
+    if (parsed && parsed.subtype === "RULE") {
+      id = parsed.id;
+      slug = parsed.slug;
+    }
+  }
+
+  return parseRuleFromContext({
+    id,
+    slug,
+    title: slug ? slug.replace(/-/g, " ") : "",
+    filepath: filePathOrFilename,
+    filename: filePathOrFilename,
+    rawContent: content,
+    frontmatter: doc.frontmatter,
+    body: doc.body,
+    frontmatterFields: doc.frontmatterFields,
+    sections: doc.sections,
+  });
 }

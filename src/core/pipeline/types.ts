@@ -4,6 +4,7 @@
  */
 
 import type { IndexableSubtype } from "../common/types.ts";
+import type { ParsedFrontmatterFields } from "../query/markdown-parser.ts";
 import type { WatermarkDetails } from "../resolver/types.ts";
 
 export interface BaseCreateArtifactOptions {
@@ -63,9 +64,22 @@ export interface ArtifactRenderResult<TArtifact = unknown> {
   artifact: TArtifact;
 }
 
+export interface ArtifactParseContext {
+  id: string;
+  slug: string;
+  title: string;
+  filepath?: string;
+  filename?: string;
+  rawContent: string;
+  frontmatter: string;
+  body: string;
+  frontmatterFields: ParsedFrontmatterFields;
+  sections: Record<string, string>;
+}
+
 /**
  * Declarative definition of an artifact subtype, defining its lifecycle behaviors,
- * directory conventions, link validation rules, and template generator.
+ * directory conventions, link validation rules, template generator, and markdown parser.
  */
 export interface ArtifactDefinition<TOptions = any, TArtifact = any> {
   /**
@@ -99,6 +113,12 @@ export interface ArtifactDefinition<TOptions = any, TArtifact = any> {
   render: (
     context: ArtifactRenderContext<TOptions>,
   ) => ArtifactRenderResult<TArtifact>;
+
+  /**
+   * Bidirectional markdown parser that reconstructs the structured artifact object
+   * from a parsed markdown document context.
+   */
+  parse?: (context: ArtifactParseContext) => TArtifact;
 }
 
 export interface CreateArtifactResult<TArtifact = unknown> {

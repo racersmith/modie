@@ -70,18 +70,12 @@ export const linkCommand: CliCommandDefinition<
   positionals: [
     {
       name: "source",
-      property: "source",
-      description:
-        "Source artifact tag (e.g. RULE-16, ADR-5), slug, or file path",
       required: true,
       missingError:
         "Error: Missing required source artifact identifier. Usage: modie link <source> <target> [options]",
     },
     {
       name: "target",
-      property: "target",
-      description:
-        "Target artifact tag (e.g. ADR-5, RULE-13), slug, or file path",
       required: true,
       missingError:
         "Error: Missing required target artifact identifier. Usage: modie link <source> <target> [options]",
@@ -89,7 +83,6 @@ export const linkCommand: CliCommandDefinition<
   ],
   flags: {
     type: {
-      type: "string",
       short: "t",
       property: "relationship",
       aliases: ["relationship"],

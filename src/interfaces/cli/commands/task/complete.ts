@@ -87,37 +87,19 @@ export const taskCompleteCommand: CliCommandDefinition<
   positionals: [
     {
       name: "id-or-path",
-      property: "id",
-      description:
-        "Task ID (e.g. TASK-7-1, 7-1), slug, or file path (optional when on a task branch)",
       required: false,
     },
   ],
   flags: {
     commit: {
-      type: "boolean",
       short: "c",
-      description:
-        "Execute atomic two-phase Git commit ceremony (default in git repo)",
     },
-    "no-commit": {
-      type: "boolean",
-      description:
-        "Disable automatic Git commits and only delete the artifact locally",
-      property: "noCommit",
-    },
+    "no-commit": {},
     force: {
-      type: "boolean",
       short: "f",
-      description:
-        "Force completion even if acceptance criteria remain unchecked",
     },
     "keep-file": {
-      type: "boolean",
-      description:
-        "Retain the task artifact file on disk instead of deleting it",
       aliases: ["no-delete"],
-      property: "keepFile",
     },
   },
   execute: async (input, context) => {

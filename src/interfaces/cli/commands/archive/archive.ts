@@ -57,8 +57,6 @@ export const archiveCommand: CliCommandDefinition<
   positionals: [
     {
       name: "tag-or-path",
-      property: "tag",
-      description: "Artifact tag (e.g. RULE-5, ADR-3), slug, or file path",
       required: true,
       missingError:
         "Error: Missing required artifact identifier. Usage: modie archive <tag-or-path> [options]",
@@ -66,10 +64,7 @@ export const archiveCommand: CliCommandDefinition<
   ],
   flags: {
     force: {
-      type: "boolean",
       short: "f",
-      description:
-        "Force archival bypassing active incoming reference checks (RULE-31 override)",
     },
   },
   execute: async (input, context) => {

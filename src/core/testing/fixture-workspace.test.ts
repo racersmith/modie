@@ -5,7 +5,13 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { createFixtureWorkspace, type FixtureWorkspace } from "./fixture-workspace.ts";
+import { parseArtifact } from "../pipeline/create.ts";
+import { getArtifactDetails } from "../query/artifact-query.ts";
+import {
+  createFixtureWorkspace,
+  makeTestTag,
+  type FixtureWorkspace,
+} from "./fixture-workspace.ts";
 
 describe("FixtureWorkspace - Architectural scopeDir Resolution (RULE-8, RULE-12, RULE-34, ADR-10)", () => {
   let workspace: FixtureWorkspace;
@@ -118,6 +124,80 @@ describe("FixtureWorkspace - Architectural scopeDir Resolution (RULE-8, RULE-12,
     expect(await workspace.fileExists(rule)).toBe(true);
     expect(await workspace.fileExists(adr)).toBe(true);
     expect(await workspace.fileExists(task)).toBe(true);
+  });
+
+  // @verifies ADR-4, RULE-25, RULE-34, RULE-35
+  it("[ADR-4][RULE-25][RULE-34][RULE-35] should delegate fixture creation to canonical subtype template renderers and roundtrip parse cleanly", async () => {
+    const adr1Tag = makeTestTag("ADR", 1);
+    const rule1Tag = makeTestTag("RULE", 1);
+    const task1Tag = makeTestTag("TASK", 1);
+
+    const adr = await workspace.createAdr({
+      id: 1,
+      title: "Canonical Template Delegation",
+      summary: "Delegate fixture helpers to canonical subtype renderers.",
+      context: "Parallel markdown builders in test fixtures drift from schemas.",
+      alternatives: "Maintain duplicate builders in fixture-workspace.ts.",
+      decision: "Call renderRuleMarkdown, renderAdrMarkdown, and renderTaskMarkdown.",
+    });
+
+    const rule = await workspace.createRule({
+      id: 1,
+      title: "No Parallel Fixture Renderers",
+      body: "Fixture creation helpers must delegate to canonical subtype template renderers.",
+      links: [adr1Tag],
+    });
+
+    const task = await workspace.createTask({
+      id: 1,
+      title: "Verify Fixture Delegation",
+      context: "Ensure fixture tasks render canonical sections.",
+      links: [adr1Tag, rule1Tag],
+      criteria: [
+        "Delegate createRule",
+        { text: "Delegate createAdr", completed: true },
+      ],
+    });
+
+    const parsedAdr = parseArtifact(
+      "ADR",
+      await workspace.readFile(adr),
+      adr.filepath,
+    ) as any;
+    expect(parsedAdr.summary).toBe(
+      "Delegate fixture helpers to canonical subtype renderers.",
+    );
+    expect(parsedAdr.context).toBe(
+      "Parallel markdown builders in test fixtures drift from schemas.",
+    );
+    expect(parsedAdr.alternatives).toBe(
+      "Maintain duplicate builders in fixture-workspace.ts.",
+    );
+    expect(parsedAdr.decision).toBe(
+      "Call renderRuleMarkdown, renderAdrMarkdown, and renderTaskMarkdown.",
+    );
+
+    const parsedRule = parseArtifact(
+      "RULE",
+      await workspace.readFile(rule),
+      rule.filepath,
+    ) as any;
+    expect(parsedRule.links).toEqual([adr1Tag]);
+    expect(parsedRule.assertion).toBe(
+      "Fixture creation helpers must delegate to canonical subtype template renderers.",
+    );
+
+    const taskDetails = await getArtifactDetails(task1Tag, {
+      cwd: workspace.cwd,
+    });
+    expect(taskDetails.links).toEqual([adr1Tag, rule1Tag]);
+    expect(taskDetails.context).toBe(
+      "Ensure fixture tasks render canonical sections.",
+    );
+    expect(taskDetails.acceptanceCriteria).toEqual([
+      { text: "Delegate createRule", completed: false },
+      { text: "Delegate createAdr", completed: true },
+    ]);
   });
 });
 

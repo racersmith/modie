@@ -20,8 +20,12 @@ export interface PlannedGovernanceItem {
 }
 
 export interface PlannedGovernanceDeclaration {
-  rules?: Array<string | PlannedGovernanceItem>;
-  adrs?: Array<string | PlannedGovernanceItem>;
+  rules?: Array<
+    string | (Omit<PlannedGovernanceItem, "completed"> & { completed?: boolean })
+  >;
+  adrs?: Array<
+    string | (Omit<PlannedGovernanceItem, "completed"> & { completed?: boolean })
+  >;
 }
 
 export interface ParsedPlannedGovernance {
@@ -50,7 +54,11 @@ export interface TaskRenderOptions {
   links?: string[];
   context?: string;
   plannedGovernance?: PlannedGovernanceDeclaration;
-  acceptanceCriteria?: (string | TaskAcceptanceCriteriaItem)[];
+  acceptanceCriteria?: Array<
+    string | { text: string; completed?: boolean }
+  >;
+  skipValidation?: boolean;
+  allowEmptyCriteria?: boolean;
 }
 
 export interface TaskBranchTopology {
@@ -137,7 +145,7 @@ export interface CreateTaskOptions {
    * Acceptance criteria checklist items per RULE-22.
    * Can be strings or { text, completed } items.
    */
-  acceptanceCriteria?: Array<string | TaskAcceptanceCriteriaItem>;
+  acceptanceCriteria?: Array<string | { text: string; completed?: boolean }>;
 
   /**
    * Planned governance declarations (rules and ADRs to author during task execution).

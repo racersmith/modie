@@ -69,18 +69,12 @@ export const unlinkCommand: CliCommandDefinition<
   positionals: [
     {
       name: "source",
-      property: "source",
-      description:
-        "Source artifact tag (e.g. RULE-16, ADR-5), slug, or file path",
       required: true,
       missingError:
         "Error: Missing required source artifact identifier. Usage: modie unlink <source> <target> [options]",
     },
     {
       name: "target",
-      property: "target",
-      description:
-        "Target artifact tag (e.g. ADR-5, RULE-13), slug, or file path",
       required: true,
       missingError:
         "Error: Missing required target artifact identifier. Usage: modie unlink <source> <target> [options]",
@@ -88,7 +82,6 @@ export const unlinkCommand: CliCommandDefinition<
   ],
   flags: {
     type: {
-      type: "string",
       short: "t",
       property: "relationship",
       aliases: ["relationship"],

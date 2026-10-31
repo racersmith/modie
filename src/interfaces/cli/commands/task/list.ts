@@ -111,19 +111,13 @@ export const taskListCommand: CliCommandDefinition<
   positionals: [],
   flags: {
     ready: {
-      type: "boolean",
       short: "r",
-      description: "Show only unblocked tasks ready for execution",
     },
     blocked: {
-      type: "boolean",
       short: "b",
-      description: "Show only tasks blocked by pending dependencies",
     },
     scope: {
-      type: "string",
       placeholder: "<path>",
-      description: "Filter tasks located within specified directory scope",
     },
   },
   execute: async (input, context) => {

@@ -97,11 +97,15 @@ export function renderTaskMarkdown(options: TaskRenderOptions): string {
     links = [],
     plannedGovernance,
     acceptanceCriteria = [],
+    skipValidation,
+    allowEmptyCriteria,
   } = options;
 
   // Validate frontmatter boundaries
-  validateTaskLinks(links);
-  validateTaskDependencies(depends_on);
+  if (!skipValidation) {
+    validateTaskLinks(links);
+    validateTaskDependencies(depends_on);
+  }
 
   const frontmatterLines: string[] = ["---"];
 
@@ -145,7 +149,12 @@ export function renderTaskMarkdown(options: TaskRenderOptions): string {
     sections.push(plannedGovContent, "");
   }
 
-  sections.push(renderAcceptanceCriteria(acceptanceCriteria).trim(), "");
+  sections.push(
+    renderAcceptanceCriteria(acceptanceCriteria, {
+      allowEmpty: allowEmptyCriteria,
+    }).trim(),
+    "",
+  );
 
   return sections.join("\n");
 }

@@ -8,6 +8,8 @@ import { makeTestTag } from "../testing/index.ts";
 import {
   extractAdrSummary,
   parseFrontmatterFields,
+  parseFrontmatterLineMap,
+  parseMarkdownDocument,
   parseMarkdownSections,
   splitMarkdownFrontmatter,
 } from "./markdown-parser.ts";
@@ -131,7 +133,43 @@ superseded_by: []
 
     const parsed = parseFrontmatterFields(frontmatter);
     expect(parsed.links).toEqual([adr1Tag]);
+    expect(parsed.supersedes).toEqual([adr2Tag]);
+    expect(parsed.superseded_by).toBeUndefined();
     expect(parsed.depends_on).toBeUndefined();
+  });
+
+  // @verifies ADR-4, RULE-1, RULE-25, RULE-35
+  it("[ADR-4][RULE-1][RULE-25][RULE-35] should parse supersedes and superseded_by in block, inline array, and scalar formats and map line numbers", () => {
+    const adr1Tag = makeTestTag("ADR", 1);
+    const adr2Tag = makeTestTag("ADR", 2);
+    const adr3Tag = makeTestTag("ADR", 3);
+
+    const docText = `---
+summary: Unified parser test
+links:
+  - ${adr1Tag}
+supersedes: [${adr2Tag}]
+superseded_by: ${adr3Tag}
+---
+
+# Context
+
+Unified context section.
+`;
+
+    const doc = parseMarkdownDocument(docText);
+    expect(doc.frontmatterFields.summary).toBe("Unified parser test");
+    expect(doc.frontmatterFields.links).toEqual([adr1Tag]);
+    expect(doc.frontmatterFields.supersedes).toEqual([adr2Tag]);
+    expect(doc.frontmatterFields.superseded_by).toEqual([adr3Tag]);
+    expect(doc.sections["Context"]).toBe("Unified context section.");
+
+    const lineMap = parseFrontmatterLineMap(docText.split("\n"));
+    expect(lineMap.frontmatterEndLine).toBe(7);
+    expect(lineMap.linkLines.get(3)).toBe("links");
+    expect(lineMap.linkLines.get(4)).toBe("links");
+    expect(lineMap.linkLines.get(5)).toBe("supersedes");
+    expect(lineMap.linkLines.get(6)).toBe("superseded_by");
   });
 
   // @verifies ADR-8, RULE-25, RULE-26

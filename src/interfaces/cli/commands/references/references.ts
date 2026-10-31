@@ -68,9 +68,6 @@ export const referencesCommandDefinition: CliCommandDefinition<
   positionals: [
     {
       name: "tag",
-      property: "tag",
-      description:
-        "Artifact tag (e.g. RULE-25, ADR-4, TASK-20), slug, or filepath",
       required: true,
       missingError:
         "Missing required artifact identifier. Usage: modie references <tag> [options]",
@@ -78,24 +75,10 @@ export const referencesCommandDefinition: CliCommandDefinition<
   ],
   flags: {
     by: {
-      type: "boolean",
-      description: "Display only 'Found In' citations",
       aliases: ["found-in"],
     },
     to: {
-      type: "boolean",
-      description: "Display only 'Links To' declared outbound links",
       aliases: ["links-to"],
-    },
-    "code-only": {
-      type: "boolean",
-      description: "Filter citations to source code and tests only",
-      property: "codeOnly",
-    },
-    "governance-only": {
-      type: "boolean",
-      description: "Filter citations to governance artifacts only",
-      property: "governanceOnly",
     },
   },
   execute: async (input, context) => {

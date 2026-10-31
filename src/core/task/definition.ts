@@ -8,6 +8,7 @@ import { findDeepestCommonAncestor } from "../common/index.ts";
 import type { ArtifactDefinition } from "../pipeline/types.ts";
 import { resolveWatermark } from "../resolver/watermark.ts";
 import { assertNotZombieTask } from "./completion.ts";
+import { parseTaskFromContext } from "./parser.ts";
 import { renderTaskMarkdown } from "./template.ts";
 import type {
   CreateTaskOptions,
@@ -85,7 +86,7 @@ export const taskDefinition: ArtifactDefinition<
   render: ({ id, slug, title, options, filepath }) => {
     const rawCriteria = options.acceptanceCriteria ?? [];
     const normalizedCriteria: TaskAcceptanceCriteriaItem[] = rawCriteria.map(
-      (item: string | TaskAcceptanceCriteriaItem) => {
+      (item) => {
         if (typeof item === "string") {
           return { text: item, completed: false };
         }
@@ -126,10 +127,14 @@ export const taskDefinition: ArtifactDefinition<
       plannedGovernance: options.plannedGovernance
         ? {
             rules: (options.plannedGovernance.rules ?? []).map((r) =>
-              typeof r === "string" ? { text: r, completed: false } : r,
+              typeof r === "string"
+                ? { text: r, completed: false }
+                : { ...r, completed: r.completed ?? false },
             ),
             adrs: (options.plannedGovernance.adrs ?? []).map((a) =>
-              typeof a === "string" ? { text: a, completed: false } : a,
+              typeof a === "string"
+                ? { text: a, completed: false }
+                : { ...a, completed: a.completed ?? false },
             ),
           }
         : undefined,
@@ -140,4 +145,5 @@ export const taskDefinition: ArtifactDefinition<
 
     return { markdown, artifact };
   },
+  parse: (context) => parseTaskFromContext(context),
 };

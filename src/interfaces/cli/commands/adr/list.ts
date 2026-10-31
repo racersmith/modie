@@ -81,7 +81,6 @@ export const adrListCommand: CliCommandDefinition<
   positionals: [],
   flags: {
     scope: {
-      type: "string",
       short: "s",
       placeholder: "<path>",
       description:

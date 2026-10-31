@@ -1,9 +1,15 @@
 /**
- * ADR markdown template generator and renderer.
+ * ADR markdown template generator, renderer, and parser.
  * Enforces ADR-4 and RULE-14.
  */
 
-import type { AdrRenderOptions } from "./types.ts";
+import { parseArtifactFilename } from "../common/filename.ts";
+import type { ArtifactParseContext } from "../pipeline/types.ts";
+import {
+  extractAdrSummary,
+  parseMarkdownDocument,
+} from "../query/markdown-parser.ts";
+import type { AdrArtifact, AdrRenderOptions } from "./types.ts";
 
 export const ADR_OR_RULE_LINK_REGEX = /^(?:ADR|RULE)-[A-Za-z0-9_-]+$/;
 
@@ -33,10 +39,13 @@ export function renderAdrMarkdown(options: AdrRenderOptions): string {
     context,
     alternatives,
     decision,
+    skipValidation,
   } = options;
 
   // Validate frontmatter boundaries per RULE-14
-  validateAdrLinks(links);
+  if (!skipValidation) {
+    validateAdrLinks(links);
+  }
 
   const frontmatterLines: string[] = ["---"];
 
@@ -102,4 +111,72 @@ export function renderAdrMarkdown(options: AdrRenderOptions): string {
   ];
 
   return sections.join("\n");
+}
+
+/**
+ * Reconstructs a strongly-typed AdrArtifact from a standardized ArtifactParseContext.
+ */
+export function parseAdrFromContext(
+  context: ArtifactParseContext,
+): AdrArtifact {
+  const summary =
+    context.frontmatterFields.summary ??
+    (extractAdrSummary(context.rawContent, context.slug) || undefined);
+
+  return {
+    id: context.id,
+    slug: context.slug,
+    title: context.title,
+    ...(summary ? { summary } : {}),
+    links: context.frontmatterFields.links,
+    ...(context.frontmatterFields.supersedes
+      ? { supersedes: context.frontmatterFields.supersedes }
+      : {}),
+    ...(context.frontmatterFields.superseded_by
+      ? { superseded_by: context.frontmatterFields.superseded_by }
+      : {}),
+    ...(context.sections["Context"] !== undefined
+      ? { context: context.sections["Context"] }
+      : {}),
+    ...(context.sections["Alternatives Considered"] !== undefined
+      ? { alternatives: context.sections["Alternatives Considered"] }
+      : {}),
+    ...(context.sections["Decision"] !== undefined
+      ? { decision: context.sections["Decision"] }
+      : {}),
+    filePath: context.filepath ?? "",
+    rawContent: context.rawContent,
+  };
+}
+
+/**
+ * Parses an ADR markdown document into a structured AdrArtifact object.
+ */
+export function parseAdrMarkdown(
+  content: string,
+  filePathOrFilename?: string,
+): AdrArtifact {
+  const doc = parseMarkdownDocument(content);
+  let id = "";
+  let slug = "";
+  if (filePathOrFilename) {
+    const parsed = parseArtifactFilename(filePathOrFilename);
+    if (parsed && parsed.subtype === "ADR") {
+      id = parsed.id;
+      slug = parsed.slug;
+    }
+  }
+
+  return parseAdrFromContext({
+    id,
+    slug,
+    title: slug ? slug.replace(/-/g, " ") : "",
+    filepath: filePathOrFilename,
+    filename: filePathOrFilename,
+    rawContent: content,
+    frontmatter: doc.frontmatter,
+    body: doc.body,
+    frontmatterFields: doc.frontmatterFields,
+    sections: doc.sections,
+  });
 }

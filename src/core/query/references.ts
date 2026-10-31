@@ -16,6 +16,11 @@ import { parseArtifactFilename } from "../common/filename.ts";
 import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
 import type { GitGrepMatch, IVcsAdapter } from "../vcs/types.ts";
 import { getArtifactDetails, resolveArtifactByTag } from "./artifact-query.ts";
+import {
+  parseFrontmatterFields,
+  parseFrontmatterLineMap,
+  splitMarkdownFrontmatter,
+} from "./markdown-parser.ts";
 import type {
   ArchivalGuardResult,
   ArtifactFoundIn,
@@ -156,81 +161,6 @@ export function isTestVerificationCitation(
 }
 
 /**
- * Parses frontmatter metadata lines to identify which lines are link declarations.
- */
-interface ParsedFrontmatterLinkLines {
-  /** Map of 1-based line number to relationship name */
-  linkLines: Map<number, string>;
-  /** 1-based end line of the frontmatter block */
-  frontmatterEndLine: number;
-}
-
-function parseFrontmatterLineMap(lines: string[]): ParsedFrontmatterLinkLines {
-  const linkLines = new Map<number, string>();
-  let frontmatterEndLine = 0;
-
-  if (lines.length === 0 || lines[0]!.trim() !== "---") {
-    return { linkLines, frontmatterEndLine: 0 };
-  }
-
-  let inFrontmatter = true;
-  let currentKey: string | null = null;
-
-  for (let i = 1; i < lines.length; i++) {
-    const lineNum = i + 1; // 1-based line index
-    const line = lines[i]!;
-
-    if (line.trim() === "---") {
-      frontmatterEndLine = lineNum;
-      inFrontmatter = false;
-      break;
-    }
-
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) {
-      continue;
-    }
-
-    if (trimmed.startsWith("links:")) {
-      currentKey = "links";
-      linkLines.set(lineNum, "links");
-      continue;
-    }
-
-    if (trimmed.startsWith("depends_on:")) {
-      currentKey = "depends_on";
-      linkLines.set(lineNum, "depends_on");
-      continue;
-    }
-
-    if (trimmed.startsWith("supersedes:")) {
-      currentKey = "supersedes";
-      linkLines.set(lineNum, "supersedes");
-      continue;
-    }
-
-    if (trimmed.startsWith("superseded_by:")) {
-      currentKey = "superseded_by";
-      linkLines.set(lineNum, "superseded_by");
-      continue;
-    }
-
-    if (trimmed.startsWith("- ")) {
-      if (currentKey) {
-        linkLines.set(lineNum, currentKey);
-      }
-      continue;
-    }
-
-    if (/^[a-zA-Z0-9_-]+:/.test(trimmed)) {
-      currentKey = null;
-    }
-  }
-
-  return { linkLines, frontmatterEndLine };
-}
-
-/**
  * Discovers and classifies all citations of an artifact tag across the workspace ("Found In")
  * and extracts all declared outbound links ("Links To").
  *
@@ -278,60 +208,16 @@ export async function findArtifactReferences(
     }
   }
 
-  function parseFrontmatterList(content: string, fieldName: string): string[] {
-    const lines = content.split("\n");
-    const items: string[] = [];
-    let inField = false;
-
-    for (const rawLine of lines) {
-      const line = rawLine.trim();
-      if (line === "---" && inField) break;
-
-      if (line.startsWith(`${fieldName}:`)) {
-        inField = true;
-        const inline = line.slice(fieldName.length + 1).trim();
-        if (inline.startsWith("[") && inline.endsWith("]")) {
-          const parsed = inline
-            .slice(1, -1)
-            .split(",")
-            .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
-            .filter(Boolean);
-          items.push(...parsed);
-          inField = false;
-        } else if (inline.length > 0) {
-          items.push(inline.replace(/^['"]|['"]$/g, ""));
-          inField = false;
-        }
-        continue;
-      }
-
-      if (inField) {
-        if (line.startsWith("- ")) {
-          const val = line
-            .slice(2)
-            .trim()
-            .replace(/^['"]|['"]$/g, "");
-          if (val) items.push(val);
-        } else if (/^[a-zA-Z0-9_-]+:/.test(line)) {
-          inField = false;
-        }
-      }
-    }
-
-    return items;
-  }
-
-  // Parse supersedes / superseded_by from raw content if present
-  const supersedesItems = parseFrontmatterList(
+  // Parse supersedes / superseded_by from unified frontmatter parser
+  const { frontmatter: targetFrontmatter } = splitMarkdownFrontmatter(
     details.rawContent,
-    "supersedes",
   );
+  const parsedTargetFm = parseFrontmatterFields(targetFrontmatter);
+  const supersedesItems = details.supersedes ?? parsedTargetFm.supersedes ?? [];
   supersedes.push(...supersedesItems);
 
-  const supersededByItems = parseFrontmatterList(
-    details.rawContent,
-    "superseded_by",
-  );
+  const supersededByItems =
+    details.superseded_by ?? parsedTargetFm.superseded_by ?? [];
   if (supersededByItems.length > 0) {
     superseded_by = supersededByItems[0];
   }
@@ -395,8 +281,11 @@ export async function findArtifactReferences(
     }
     const lines = content.split("\n");
     const { linkLines, frontmatterEndLine } = parseFrontmatterLineMap(lines);
-    const candidateSupersedes = parseFrontmatterList(content, "supersedes").map(
-      (s) => s.toUpperCase(),
+    const { frontmatter } = splitMarkdownFrontmatter(content);
+    const { supersedes: candidateSupersedesRaw = [] } =
+      parseFrontmatterFields(frontmatter);
+    const candidateSupersedes = candidateSupersedesRaw.map((s) =>
+      s.toUpperCase(),
     );
     const isSupersedingSuccessor = candidateSupersedes.includes(targetTag);
     const data = {

@@ -70,30 +70,17 @@ export const taskMergeCommand: CliCommandDefinition<
   positionals: [
     {
       name: "id-or-path",
-      property: "id",
-      description:
-        "Task ID (e.g. TASK-11, 11-1), slug, or file path (optional when on a task branch)",
       required: false,
     },
   ],
   flags: {
     target: {
-      type: "string",
       short: "t",
       placeholder: "<branch>",
-      description:
-        "Target branch to merge into (default: parent branch or trunk)",
     },
-    "keep-branch": {
-      type: "boolean",
-      description:
-        "Retain the task branch after merging instead of deleting it",
-      property: "keepBranch",
-    },
+    "keep-branch": {},
     force: {
-      type: "boolean",
       short: "f",
-      description: "Bypass completion verification and protected branch guards",
     },
   },
   execute: async (input, context) => {

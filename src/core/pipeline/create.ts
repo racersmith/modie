@@ -7,9 +7,11 @@
 
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
+import { adrDefinition } from "../adr/definition.ts";
 import {
   formatArtifactFilename,
   generateSlug,
+  parseArtifactFilename,
   registerArtifactSubtype,
   resolveArtifactDirectories,
 } from "../common/index.ts";
@@ -18,10 +20,14 @@ import {
   parseCanonicalTag,
   resolveArtifactByTag,
 } from "../query/artifact-query.ts";
+import { parseMarkdownDocument } from "../query/markdown-parser.ts";
 import { resolveNextArtifactId } from "../resolver/watermark.ts";
+import { ruleDefinition } from "../rule/definition.ts";
+import { taskDefinition } from "../task/definition.ts";
 import { updateSupersededArtifactFrontmatter } from "./supersession.ts";
 import type {
   ArtifactDefinition,
+  ArtifactParseContext,
   BaseCreateArtifactOptions,
   CreateArtifactResult,
 } from "./types.ts";
@@ -173,4 +179,121 @@ export async function createArtifact<
     tag,
     watermark,
   };
+}
+
+/**
+ * Resolves the canonical ArtifactDefinition for an indexable subtype ("RULE", "ADR", "TASK").
+ */
+export function getArtifactDefinition(
+  subtype: IndexableSubtype | string,
+): ArtifactDefinition<any, any> | undefined {
+  const upper = subtype.toUpperCase();
+  if (upper === "RULE") return ruleDefinition;
+  if (upper === "ADR") return adrDefinition;
+  if (upper === "TASK") return taskDefinition;
+  return undefined;
+}
+
+/**
+ * Builds a standardized ArtifactParseContext from raw markdown content and optional path/metadata.
+ */
+export function buildArtifactParseContext(
+  rawContent: string,
+  filePathOrMetadata?:
+    | string
+    | {
+        id?: string;
+        slug?: string;
+        title?: string;
+        filepath?: string;
+        filename?: string;
+      },
+): ArtifactParseContext {
+  const doc = parseMarkdownDocument(rawContent);
+  let id = "";
+  let slug = "";
+  let title = "";
+  let filepath: string | undefined;
+  let filename: string | undefined;
+
+  if (typeof filePathOrMetadata === "string") {
+    filepath = filePathOrMetadata;
+    filename = filePathOrMetadata;
+    const parsed = parseArtifactFilename(filePathOrMetadata);
+    if (parsed) {
+      id = parsed.id;
+      slug = parsed.slug;
+    }
+  } else if (filePathOrMetadata) {
+    filepath = filePathOrMetadata.filepath;
+    filename = filePathOrMetadata.filename ?? filePathOrMetadata.filepath;
+    if (filePathOrMetadata.id !== undefined) id = filePathOrMetadata.id;
+    if (filePathOrMetadata.slug !== undefined) slug = filePathOrMetadata.slug;
+    if (filePathOrMetadata.title !== undefined) title = filePathOrMetadata.title;
+    if ((!id || !slug) && filename) {
+      const parsed = parseArtifactFilename(filename);
+      if (parsed) {
+        if (!id) id = parsed.id;
+        if (!slug) slug = parsed.slug;
+      }
+    }
+  }
+
+  if (!title && slug) {
+    title = slug.replace(/-/g, " ");
+  }
+
+  return {
+    id,
+    slug,
+    title,
+    filepath,
+    filename,
+    rawContent,
+    frontmatter: doc.frontmatter,
+    body: doc.body,
+    frontmatterFields: doc.frontmatterFields,
+    sections: doc.sections,
+  };
+}
+
+/**
+ * Parses raw markdown content into a strongly-typed artifact object using the
+ * subtype's bidirectional ArtifactDefinition.parse contract.
+ */
+export function parseArtifact<TArtifact = unknown>(
+  definitionOrSubtype:
+    | ArtifactDefinition<any, TArtifact>
+    | IndexableSubtype
+    | string,
+  rawContent: string,
+  filePathOrMetadata?:
+    | string
+    | {
+        id?: string;
+        slug?: string;
+        title?: string;
+        filepath?: string;
+        filename?: string;
+      },
+): TArtifact {
+  const definition =
+    typeof definitionOrSubtype === "string"
+      ? (getArtifactDefinition(definitionOrSubtype) as
+          | ArtifactDefinition<any, TArtifact>
+          | undefined)
+      : definitionOrSubtype;
+
+  if (!definition || !definition.parse) {
+    const subtypeName =
+      typeof definitionOrSubtype === "string"
+        ? definitionOrSubtype
+        : definitionOrSubtype.subtype;
+    throw new Error(
+      `Artifact subtype "${subtypeName}" does not define a bidirectional parse handler.`,
+    );
+  }
+
+  const context = buildArtifactParseContext(rawContent, filePathOrMetadata);
+  return definition.parse(context);
 }

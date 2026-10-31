@@ -59,6 +59,209 @@ export function getZodKind(schema: any): string {
 }
 
 /**
+ * Extracts the `.describe(...)` string from a Zod schema, unwrapping outer modifiers
+ * (`optional`, `default`, `nullable`, `preprocess`/`pipe`) if needed.
+ */
+export function getZodDescription(schema: any): string | undefined {
+  let curr = schema;
+  while (curr) {
+    const desc = curr.description ?? curr._def?.description;
+    if (typeof desc === "string" && desc.length > 0) {
+      return desc;
+    }
+    const type = curr._def?.type || curr._def?.typeName || "";
+    if (
+      type === "default" ||
+      type === "optional" ||
+      type === "nullable" ||
+      type === "ZodDefault" ||
+      type === "ZodOptional" ||
+      type === "ZodNullable"
+    ) {
+      curr =
+        curr._def?.innerType ??
+        (typeof curr.unwrap === "function" ? curr.unwrap() : null);
+    } else if (
+      type === "pipe" ||
+      type === "ZodPipeline" ||
+      type === "effects" ||
+      type === "ZodEffects"
+    ) {
+      curr = curr._def?.out ?? curr._def?.schema ?? curr._def?.in ?? null;
+    } else {
+      break;
+    }
+  }
+  return undefined;
+}
+
+function resolvePositionalSchemaProperty(
+  posDef: CliPositionalDefinition,
+  shape: Record<string, any>,
+): string | undefined {
+  if (posDef.property && shape[posDef.property]) {
+    return posDef.property;
+  }
+  if (shape[posDef.name]) {
+    return posDef.name;
+  }
+  const camel = toCamelCase(posDef.name);
+  const snake = toSnakeCase(posDef.name);
+  if (shape[camel]) return camel;
+  if (shape[snake]) return snake;
+  if (posDef.name === "id-or-path" && shape.id) return "id";
+  if (posDef.name === "tag-or-identifier" && shape.tag) return "tag";
+  if (posDef.name === "tag-or-path" && shape.tag) return "tag";
+  if (posDef.name === "target-or-identifier" && shape.target) return "target";
+  return posDef.property;
+}
+
+function resolveFlagSchemaProperty(
+  flagName: string,
+  flagDef: CliFlagDefinition,
+  shape: Record<string, any>,
+): string | undefined {
+  if (flagDef.property && shape[flagDef.property]) {
+    return flagDef.property;
+  }
+  const candidates = [
+    flagName,
+    toCamelCase(flagName),
+    toSnakeCase(flagName),
+    ...(flagDef.aliases ?? []).flatMap((a) => [
+      a,
+      toCamelCase(a),
+      toSnakeCase(a),
+    ]),
+  ];
+  for (const cand of candidates) {
+    if (shape[cand]) {
+      return cand;
+    }
+  }
+  if (flagName === "link" && shape.links) return "links";
+  if (flagName === "depend-on" && shape.depends_on) return "depends_on";
+  if (flagName === "criterion" && shape.criteria) return "criteria";
+  if (flagName === "acceptance-criteria" && shape.criteria) return "criteria";
+  if (flagName === "plan-rule" && shape.plan_rules) return "plan_rules";
+  if (flagName === "plan-adr" && shape.plan_adrs) return "plan_adrs";
+  return flagDef.property;
+}
+
+/**
+ * Infers missing positional property bindings and descriptions from the command's Zod schema.
+ */
+export function resolveCommandPositionals(
+  positionals: CliPositionalDefinition[] | undefined,
+  schema: any,
+): CliPositionalDefinition[] | undefined {
+  if (!positionals) return undefined;
+  const shape: Record<string, any> = schema?.shape ?? {};
+
+  return positionals.map((posDef) => {
+    const propName = resolvePositionalSchemaProperty(posDef, shape);
+    const propSchema = propName ? shape[propName] : undefined;
+    return {
+      ...posDef,
+      ...(propName && !posDef.property ? { property: propName } : {}),
+      description:
+        posDef.description ??
+        (propSchema ? getZodDescription(propSchema) : undefined) ??
+        "",
+    };
+  });
+}
+
+/**
+ * Infers missing flag `type`, `multiple`, `property`, and `description` metadata from the
+ * command's Zod schema, and automatically synthesizes CLI flags for any schema properties
+ * not already covered by declared positionals or flags.
+ */
+export function resolveCommandFlags(
+  declaredFlags: Record<string, CliFlagDefinition> | undefined,
+  positionals: CliPositionalDefinition[] | undefined,
+  schema: any,
+): Record<string, CliFlagDefinition> | undefined {
+  const shape: Record<string, any> | undefined = schema?.shape;
+  if (!shape && !declaredFlags) {
+    return undefined;
+  }
+
+  const resolvedFlags: Record<string, CliFlagDefinition> = {};
+  const coveredProperties = new Set<string>();
+
+  if (positionals && shape) {
+    for (const posDef of positionals) {
+      const propName = resolvePositionalSchemaProperty(posDef, shape);
+      if (propName) {
+        coveredProperties.add(propName);
+      }
+    }
+  }
+
+  for (const [flagName, flagDef] of Object.entries(declaredFlags ?? {})) {
+    const propName = shape
+      ? resolveFlagSchemaProperty(flagName, flagDef, shape)
+      : flagDef.property;
+    const propSchema = propName && shape ? shape[propName] : undefined;
+
+    if (propName) {
+      coveredProperties.add(propName);
+    }
+    if (shape) {
+      if (shape[flagName]) coveredProperties.add(flagName);
+      for (const alias of flagDef.aliases ?? []) {
+        if (shape[alias]) coveredProperties.add(alias);
+        const camelAlias = toCamelCase(alias);
+        if (shape[camelAlias]) coveredProperties.add(camelAlias);
+      }
+    }
+
+    const kind = propSchema ? getZodKind(propSchema) : undefined;
+    const inferredType: "string" | "boolean" =
+      kind === "boolean" ? "boolean" : "string";
+    const inferredMultiple = kind === "array" ? true : undefined;
+    const inferredDescription =
+      flagDef.description ??
+      (propSchema ? getZodDescription(propSchema) : undefined) ??
+      "";
+
+    resolvedFlags[flagName] = {
+      ...flagDef,
+      type: flagDef.type ?? inferredType,
+      ...(flagDef.multiple !== undefined
+        ? { multiple: flagDef.multiple }
+        : inferredMultiple !== undefined
+          ? { multiple: inferredMultiple }
+          : {}),
+      ...(propName && !flagDef.property ? { property: propName } : {}),
+      description: inferredDescription,
+    };
+  }
+
+  if (shape) {
+    for (const [propName, propSchema] of Object.entries(shape)) {
+      if (coveredProperties.has(propName)) {
+        continue;
+      }
+      const flagName = toKebabCase(propName);
+      if (resolvedFlags[flagName]) {
+        continue;
+      }
+      const kind = getZodKind(propSchema);
+      resolvedFlags[flagName] = {
+        type: kind === "boolean" ? "boolean" : "string",
+        ...(kind === "array" ? { multiple: true } : {}),
+        property: propName,
+        description: getZodDescription(propSchema) ?? "",
+      };
+    }
+  }
+
+  return resolvedFlags;
+}
+
+/**
  * Formats a Zod issue into a user-friendly CLI error message.
  */
 export function formatZodIssue(
@@ -306,8 +509,20 @@ export function defineCommand<
 >(
   definition: DefineCommandOptions<TSchema, TResult, TFlags>,
 ): CliCommandDefinition<TFlags, TResult, TSchema> {
+  const resolvedPositionals = resolveCommandPositionals(
+    definition.positionals,
+    definition.schema,
+  );
+  const resolvedFlags = resolveCommandFlags(
+    definition.flags,
+    resolvedPositionals,
+    definition.schema,
+  );
+
   const fullDefinition: CliCommandDefinition<TFlags, TResult, TSchema> = {
     ...definition,
+    positionals: resolvedPositionals,
+    flags: resolvedFlags,
     run:
       definition.run ??
       (async (context: CliExecutionContext<TFlags>) => {

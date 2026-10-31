@@ -110,13 +110,9 @@ export const scopeCommand: CliCommandDefinition<
   positionals: [
     {
       name: "target-or-identifier",
-      property: "target",
-      description:
-        "Artifact tag (e.g. RULE-6, TASK-51), slug, or file/directory path (default: '.')",
       required: false,
     },
   ],
-  flags: {},
   execute: async (input, context) => {
     return resolveScope(input.target, { cwd: context.cwd });
   },

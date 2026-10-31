@@ -157,9 +157,6 @@ export const readCommand: CliCommandDefinition<
   positionals: [
     {
       name: "tag-or-identifier",
-      property: "tag",
-      description:
-        "Artifact tag (e.g. RULE-1, ADR-6, TASK-12), slug, or filename",
       required: true,
       missingError:
         "Error: Missing required artifact identifier. Usage: modie read <tag>",
@@ -167,8 +164,6 @@ export const readCommand: CliCommandDefinition<
   ],
   flags: {
     raw: {
-      type: "boolean",
-      description: "Emit unparsed raw markdown content to stdout",
       aliases: ["content"],
     },
   },

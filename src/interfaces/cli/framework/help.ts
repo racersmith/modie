@@ -60,7 +60,7 @@ export function generateCommandHelp(
     );
     for (const pos of definition.positionals) {
       const token = `  <${pos.name}>`.padEnd(maxArgLen + 4);
-      sections.push(`${token}${pos.description}`);
+      sections.push(`${token}${pos.description ?? ""}`);
     }
   }
 
@@ -98,7 +98,7 @@ export function generateCommandHelp(
 
     formattedFlags.push({
       token: `  ${formatFlagTokens(name, flag)}`,
-      description: flag.description,
+      description: flag.description ?? "",
     });
   }
 

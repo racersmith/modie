@@ -1,7 +1,29 @@
 /**
  * Markdown frontmatter and level-1 section parsing helpers for governance artifacts.
- * Complies with RULE-1, RULE-25, and RULE-26.
+ * Complies with ADR-4, RULE-1, RULE-25, and RULE-26.
  */
+
+export interface ParsedFrontmatterFields {
+  links: string[];
+  depends_on?: string[];
+  supersedes?: string[];
+  superseded_by?: string[];
+  summary?: string;
+}
+
+export interface ParsedFrontmatterLinkLines {
+  /** Map of 1-based line number to relationship name */
+  linkLines: Map<number, string>;
+  /** 1-based end line of the frontmatter block */
+  frontmatterEndLine: number;
+}
+
+export interface ParsedMarkdownDocument {
+  frontmatter: string;
+  body: string;
+  frontmatterFields: ParsedFrontmatterFields;
+  sections: Record<string, string>;
+}
 
 /**
  * Splits markdown content into frontmatter and body string blocks.
@@ -45,19 +67,44 @@ function unquoteYamlScalar(raw: string): string {
   return trimmed;
 }
 
-/**
- * Parses links, depends_on, and summary from frontmatter text.
- */
-export function parseFrontmatterFields(frontmatterStr: string): {
-  links: string[];
-  depends_on?: string[];
-  summary?: string;
+function parseInlineYamlListValue(inline: string): {
+  items: string[];
+  closed: boolean;
 } {
+  if (!inline) {
+    return { items: [], closed: false };
+  }
+  if (inline.startsWith("[") && inline.endsWith("]")) {
+    const items = inline
+      .slice(1, -1)
+      .split(",")
+      .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
+      .filter(Boolean);
+    return { items, closed: true };
+  }
+  const scalar = unquoteYamlScalar(inline);
+  return { items: scalar ? [scalar] : [], closed: true };
+}
+
+/**
+ * Parses links, depends_on, supersedes, superseded_by, and summary from frontmatter text.
+ */
+export function parseFrontmatterFields(
+  frontmatterStr: string,
+): ParsedFrontmatterFields {
   const lines = frontmatterStr.split(/\r?\n/);
   const links: string[] = [];
   const depends_on: string[] = [];
+  const supersedes: string[] = [];
+  const superseded_by: string[] = [];
   const summaryParts: string[] = [];
-  let currentKey: "links" | "depends_on" | "summary" | null = null;
+  let currentKey:
+    | "links"
+    | "depends_on"
+    | "supersedes"
+    | "superseded_by"
+    | "summary"
+    | null = null;
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
@@ -83,32 +130,34 @@ export function parseFrontmatterFields(frontmatterStr: string): {
     }
 
     if (line.startsWith("links:")) {
-      currentKey = "links";
       const inline = line.slice("links:".length).trim();
-      if (inline.startsWith("[") && inline.endsWith("]")) {
-        const items = inline
-          .slice(1, -1)
-          .split(",")
-          .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
-          .filter(Boolean);
-        links.push(...items);
-        currentKey = null;
-      }
+      const { items, closed } = parseInlineYamlListValue(inline);
+      links.push(...items);
+      currentKey = closed ? null : "links";
       continue;
     }
 
     if (line.startsWith("depends_on:")) {
-      currentKey = "depends_on";
       const inline = line.slice("depends_on:".length).trim();
-      if (inline.startsWith("[") && inline.endsWith("]")) {
-        const items = inline
-          .slice(1, -1)
-          .split(",")
-          .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
-          .filter(Boolean);
-        depends_on.push(...items);
-        currentKey = null;
-      }
+      const { items, closed } = parseInlineYamlListValue(inline);
+      depends_on.push(...items);
+      currentKey = closed ? null : "depends_on";
+      continue;
+    }
+
+    if (line.startsWith("supersedes:")) {
+      const inline = line.slice("supersedes:".length).trim();
+      const { items, closed } = parseInlineYamlListValue(inline);
+      supersedes.push(...items);
+      currentKey = closed ? null : "supersedes";
+      continue;
+    }
+
+    if (line.startsWith("superseded_by:")) {
+      const inline = line.slice("superseded_by:".length).trim();
+      const { items, closed } = parseInlineYamlListValue(inline);
+      superseded_by.push(...items);
+      currentKey = closed ? null : "superseded_by";
       continue;
     }
 
@@ -120,6 +169,8 @@ export function parseFrontmatterFields(frontmatterStr: string): {
       if (val) {
         if (currentKey === "links") links.push(val);
         if (currentKey === "depends_on") depends_on.push(val);
+        if (currentKey === "supersedes") supersedes.push(val);
+        if (currentKey === "superseded_by") superseded_by.push(val);
       }
       continue;
     }
@@ -145,8 +196,79 @@ export function parseFrontmatterFields(frontmatterStr: string): {
   return {
     links,
     depends_on: depends_on.length > 0 ? depends_on : undefined,
+    ...(supersedes.length > 0 ? { supersedes } : {}),
+    ...(superseded_by.length > 0 ? { superseded_by } : {}),
     ...(summary ? { summary } : {}),
   };
+}
+
+/**
+ * Parses frontmatter metadata lines to identify which 1-based line numbers
+ * correspond to link relationship declarations (`links`, `depends_on`, `supersedes`, `superseded_by`).
+ */
+export function parseFrontmatterLineMap(
+  lines: string[],
+): ParsedFrontmatterLinkLines {
+  const linkLines = new Map<number, string>();
+  let frontmatterEndLine = 0;
+
+  if (lines.length === 0 || lines[0]!.trim() !== "---") {
+    return { linkLines, frontmatterEndLine: 0 };
+  }
+
+  let currentKey: string | null = null;
+
+  for (let i = 1; i < lines.length; i++) {
+    const lineNum = i + 1; // 1-based line index
+    const line = lines[i]!;
+
+    if (line.trim() === "---") {
+      frontmatterEndLine = lineNum;
+      break;
+    }
+
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue;
+    }
+
+    if (trimmed.startsWith("links:")) {
+      currentKey = "links";
+      linkLines.set(lineNum, "links");
+      continue;
+    }
+
+    if (trimmed.startsWith("depends_on:")) {
+      currentKey = "depends_on";
+      linkLines.set(lineNum, "depends_on");
+      continue;
+    }
+
+    if (trimmed.startsWith("supersedes:")) {
+      currentKey = "supersedes";
+      linkLines.set(lineNum, "supersedes");
+      continue;
+    }
+
+    if (trimmed.startsWith("superseded_by:")) {
+      currentKey = "superseded_by";
+      linkLines.set(lineNum, "superseded_by");
+      continue;
+    }
+
+    if (trimmed.startsWith("- ")) {
+      if (currentKey) {
+        linkLines.set(lineNum, currentKey);
+      }
+      continue;
+    }
+
+    if (/^[a-zA-Z0-9_-]+:/.test(trimmed)) {
+      currentKey = null;
+    }
+  }
+
+  return { linkLines, frontmatterEndLine };
 }
 
 /**
@@ -256,4 +378,20 @@ export function parseMarkdownSections(body: string): Record<string, string> {
   }
 
   return sections;
+}
+
+/**
+ * Parses a markdown document into its frontmatter string, body string,
+ * parsed frontmatter fields, and level-1 sections map in a single unified pass.
+ */
+export function parseMarkdownDocument(content: string): ParsedMarkdownDocument {
+  const { frontmatter, body } = splitMarkdownFrontmatter(content);
+  const frontmatterFields = parseFrontmatterFields(frontmatter);
+  const sections = parseMarkdownSections(body);
+  return {
+    frontmatter,
+    body,
+    frontmatterFields,
+    sections,
+  };
 }

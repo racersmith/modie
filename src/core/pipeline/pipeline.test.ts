@@ -11,11 +11,14 @@ import {
 import {
   adrDefinition,
   createArtifact,
+  getArtifactDefinition,
+  parseArtifact,
   ruleDefinition,
   taskDefinition,
   type ArtifactDefinition,
   type BaseCreateArtifactOptions,
 } from "./index.ts";
+import { getArtifactDetails } from "../query/artifact-query.ts";
 
 describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-35, ADR-1, ADR-4)", () => {
   let workspace: FixtureWorkspace;
@@ -185,5 +188,105 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
       `implement-cache-invalidation.${expectedTaskTag}.md`,
     );
     expect(taskRes.watermark).toBeDefined();
+  });
+
+  // @verifies ADR-4, RULE-25, RULE-34, RULE-35
+  it("[ADR-4][RULE-25][RULE-34][RULE-35] should roundtrip serialize and parse RULE, ADR, and TASK artifacts bidirectionally via ArtifactDefinition.parse", async () => {
+    const adr1Tag = makeTestTag("ADR", 1);
+    const rule1Tag = makeTestTag("RULE", 1);
+    const task1Tag = makeTestTag("TASK", 1);
+
+    // 1. Create ADR first so RULE and TASK can link to it
+    const adrRes = await createArtifact(adrDefinition, {
+      title: "Bidirectional Artifact Contract",
+      summary: "Unify rendering and parsing in ArtifactDefinition.",
+      context: "Shotgun edits across read and write parsers.",
+      alternatives: "- Keep separate parsers\n- Unify in definition",
+      decision: "Each ArtifactDefinition owns both render and parse.",
+      cwd: workspace.cwd,
+    });
+
+    const parsedAdr = parseArtifact(
+      adrDefinition,
+      adrRes.markdown,
+      adrRes.filepath,
+    );
+    expect(parsedAdr.id).toBe("1");
+    expect(parsedAdr.slug).toBe("bidirectional-artifact-contract");
+    expect(parsedAdr.summary).toBe(
+      "Unify rendering and parsing in ArtifactDefinition.",
+    );
+    expect(parsedAdr.context).toBe(
+      "Shotgun edits across read and write parsers.",
+    );
+    expect(parsedAdr.alternatives).toBe(
+      "- Keep separate parsers\n- Unify in definition",
+    );
+    expect(parsedAdr.decision).toBe(
+      "Each ArtifactDefinition owns both render and parse.",
+    );
+
+    // 2. Create RULE linking to ADR-1
+    const ruleRes = await createArtifact(ruleDefinition, {
+      title: "Single Parser Invariant",
+      assertion: "All frontmatter and section parsing must use the core parser.",
+      links: [adr1Tag],
+      cwd: workspace.cwd,
+    });
+
+    const parsedRule = parseArtifact("RULE", ruleRes.markdown, ruleRes.filepath);
+    expect(parsedRule).toEqual({
+      id: "1",
+      slug: "single-parser-invariant",
+      title: "single parser invariant",
+      links: [adr1Tag],
+      assertion:
+        "All frontmatter and section parsing must use the core parser.",
+      filePath: ruleRes.filepath,
+      rawContent: ruleRes.markdown,
+    });
+
+    // 3. Create TASK linking to ADR-1 and RULE-1 with planned governance
+    const taskRes = await createArtifact(taskDefinition, {
+      title: "Consolidate Artifact Pipeline",
+      context: "Unify definitions and CLI flags.",
+      links: [adr1Tag, rule1Tag],
+      plannedGovernance: {
+        rules: ["Enforce bidirectional definition contract"],
+        adrs: ["Adopt schema-driven CLI flags"],
+      },
+      acceptanceCriteria: ["Extend ArtifactDefinition", "Verify roundtrip"],
+      review: false,
+      cwd: workspace.cwd,
+    });
+
+    const parsedTask = parseArtifact(
+      taskDefinition,
+      taskRes.markdown,
+      taskRes.filepath,
+    );
+    expect(parsedTask.id).toBe("1");
+    expect(parsedTask.slug).toBe("consolidate-artifact-pipeline");
+    expect(parsedTask.links).toEqual([adr1Tag, rule1Tag]);
+    expect(parsedTask.context).toBe("Unify definitions and CLI flags.");
+    expect(parsedTask.plannedGovernance?.rules).toHaveLength(1);
+    expect(parsedTask.plannedGovernance?.adrs).toHaveLength(1);
+    expect(parsedTask.acceptanceCriteria).toEqual([
+      { text: "Extend ArtifactDefinition", completed: false },
+      { text: "Verify roundtrip", completed: false },
+    ]);
+
+    // 4. Verify getArtifactDetails delegates to subtype definitions
+    const taskDetails = await getArtifactDetails(task1Tag, {
+      cwd: workspace.cwd,
+    });
+    expect(taskDetails.context).toBe("Unify definitions and CLI flags.");
+    expect(taskDetails.plannedGovernance?.rules[0]?.text).toBe(
+      "Enforce bidirectional definition contract",
+    );
+    expect(taskDetails.acceptanceCriteria).toHaveLength(2);
+    expect(getArtifactDefinition("RULE")).toBe(ruleDefinition);
+    expect(getArtifactDefinition("ADR")).toBe(adrDefinition);
+    expect(getArtifactDefinition("TASK")).toBe(taskDefinition);
   });
 });

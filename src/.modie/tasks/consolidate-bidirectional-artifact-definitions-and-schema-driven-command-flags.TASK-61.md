@@ -15,9 +15,9 @@ Adding a single metadata field across an artifact subtype currently requires sho
 
 # Acceptance Criteria
 
-- [ ] Extend declarative ArtifactDefinition contract to support bidirectional serialization and parsing for indexable subtypes
-- [ ] Unify frontmatter and section parsing into a single shared core parser consumed across query, task, and reference services
-- [ ] Delegate fixture workspace artifact creation helpers to canonical subtype template renderers to eliminate parallel markdown builders
-- [ ] Infer default CLI flag descriptions and types from declarative command Zod schemas to eliminate redundant flag boilerplate
-- [ ] Verify roundtrip creation, parsing, query inspection, and CLI/MCP execution across all subtypes in test suite
-- [ ] User Review
+- [x] Extend declarative ArtifactDefinition contract to support bidirectional serialization and parsing for indexable subtypes
+- [x] Unify frontmatter and section parsing into a single shared core parser consumed across query, task, and reference services
+- [x] Delegate fixture workspace artifact creation helpers to canonical subtype template renderers to eliminate parallel markdown builders
+- [x] Infer default CLI flag descriptions and types from declarative command Zod schemas to eliminate redundant flag boilerplate
+- [x] Verify roundtrip creation, parsing, query inspection, and CLI/MCP execution across all subtypes in test suite
+- [x] User Review

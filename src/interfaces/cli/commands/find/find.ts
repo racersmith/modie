@@ -59,25 +59,11 @@ export const findCommand: CliCommandDefinition<
   positionals: [
     {
       name: "tag-or-identifier",
-      property: "tag",
-      description:
-        "Artifact tag (e.g. RULE-1, ADR-6, TASK-12), slug, or filename",
       required: true,
       missingError:
         "Error: Missing required artifact identifier. Usage: modie find <tag>",
     },
   ],
-  flags: {
-    absolute: {
-      type: "boolean",
-      description: "Emit absolute file path instead of relative path",
-    },
-    history: {
-      type: "boolean",
-      description:
-        "Query completed task history and branches in Git if artifact is not active on disk",
-    },
-  },
   execute: async (input, context) => {
     return resolveArtifactByTag(input.tag, {
       cwd: context.cwd,
