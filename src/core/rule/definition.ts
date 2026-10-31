@@ -3,14 +3,11 @@
  * Complies with ADR-1, ADR-2, RULE-1, RULE-3, RULE-8, RULE-11, RULE-13, and RULE-16.
  */
 
-import { dirname, isAbsolute, relative } from "node:path";
-import { resolveArtifactDirectories } from "../common/index.ts";
+import { validateLinkTarget } from "../linking/validator.ts";
 import type { ArtifactDefinition } from "../pipeline/types.ts";
-import { resolveArtifactByTag } from "../query/index.ts";
 import {
   parseRuleFromContext,
   renderRuleMarkdown,
-  validateRuleLinks,
 } from "./template.ts";
 import type { CreateRuleOptions, RuleArtifact } from "./types.ts";
 
@@ -27,29 +24,11 @@ export async function validateRuleAncestry(
   links: string[] = [],
   cwd: string = process.cwd(),
 ): Promise<void> {
-  // 1. Enforce RULE-13: only ADR targets allowed
-  validateRuleLinks(links);
-
-  if (links.length === 0) return;
-
-  // 2. Enforce RULE-16: referenced ADRs must reside in rule directory or ancestor directory
   for (const link of links) {
-    const adr = await resolveArtifactByTag(link, { cwd });
-
-    const adrDir = dirname(adr.filepath);
-    const { normalizedScopeDir: adrNormalizedScope } =
-      resolveArtifactDirectories("ADR", adrDir, cwd);
-
-    const relFromAdrToRule = relative(adrNormalizedScope, normalizedScopeDir);
-    const isAncestorOrEqual =
-      !relFromAdrToRule.startsWith("..") && !isAbsolute(relFromAdrToRule);
-
-    if (!isAncestorOrEqual) {
-      const ruleScopeDisplay = relative(cwd, normalizedScopeDir) || ".";
-      throw new Error(
-        `Rule justification ancestry violation: linked ADR "${link}" at "${adr.relativePath}" does not reside in rule directory "${ruleScopeDisplay}" or an ancestor directory (RULE-16).`,
-      );
-    }
+    await validateLinkTarget("RULE", normalizedScopeDir, "links", link, {
+      cwd,
+      sourceTag: "RULE",
+    });
   }
 }
 

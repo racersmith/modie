@@ -119,21 +119,32 @@ describe("ADR Creation - Frontmatter Validation & Rule Scope (RULE-14, RULE-17, 
     await workspace.cleanup();
   });
 
-  // @verifies RULE-14, RULE-34
-  it("[RULE-14][RULE-34] should allow referencing another ADR anywhere without RULE-17 restriction", async () => {
+  // @verifies RULE-14, RULE-19, RULE-34
+  it("[RULE-14][RULE-19][RULE-34] should allow referencing an ancestor ADR without RULE-17 restriction and reject sibling ADR under RULE-19", async () => {
     const workspace = await createFixtureWorkspace("adr-to-adr-");
-    const adr = await workspace.createAdr({
+    const rootAdr = await workspace.createAdr({
       id: 205,
       slug: "prior-decision",
       context: "Prior decision",
-      scopeDir: "other",
     });
 
     const localScope = await workspace.mkdir("local");
 
     await expect(
-      validateAdrScope(localScope, [adr.tag], workspace.cwd),
+      validateAdrScope(localScope, [rootAdr.tag], workspace.cwd),
     ).resolves.toBeUndefined();
+
+    // Sibling ADR should be rejected under RULE-19
+    const siblingAdr = await workspace.createAdr({
+      id: 206,
+      slug: "sibling-decision",
+      context: "Sibling decision",
+      scopeDir: "other",
+    });
+
+    await expect(
+      validateAdrScope(localScope, [siblingAdr.tag], workspace.cwd),
+    ).rejects.toThrow("RULE-19");
 
     await workspace.cleanup();
   });

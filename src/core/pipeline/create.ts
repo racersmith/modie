@@ -79,6 +79,7 @@ export async function createArtifact<
   }
 
   // 3.5 Validate supersedes targets and ensure same-subtype constraint
+  let normalizedSupersedes: string[] | undefined;
   if (options.supersedes) {
     const supersedesRaw = Array.isArray(options.supersedes)
       ? options.supersedes
@@ -86,6 +87,9 @@ export async function createArtifact<
     const supersedesList = supersedesRaw
       .map((s) => s.trim().toUpperCase())
       .filter(Boolean);
+    if (supersedesList.length > 0) {
+      normalizedSupersedes = supersedesList;
+    }
 
     const subtypeDisplay = (definition.subtype as string).toUpperCase();
     const article = subtypeDisplay === "ADR" ? "An" : "A";
@@ -178,20 +182,34 @@ export async function createArtifact<
     id,
     tag,
     watermark,
+    supersedes: normalizedSupersedes,
   };
 }
 
 /**
+ * Central declarative registry of artifact definitions across all primitive subtypes.
+ */
+export const ARTIFACT_DEFINITIONS: Record<
+  string,
+  ArtifactDefinition<any, any>
+> = {
+  RULE: ruleDefinition,
+  ADR: adrDefinition,
+  TASK: taskDefinition,
+};
+
+/**
  * Resolves the canonical ArtifactDefinition for an indexable subtype ("RULE", "ADR", "TASK").
  */
-export function getArtifactDefinition(
+export function getArtifactDefinition<
+  TOptions = any,
+  TArtifact = any,
+>(
   subtype: IndexableSubtype | string,
-): ArtifactDefinition<any, any> | undefined {
-  const upper = subtype.toUpperCase();
-  if (upper === "RULE") return ruleDefinition;
-  if (upper === "ADR") return adrDefinition;
-  if (upper === "TASK") return taskDefinition;
-  return undefined;
+): ArtifactDefinition<TOptions, TArtifact> | undefined {
+  return ARTIFACT_DEFINITIONS[subtype.toUpperCase()] as
+    | ArtifactDefinition<TOptions, TArtifact>
+    | undefined;
 }
 
 /**

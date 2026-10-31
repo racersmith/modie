@@ -3,6 +3,8 @@
  * Complies with RULE-1, RULE-3, RULE-11, and RULE-13.
  */
 
+import type { CreateArtifactResult } from "../pipeline/types.ts";
+
 export interface RuleArtifact {
   /**
    * Monotonic unpadded integer ID (e.g. "1", "14").
@@ -132,13 +134,4 @@ export interface CreateRuleOptions {
   cwd?: string;
 }
 
-export interface CreateRuleResult {
-  artifact: RuleArtifact;
-  filename: string;
-  filepath: string;
-  relativePath: string;
-  markdown: string;
-  id: string;
-  tag: string;
-  supersedes?: string[];
-}
+export type CreateRuleResult = CreateArtifactResult<RuleArtifact>;

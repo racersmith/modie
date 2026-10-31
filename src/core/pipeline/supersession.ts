@@ -7,6 +7,7 @@
 
 import { readFile, writeFile } from "node:fs/promises";
 import type { IndexableSubtype } from "../common/types.ts";
+import { mutateFrontmatterListField } from "../linking/mutation.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
 
 export interface UpdateSupersededFrontmatterOptions {
@@ -25,7 +26,7 @@ export interface UpdateSupersededFrontmatterOptions {
 /**
  * Updates a superseded artifact file on disk to append `superseded_by` frontmatter link.
  * Automatically initializes frontmatter if absent, appends to existing frontmatter,
- * and ensures idempotent deduplication.
+ * handles inline arrays, and ensures idempotent deduplication.
  *
  * @throws Error if target cannot be resolved or if a subtype mismatch occurs.
  */
@@ -55,62 +56,14 @@ export async function updateSupersededArtifactFrontmatter(
   }
 
   const content = await readFile(target.filepath, "utf8");
-  const trimmed = content.trim();
+  const { updatedContent, changed } = mutateFrontmatterListField(
+    content,
+    "superseded_by",
+    "add",
+    newTag,
+  );
 
-  // If no frontmatter exists (e.g., bare RULE without links), prepend frontmatter block
-  if (!trimmed.startsWith("---")) {
-    const newContent = `---\nsuperseded_by:\n  - ${newTag}\n---\n\n${content}`;
-    await writeFile(target.filepath, newContent, "utf8");
-    return;
+  if (changed) {
+    await writeFile(target.filepath, updatedContent, "utf8");
   }
-
-  // Find end of frontmatter block
-  const isCrlf = content.includes("\r\n");
-  const newline = isCrlf ? "\r\n" : "\n";
-  const closeMarker = `${newline}---`;
-  const endIdx = content.indexOf(closeMarker, 3);
-  if (endIdx === -1) {
-    return;
-  }
-
-  const frontmatter = content.slice(0, endIdx);
-  const rest = content.slice(endIdx);
-
-  // Check if superseded_by is already present
-  if (frontmatter.includes("superseded_by:")) {
-    const regex = new RegExp(
-      `(?<![A-Za-z0-9_-])${newTag}(?![A-Za-z0-9_-])`,
-      "i",
-    );
-    if (regex.test(frontmatter)) {
-      return; // Already present, idempotent
-    }
-
-    const lines = frontmatter.split(/\r?\n/);
-    let insertIdx = -1;
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i]!.trim().startsWith("superseded_by:")) {
-        insertIdx = i + 1;
-        while (
-          insertIdx < lines.length &&
-          lines[insertIdx]!.trim().startsWith("- ")
-        ) {
-          insertIdx++;
-        }
-        break;
-      }
-    }
-
-    if (insertIdx !== -1) {
-      lines.splice(insertIdx, 0, `  - ${newTag}`);
-      const updatedContent = lines.join(newline) + rest;
-      await writeFile(target.filepath, updatedContent, "utf8");
-      return;
-    }
-  }
-
-  // Append superseded_by block before closing frontmatter delimiter
-  const updatedFrontmatter = `${frontmatter}${newline}superseded_by:${newline}  - ${newTag}`;
-  const updatedContent = updatedFrontmatter + rest;
-  await writeFile(target.filepath, updatedContent, "utf8");
 }

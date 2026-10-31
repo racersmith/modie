@@ -130,4 +130,5 @@ export interface CreateArtifactResult<TArtifact = unknown> {
   id: string;
   tag: string;
   watermark?: WatermarkDetails;
+  supersedes?: string[];
 }

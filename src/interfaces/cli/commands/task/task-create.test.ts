@@ -22,9 +22,9 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-1, RULE-25, RU
 
   // @verifies RULE-1, RULE-25, RULE-27, RULE-34, RULE-35, ADR-1, ADR-6, ADR-9
   it("[RULE-1][RULE-25][RULE-27][RULE-34][RULE-35][ADR-1][ADR-6][ADR-9] should create a task with machine path to stdout and status to stderr", async () => {
-    const depTask = makeTestTag("TASK", 1);
-    const linkAdr = makeTestTag("ADR", 1);
-    const linkRule = makeTestTag("RULE", 27);
+    const dep = await workspace.createTask({ id: 1, slug: "dep-task" });
+    const adr = await workspace.createAdr({ id: 1, slug: "link-adr" });
+    const rule = await workspace.createRule({ id: 27, slug: "link-rule" });
 
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "task",
@@ -35,9 +35,9 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-1, RULE-25, RU
       "--context",
       "Verifying CLI stream output separation",
       "--depends-on",
-      depTask,
+      dep.tag,
       "--links",
-      `${linkAdr},${linkRule}`,
+      `${adr.tag},${rule.tag}`,
       "--criteria",
       "Verify stdout path,Verify stderr log",
       "--branch",
@@ -224,8 +224,11 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
 
   // @verifies RULE-15, RULE-25, RULE-34, RULE-35
   it("[RULE-15][RULE-25][RULE-34][RULE-35] should support repeated -l / --link flags without comma splitting", async () => {
-    const linkAdr6 = makeTestTag("ADR", 6);
-    const linkRule25 = makeTestTag("RULE", 25);
+    const adr = await workspace.createAdr({ id: 6, slug: "link-adr-six" });
+    const rule = await workspace.createRule({
+      id: 25,
+      slug: "link-rule-twenty-five",
+    });
 
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "task",
@@ -236,15 +239,15 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
       "--branch",
       "dev",
       "--link",
-      linkAdr6,
+      adr.tag,
       "-l",
-      linkRule25,
+      rule.tag,
       "--json",
     ]);
 
     expect(exitCode).toBe(0);
     const parsed = JSON.parse(stdout.trim());
-    expect(parsed.links).toEqual([linkAdr6, linkRule25]);
+    expect(parsed.links).toEqual([adr.tag, rule.tag]);
   });
 
   // @verifies RULE-25, RULE-27, RULE-34

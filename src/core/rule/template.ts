@@ -4,11 +4,10 @@
  */
 
 import { parseArtifactFilename } from "../common/filename.ts";
+import { isValidAdrLinkTag } from "../linking/validator.ts";
 import type { ArtifactParseContext } from "../pipeline/types.ts";
 import { parseMarkdownDocument } from "../query/markdown-parser.ts";
 import type { RuleArtifact, RuleRenderOptions } from "./types.ts";
-
-export const ADR_LINK_REGEX = /^ADR-[A-Za-z0-9_-]+$/;
 
 /**
  * Validates frontmatter links per RULE-13:
@@ -16,7 +15,7 @@ export const ADR_LINK_REGEX = /^ADR-[A-Za-z0-9_-]+$/;
  */
 export function validateRuleLinks(links: string[] = []): void {
   for (const link of links) {
-    if (!ADR_LINK_REGEX.test(link)) {
+    if (!isValidAdrLinkTag(link)) {
       throw new Error(
         `Invalid rule link target: "${link}". A RULE artifact's frontmatter links must exclusively reference ADR artifacts (RULE-13).`,
       );

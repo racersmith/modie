@@ -31,12 +31,5 @@ export async function createTask(
   options: CreateTaskOptions,
 ): Promise<CreateTaskResult> {
   const result = await createArtifact(taskDefinition, options);
-  return {
-    artifact: result.artifact,
-    filename: result.filename,
-    filepath: result.filepath,
-    relativePath: result.relativePath,
-    markdown: result.markdown,
-    watermark: result.watermark!,
-  };
+  return result as CreateTaskResult;
 }
