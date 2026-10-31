@@ -35,6 +35,10 @@ import {
   handleAdrList,
 } from "./adr/index.ts";
 import {
+  motiveCreateCommand,
+  handleMotiveCreate,
+} from "./motive/index.ts";
+import {
   taskCreateCommand,
   handleTaskCreate,
   taskListCommand,
@@ -60,6 +64,7 @@ export * from "./archive/index.ts";
 export * from "./link/index.ts";
 export * from "./rule/index.ts";
 export * from "./adr/index.ts";
+export * from "./motive/index.ts";
 export * from "./task/index.ts";
 export * from "./mcp/index.ts";
 
@@ -81,6 +86,7 @@ export const allCliCommands: CliCommandDefinition<any, any, any>[] = [
   adrCreateCommand,
   adrListCommand,
   adrArchiveCommand,
+  motiveCreateCommand,
   taskCreateCommand,
   taskStartCommand,
   taskCheckCommand,

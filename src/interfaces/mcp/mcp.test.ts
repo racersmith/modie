@@ -100,6 +100,7 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     expect(toolNames).toContain("adr_create");
     expect(toolNames).toContain("adr_list");
     expect(toolNames).toContain("adr_archive");
+    expect(toolNames).toContain("motive_create");
     expect(toolNames).toContain("task_create");
     expect(toolNames).toContain("task_list");
     expect(toolNames).toContain("task_status");
@@ -454,6 +455,48 @@ describe("Modie MCP Server - Tool Registration & Protocol Interface (RULE-25, RU
     const matched = listData.find((a: any) => a.tag === created.tag);
     expect(matched?.summary).toBe(
       "Provide 1-2 sentence ADR summaries in frontmatter for progressive disclosure.",
+    );
+  });
+
+  // @verifies ADR-2, ADR-4, ADR-10, RULE-8, RULE-10, RULE-25, RULE-26, RULE-34, RULE-35
+  it("[ADR-2][ADR-4][ADR-10][RULE-8][RULE-10][RULE-25][RULE-26][RULE-34][RULE-35] should execute motive_create MCP tool and enforce collision and RULE-10 guards", async () => {
+    // 1. Create motive in nested scope
+    const createRes = await client.callTool({
+      name: "motive_create",
+      arguments: {
+        scope: "src/core",
+        content: "Provide pure governance and context compilation services.",
+      },
+    });
+    expect(createRes.isError).toBeFalsy();
+    const created = JSON.parse(getTextContent(createRes));
+    expect(created.scope).toBe("src/core");
+    expect(created.relativePath).toBe("src/core/.modie/MOTIVE.md");
+    expect(created.overwritten).toBe(false);
+    expect(created.scaffolded).toBe(false);
+
+    // 2. Reject collision without overwrite
+    const collisionRes = await client.callTool({
+      name: "motive_create",
+      arguments: {
+        scope: "src/core",
+        content: "Duplicate motive.",
+      },
+    });
+    expect(collisionRes.isError).toBe(true);
+    expect(getTextContent(collisionRes)).toContain("MOTIVE.md already exists");
+
+    // 3. Reject RULE-10 reference violation
+    const invalidRes = await client.callTool({
+      name: "motive_create",
+      arguments: {
+        scope: "src/interfaces",
+        content: `Coupled to ${ruleTag}.`,
+      },
+    });
+    expect(invalidRes.isError).toBe(true);
+    expect(getTextContent(invalidRes)).toContain(
+      "prohibited in MOTIVE.md per RULE-10",
     );
   });
 });
