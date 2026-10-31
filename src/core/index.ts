@@ -141,6 +141,30 @@ export {
 export { archiveAdr } from "./adr/archive.ts";
 export type { ArchiveAdrOptions } from "./adr/archive.ts";
 
+// GIST domain module (ADR-2, ADR-4, ADR-8, ADR-10, RULE-9, RULE-20)
+export * as GistPrimitive from "./gist/index.ts";
+export * from "./gist/types.ts";
+export {
+  DIRECTORY_GIST_FILENAME,
+  FILE_GIST_SUFFIX,
+  GISTS_CONTAINER_DIR,
+  GIST_LEDGER_FILENAME,
+  formatFileGistFilename,
+  isDirectoryGistFilename,
+  isFileGistFilename,
+  parseFileGistFilename,
+  resolveDirectoryGistPath,
+  resolveFileGistPath,
+  resolveGistPaths,
+} from "./gist/paths.ts";
+export {
+  discoverChildSignposts,
+  discoverGistsForScope,
+  readDirectoryGist,
+  readFileGist,
+  readLocalGists,
+} from "./gist/reader.ts";
+
 // Archival domain module (RULE-31)
 export * as ArchivalPrimitive from "./archival/index.ts";
 export * from "./archival/types.ts";

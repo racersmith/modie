@@ -18,10 +18,10 @@ Establish the foundational GIST domain module in src/core/gist providing canonic
 
 # Acceptance Criteria
 
-- [ ] Define core domain types for directory GISTs, file-level GIST proxies, and child signposts conforming to RULE-20 and ADR-10
-- [ ] Implement path resolution utilities for <dir>/.modie/gists/GIST.md and <dir>/.modie/gists/<filename>.GIST.md
-- [ ] Implement reader services to resolve all local GISTs (directory summary and file proxies) for a given target path (RULE-9, RULE-20)
-- [ ] Implement shallow signpost discovery service to locate immediate child directory GIST summaries (depth=1) per ADR-8
-- [ ] Export public GIST discovery and pathing APIs from core index
-- [ ] Verify resolution and discovery across nested directories and edge cases with test coverage
-- [ ] User Review
+- [x] Define core domain types for directory GISTs, file-level GIST proxies, and child signposts conforming to RULE-20 and ADR-10
+- [x] Implement path resolution utilities for <dir>/.modie/gists/GIST.md and <dir>/.modie/gists/<filename>.GIST.md
+- [x] Implement reader services to resolve all local GISTs (directory summary and file proxies) for a given target path (RULE-9, RULE-20)
+- [x] Implement shallow signpost discovery service to locate immediate child directory GIST summaries (depth=1) per ADR-8
+- [x] Export public GIST discovery and pathing APIs from core index
+- [x] Verify resolution and discovery across nested directories and edge cases with test coverage
+- [x] User Review
