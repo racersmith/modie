@@ -104,7 +104,7 @@ function splitFrontmatter(content: string): {
  * Extracts the content under `# Context` section.
  */
 function parseContextSection(body: string): string | undefined {
-  const match = body.match(/^#\s+Context\b([\s\S]*?)(?=^#\s+|\Z)/im);
+  const match = body.match(/^#\s+Context\b([\s\S]*?)(?=^#\s+|$(?![\s\S]))/im);
   if (!match || !match[1]) {
     return undefined;
   }
@@ -117,7 +117,9 @@ function parseContextSection(body: string): string | undefined {
 export function parsePlannedGovernanceSection(
   body: string,
 ): ParsedPlannedGovernance | undefined {
-  const match = body.match(/^#\s+Planned Governance\b([\s\S]*?)(?=^#\s+|\Z)/im);
+  const match = body.match(
+    /^#\s+Planned Governance\b([\s\S]*?)(?=^#\s+|$(?![\s\S]))/im,
+  );
   if (!match || !match[1]) {
     return undefined;
   }

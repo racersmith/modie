@@ -12,6 +12,7 @@ import {
   type McpServerOptions,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
+  formatCompiledContextMarkdown,
   getArtifactDetails,
   queryTaskQueue,
   scanActiveArtifacts,
@@ -61,6 +62,16 @@ export function sanitizePayload(
     if (!args.raw && "rawContent" in result) {
       const { rawContent, ...rest } = result;
       return rest;
+    }
+  }
+
+  if (commandId === "context" && typeof result === "object") {
+    // Per RULE-26, return structured context payload by default and only attach rawContent when requested
+    if (args.raw) {
+      return {
+        ...result,
+        rawContent: formatCompiledContextMarkdown(result),
+      };
     }
   }
 

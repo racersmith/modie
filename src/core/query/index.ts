@@ -4,6 +4,7 @@
 
 export * from "./artifact-query.ts";
 export * from "./artifact-list.ts";
+export * from "./context.ts";
 export * from "./markdown-parser.ts";
 export * from "./references.ts";
 export * from "./scope.ts";

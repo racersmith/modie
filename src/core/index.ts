@@ -111,6 +111,10 @@ export {
   resolveScope,
 } from "./query/scope.ts";
 export {
+  compileContext,
+  formatCompiledContextMarkdown,
+} from "./query/context.ts";
+export {
   getArtifactDetails,
   parseCanonicalTag,
   resolveArtifactByTag,

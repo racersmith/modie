@@ -4,6 +4,11 @@
  */
 
 import type { IndexableSubtype } from "../common/types.ts";
+import type {
+  DirectoryGist,
+  FileGist,
+  GistSignpost,
+} from "../gist/types.ts";
 import type { TaskReadiness } from "../task/query.ts";
 import type { TaskAcceptanceCriteriaItem } from "../task/types.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
@@ -470,4 +475,96 @@ export interface ResolveScopeOptions {
    * Workspace root directory (defaults to process.cwd()).
    */
   cwd?: string;
+}
+
+export interface CompileContextOptions {
+  /**
+   * Workspace root directory (defaults to process.cwd()).
+   */
+  cwd?: string;
+}
+
+export interface CompiledContextMotive {
+  scope: string;
+  relativePath: string;
+  content: string;
+}
+
+export interface CompiledContextRule {
+  tag: string;
+  id: string;
+  slug: string;
+  title: string;
+  scope: string;
+  relativePath: string;
+  links: string[];
+  body: string;
+}
+
+export interface CompiledContextAdr {
+  tag: string;
+  id: string;
+  slug: string;
+  title: string;
+  scope: string;
+  relativePath: string;
+  summary: string;
+  links: string[];
+}
+
+export interface CompiledContextBlastRadius {
+  scope: string;
+  scopeDir: string;
+  enclosingModieDir: string;
+  constraint: string;
+}
+
+export interface CompiledContextTask {
+  id: string;
+  tag: string;
+  fullTaskId: string;
+  slug: string;
+  title: string;
+  relativePath: string;
+  scope: string;
+  scopeDir: string;
+  readiness: TaskReadiness;
+  blockedBy: string[];
+  depends_on: string[];
+  links: string[];
+  context?: string;
+  criteriaTotal: number;
+  criteriaCompleted: number;
+  criteriaProgress: string;
+  acceptanceCriteria: TaskAcceptanceCriteriaItem[];
+  incompleteCriteria: string[];
+  blastRadius: CompiledContextBlastRadius;
+}
+
+export interface CompiledContextSignpost extends GistSignpost {
+  /**
+   * Alias for `scope` (normalized relative path to the child directory).
+   */
+  childScope: string;
+}
+
+export interface CompiledContextGists {
+  directoryGist: Omit<DirectoryGist, "rawContent"> | null;
+  fileGists: Array<Omit<FileGist, "rawContent">>;
+  signposts: CompiledContextSignpost[];
+}
+
+export interface CompiledContextResult {
+  target: string;
+  type: "path" | "task" | "artifact";
+  targetPath: string;
+  scope: string;
+  scopeDir: string;
+  ancestralScopes: string[];
+  task?: CompiledContextTask;
+  motives: CompiledContextMotive[];
+  rules: CompiledContextRule[];
+  adrs: CompiledContextAdr[];
+  gists: CompiledContextGists;
+  signposts: CompiledContextSignpost[];
 }
