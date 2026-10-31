@@ -165,6 +165,25 @@ export {
   readLocalGists,
 } from "./gist/reader.ts";
 
+// MOTIVE domain module (ADR-2, ADR-4, ADR-10, RULE-2, RULE-8, RULE-10, RULE-12)
+export * as MotivePrimitive from "./motive/index.ts";
+export * from "./motive/types.ts";
+export {
+  MOTIVE_FILENAME,
+  resolveMotivePath,
+  resolveMotivePaths,
+} from "./motive/paths.ts";
+export {
+  renderMotiveMarkdown,
+  renderMotiveTemplate,
+  validateMotiveContent,
+} from "./motive/template.ts";
+export { createMotive } from "./motive/creation.ts";
+export {
+  collectAncestralMotives,
+  readMotive,
+} from "./motive/reader.ts";
+
 // Archival domain module (RULE-31)
 export * as ArchivalPrimitive from "./archival/index.ts";
 export * from "./archival/types.ts";

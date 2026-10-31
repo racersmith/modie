@@ -11,3 +11,5 @@
 - Should we have the ignored directory names be defined in the modie config file?
 
 - Should we naturally use the `.gitignore` for scoping?
+
+- Should we put the creation of fixture artifacts within their respective directories rather than compiling them all in fixture-workspace?

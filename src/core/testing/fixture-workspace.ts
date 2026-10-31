@@ -104,6 +104,26 @@ export interface CreatedFixtureGist {
   relativePath: string;
 }
 
+export interface CreateMotiveFixtureOptions {
+  /**
+   * Target architectural scope directory (defaults to workspace root).
+   */
+  scopeDir?: string;
+
+  /**
+   * Natural-language prose content of the MOTIVE.md file.
+   */
+  content?: string;
+}
+
+export interface CreatedFixtureMotive {
+  scope: string;
+  filename: string;
+  filepath: string;
+  relativePath: string;
+  content: string;
+}
+
 /**
  * Options for generating a fixture artifact in an isolated test workspace.
  */
@@ -153,6 +173,9 @@ export interface FixtureWorkspace {
   createRule(options?: CreateRuleOptions): Promise<CreatedFixtureArtifact>;
   createAdr(options?: CreateAdrOptions): Promise<CreatedFixtureArtifact>;
   createGist(options: CreateGistOptions): Promise<CreatedFixtureGist>;
+  createMotive(
+    options?: CreateMotiveFixtureOptions,
+  ): Promise<CreatedFixtureMotive>;
   readFile(target: string | CreatedFixtureArtifact): Promise<string>;
   fileExists(target: string | CreatedFixtureArtifact): Promise<boolean>;
   readJson<T = any>(target: string | CreatedFixtureArtifact): Promise<T>;
@@ -449,6 +472,34 @@ export async function createFixtureWorkspace(
         filename,
         filepath,
         relativePath: relative(cwd, filepath).replace(/\\/g, "/"),
+      };
+    },
+
+    async createMotive(
+      options: CreateMotiveFixtureOptions = {},
+    ): Promise<CreatedFixtureMotive> {
+      const resolvedScope = options.scopeDir?.trim()
+        ? join(cwd, options.scopeDir.trim())
+        : cwd;
+      const modieDir = join(resolvedScope, ".modie");
+      await mkdir(modieDir, { recursive: true });
+
+      const filename = "MOTIVE.md";
+      const filepath = join(modieDir, filename);
+      const relScope = relative(cwd, resolvedScope).replace(/\\/g, "/");
+      const scope = relScope === "" ? "." : relScope;
+      const content =
+        options.content?.trim() ||
+        `Establish architectural purpose for scope ${scope}.`;
+
+      await writeFile(filepath, `${content}\n`, "utf8");
+
+      return {
+        scope,
+        filename,
+        filepath,
+        relativePath: relative(cwd, filepath).replace(/\\/g, "/"),
+        content,
       };
     },
 

@@ -142,6 +142,13 @@ export function printAdrNamespaceHelp(stderr: (msg: string) => void): void {
 }
 
 /**
+ * Prints motive namespace usage to stderr.
+ */
+export function printMotiveNamespaceHelp(stderr: (msg: string) => void): void {
+  printNamespaceHelp("motive", allCliCommands, stderr);
+}
+
+/**
  * Prints global Modie CLI usage dynamically from declared command registry to stderr.
  */
 export function printGlobalHelp(

@@ -17,9 +17,9 @@ Introduce a dedicated `motive create` command and core domain creation service t
 
 # Acceptance Criteria
 
-- [ ] Implement core domain service to create and scaffold MOTIVE.md within a target directory .modie container or workspace root
-- [ ] Enforce singleton collision guard rejecting creation if MOTIVE.md already exists in the target scope unless overwrite is explicitly requested
-- [ ] Validate initial motive content against RULE-10 asserting rejection if artifact tags or cross-document references are present
-- [ ] Expose declarative motive create CLI command and MCP tool conforming to interface decoupling and structured output contracts
-- [ ] Verify motive creation, template scaffolding, collision protection, and reference rejection across test suites
-- [ ] User Review
+- [x] Implement core domain service to create and scaffold MOTIVE.md within a target directory .modie container or workspace root
+- [x] Enforce singleton collision guard rejecting creation if MOTIVE.md already exists in the target scope unless overwrite is explicitly requested
+- [x] Validate initial motive content against RULE-10 asserting rejection if artifact tags or cross-document references are present
+- [x] Expose declarative motive create CLI command and MCP tool conforming to interface decoupling and structured output contracts
+- [x] Verify motive creation, template scaffolding, collision protection, and reference rejection across test suites
+- [x] User Review
