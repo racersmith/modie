@@ -38,10 +38,14 @@
     "format": "bun fmt",
     "prepublishOnly": "bun run build && bun test",
     "count:all": "find src -type f \\( -name \"*.ts\" -o -name \"*.tsx\" \\) | xargs wc -l",
-    "count:src": "find src -type f \\( -name \"*.ts\" -o -name \"*.tsx\" \\) ! -name \"*.test.ts\" ! -name \"*.spec.ts\" | xargs wc -l"
+    "count:src": "find src -type f \\( -name \"*.ts\" -o -name \"*.tsx\" \\) ! -name \"*.test.ts\" ! -name \"*.spec.ts\" | xargs wc -l",
+    "check:complexity": "bun ./scripts/check-complexity.ts",
+    "check:duplication": "jscpd src --pattern '**/*.ts' --ignore '**/*.test.ts' --min-lines 5 --min-tokens 50"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "jscpd": "^5.4.2",
+    "typescript": "^5.6.0"
   },
   "peerDependencies": {
     "typescript": "^7.0.2"
