@@ -1,6 +1,6 @@
 ---
 depends_on:
-  - TASK-62
+  - TASK-64
 
 links:
   - ADR-4
