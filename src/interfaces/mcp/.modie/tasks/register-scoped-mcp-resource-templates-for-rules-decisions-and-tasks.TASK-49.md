@@ -9,13 +9,16 @@ links:
 
 # Context
 
-Register distinct, scoped MCP Resource Templates (modie://rules/{tag}, modie://adrs/{tag}, modie://tasks/{id}) with typed MIME types and clear descriptions per spec [2026-07-28 best practices](https://modelcontextprotocol.info/docs/best-practices/), omitting ambiguous generic tag URIs to enforce RULE-26 token economy.
+Register distinct, scoped MCP Resource Templates (`modie://artifact/{tag}`, `modie://context/{target}`, `modie://scope/{path}`, `modie://catalog/{kind}`, `modie://templates/{subtype}`) and native Workflow Prompts (`modie_task_execution`, `modie_architectural_review`, `modie_governance_authoring`) per `scratch/mcp-design.md`, providing on-demand lazy context loading and guided workflows with zero static preamble token overhead.
 
 # Acceptance Criteria
 
-- [ ] Register dynamic resource template modie://rules/{tag} delivering architectural rule markdown with text/markdown MIME type
-- [ ] Register dynamic resource template modie://adrs/{tag} delivering architectural decision record markdown with text/markdown MIME type
-- [ ] Register dynamic resource template modie://tasks/{id} delivering task details and acceptance criteria with application/json MIME type
-- [ ] Return descriptive errors when requested artifact identifiers or tags do not exist on disk
-- [ ] Verify client resource template discovery and parameterized reading for rules, ADRs, and tasks in test suite
+- [ ] Register dynamic resource template `modie://artifact/{tag}` delivering composite artifact view (file path, frontmatter, links, referencedBy, body/gist)
+- [ ] Register dynamic resource template `modie://context/{target}` delivering pre-compiled architectural cones
+- [ ] Register dynamic resource template `modie://scope/{path}` delivering spatial scope and container hierarchy
+- [ ] Register dynamic resource template `modie://catalog/{kind}` delivering catalog listings with compact GIST summaries
+- [ ] Register dynamic resource template `modie://templates/{subtype}` delivering raw scaffolding template skeletons
+- [ ] Register dynamic resource `modie://task/current` delivering active task branch checklist, progress, and blast radius stream
+- [ ] Register native MCP Workflow Prompts (`modie_task_execution`, `modie_architectural_review`, `modie_governance_authoring`)
+- [ ] Verify client resource template discovery, parameterized reads, and prompt retrieval in test suite
 - [ ] User Review

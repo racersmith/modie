@@ -1,20 +1,23 @@
 ---
 depends_on:
-  - TASK-48
+  - TASK-52
 
 links:
+  - RULE-6
+  - RULE-16
+  - RULE-19
   - RULE-25
   - RULE-26
 ---
 
 # Context
 
-Format tool validation and execution error messages to return isError: true with actionable guidance—naming the invalid parameter, describing valid formats or ranges, and suggesting discovery tools—to prevent model retry loops per spec [2026-07-28 best practices](https://modelcontextprotocol.info/docs/best-practices/).
+Format tool validation and execution error messages to return structured self-recovery error envelopes (`isError: true`, machine-readable `code`, actionable `diagnostic`, and concrete `recovery` objects) per `scratch/mcp-design.md`, directing models to correct invalid arguments, resolve spatial ancestry violations, and discover valid artifacts through the 5 consolidated tools rather than falling into retry loops.
 
 # Acceptance Criteria
 
-- [ ] Standardize MCP tool execution error handler to construct structured, model-actionable error messages
-- [ ] Include parameter name, invalid value, and expected format or allowed enumeration values for input validation failures
-- [ ] Include suggested lookup tools such as task_list, rule_list, or find when requested artifact identifiers or tags are not found
-- [ ] Verify model-recoverable error messages are returned with isError: true across invalid arguments and missing artifact scenarios in test suite
+- [ ] Standardize MCP tool execution error handler to construct structured `{ isError: true, code, message, diagnostic, recovery }` response payloads
+- [ ] Implement standardized error codes including `CRITERIA_INCOMPLETE`, `ANCESTRY_VIOLATION_RULE_16`, `BLAST_RADIUS_BREACH_RULE_6`, `ARTIFACT_NOT_FOUND`, and `INVALID_PARAMETER`
+- [ ] Provide actionable recovery objects suggesting discovery via `modie_query_catalog`, `modie_compile_context`, and `modie_task_lifecycle` rather than deprecated CLI tools
+- [ ] Verify model-recoverable error envelopes across invalid arguments, boundary breaches, and missing artifact scenarios in test suite
 - [ ] User Review
