@@ -40,17 +40,11 @@ export const unlinkSchema = z.object({
 
 export type UnlinkInput = z.infer<typeof unlinkSchema>;
 
-export interface UnlinkFlags {
-  type?: ArtifactLinkRelationship;
-  relationship?: ArtifactLinkRelationship;
-  json?: boolean;
-}
-
 /**
  * Declarative definition for the root `modie unlink` command (`unlink_artifact` MCP tool).
  */
 export const unlinkCommand: CliCommandDefinition<
-  UnlinkFlags,
+  Record<string, any>,
   LinkMutationResult,
   typeof unlinkSchema
 > = defineCommand({

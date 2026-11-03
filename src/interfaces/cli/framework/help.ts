@@ -116,3 +116,17 @@ export function generateCommandHelp(
 
   return sections.join("\n") + "\n";
 }
+
+/**
+ * Formats a two-column command or option table with consistent aligned padding.
+ */
+export function formatCommandTable(
+  rows: Array<{ invocation: string; description: string }>,
+  minPad = 29,
+  indent = "  ",
+): string[] {
+  const padWidth = Math.max(minPad, ...rows.map((r) => r.invocation.length + 2));
+  return rows.map(
+    (r) => `${indent}${r.invocation.padEnd(padWidth)}${r.description}`,
+  );
+}

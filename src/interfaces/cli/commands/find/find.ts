@@ -32,17 +32,11 @@ export const findSchema = z.object({
 
 export type FindInput = z.infer<typeof findSchema>;
 
-export interface FindFlags {
-  absolute?: boolean;
-  history?: boolean;
-  json?: boolean;
-}
-
 /**
  * Declarative definition for the `modie find` command.
  */
 export const findCommand: CliCommandDefinition<
-  FindFlags,
+  Record<string, any>,
   ResolvedArtifact,
   typeof findSchema
 > = defineCommand({
@@ -67,14 +61,11 @@ export const findCommand: CliCommandDefinition<
       history: input.history,
     });
   },
-  render: (result, context) => {
-    const outputPath = context.flags.absolute
+  render: (result, context, input) => {
+    const outputPath = input?.absolute
       ? result.filepath
       : result.relativePath;
     context.stdout(outputPath);
-  },
-  renderJson: (result, context) => {
-    context.stdout(JSON.stringify(result, null, 2));
   },
 });
 

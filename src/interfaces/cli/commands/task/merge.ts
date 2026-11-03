@@ -39,18 +39,11 @@ export const taskMergeSchema = z.object({
 
 export type TaskMergeInput = z.infer<typeof taskMergeSchema>;
 
-export interface TaskMergeFlags {
-  target?: string;
-  "keep-branch"?: boolean;
-  force?: boolean;
-  json?: boolean;
-}
-
 /**
  * Declarative definition for the `modie task merge` command.
  */
 export const taskMergeCommand: CliCommandDefinition<
-  TaskMergeFlags,
+  Record<string, any>,
   MergeTaskBranchResult,
   typeof taskMergeSchema
 > = defineCommand({
@@ -75,7 +68,9 @@ export const taskMergeCommand: CliCommandDefinition<
       short: "t",
       placeholder: "<branch>",
     },
-    "keep-branch": {},
+    "keep-branch": {
+      property: "keepBranch",
+    },
     force: {
       short: "f",
     },

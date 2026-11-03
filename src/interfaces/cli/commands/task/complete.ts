@@ -30,12 +30,6 @@ export const taskCompleteSchema = z.object({
     .describe(
       "Execute atomic two-phase Git commit ceremony (default in git repo)",
     ),
-  noCommit: z
-    .boolean()
-    .default(false)
-    .describe(
-      "Disable automatic Git commits and only delete the artifact locally",
-    ),
   force: z
     .boolean()
     .default(false)
@@ -48,20 +42,11 @@ export const taskCompleteSchema = z.object({
 
 export type TaskCompleteInput = z.infer<typeof taskCompleteSchema>;
 
-export interface TaskCompleteFlags {
-  commit?: boolean;
-  "no-commit"?: boolean;
-  force?: boolean;
-  "keep-file"?: boolean;
-  "no-delete"?: boolean;
-  json?: boolean;
-}
-
 /**
  * Declarative definition for the `modie task complete` command.
  */
 export const taskCompleteCommand: CliCommandDefinition<
-  TaskCompleteFlags,
+  Record<string, any>,
   CompleteTaskResult,
   typeof taskCompleteSchema
 > = defineCommand({
@@ -89,23 +74,21 @@ export const taskCompleteCommand: CliCommandDefinition<
   ],
   flags: {
     commit: {
+      property: "commit",
       short: "c",
     },
-    "no-commit": {},
     force: {
       short: "f",
     },
     "keep-file": {
+      property: "keepFile",
       aliases: ["no-delete"],
     },
   },
   execute: async (input, context) => {
     const isGitRepo = await defaultVcsAdapter.isInsideWorkTree(context.cwd);
-    const commit = input.noCommit
-      ? false
-      : input.commit !== undefined
-        ? input.commit
-        : isGitRepo;
+    const commit =
+      input.commit !== undefined ? input.commit : isGitRepo;
     const deleteArtifact = !input.keepFile;
 
     const idToComplete = input.id?.trim();

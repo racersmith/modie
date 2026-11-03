@@ -19,16 +19,11 @@ export const ruleArchiveSchema = archiveSchema;
 
 export type RuleArchiveInput = z.infer<typeof ruleArchiveSchema>;
 
-export interface RuleArchiveFlags {
-  force?: boolean;
-  json?: boolean;
-}
-
 /**
  * Declarative definition for the `modie rule archive` command alias.
  */
 export const ruleArchiveCommand: CliCommandDefinition<
-  RuleArchiveFlags,
+  Record<string, any>,
   ArchiveArtifactResult,
   typeof ruleArchiveSchema
 > = defineCommand({

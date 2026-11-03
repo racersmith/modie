@@ -36,15 +36,6 @@ export const ruleCreateSchema = z.object({
 
 export type RuleCreateInput = z.infer<typeof ruleCreateSchema>;
 
-export interface RuleCreateFlags {
-  scope?: string;
-  context?: string;
-  assertion?: string;
-  link?: string[];
-  links?: string[];
-  supersedes?: string[];
-}
-
 export interface RuleCreateResultPayload {
   id: string;
   tag: string;
@@ -62,7 +53,7 @@ export interface RuleCreateResultPayload {
  * Declarative definition for the `modie rule create` command.
  */
 export const ruleCreateCommand: CliCommandDefinition<
-  RuleCreateFlags,
+  Record<string, any>,
   RuleCreateResultPayload,
   typeof ruleCreateSchema
 > = defineCommand({

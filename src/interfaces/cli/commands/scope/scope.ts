@@ -25,16 +25,13 @@ export const scopeSchema = z.object({
 
 export type ScopeInput = z.infer<typeof scopeSchema>;
 
-export interface ScopeFlags {
-  json?: boolean;
-}
-
 /**
  * Standard human-readable renderer for scope details to stderr per RULE-27.
  */
 export function renderScopeDetails(
   result: ScopeResolutionResult,
-  context: CliExecutionContext<ScopeFlags>,
+  context: CliExecutionContext,
+  _input?: ScopeInput,
 ): void {
   context.stderr(`Scope Resolution: ${result.target}`);
   context.stderr(`Type:             ${result.type}`);
@@ -78,20 +75,10 @@ export function renderScopeDetails(
 }
 
 /**
- * Machine-parsable JSON renderer for scope details to stdout.
- */
-export function renderScopeDetailsJson(
-  result: ScopeResolutionResult,
-  context: CliExecutionContext<ScopeFlags>,
-): void {
-  context.stdout(JSON.stringify(result, null, 2));
-}
-
-/**
  * Declarative definition for the `modie scope` command.
  */
 export const scopeCommand: CliCommandDefinition<
-  ScopeFlags,
+  Record<string, any>,
   ScopeResolutionResult,
   typeof scopeSchema
 > = defineCommand({
@@ -114,7 +101,6 @@ export const scopeCommand: CliCommandDefinition<
     return resolveScope(input.target, { cwd: context.cwd });
   },
   render: renderScopeDetails,
-  renderJson: renderScopeDetailsJson,
 });
 
 

@@ -22,11 +22,6 @@ export const ruleListSchema = z.object({
 
 export type RuleListInput = z.infer<typeof ruleListSchema>;
 
-export interface RuleListFlags {
-  scope?: string;
-  json?: boolean;
-}
-
 /**
  * Formats listed RULE artifacts into a human-readable aligned table.
  */
@@ -60,7 +55,7 @@ export function renderRuleListTable(rules: ListedArtifact[]): string {
  * Declarative definition for the `modie rule list` command.
  */
 export const ruleListCommand: CliCommandDefinition<
-  RuleListFlags,
+  Record<string, any>,
   ListedArtifact[],
   typeof ruleListSchema
 > = defineCommand({
@@ -90,8 +85,8 @@ export const ruleListCommand: CliCommandDefinition<
       scope: input.scope,
     });
   },
-  render: (rules, context) => {
-    const scope = context.flags.scope;
+  render: (rules, context, input) => {
+    const scope = input?.scope ?? context.flags.scope;
     if (rules.length === 0) {
       if (scope) {
         context.stderr(`No active rules found governing scope "${scope}".`);
@@ -106,9 +101,6 @@ export const ruleListCommand: CliCommandDefinition<
       `Active Rules (${rules.length} rule${rules.length === 1 ? "" : "s"}${scopeSummary}):\n`,
     );
     context.stderr(renderRuleListTable(rules));
-  },
-  renderJson: (rules, context) => {
-    context.stdout(JSON.stringify(rules, null, 2));
   },
 });
 

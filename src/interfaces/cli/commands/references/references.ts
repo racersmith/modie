@@ -36,21 +36,11 @@ export const referencesSchema = z.object({
 
 export type ReferencesInput = z.infer<typeof referencesSchema>;
 
-export interface ReferencesFlags {
-  by?: boolean;
-  "found-in"?: boolean;
-  to?: boolean;
-  "links-to"?: boolean;
-  "code-only"?: boolean;
-  "governance-only"?: boolean;
-  json?: boolean;
-}
-
 /**
  * Declarative definition for the `modie references` command.
  */
 export const referencesCommandDefinition: CliCommandDefinition<
-  ReferencesFlags,
+  Record<string, any>,
   ArtifactReferencesResult,
   typeof referencesSchema
 > = defineCommand({
@@ -81,11 +71,15 @@ export const referencesCommandDefinition: CliCommandDefinition<
   execute: async (input, context) => {
     return findArtifactReferences(input.tag, { cwd: context.cwd });
   },
-  render: (result, context) => {
-    const showOnlyBy = Boolean(context.flags.by && !context.flags.to);
-    const showOnlyTo = Boolean(context.flags.to && !context.flags.by);
-    const codeOnly = Boolean(context.flags["code-only"]);
-    const govOnly = Boolean(context.flags["governance-only"]);
+  render: (result, context, input) => {
+    const byVal = input?.by ?? context.flags.by;
+    const toVal = input?.to ?? context.flags.to;
+    const showOnlyBy = Boolean(byVal && !toVal);
+    const showOnlyTo = Boolean(toVal && !byVal);
+    const codeOnly = Boolean(input?.codeOnly ?? context.flags["code-only"]);
+    const govOnly = Boolean(
+      input?.governanceOnly ?? context.flags["governance-only"],
+    );
 
     const target = result.target;
     const archivedNotice = target.isArchived ? " [ARCHIVED]" : " [Active]";

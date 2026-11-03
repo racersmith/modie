@@ -27,20 +27,15 @@ export const readSchema = z.object({
 
 export type ReadInput = z.infer<typeof readSchema>;
 
-export interface ReadFlags {
-  raw?: boolean;
-  content?: boolean;
-  json?: boolean;
-}
-
 /**
  * Standard human-readable renderer for artifact details to stderr per RULE-27.
  */
 export function renderArtifactDetails(
   details: ArtifactDetails,
-  context: CliExecutionContext<ReadFlags>,
+  context: CliExecutionContext,
+  input?: ReadInput,
 ): void {
-  if (context.flags.raw) {
+  if (input?.raw || context.flags.raw) {
     context.stdout(details.rawContent);
     return;
   }
@@ -95,7 +90,8 @@ export function renderArtifactDetails(
  */
 export function renderArtifactDetailsJson(
   details: ArtifactDetails,
-  context: CliExecutionContext<ReadFlags>,
+  context: CliExecutionContext,
+  _input?: ReadInput,
 ): void {
   // Agent-optimized structured payload per RULE-26
   const payload: Record<string, unknown> = {
@@ -140,7 +136,7 @@ export function renderArtifactDetailsJson(
  * Declarative definition for the `modie read` command.
  */
 export const readCommand: CliCommandDefinition<
-  ReadFlags,
+  Record<string, any>,
   ArtifactDetails,
   typeof readSchema
 > = defineCommand({

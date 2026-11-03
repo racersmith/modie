@@ -499,4 +499,111 @@ describe("Declarative CLI Subcommand Framework (ADR-4, RULE-25, RULE-27)", () =>
       dryRun: true,
     });
   });
+
+  it("should resolve --no-* boolean negation flags to canonical schema keys prior to validation", async () => {
+    const z = (await import("zod")).z;
+    const { defineCommand, executeCliCommand } = await import("./index.ts");
+
+    const negationSchema = z.object({
+      commit: z.boolean().default(true).describe("Auto-commit changes"),
+      review: z.boolean().default(true).describe("Require human review"),
+      force: z.boolean().default(false).describe("Force execution"),
+    });
+
+    let capturedInput: any = null;
+    const cmd = defineCommand({
+      id: "negation_test",
+      name: "negation-test",
+      schema: negationSchema,
+      flags: {
+        commit: {
+          short: "c",
+        },
+        review: {
+          aliases: ["gate"],
+        },
+      },
+      execute: (input) => {
+        capturedInput = input;
+        return { ok: true };
+      },
+    });
+
+    // 1. Passing --no-commit should negate commit to false
+    const exit1 = await executeCliCommand(cmd, ["--no-commit"], {});
+    expect(exit1).toBe(0);
+    expect(capturedInput.commit).toBe(false);
+    expect(capturedInput.review).toBe(true);
+    expect(capturedInput.force).toBe(false);
+
+    // 2. Passing --no-review and --no-gate alias should negate review to false
+    const exit2 = await executeCliCommand(cmd, ["--no-gate"], {});
+    expect(exit2).toBe(0);
+    expect(capturedInput.commit).toBe(true);
+    expect(capturedInput.review).toBe(false);
+
+    // 3. Positive flag overrides default false
+    const exit3 = await executeCliCommand(cmd, ["--force"], {});
+    expect(exit3).toBe(0);
+    expect(capturedInput.force).toBe(true);
+  });
+
+  it("should pass validated schema input directly to render and renderJson functions", async () => {
+    const z = (await import("zod")).z;
+    const { defineCommand, executeCliCommand } = await import("./index.ts");
+
+    const schema = z.object({
+      query: z.string().describe("Search query"),
+      limit: z.coerce.number().default(10).describe("Result limit"),
+    });
+
+    let renderedInput: any = null;
+    let jsonRenderedInput: any = null;
+
+    const cmd = defineCommand({
+      id: "render_input_test",
+      name: "render-input-test",
+      schema,
+      positionals: [
+        {
+          name: "query",
+          required: true,
+        },
+      ],
+      execute: (input) => {
+        return { hits: [`Result for ${input.query}`], count: 1 };
+      },
+      render: (result, context, input) => {
+        renderedInput = input;
+        context.stdout(`Found ${result.count} hits (limit: ${input?.limit})`);
+      },
+      renderJson: (result, context, input) => {
+        jsonRenderedInput = input;
+        context.stdout(
+          JSON.stringify({ ...result, meta: { limit: input?.limit } }),
+        );
+      },
+    });
+
+    let stdout1 = "";
+    const exit1 = await executeCliCommand(cmd, ["antigravity", "--limit", "5"], {
+      stdout: (m) => (stdout1 += m + "\n"),
+    });
+    expect(exit1).toBe(0);
+    expect(renderedInput).toEqual({ query: "antigravity", limit: 5 });
+    expect(stdout1).toContain("Found 1 hits (limit: 5)");
+
+    let stdout2 = "";
+    const exit2 = await executeCliCommand(
+      cmd,
+      ["antigravity", "--limit", "20", "--json"],
+      {
+        stdout: (m) => (stdout2 += m + "\n"),
+      },
+    );
+    expect(exit2).toBe(0);
+    expect(jsonRenderedInput).toEqual({ query: "antigravity", limit: 20 });
+    const parsed = JSON.parse(stdout2);
+    expect(parsed.meta.limit).toBe(20);
+  });
 });

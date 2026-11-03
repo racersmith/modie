@@ -37,15 +37,6 @@ export const motiveCreateSchema = z.object({
 
 export type MotiveCreateInput = z.infer<typeof motiveCreateSchema>;
 
-export interface MotiveCreateFlags {
-  scope?: string;
-  content?: string;
-  context?: string;
-  purpose?: string;
-  overwrite?: boolean;
-  force?: boolean;
-}
-
 export interface MotiveCreateResultPayload {
   scope: string;
   filename: string;
@@ -60,7 +51,7 @@ export interface MotiveCreateResultPayload {
  * Declarative definition for the `modie motive create` command.
  */
 export const motiveCreateCommand: CliCommandDefinition<
-  MotiveCreateFlags,
+  Record<string, any>,
   MotiveCreateResultPayload,
   typeof motiveCreateSchema
 > = defineCommand({

@@ -40,22 +40,15 @@ export const contextSchema = z.object({
 
 export type ContextInput = z.infer<typeof contextSchema>;
 
-export interface ContextFlags {
-  scope?: string;
-  task?: string;
-  raw?: boolean;
-  markdown?: boolean;
-  json?: boolean;
-}
-
 /**
  * Human-readable context overview renderer to stderr (or raw markdown to stdout when `--raw` is passed) per RULE-27.
  */
 export function renderCompiledContext(
   result: CompiledContextResult,
-  context: CliExecutionContext<ContextFlags>,
+  context: CliExecutionContext,
+  input?: ContextInput,
 ): void {
-  if (context.flags.raw) {
+  if (input?.raw || context.flags.raw) {
     context.stdout(formatCompiledContextMarkdown(result).trimEnd());
     return;
   }
@@ -152,20 +145,10 @@ export function renderCompiledContext(
 }
 
 /**
- * Structured JSON renderer for compiled context to stdout per RULE-26 and RULE-27.
- */
-export function renderCompiledContextJson(
-  result: CompiledContextResult,
-  context: CliExecutionContext<ContextFlags>,
-): void {
-  context.stdout(JSON.stringify(result, null, 2));
-}
-
-/**
  * Declarative definition for the `modie context` command and `context` MCP tool.
  */
 export const contextCommand: CliCommandDefinition<
-  ContextFlags,
+  Record<string, any>,
   CompiledContextResult,
   typeof contextSchema
 > = defineCommand({
@@ -187,11 +170,13 @@ export const contextCommand: CliCommandDefinition<
   ],
   flags: {
     scope: {
+      property: "target",
       short: "s",
       placeholder: "<dir>",
       description: "Target directory scope (alias for positional target)",
     },
     task: {
+      property: "target",
       short: "t",
       placeholder: "<id>",
       description: "Target task identifier (alias for positional target)",
@@ -206,6 +191,5 @@ export const contextCommand: CliCommandDefinition<
     return compileContext(resolvedTarget, { cwd: context.cwd });
   },
   render: renderCompiledContext,
-  renderJson: renderCompiledContextJson,
 });
 
