@@ -1,8 +1,8 @@
 /**
  * Model Context Protocol (MCP) server implementation for Modie.
- * Automatically projects shared Zod command definitions into typed MCP tools,
- * provides read-only MCP resources for live workspace context,
- * and strictly enforces RULE-25 (interface-core decoupling) and RULE-26 (token economy).
+ * Registers 5 consolidated, goal-oriented agent tools with flat Zod input/output schemas,
+ * declared behavioral annotations, stateless parameters with Git branch fallback,
+ * and token economy progressive disclosure (RULE-25, RULE-26, RULE-27).
  */
 
 import { readFile } from "node:fs/promises";
@@ -12,17 +12,33 @@ import {
   type McpServerOptions,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
-  formatCompiledContextMarkdown,
+  detectGitBranch,
   getArtifactDetails,
+  getTaskStatus,
   MODIE_VERSION,
+  parseTaskIdFromBranch,
   queryTaskQueue,
   scanActiveArtifacts,
 } from "../../core/index.ts";
-import { allCliCommands } from "../cli/commands/index.ts";
-import type {
-  CliCommandDefinition,
-  CliExecutionContext,
-} from "../cli/framework/types.ts";
+import {
+  handleCompileContext,
+  handleCreateArtifact,
+  handleMutateGovernance,
+  handleQueryCatalog,
+  handleTaskLifecycle,
+} from "./handlers.ts";
+import {
+  compileContextInputSchema,
+  compileContextOutputSchema,
+  createArtifactInputSchema,
+  createArtifactOutputSchema,
+  mutateGovernanceInputSchema,
+  mutateGovernanceOutputSchema,
+  queryCatalogInputSchema,
+  queryCatalogOutputSchema,
+  taskLifecycleInputSchema,
+  taskLifecycleOutputSchema,
+} from "./schemas.ts";
 
 export interface ModieMcpServerOptions {
   /**
@@ -31,9 +47,9 @@ export interface ModieMcpServerOptions {
   cwd?: string;
 
   /**
-   * Custom command registry override (defaults to allCliCommands).
+   * Optional command registry override (retained for backward compatibility, ignored).
    */
-  commands?: CliCommandDefinition<any, any, any>[];
+  commands?: any[];
 
   /**
    * Underlying MCP server options.
@@ -47,41 +63,8 @@ export interface ModieMcpServerOptions {
 }
 
 /**
- * Strips unrequested raw content and formatting to enforce RULE-26 token economy.
- */
-export function sanitizePayload(
-  commandId: string,
-  args: Record<string, any>,
-  result: any,
-): any {
-  if (result === undefined || result === null) {
-    return { success: true };
-  }
-
-  if (commandId === "read" && typeof result === "object") {
-    // Per RULE-26, omit unsolicited raw document contents unless explicitly requested
-    if (!args.raw && "rawContent" in result) {
-      const { rawContent, ...rest } = result;
-      return rest;
-    }
-  }
-
-  if (commandId === "context" && typeof result === "object") {
-    // Per RULE-26, return structured context payload by default and only attach rawContent when requested
-    if (args.raw) {
-      return {
-        ...result,
-        rawContent: formatCompiledContextMarkdown(result),
-      };
-    }
-  }
-
-  return result;
-}
-
-/**
- * Creates and initializes a Modie MCP server with automated tool registration
- * from shared declarative Zod action definitions and read-only governance resources.
+ * Creates and initializes a Modie MCP server with the 5 consolidated agent tools
+ * and ambient governance resources.
  */
 export function createModieMcpServer(
   options: ModieMcpServerOptions = {},
@@ -98,76 +81,213 @@ export function createModieMcpServer(
     options.serverOptions,
   );
 
-  // 1. Automated Tool Registration
-  const commands = options.commands ?? allCliCommands;
-
-  for (const cmd of commands) {
-    // Skip internal or transport-specific commands if any
-    if (cmd.id === "mcp") continue;
-
-    const toolName = cmd.id || cmd.name;
-    const description = [
-      cmd.description,
-      cmd.agentGuidance ? `Guidance: ${cmd.agentGuidance}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n\n");
-
-    const inputSchema = cmd.schema?.shape ?? {};
-
-    const executeFn = cmd.execute;
-    if (!executeFn) continue;
-
-    server.registerTool(
-      toolName,
-      {
-        description,
-        inputSchema,
+  // 1. Tool 1: modie_compile_context
+  server.registerTool(
+    "modie_compile_context",
+    {
+      description:
+        "Compile spatial architectural context, composite artifact view (path + content + refs), or scope lookup.",
+      inputSchema: compileContextInputSchema.shape,
+      outputSchema: compileContextOutputSchema.shape,
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        destructiveHint: false,
       },
-      async (args: any) => {
-        try {
-          const context: CliExecutionContext = {
-            args: [],
-            positionals: [],
-            flags: { ...args },
-            stdout: () => {}, // Suppress stdout to avoid corrupting stdio transport
-            stderr,
-            cwd,
-            io: { cwd, stderr },
-          };
+    },
+    async (args: any) => {
+      try {
+        const result = await handleCompileContext(args, cwd);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+          structuredContent: result,
+        };
+      } catch (error: any) {
+        stderr(`[modie_compile_context] error: ${error?.message ?? error}`);
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: error?.message ?? String(error),
+            },
+          ],
+        };
+      }
+    },
+  );
 
-          const rawResult = await executeFn(args, context);
-          const cleanResult = sanitizePayload(
-            toolName,
-            args,
-            rawResult,
-          );
-
-          return {
-            content: [
-              {
-                type: "text" as const,
-                text: JSON.stringify(cleanResult, null, 2),
-              },
-            ],
-          };
-        } catch (error: any) {
-          return {
-            isError: true,
-            content: [
-              {
-                type: "text" as const,
-                text: error?.message ?? String(error),
-              },
-            ],
-          };
-        }
+  // 2. Tool 2: modie_query_catalog
+  server.registerTool(
+    "modie_query_catalog",
+    {
+      description:
+        "Query task queue (with DAG readiness), rules, ADRs, or backlog with compact GIST summaries.",
+      inputSchema: queryCatalogInputSchema.shape,
+      outputSchema: queryCatalogOutputSchema.shape,
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        destructiveHint: false,
       },
-    );
-  }
+    },
+    async (args: any) => {
+      try {
+        const result = await handleQueryCatalog(args, cwd);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+          structuredContent: result,
+        };
+      } catch (error: any) {
+        stderr(`[modie_query_catalog] error: ${error?.message ?? error}`);
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: error?.message ?? String(error),
+            },
+          ],
+        };
+      }
+    },
+  );
 
-  // 2. Read-Only Resource Registration (Criterion 4)
-  // Ready Tasks Resource
+  // 3. Tool 3: modie_task_lifecycle
+  server.registerTool(
+    "modie_task_lifecycle",
+    {
+      description:
+        "Manage task execution: start (with auto-injected context), batch check criteria, complete (2-phase commit), and merge.",
+      inputSchema: taskLifecycleInputSchema.shape,
+      outputSchema: taskLifecycleOutputSchema.shape,
+      annotations: {
+        readOnlyHint: false,
+        idempotentHint: false,
+        destructiveHint: true,
+      },
+    },
+    async (args: any) => {
+      try {
+        const result = await handleTaskLifecycle(args, cwd);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+          structuredContent: result,
+        };
+      } catch (error: any) {
+        stderr(`[modie_task_lifecycle] error: ${error?.message ?? error}`);
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: error?.message ?? String(error),
+            },
+          ],
+        };
+      }
+    },
+  );
+
+  // 4. Tool 4: modie_create_artifact
+  server.registerTool(
+    "modie_create_artifact",
+    {
+      description:
+        "Universal declarative authoring for RULE, ADR, TASK, MOTIVE, IDEA, SPARK with atomic link creation and scaffold preview.",
+      inputSchema: createArtifactInputSchema.shape,
+      outputSchema: createArtifactOutputSchema.shape,
+      annotations: {
+        readOnlyHint: false,
+        idempotentHint: false,
+        destructiveHint: false,
+      },
+    },
+    async (args: any) => {
+      try {
+        const result = await handleCreateArtifact(args, cwd);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+          structuredContent: result,
+        };
+      } catch (error: any) {
+        stderr(`[modie_create_artifact] error: ${error?.message ?? error}`);
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: error?.message ?? String(error),
+            },
+          ],
+        };
+      }
+    },
+  );
+
+  // 5. Tool 5: modie_mutate_governance
+  server.registerTool(
+    "modie_mutate_governance",
+    {
+      description:
+        "Batch link or unlink frontmatter relationships and archive obsolete rules/ADRs.",
+      inputSchema: mutateGovernanceInputSchema.shape,
+      outputSchema: mutateGovernanceOutputSchema.shape,
+      annotations: {
+        readOnlyHint: false,
+        idempotentHint: false,
+        destructiveHint: true,
+      },
+    },
+    async (args: any) => {
+      try {
+        const result = await handleMutateGovernance(args, cwd);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+          structuredContent: result,
+        };
+      } catch (error: any) {
+        stderr(`[modie_mutate_governance] error: ${error?.message ?? error}`);
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text" as const,
+              text: error?.message ?? String(error),
+            },
+          ],
+        };
+      }
+    },
+  );
+
+  // 6. Resources Registration
+  // Active Ready Tasks Resource
   server.registerResource(
     "ready-tasks",
     "modie://tasks/ready",
@@ -215,6 +335,37 @@ export function createModieMcpServer(
     },
   );
 
+  // Current Task Dynamic Resource
+  server.registerResource(
+    "current-task",
+    "modie://task/current",
+    {
+      title: "Active Task Branch State",
+      description:
+        "Ambient active task progress, checklist, and blast radius stream",
+      mimeType: "application/json",
+    },
+    async (uri) => {
+      const branch = await detectGitBranch(cwd);
+      const taskId = branch ? parseTaskIdFromBranch(branch) : null;
+      let status: any = null;
+      if (taskId) {
+        try {
+          status = await getTaskStatus(taskId, { cwd });
+        } catch {}
+      }
+      return {
+        contents: [
+          {
+            uri: uri.href,
+            mimeType: "application/json",
+            text: JSON.stringify({ branch, taskId, status }, null, 2),
+          },
+        ],
+      };
+    },
+  );
+
   // Active Governance Rules Resource
   server.registerResource(
     "active-rules",
@@ -235,8 +386,7 @@ export function createModieMcpServer(
               const details = await getArtifactDetails(r.tag, { cwd });
               return {
                 tag: details.tag,
-                id: details.id,
-                slug: details.slug,
+                title: details.title,
                 relativePath: details.relativePath,
                 links: details.links,
                 body: details.body,
@@ -244,8 +394,7 @@ export function createModieMcpServer(
             } catch {
               return {
                 tag: r.tag,
-                id: r.id,
-                slug: r.slug,
+                title: r.title,
                 relativePath: r.filepath,
               };
             }
@@ -264,14 +413,14 @@ export function createModieMcpServer(
     },
   );
 
-  // Agent Instructions & Governance Best Practices Resource
+  // Agent Instructions Resource
   server.registerResource(
     "instructions",
     "modie://instructions",
     {
       title: "Agent Instructions & Governance Best Practices",
       description:
-        "Comprehensive guidelines on ephemeral task decoupling, contract-based criteria (RULE-30), planned governance, and task lifecycle",
+        "Comprehensive guidelines on ephemeral task decoupling, contract-based criteria, planned governance, and task lifecycle",
       mimeType: "text/markdown",
     },
     async (uri) => {
@@ -303,8 +452,8 @@ export function createModieMcpServer(
         text =
           "# Modie Agent Instructions & Authoring Best Practices\n\n" +
           "## 1. Ephemeral Task Decoupling (Critical Anti-Pattern)\n\n" +
-          "Never reference ephemeral `TASK-XX` IDs in test headers (`[TASK-XX]`) or code comments (`@verifies TASK-XX`). Tasks are ephemeral and deleted upon completion per ADR-6 and RULE-21. Instead, author and cite durable `RULE-` and `ADR-` artifacts.\n\n" +
-          "## 2. Contract-Based Acceptance Criteria (RULE-30)\n\n" +
+          "Never reference ephemeral `TASK-XX` IDs in test headers (`[TASK-XX]`) or code comments (`@verifies TASK-XX`). Tasks are ephemeral and deleted upon completion. Instead, author and cite durable `RULE-` and `ADR-` artifacts.\n\n" +
+          "## 2. Contract-Based Acceptance Criteria\n\n" +
           "Define deliverables in terms of component roles, behavioral contracts, or testable capabilities rather than concrete filesystem paths.\n\n" +
           "## 3. Front-Loaded Planned Governance\n\n" +
           "Declare planned rules and ADRs upfront during task creation (`--plan-rule`, `--plan-adr`). All planned governance items must be generated before task completion.";

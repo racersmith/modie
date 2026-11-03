@@ -4,7 +4,8 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { renderAdrMarkdown, validateAdrLinks } from "./template.ts";
+import { formatArtifactFilename } from "../common/filename.ts";
+import { parseAdrMarkdown, renderAdrMarkdown, validateAdrLinks } from "./template.ts";
 
 describe("ADR Primitive - Frontmatter Links Validation (RULE-14)", () => {
   // @verifies RULE-14
@@ -80,6 +81,46 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14)", () => {
     expect(rendered).toContain(
       "Adopted decision regarding Defaulted Decision.",
     );
+    expect(rendered).toContain("# Consequences\n\n- None recorded.");
+  });
+
+  // @verifies ADR-4
+  it("[ADR-4] should render consequences section when provided", () => {
+    const rendered = renderAdrMarkdown({
+      title: "Consolidated Tools",
+      links: [],
+      decision: "Adopt 5 consolidated tools.",
+      consequences: "- Reduced cognitive load.\n- Controlled trade-off.",
+    });
+
+    expect(rendered).toContain(
+      "# Consequences\n\n- Reduced cognitive load.\n- Controlled trade-off.",
+    );
+  });
+
+  // @verifies ADR-4, ADR-8, RULE-26
+  it("[ADR-4][ADR-8][RULE-26] should parse ADR markdown with consequences and summary", () => {
+    const markdown = renderAdrMarkdown({
+      title: "Extracted ADR",
+      summary: "Short signpost summary.",
+      links: [],
+      context: "Context content.",
+      alternatives: "Alternatives content.",
+      decision: "Decision content.",
+      consequences: "Consequences content.",
+    });
+
+    const filename = formatArtifactFilename({
+      slug: "extracted-adr",
+      subtype: "ADR",
+      id: "999",
+    });
+    const parsed = parseAdrMarkdown(markdown, filename);
+    expect(parsed.summary).toBe("Short signpost summary.");
+    expect(parsed.context).toBe("Context content.");
+    expect(parsed.alternatives).toBe("Alternatives content.");
+    expect(parsed.decision).toBe("Decision content.");
+    expect(parsed.consequences).toBe("Consequences content.");
   });
 
   // @verifies ADR-4, ADR-8, RULE-26
