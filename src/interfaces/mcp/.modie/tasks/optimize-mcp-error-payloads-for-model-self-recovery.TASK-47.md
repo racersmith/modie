@@ -12,12 +12,23 @@ links:
 
 # Context
 
-Format tool validation and execution error messages to return structured self-recovery error envelopes (`isError: true`, machine-readable `code`, actionable `diagnostic`, and concrete `recovery` objects) per `scratch/mcp-design.md`, directing models to correct invalid arguments, resolve spatial ancestry violations, and discover valid artifacts through the 5 consolidated tools rather than falling into retry loops.
+Per the maintainability review (§2.2) and the Agent-First MCP Design (`scratch/mcp-design.md` §2.3), raw exception messages return opaque errors that frequently trap LLM agents in unguided retry loops.
+
+When a tool call fails (for example, attempting to merge an uncompleted task branch, linking an artifact across illegal spatial boundaries, or referencing a non-existent identifier), returning an unformatted stack trace or raw string forces the model to guess the correct remedy.
+
+Implement structured Self-Recovery Error Envelopes for all 5 consolidated MCP tools:
+- Standard error envelope: `{ isError: true, code: string, message: string, diagnostic: string, recovery: { action: string, tool: string, parameters: Record<string, unknown> } }`.
+- Direct models toward concrete self-correction rather than blind retries:
+  - `CRITERIA_INCOMPLETE`: points model to `modie_task_lifecycle(action: "check")` with missing checkboxes.
+  - `ANCESTRY_VIOLATION_RULE_16`: explains spatial boundary violation and directs model to inspect container hierarchy via `modie_compile_context`.
+  - `BLAST_RADIUS_BREACH_RULE_6`: identifies scope containment limits.
+  - `ARTIFACT_NOT_FOUND`: directs model to search active artifacts via `modie_query_catalog`.
+  - `INVALID_PARAMETER`: indicates exact schema failure and valid argument alternatives.
 
 # Acceptance Criteria
 
-- [ ] Standardize MCP tool execution error handler to construct structured `{ isError: true, code, message, diagnostic, recovery }` response payloads
-- [ ] Implement standardized error codes including `CRITERIA_INCOMPLETE`, `ANCESTRY_VIOLATION_RULE_16`, `BLAST_RADIUS_BREACH_RULE_6`, `ARTIFACT_NOT_FOUND`, and `INVALID_PARAMETER`
-- [ ] Provide actionable recovery objects suggesting discovery via `modie_query_catalog`, `modie_compile_context`, and `modie_task_lifecycle` rather than deprecated CLI tools
-- [ ] Verify model-recoverable error envelopes across invalid arguments, boundary breaches, and missing artifact scenarios in test suite
+- [ ] Standardize MCP tool execution error handler to construct structured `{ isError: true, code, message, diagnostic, recovery }` response payloads.
+- [ ] Implement standardized error codes including `CRITERIA_INCOMPLETE`, `ANCESTRY_VIOLATION_RULE_16`, `BLAST_RADIUS_BREACH_RULE_6`, `ARTIFACT_NOT_FOUND`, and `INVALID_PARAMETER`.
+- [ ] Provide actionable recovery objects suggesting discovery and remediation via `modie_query_catalog`, `modie_compile_context`, and `modie_task_lifecycle`.
+- [ ] Verify model-recoverable error envelopes across invalid arguments, boundary breaches, and missing artifact scenarios in MCP test suite.
 - [ ] User Review
