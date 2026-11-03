@@ -1,6 +1,6 @@
 /**
  * Model Context Protocol (MCP) server implementation for Modie.
- * Registers 5 consolidated, goal-oriented agent tools with flat Zod input/output schemas,
+ * Registers 4 consolidated, goal-oriented agent tools with flat Zod input/output schemas,
  * declared behavioral annotations, stateless parameters with Git branch fallback,
  * and token economy progressive disclosure (RULE-25, RULE-26, RULE-27).
  */
@@ -24,7 +24,6 @@ import {
   handleCompileContext,
   handleCreateArtifact,
   handleMutateGovernance,
-  handleQueryCatalog,
   handleTaskLifecycle,
 } from "./handlers.ts";
 import {
@@ -34,8 +33,6 @@ import {
   createArtifactOutputSchema,
   mutateGovernanceInputSchema,
   mutateGovernanceOutputSchema,
-  queryCatalogInputSchema,
-  queryCatalogOutputSchema,
   taskLifecycleInputSchema,
   taskLifecycleOutputSchema,
 } from "./schemas.ts";
@@ -122,48 +119,7 @@ export function createModieMcpServer(
     },
   );
 
-  // 2. Tool 2: modie_query_catalog
-  server.registerTool(
-    "modie_query_catalog",
-    {
-      description:
-        "Query task queue (with DAG readiness), rules, ADRs, or backlog with compact GIST summaries.",
-      inputSchema: queryCatalogInputSchema.shape,
-      outputSchema: queryCatalogOutputSchema.shape,
-      annotations: {
-        readOnlyHint: true,
-        idempotentHint: true,
-        destructiveHint: false,
-      },
-    },
-    async (args: any) => {
-      try {
-        const result = await handleQueryCatalog(args, cwd);
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-          structuredContent: result,
-        };
-      } catch (error: any) {
-        stderr(`[modie_query_catalog] error: ${error?.message ?? error}`);
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: error?.message ?? String(error),
-            },
-          ],
-        };
-      }
-    },
-  );
-
-  // 3. Tool 3: modie_task_lifecycle
+  // 2. Tool 2: modie_task_lifecycle
   server.registerTool(
     "modie_task_lifecycle",
     {
@@ -204,12 +160,12 @@ export function createModieMcpServer(
     },
   );
 
-  // 4. Tool 4: modie_create_artifact
+  // 3. Tool 3: modie_create_artifact
   server.registerTool(
     "modie_create_artifact",
     {
       description:
-        "Universal declarative authoring for RULE, ADR, TASK, MOTIVE, IDEA, SPARK with atomic link creation and scaffold preview.",
+        "Universal declarative authoring for RULE, ADR, TASK, MOTIVE, IDEA, SPARK with atomic link creation.",
       inputSchema: createArtifactInputSchema.shape,
       outputSchema: createArtifactOutputSchema.shape,
       annotations: {
@@ -245,7 +201,7 @@ export function createModieMcpServer(
     },
   );
 
-  // 5. Tool 5: modie_mutate_governance
+  // 4. Tool 4: modie_mutate_governance
   server.registerTool(
     "modie_mutate_governance",
     {

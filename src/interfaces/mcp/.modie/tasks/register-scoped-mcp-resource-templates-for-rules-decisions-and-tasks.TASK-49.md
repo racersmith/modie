@@ -21,7 +21,6 @@ Per the maintainability review (§5) and the Agent-First MCP Design (`scratch/mc
      - `modie://artifact/{tag}`: composite artifact inspection (file path, frontmatter, links, references, body/gist).
      - `modie://context/{target}`: pre-compiled architectural cones for tasks and files.
      - `modie://catalog/{kind}`: catalog listings with compact GIST summaries.
-     - `modie://task/current`: live checklist and blast-radius stream for the active branch.
 
 3. **Standardized Workflow Prompts**:
    - Register native MCP Workflow Prompts guiding multi-step agent interactions:
@@ -34,8 +33,6 @@ Per the maintainability review (§5) and the Agent-First MCP Design (`scratch/mc
 - [ ] Register dynamic resource template `modie://artifact/{tag}` delivering composite artifact view (file path, frontmatter, links, referencedBy, body/gist).
 - [ ] Register dynamic resource template `modie://context/{target}` delivering pre-compiled architectural cones.
 - [ ] Register dynamic resource template `modie://catalog/{kind}` delivering catalog listings with compact GIST summaries.
-- [ ] Remove `scaffold_only` from `modie_create_artifact` to clean up its input and output schemas.
-- [ ] Register dynamic resource `modie://task/current` delivering active task branch checklist, progress, and blast radius stream.
 - [ ] Register native MCP Workflow Prompts (`modie_task_execution`, `modie_governance_authoring`).
 - [ ] Verify client resource template discovery, parameterized reads, and prompt retrieval in MCP test suite.
 - [ ] User Review

@@ -1,6 +1,6 @@
 /**
  * Integration and unit tests for Modie Model Context Protocol (MCP) server.
- * Verifies Consolidated 5-Tool Architecture,
+ * Verifies Consolidated 4-Tool Architecture,
  * RULE-25 (interface-core decoupling), RULE-26 (token economy), and RULE-27 (stream separation).
  */
 
@@ -34,7 +34,7 @@ function getResourceText(readRes: any): string {
     : "";
 }
 
-describe("Modie MCP Server - Consolidated Five-Tool Architecture", () => {
+describe("Modie MCP Server - Consolidated Four-Tool Architecture", () => {
   let workspace: FixtureWorkspace;
   let server: ReturnType<typeof createModieMcpServer>;
   let client: Client;
@@ -113,20 +113,20 @@ describe("Modie MCP Server - Consolidated Five-Tool Architecture", () => {
     await workspace.cleanup();
   });
 
-  it("should register exactly the 5 consolidated tools with outputSchema and behavioral annotations", async () => {
+  it("should register exactly the 4 consolidated tools with outputSchema and behavioral annotations", async () => {
     const response = await client.listTools();
     const toolNames = response.tools.map((t) => t.name);
 
-    // Verify exactly the 5 consolidated tools are exposed
+    // Verify exactly the 4 consolidated tools are exposed
     expect(toolNames.sort()).toEqual([
       "modie_compile_context",
       "modie_create_artifact",
       "modie_mutate_governance",
-      "modie_query_catalog",
       "modie_task_lifecycle",
     ]);
 
-    // Ensure deprecated 1:1 CLI wrappers are no longer registered
+    // Ensure deprecated 1:1 CLI wrappers and dropped tools are not registered
+    expect(toolNames).not.toContain("modie_query_catalog");
     expect(toolNames).not.toContain("find");
     expect(toolNames).not.toContain("read");
     expect(toolNames).not.toContain("show");
@@ -159,15 +159,6 @@ describe("Modie MCP Server - Consolidated Five-Tool Architecture", () => {
     expect(compileTool.annotations?.idempotentHint).toBe(true);
     expect(compileTool.annotations?.destructiveHint).toBe(false);
     expect(compileTool.outputSchema).toBeDefined();
-
-    const queryTool = response.tools.find(
-      (t) => t.name === "modie_query_catalog",
-    )!;
-    expect(queryTool).toBeDefined();
-    expect(queryTool.annotations?.readOnlyHint).toBe(true);
-    expect(queryTool.annotations?.idempotentHint).toBe(true);
-    expect(queryTool.annotations?.destructiveHint).toBe(false);
-    expect(queryTool.outputSchema).toBeDefined();
 
     const lifecycleTool = response.tools.find(
       (t) => t.name === "modie_task_lifecycle",
@@ -246,61 +237,7 @@ describe("Modie MCP Server - Consolidated Five-Tool Architecture", () => {
     });
   });
 
-  describe("Tool 2: modie_query_catalog", () => {
-    it("should query task catalog with DAG readiness filtering", async () => {
-      const res = await client.callTool({
-        name: "modie_query_catalog",
-        arguments: { kind: "TASK", ready_only: true },
-      });
-
-      expect(res.isError).toBeFalsy();
-      const content = getStructuredContent(res);
-      expect(content.kind).toBe("TASK");
-      expect(content.totalTasks).toBe(2);
-      expect(content.readyCount).toBe(1);
-      expect(content.blockedCount).toBe(1);
-      expect(content.items).toHaveLength(1);
-      expect(content.items[0].tag).toBe(task101Tag);
-      expect(content.items[0].readiness).toBe("READY");
-    });
-
-    it("should query backlog tasks when kind='BACKLOG'", async () => {
-      const res = await client.callTool({
-        name: "modie_query_catalog",
-        arguments: { kind: "BACKLOG" },
-      });
-
-      expect(res.isError).toBeFalsy();
-      const content = getStructuredContent(res);
-      expect(content.kind).toBe("BACKLOG");
-      expect(content.blockedCount).toBe(1);
-      expect(content.items[0].tag).toBe(task102Tag);
-      expect(content.items[0].blockedBy).toContain(task101Tag);
-    });
-
-    it("should query rules and adrs with 1-line invariants and summaries", async () => {
-      const ruleRes = await client.callTool({
-        name: "modie_query_catalog",
-        arguments: { kind: "RULE" },
-      });
-      const ruleContent = getStructuredContent(ruleRes);
-      expect(ruleContent.kind).toBe("RULE");
-      expect(ruleContent.totalCount).toBeGreaterThan(0);
-      expect(ruleContent.items[0].tag).toBe(ruleTag);
-
-      const adrRes = await client.callTool({
-        name: "modie_query_catalog",
-        arguments: { kind: "ADR" },
-      });
-      const adrContent = getStructuredContent(adrRes);
-      expect(adrContent.kind).toBe("ADR");
-      expect(adrContent.totalCount).toBe(1);
-      expect(adrContent.items[0].tag).toBe(adrTag);
-      expect(adrContent.items[0].summary).toContain("consolidated MCP tools");
-    });
-  });
-
-  describe("Tool 3: modie_task_lifecycle", () => {
+  describe("Tool 2: modie_task_lifecycle", () => {
     it("should auto-inject Mission Brief, checklist, blast radius constraint, and ambient guardrails on start", async () => {
       const res = await client.callTool({
         name: "modie_task_lifecycle",
@@ -409,34 +346,7 @@ describe("Modie MCP Server - Consolidated Five-Tool Architecture", () => {
     });
   });
 
-  describe("Tool 4: modie_create_artifact", () => {
-    it("should return blueprint skeleton without writing to disk when scaffold_only=true", async () => {
-      const res = await client.callTool({
-        name: "modie_create_artifact",
-        arguments: {
-          kind: "ADR",
-          title: "Blueprint Decision",
-          scaffold_only: true,
-        },
-      });
-
-      expect(res.isError).toBeFalsy();
-      const content = getStructuredContent(res);
-      expect(content.kind).toBe("ADR");
-      expect(content.requiredSections).toEqual([
-        "Context",
-        "Alternatives Considered",
-        "Decision",
-        "Consequences",
-      ]);
-      expect(content.allowedFrontmatter).toContain("links");
-      expect(content.allowedFrontmatter).toContain("supersedes");
-      expect(content.allowedFrontmatter).toContain("summary");
-      expect(content.template).toContain("# Context");
-      expect(content.template).toContain("# Decision");
-      expect(content.template).toContain("# Consequences");
-    });
-
+  describe("Tool 3: modie_create_artifact", () => {
     it("should atomically create artifact with initial_links in a single turn", async () => {
       const res = await client.callTool({
         name: "modie_create_artifact",
@@ -503,7 +413,7 @@ describe("Modie MCP Server - Consolidated Five-Tool Architecture", () => {
     });
   });
 
-  describe("Tool 5: modie_mutate_governance", () => {
+  describe("Tool 4: modie_mutate_governance", () => {
     it("should batch link and unlink relationships in a single turn", async () => {
       // Create a second rule to link
       const rule2Res = await client.callTool({

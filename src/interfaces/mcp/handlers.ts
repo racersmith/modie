@@ -1,5 +1,5 @@
 /**
- * Domain handlers for the 5 consolidated Modie MCP tools.
+ * Domain handlers for the 4 consolidated Modie MCP tools.
  * Exclusively consumes pure domain logic from src/core/ public API (RULE-25).
  * Implements token economy and progressive disclosure (RULE-26).
  */
@@ -20,15 +20,9 @@ import {
   getArtifactDetails,
   getTaskStatus,
   linkArtifact,
-  listAdrs,
-  listRules,
   mergeTaskBranch,
   normalizeTaskId,
   parseTaskIdFromBranch,
-  queryTaskQueue,
-  renderAdrMarkdown,
-  renderMotiveMarkdown,
-  renderRuleMarkdown,
   resolveGoverningScope,
   resolveScope,
   startTaskBranch,
@@ -41,8 +35,6 @@ import type {
   CreateArtifactOutput,
   MutateGovernanceInput,
   MutateGovernanceOutput,
-  QueryCatalogInput,
-  QueryCatalogOutput,
   TaskLifecycleInput,
   TaskLifecycleOutput,
 } from "./schemas.ts";
@@ -240,185 +232,7 @@ export async function handleCompileContext(
 }
 
 /**
- * 2. modie_query_catalog handler
- */
-export async function handleQueryCatalog(
-  args: QueryCatalogInput,
-  cwd: string,
-): Promise<QueryCatalogOutput> {
-  const detailLevel = args.detail_level ?? "gist";
-  const readyOnly = args.ready_only ?? true;
-
-  if (args.kind === "TASK") {
-    const allTasks = await queryTaskQueue({
-      cwd,
-      scope: args.scope,
-      readyOnly: false,
-    });
-    const readyTasks = allTasks.filter((t) => t.readiness === "READY");
-    const blockedTasks = allTasks.filter((t) => t.readiness === "BLOCKED");
-    const selected = readyOnly ? readyTasks : allTasks;
-
-    const formatTask = (t: any) => {
-      const tag = t.fullTaskId ?? t.tag;
-      if (detailLevel === "gist") {
-        return {
-          tag,
-          title: t.title,
-          scope:
-            t.scope ??
-            (t.relativePath
-              ? dirname(t.relativePath).replace(/\/\.modie\/tasks$/, "") || "."
-              : "."),
-          readiness: t.readiness,
-          criteriaCount: t.criteriaTotal,
-          completedCriteriaCount: t.criteriaCompleted,
-          blockedBy: t.blockedBy,
-          plannedGovernance: t.plannedGovernance ?? { rules: 0, adrs: 0 },
-        };
-      }
-      return {
-        tag,
-        title: t.title,
-        scope: t.scope,
-        relativePath: t.relativePath,
-        readiness: t.readiness,
-        blockedBy: t.blockedBy,
-        depends_on: t.depends_on,
-        links: t.links,
-        criteriaCount: t.criteriaTotal,
-        completedCriteriaCount: t.criteriaCompleted,
-        criteriaProgress: t.criteriaProgress,
-        acceptanceCriteria: t.acceptanceCriteria,
-        plannedGovernance: t.plannedGovernance,
-      };
-    };
-
-    return {
-      kind: "TASK",
-      scope: args.scope ?? ".",
-      totalTasks: allTasks.length,
-      readyCount: readyTasks.length,
-      blockedCount: blockedTasks.length,
-      items: selected.map(formatTask),
-      readyTasks: readyTasks.map(formatTask),
-      blockedTasks: readyOnly ? undefined : blockedTasks.map(formatTask),
-    };
-  }
-
-  if (args.kind === "BACKLOG") {
-    const allTasks = await queryTaskQueue({
-      cwd,
-      scope: args.scope,
-      readyOnly: false,
-    });
-    const blockedTasks = allTasks.filter((t) => t.readiness !== "READY");
-
-    const formatTask = (t: any) => {
-      const tag = t.fullTaskId ?? t.tag;
-      if (detailLevel === "gist") {
-        return {
-          tag,
-          title: t.title,
-          scope:
-            t.scope ??
-            (t.relativePath
-              ? dirname(t.relativePath).replace(/\/\.modie\/tasks$/, "") || "."
-              : "."),
-          readiness: t.readiness,
-          blockedBy: t.blockedBy,
-          criteriaCount: t.criteriaTotal,
-          completedCriteriaCount: t.criteriaCompleted,
-        };
-      }
-      return {
-        tag,
-        title: t.title,
-        scope: t.scope,
-        relativePath: t.relativePath,
-        readiness: t.readiness,
-        blockedBy: t.blockedBy,
-        criteriaCount: t.criteriaTotal,
-        completedCriteriaCount: t.criteriaCompleted,
-        criteriaProgress: t.criteriaProgress,
-      };
-    };
-
-    return {
-      kind: "BACKLOG",
-      scope: args.scope ?? ".",
-      totalTasks: allTasks.length,
-      blockedCount: blockedTasks.length,
-      items: blockedTasks.map(formatTask),
-    };
-  }
-
-  if (args.kind === "RULE") {
-    const rules = await listRules({ cwd, scope: args.scope });
-    const formatted =
-      detailLevel === "gist"
-        ? rules.map((r) => ({
-            tag: r.tag,
-            title: r.title,
-            invariant: r.invariant,
-            scope: r.scope,
-            links: r.links,
-          }))
-        : rules.map((r) => ({
-            tag: r.tag,
-            title: r.title,
-            invariant: r.invariant,
-            scope: r.scope,
-            links: r.links,
-            body: r.body,
-            relativePath: r.relativePath,
-          }));
-
-    return {
-      kind: "RULE",
-      scope: args.scope ?? ".",
-      totalCount: rules.length,
-      items: formatted,
-      rules: formatted,
-    };
-  }
-
-  if (args.kind === "ADR") {
-    const adrs = await listAdrs({ cwd, scope: args.scope });
-    const formatted =
-      detailLevel === "gist"
-        ? adrs.map((a) => ({
-            tag: a.tag,
-            title: a.title,
-            summary: a.summary,
-            scope: a.scope,
-            links: a.links,
-          }))
-        : adrs.map((a) => ({
-            tag: a.tag,
-            title: a.title,
-            summary: a.summary,
-            scope: a.scope,
-            links: a.links,
-            context: a.context,
-            decision: a.decision,
-            relativePath: a.relativePath,
-          }));
-
-    return {
-      kind: "ADR",
-      scope: args.scope ?? ".",
-      totalCount: adrs.length,
-      items: formatted,
-      adrs: formatted,
-    };
-  }
-
-  throw new Error(`Unsupported catalog kind: "${args.kind}".`);
-}
-
-/**
- * 3. modie_task_lifecycle handler
+ * 2. modie_task_lifecycle handler
  */
 export async function handleTaskLifecycle(
   args: TaskLifecycleInput,
@@ -625,84 +439,12 @@ export async function handleTaskLifecycle(
 }
 
 /**
- * 4. modie_create_artifact handler
+ * 3. modie_create_artifact handler
  */
 export async function handleCreateArtifact(
   args: CreateArtifactInput,
   cwd: string,
 ): Promise<CreateArtifactOutput> {
-  if (args.scaffold_only) {
-    switch (args.kind) {
-      case "RULE":
-        return {
-          kind: "RULE",
-          requiredSections: ["Invariant"],
-          allowedFrontmatter: ["links"],
-          linkTargetSubtypes: ["ADR"],
-          ancestryRule:
-            "Target ADRs must reside in self or ancestor directories (RULE-16, RULE-19).",
-          template: renderRuleMarkdown({
-            title: args.title || "Template Rule",
-            invariant: "Invariant assertion claim statement.",
-          }),
-        };
-      case "ADR":
-        return {
-          kind: "ADR",
-          requiredSections: [
-            "Context",
-            "Alternatives Considered",
-            "Decision",
-            "Consequences",
-          ],
-          allowedFrontmatter: ["links", "supersedes", "summary"],
-          linkTargetSubtypes: ["ADR", "RULE"],
-          ancestryRule:
-            "Target RULEs must reside in self or descendant subtrees (RULE-17). Target ADRs must reside in self or ancestor directories (ADR-5).",
-          template: renderAdrMarkdown({
-            title: args.title || "Template ADR",
-            summary: "Signpost summary of the architectural decision.",
-            context: "Problem context.",
-            alternatives: "- None recorded.",
-            decision: "Architectural decision statement.",
-            consequences: "Positive outcomes, new risks, and trade-offs.",
-          }),
-        };
-      case "TASK":
-        return {
-          kind: "TASK",
-          requiredSections: ["Context", "Acceptance Criteria"],
-          allowedFrontmatter: ["links", "depends_on", "plan_rule", "plan_adr"],
-          linkTargetSubtypes: ["ADR", "RULE"],
-          ancestryRule:
-            "Target RULEs and ADRs must reside in self or ancestor directories (RULE-6, RULE-18).",
-          template:
-            "---\nlinks: []\ndepends_on: []\n---\n\n# Context\n\nTask context and user story.\n\n# Acceptance Criteria\n\n- [ ] Implementation verified\n- [ ] User Review\n",
-        };
-      case "MOTIVE":
-        return {
-          kind: "MOTIVE",
-          requiredSections: ["Intent"],
-          allowedFrontmatter: [],
-          linkTargetSubtypes: [],
-          ancestryRule:
-            "MOTIVE documents define directory purpose and cannot cite other artifacts (RULE-10).",
-          template: renderMotiveMarkdown({
-            intent: "Architectural directory purpose and intent.",
-          }),
-        };
-      default:
-        return {
-          kind: args.kind,
-          requiredSections: ["Description"],
-          allowedFrontmatter: ["links"],
-          linkTargetSubtypes: ["ADR", "RULE"],
-          ancestryRule: "Follow standard architectural ancestry.",
-          template: `# ${args.title || "Artifact Blueprint"}\n\nDescription.\n`,
-        };
-    }
-  }
-
   // Resolve scopeDir with active task branch fallback
   let resolvedScopeDir = args.scope_dir;
   if (!resolvedScopeDir || resolvedScopeDir === ".") {
@@ -861,7 +603,7 @@ export async function handleCreateArtifact(
 }
 
 /**
- * 5. modie_mutate_governance handler
+ * 4. modie_mutate_governance handler
  */
 export async function handleMutateGovernance(
   args: MutateGovernanceInput,

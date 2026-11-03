@@ -234,114 +234,7 @@ export const compileContextOutputSchema = z
   })
   .passthrough();
 
-// 2. modie_query_catalog
-export const catalogPlannedGovernanceSchema = z.object({
-  rules: z.number().optional().describe("Planned rules count"),
-  adrs: z.number().optional().describe("Planned ADRs count"),
-});
-
-export const catalogTaskItemSchema = z.object({
-  tag: z.string().optional().describe("Task tag"),
-  title: z.string().optional().describe("Task title"),
-  scope: z.string().optional().describe("Architectural scope"),
-  relativePath: z.string().optional().describe("Relative path to task file"),
-  readiness: z.string().optional().describe("Readiness state"),
-  criteriaCount: z.number().optional().describe("Total criteria count"),
-  completedCriteriaCount: z
-    .number()
-    .optional()
-    .describe("Completed criteria count"),
-  criteriaProgress: z.string().optional().describe("Progress summary string"),
-  blockedBy: z.array(z.string()).optional().describe("Blocking task tags"),
-  plannedGovernance: catalogPlannedGovernanceSchema
-    .optional()
-    .describe("Planned governance items"),
-});
-
-export const catalogRuleItemSchema = z.object({
-  tag: z.string().describe("Rule tag"),
-  title: z.string().optional().describe("Rule title"),
-  invariant: z.string().optional().describe("Core rule invariant"),
-  scope: z.string().optional().describe("Architectural scope"),
-  links: z.array(z.string()).optional().describe("Outbound links"),
-  body: z.string().optional().describe("Rule body markdown"),
-});
-
-export const catalogAdrItemSchema = z.object({
-  tag: z.string().describe("ADR tag"),
-  title: z.string().optional().describe("ADR title"),
-  summary: z.string().optional().describe("Decision summary"),
-  scope: z.string().optional().describe("Architectural scope"),
-  links: z.array(z.string()).optional().describe("Outbound links"),
-  context: z.string().optional().describe("Context section"),
-  decision: z.string().optional().describe("Decision section"),
-  consequences: z
-    .string()
-    .optional()
-    .describe("Positive outcomes, new risks, and accepted trade-offs"),
-  relativePath: z.string().optional().describe("Relative path to ADR file"),
-});
-
-export const catalogItemSchema = z.object({
-  tag: z.string().optional().describe("Artifact tag"),
-  title: z.string().optional().describe("Artifact title"),
-  scope: z.string().optional().describe("Architectural scope"),
-  relativePath: z
-    .string()
-    .optional()
-    .describe("Relative path to artifact file"),
-  readiness: z.string().optional().describe("Task readiness state"),
-  invariant: z.string().optional().describe("Rule invariant"),
-  summary: z.string().optional().describe("ADR summary"),
-  links: z.array(z.string()).optional().describe("Outbound governance links"),
-  blockedBy: z.array(z.string()).optional().describe("Blocking task tags"),
-  criteriaCount: z.number().optional().describe("Total criteria count"),
-  completedCriteriaCount: z
-    .number()
-    .optional()
-    .describe("Completed criteria count"),
-  criteriaProgress: z.string().optional().describe("Criteria progress string"),
-  plannedGovernance: catalogPlannedGovernanceSchema
-    .optional()
-    .describe("Planned governance metadata"),
-  body: z.string().optional().describe("Full markdown body"),
-});
-
-export const queryCatalogInputSchema = z.object({
-  kind: z
-    .enum(["TASK", "BACKLOG", "RULE", "ADR"])
-    .describe("Artifact catalog kind to query"),
-  scope: z
-    .string()
-    .optional()
-    .describe("Architectural directory scope filter (e.g. 'src/interfaces')"),
-  ready_only: z
-    .boolean()
-    .default(true)
-    .describe("For tasks, filter strictly to unblocked ready tasks"),
-  detail_level: z
-    .enum(["gist", "full"])
-    .default("gist")
-    .describe("Compact GIST summaries vs complete records"),
-});
-
-export const queryCatalogOutputSchema = z
-  .object({
-    kind: z.enum(["TASK", "BACKLOG", "RULE", "ADR"]).optional(),
-    scope: z.string().optional(),
-    totalCount: z.number().optional(),
-    totalTasks: z.number().optional(),
-    readyCount: z.number().optional(),
-    blockedCount: z.number().optional(),
-    items: z.array(catalogItemSchema).optional(),
-    readyTasks: z.array(catalogTaskItemSchema).optional(),
-    blockedTasks: z.array(catalogTaskItemSchema).optional(),
-    rules: z.array(catalogRuleItemSchema).optional(),
-    adrs: z.array(catalogAdrItemSchema).optional(),
-  })
-  .passthrough();
-
-// 3. modie_task_lifecycle
+// 2. modie_task_lifecycle
 export const taskLifecycleInputSchema = z.object({
   action: z
     .enum([
@@ -455,7 +348,7 @@ export const taskLifecycleOutputSchema = z
   })
   .passthrough();
 
-// 4. modie_create_artifact
+// 3. modie_create_artifact
 export const createArtifactInputSchema = z.object({
   kind: z
     .enum(["RULE", "ADR", "TASK", "MOTIVE", "IDEA", "SPARK"])
@@ -470,7 +363,9 @@ export const createArtifactInputSchema = z.object({
   sections: z
     .record(z.string(), z.string())
     .optional()
-    .describe("Key-value map of section headings to body markdown text"),
+    .describe(
+      "Key-value map of section headings to body markdown text (e.g. for RULE: Invariant; for ADR: Context, Decision, Consequences; for TASK: Context, Acceptance Criteria)",
+    ),
   content: z.string().optional().describe("Raw markdown content override"),
   initial_links: z
     .array(z.string())
@@ -484,10 +379,6 @@ export const createArtifactInputSchema = z.object({
     .array(z.string())
     .optional()
     .describe("Predecessor tags to supersede bidirectionally"),
-  scaffold_only: z
-    .boolean()
-    .default(false)
-    .describe("Return schema template blueprint without creating file on disk"),
 });
 
 export const createArtifactOutputSchema = z
@@ -502,15 +393,10 @@ export const createArtifactOutputSchema = z
     scope: z.string().optional(),
     validatedLinks: z.array(z.string()).optional(),
     supersededUpdated: z.array(z.string()).optional(),
-    requiredSections: z.array(z.string()).optional(),
-    allowedFrontmatter: z.array(z.string()).optional(),
-    linkTargetSubtypes: z.array(z.string()).optional(),
-    ancestryRule: z.string().optional(),
-    template: z.string().optional(),
   })
   .passthrough();
 
-// 5. modie_mutate_governance
+// 4. modie_mutate_governance
 export const mutateGovernanceInputSchema = z.object({
   action: z
     .enum(["link", "unlink", "archive"])
@@ -551,8 +437,6 @@ export const mutateGovernanceOutputSchema = z
 
 export type CompileContextInput = z.infer<typeof compileContextInputSchema>;
 export type CompileContextOutput = z.infer<typeof compileContextOutputSchema>;
-export type QueryCatalogInput = z.infer<typeof queryCatalogInputSchema>;
-export type QueryCatalogOutput = z.infer<typeof queryCatalogOutputSchema>;
 export type TaskLifecycleInput = z.infer<typeof taskLifecycleInputSchema>;
 export type TaskLifecycleOutput = z.infer<typeof taskLifecycleOutputSchema>;
 export type CreateArtifactInput = z.infer<typeof createArtifactInputSchema>;
