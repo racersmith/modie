@@ -13,12 +13,22 @@ import {
   runGitCommand,
 } from "../resolver/git-inspector.ts";
 import type { DiscoveredArtifact, IndexableSubtype } from "../common/types.ts";
-import { parseTaskIdFromBranch } from "../common/index.ts";
+import {
+  formatTaskBranch,
+  formatTaskBranchName,
+  normalizeTaskId,
+  parseSubtaskId,
+  parseTaskBranch,
+  parseTaskIdFromBranch,
+  taskBranchGlob,
+  taskKey,
+} from "../common/index.ts";
 import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
-import { normalizeTaskId, resolveTaskFile } from "./completion.ts";
+import { resolveTaskFile } from "./completion.ts";
 import { parseTaskMarkdown } from "./parser.ts";
 import { scanActiveTasks } from "../resolver/active-scanner.ts";
+
 import type {
   MergeTaskBranchOptions,
   MergeTaskBranchResult,
@@ -26,43 +36,6 @@ import type {
   StartTaskBranchResult,
   TaskBranchTopology,
 } from "./types.ts";
-
-/**
- * Formats canonical task branch name: `task/<id>-<slug>`
- */
-export function formatTaskBranchName(taskId: string, slug: string): string {
-  const normId = normalizeTaskId(taskId);
-  return `task/${normId}-${slug}`;
-}
-
-/**
- * Parses subtask parent ID and sequence from task ID token per ADR-9.
- * Subtasks follow `TASK-<parentId>-<sequence>` (e.g. `2-1`, `11-2`, `J101-1`).
- */
-export function parseSubtaskId(
-  taskId: string,
-): { parentId: string; sequence: string } | null {
-  const normId = normalizeTaskId(taskId);
-  const match = normId.match(/^([A-Za-z0-9]+)-([0-9]+)$/);
-  if (!match || !match[1] || !match[2]) {
-    return null;
-  }
-  return {
-    parentId: match[1],
-    sequence: match[2],
-  };
-}
-
-/**
- * Checks whether a local git branch exists.
- */
-export async function branchExists(
-  branchName: string,
-  cwd: string = process.cwd(),
-  vcs: IVcsAdapter = defaultVcsAdapter,
-): Promise<boolean> {
-  return vcs.branchExists(branchName, cwd);
-}
 
 export interface ArtifactCollision {
   tag: string;
@@ -251,10 +224,11 @@ async function findParentTaskBranch(
   vcs: IVcsAdapter = defaultVcsAdapter,
 ): Promise<string | undefined> {
   const normParent = normalizeTaskId(parentId);
+  const normParentKey = taskKey(parentId);
 
   // 1. Check existing local git branches
   const branches = await vcs.run(
-    ["branch", "--list", `task/${normParent}-*`],
+    ["branch", "--list", taskBranchGlob(normParent)],
     cwd,
   );
   if (branches) {
@@ -263,13 +237,8 @@ async function findParentTaskBranch(
       .map((b) => b.replace(/^\*?\s+/, "").trim())
       .filter((b) => {
         // Exclude subtask branches of this parent (e.g. task/106-1-sub when looking for parent 106)
-        const match = b.match(/^task\/([A-Za-z0-9]+)-(.*)$/);
-        return Boolean(
-          match &&
-          match[1] === normParent &&
-          match[2] &&
-          !/^\d+-/.test(match[2]),
-        );
+        const parsed = parseTaskBranch(b);
+        return Boolean(parsed && parsed.taskId === normParent);
       });
     if (matched.length > 0 && matched[0]) {
       return matched[0];
@@ -279,19 +248,19 @@ async function findParentTaskBranch(
   // 2. Check active task file on disk with exact ID match
   const activeTasks = await scanActiveTasks(cwd);
   const parentTask = activeTasks.find(
-    (t) => normalizeTaskId(t.id).toLowerCase() === normParent.toLowerCase(),
+    (t) => taskKey(t.id) === normParentKey,
   );
   if (parentTask) {
-    return `task/${normParent}-${parentTask.slug}`;
+    return formatTaskBranch(normParent, parentTask.slug);
   }
 
   // 3. Check deleted artifacts in Git
   const deleted = await vcs.inspectDeletedArtifacts(cwd, "TASK");
   const matchDeleted = deleted.find(
-    (d) => normalizeTaskId(d.id).toLowerCase() === normParent.toLowerCase(),
+    (d) => taskKey(d.id) === normParentKey,
   );
   if (matchDeleted && matchDeleted.slug) {
-    return `task/${normParent}-${matchDeleted.slug}`;
+    return formatTaskBranch(normParent, matchDeleted.slug);
   }
 
   return undefined;
@@ -325,7 +294,7 @@ export async function computeTaskBranchTopology(
       vcs,
     );
     expectedBaseBranch =
-      options.base ?? parentBranchName ?? `task/${subtaskInfo.parentId}`;
+      options.base ?? parentBranchName ?? formatTaskBranch(subtaskInfo.parentId);
   } else {
     expectedBaseBranch = options.base ?? config.trunk;
   }

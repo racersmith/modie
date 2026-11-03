@@ -6,6 +6,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { resolveGoverningScope } from "../common/directories.ts";
+import { slugToTitle, toPosixRelative } from "../common/index.ts";
 import type { IndexableSubtype } from "../common/types.ts";
 import { scanActiveArtifacts } from "../resolver/active-scanner.ts";
 import {
@@ -51,7 +52,7 @@ export async function listActiveArtifacts(
     const rawTarget = resolve(cwd, trimmedScope);
     const { scopeDir: normalizedScopeDir } = resolveGoverningScope(rawTarget, cwd);
 
-    const relFromRoot = relative(cwd, normalizedScopeDir);
+    const relFromRoot = toPosixRelative(cwd, normalizedScopeDir);
     if (relFromRoot.startsWith("..") || isAbsolute(relFromRoot)) {
       throw new Error(
         `Invalid scope "${options.scope}": scope path must reside within the workspace root.`,
@@ -102,8 +103,8 @@ export async function listActiveArtifacts(
       continue;
     }
 
-    const relPath = relative(cwd, disc.filepath).replace(/\\/g, "/");
-    const title = disc.slug.replace(/-/g, " ");
+    const relPath = toPosixRelative(cwd, disc.filepath);
+    const title = slugToTitle(disc.slug);
 
     listed.push({
       tag: disc.tag,

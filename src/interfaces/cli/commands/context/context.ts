@@ -11,13 +11,10 @@ import {
   type CompiledContextResult,
 } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
   type CliExecutionContext,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const contextSchema = z.object({
   target: z
@@ -212,17 +209,3 @@ export const contextCommand: CliCommandDefinition<
   renderJson: renderCompiledContextJson,
 });
 
-/**
- * CLI command handler for `modie context`.
- */
-export const handleContext: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(contextCommand);
-
-/**
- * Prints usage instructions for `modie context`.
- */
-export function printContextHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(contextCommand));
-}

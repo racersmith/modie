@@ -16,10 +16,12 @@ import {
 } from "../resolver/active-scanner.ts";
 import {
   detectGitBranch,
-  inspectGitDeletedTaskIds,
+  inspectGitDeletedArtifactIds,
   runGit,
   runGitCommand,
 } from "../resolver/git-inspector.ts";
+import { normalizeTaskId } from "../common/index.ts";
+
 import type { DiscoveredTask } from "../resolver/types.ts";
 import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
@@ -109,19 +111,6 @@ export interface CompleteTaskResult {
 }
 
 /**
- * Normalizes a task identifier input to match against task IDs or slugs.
- * Examples: "TASK-7-1" -> "7-1", "7-1" -> "7-1", "task-7" -> "7".
- */
-export function normalizeTaskId(raw: string): string {
-  const trimmed = raw.trim();
-  const match = trimmed.match(/^task-([A-Za-z0-9_-]+)$/i);
-  if (match && match[1]) {
-    return match[1];
-  }
-  return trimmed;
-}
-
-/**
  * Scans active tasks on disk and detects any tasks whose IDs were previously deleted in Git history.
  */
 export async function detectZombieTasks(
@@ -129,7 +118,7 @@ export async function detectZombieTasks(
   vcs?: IVcsAdapter,
 ): Promise<DiscoveredTask[]> {
   const activeTasks = await scanActiveTasks(cwd);
-  const deletedIds = await inspectGitDeletedTaskIds(cwd, vcs);
+  const deletedIds = await inspectGitDeletedArtifactIds(cwd, "TASK", vcs);
   const deletedSet = new Set(deletedIds);
   return activeTasks.filter((t) => deletedSet.has(t.id));
 }
@@ -144,7 +133,7 @@ export async function assertNotZombieTask(
   vcs?: IVcsAdapter,
 ): Promise<void> {
   const normalized = normalizeTaskId(taskId);
-  const deletedIds = await inspectGitDeletedTaskIds(cwd, vcs);
+  const deletedIds = await inspectGitDeletedArtifactIds(cwd, "TASK", vcs);
   if (deletedIds.includes(normalized)) {
     throw new Error(
       `Zombie task detected: Task "TASK-${normalized}" was previously completed and deleted in Git history per RULE-21. Resurrecting completed tasks is prohibited (ADR-6, RULE-21).`,

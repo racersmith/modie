@@ -6,12 +6,9 @@
 import { z } from "zod";
 import { createTask, type CreateTaskOptions } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const taskCreateSchema = z.object({
   title: z
@@ -288,17 +285,3 @@ export const taskCreateCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie task create`.
- */
-export const handleTaskCreate: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(taskCreateCommand);
-
-/**
- * Prints usage instructions for `modie task create`.
- */
-export function printTaskCreateHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(taskCreateCommand));
-}

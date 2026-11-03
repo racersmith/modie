@@ -38,3 +38,13 @@ export function generateSlug(input: string): string {
 
   return normalized;
 }
+
+/**
+ * Converts a kebab-case slug to human-readable space-separated title.
+ * Examples: "create-task-cli" -> "create task cli"
+ */
+export function slugToTitle(slug?: string | null): string {
+  if (!slug) return "";
+  return slug.replace(/-/g, " ").trim();
+}
+

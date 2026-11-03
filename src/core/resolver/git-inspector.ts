@@ -81,36 +81,6 @@ export async function inspectGitDeletedArtifactIds(
 }
 
 /**
- * Queries git commit history for deleted task files across reachable branches:
- * `git log --all --diff-filter=D --format= --name-only -- *.TASK-*.md`
- * Backward compatibility wrapper around inspectGitDeletedArtifacts.
- */
-export async function inspectGitDeletedTasks(
-  cwd: string = process.cwd(),
-  vcs: IVcsAdapter = defaultVcsAdapter,
-): Promise<DiscoveredTask[]> {
-  const artifacts = await inspectGitDeletedArtifacts(cwd, "TASK", vcs);
-  return artifacts.map((a) => ({
-    id: a.id,
-    slug: a.slug,
-    filename: a.filename,
-    filepath: a.filepath,
-    status: "deleted",
-  }));
-}
-
-/**
- * Returns a deduplicated list of task IDs that were deleted in git history.
- * Backward compatibility wrapper around inspectGitDeletedArtifactIds.
- */
-export async function inspectGitDeletedTaskIds(
-  cwd: string = process.cwd(),
-  vcs: IVcsAdapter = defaultVcsAdapter,
-): Promise<string[]> {
-  return inspectGitDeletedArtifactIds(cwd, "TASK", vcs);
-}
-
-/**
  * Lists all local branch names in the git repository.
  */
 export async function listGitBranches(

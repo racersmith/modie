@@ -13,12 +13,9 @@ import {
   type CompleteTaskResult,
 } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const taskCompleteSchema = z.object({
   id: z
@@ -167,17 +164,3 @@ export const taskCompleteCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie task complete`.
- */
-export const handleTaskComplete: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(taskCompleteCommand);
-
-/**
- * Prints usage instructions for `modie task complete`.
- */
-export function printTaskCompleteHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(taskCompleteCommand));
-}

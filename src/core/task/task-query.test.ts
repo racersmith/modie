@@ -8,10 +8,10 @@ import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
 import {
   compareTaskIds,
   getTaskStatus,
-  parseTaskIdFromBranch,
   queryTaskHistory,
   queryTaskQueue,
 } from "./index.ts";
+import { parseTaskIdFromBranch } from "../common/index.ts";
 
 describe("Task Queue Query Service - ID Comparison & Natural Ordering", () => {
   it("should sort monotonic integer task IDs numerically", () => {

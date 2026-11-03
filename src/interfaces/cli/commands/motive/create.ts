@@ -9,12 +9,9 @@ import {
   type CreateMotiveOptions,
 } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const motiveCreateSchema = z.object({
   content: z
@@ -150,18 +147,4 @@ export const motiveCreateCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie motive create`.
- */
-export const handleMotiveCreate: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(motiveCreateCommand);
-
-/**
- * Prints usage instructions for `modie motive create`.
- */
-export function printMotiveCreateHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(motiveCreateCommand));
-}
 

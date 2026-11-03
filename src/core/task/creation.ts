@@ -11,7 +11,6 @@ import type { CreateTaskOptions, CreateTaskResult } from "./types.ts";
 
 export type { CreateTaskOptions, CreateTaskResult } from "./types.ts";
 export { validateTaskScope } from "./definition.ts";
-export { findDeepestCommonAncestor } from "../common/directories.ts";
 
 /**
  * Normalizes scope directory and target directory per RULE-8.

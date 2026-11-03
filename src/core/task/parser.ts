@@ -1,4 +1,8 @@
-import { generateSlug, parseArtifactFilename } from "../common/index.ts";
+import {
+  generateSlug,
+  parseArtifactFilename,
+  slugToTitle,
+} from "../common/index.ts";
 import type { ArtifactParseContext } from "../pipeline/types.ts";
 import {
   parseMarkdownDocument,
@@ -160,7 +164,7 @@ export function parseTaskMarkdown(
   return parseTaskFromContext({
     id,
     slug,
-    title: slug ? slug.replace(/-/g, " ") : "",
+    title: slugToTitle(slug),
     filepath: filePathOrFilename,
     filename: filePathOrFilename,
     rawContent: content,

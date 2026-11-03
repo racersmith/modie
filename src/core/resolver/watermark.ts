@@ -18,40 +18,7 @@ import type {
   WatermarkDetails,
   WatermarkResolutionOptions,
 } from "./types.ts";
-
-/**
- * Regular expression matching task-specific branches:
- * `task/<parent_id>-<slug>` or `task/<parent_id>`
- * Example: `task/2-task-id-allocation-and-rule-alignment` -> parentId = "2", slug = "task-id-allocation-and-rule-alignment"
- * Example: `task/4-task-id-watermark-resolver` -> parentId = "4", slug = "task-id-watermark-resolver"
- * Example: `task/2-1-subtask` -> parentId = "2-1", slug = "subtask"
- * Example: `task/J101-auth` -> parentId = "J101", slug = "auth"
- */
-const TASK_BRANCH_REGEX =
-  /^task\/([0-9]+(?:-[0-9]+)*|[A-Za-z]+[0-9]+)(?:-(.+))?$/;
-
-/**
- * Escapes regex special characters in dynamic strings.
- */
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/**
- * Parses a branch name to extract the parent task ID if it is a task branch.
- */
-export function parseTaskBranch(
-  branch: string,
-): { parentId: string; slug?: string } | null {
-  const match = branch.match(TASK_BRANCH_REGEX);
-  if (!match || !match[1]) {
-    return null;
-  }
-  return {
-    parentId: match[1],
-    slug: match[2],
-  };
-}
+import { escapeRegex, parseTaskBranch } from "../common/index.ts";
 
 /**
  * Resolves comprehensive watermark details and calculates the next unique, collision-free ID

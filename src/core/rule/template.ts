@@ -4,6 +4,7 @@
  */
 
 import { parseArtifactFilename } from "../common/filename.ts";
+import { slugToTitle } from "../common/index.ts";
 import { isValidAdrLinkTag } from "../linking/validator.ts";
 import type { ArtifactParseContext } from "../pipeline/types.ts";
 import { parseMarkdownDocument } from "../query/markdown-parser.ts";
@@ -129,7 +130,7 @@ export function parseRuleMarkdown(
   return parseRuleFromContext({
     id,
     slug,
-    title: slug ? slug.replace(/-/g, " ") : "",
+    title: slugToTitle(slug),
     filepath: filePathOrFilename,
     filename: filePathOrFilename,
     rawContent: content,

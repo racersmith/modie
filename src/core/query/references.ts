@@ -12,6 +12,7 @@ import {
   relative,
   resolve,
 } from "node:path";
+import { escapeRegex } from "../common/index.ts";
 import { parseArtifactFilename } from "../common/filename.ts";
 import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
 import type { GitGrepMatch, IVcsAdapter } from "../vcs/types.ts";
@@ -96,13 +97,6 @@ const CODE_EXTENSIONS = new Set([
 ]);
 
 const DOC_EXTENSIONS = new Set([".md", ".markdown", ".txt", ".rst"]);
-
-/**
- * Escapes regex special characters.
- */
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 /**
  * Evaluates whether a line within a test file represents a formal verification declaration

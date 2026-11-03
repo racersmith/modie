@@ -6,12 +6,9 @@
 import { z } from "zod";
 import { createRule, type CreateRuleOptions } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const ruleCreateSchema = z.object({
   title: z
@@ -156,17 +153,3 @@ export const ruleCreateCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie rule create`.
- */
-export const handleRuleCreate: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(ruleCreateCommand);
-
-/**
- * Prints usage instructions for `modie rule create`.
- */
-export function printRuleCreateHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(ruleCreateCommand));
-}

@@ -4,13 +4,13 @@
 
 import { describe, expect, it } from "bun:test";
 import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
+import { parseTaskBranch } from "../common/index.ts";
 import {
   detectGitBranch,
-  inspectGitDeletedTaskIds,
-  inspectGitDeletedTasks,
+  inspectGitDeletedArtifactIds,
+  inspectGitDeletedArtifacts,
   inspectMultiBranchActiveArtifactIds,
   inspectMultiBranchActiveArtifacts,
-  parseTaskBranch,
   resolveNextTaskId,
   resolveWatermark,
   scanActiveTaskIds,
@@ -67,21 +67,25 @@ describe("Watermark Resolver - Git History & Branch Detection (ADR-6, ADR-9, RUL
       parseTaskBranch("task/2-task-id-allocation-and-rule-alignment"),
     ).toEqual({
       parentId: "2",
+      taskId: "2",
       slug: "task-id-allocation-and-rule-alignment",
     });
 
     expect(parseTaskBranch("task/4-task-id-watermark-resolver")).toEqual({
       parentId: "4",
+      taskId: "4",
       slug: "task-id-watermark-resolver",
     });
 
     expect(parseTaskBranch("task/2-1-subtask-test")).toEqual({
       parentId: "2-1",
+      taskId: "2-1",
       slug: "subtask-test",
     });
 
     expect(parseTaskBranch("task/42")).toEqual({
       parentId: "42",
+      taskId: "42",
       slug: undefined,
     });
 
@@ -103,8 +107,8 @@ describe("Watermark Resolver - Git History & Branch Detection (ADR-6, ADR-9, RUL
     await workspace.remove(task3);
     await workspace.gitCommit("chore: remove completed tasks");
 
-    const deletedTasks = await inspectGitDeletedTasks(workspace.cwd);
-    const deletedIds = await inspectGitDeletedTaskIds(workspace.cwd);
+    const deletedTasks = await inspectGitDeletedArtifacts(workspace.cwd, "TASK");
+    const deletedIds = await inspectGitDeletedArtifactIds(workspace.cwd, "TASK");
 
     expect(deletedIds).toContain("2");
     expect(deletedIds).toContain("3");

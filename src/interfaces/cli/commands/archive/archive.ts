@@ -10,12 +10,9 @@ import {
   type ArchiveArtifactResult,
 } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const archiveSchema = z.object({
   tag: z
@@ -92,17 +89,3 @@ export const archiveCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie archive`.
- */
-export const handleArchive: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(archiveCommand);
-
-/**
- * Prints usage instructions for `modie archive`.
- */
-export function printArchiveHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(archiveCommand));
-}

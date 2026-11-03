@@ -7,11 +7,13 @@ import {
 import {
   computeTaskBranchTopology,
   detectArtifactCollisions,
-  formatTaskBranchName,
   mergeTaskBranch,
-  parseSubtaskId,
   startTaskBranch,
 } from "./branching.ts";
+import {
+  formatTaskBranchName,
+  parseSubtaskId,
+} from "../common/index.ts";
 
 describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
   let workspace: FixtureWorkspace;

@@ -9,12 +9,9 @@ import {
   type ResolvedArtifact,
 } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const findSchema = z.object({
   tag: z
@@ -81,17 +78,3 @@ export const findCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie find`.
- */
-export const handleFind: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(findCommand);
-
-/**
- * Prints usage instructions for `modie find`.
- */
-export function printFindHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(findCommand));
-}

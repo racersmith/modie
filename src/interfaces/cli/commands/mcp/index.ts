@@ -7,12 +7,9 @@ import { z } from "zod";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createModieMcpServer } from "../../../mcp/server.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const mcpSchema = z.object({});
 
@@ -51,17 +48,3 @@ export const mcpCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie mcp`.
- */
-export const handleMcp: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(mcpCommand);
-
-/**
- * Prints usage instructions for `modie mcp`.
- */
-export function printMcpHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(mcpCommand));
-}

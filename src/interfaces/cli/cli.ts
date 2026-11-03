@@ -8,7 +8,10 @@ import { createCommandHandler } from "./framework/execute.ts";
 import type { CliCommandDefinition } from "./framework/types.ts";
 import type { CliIoOptions, CommandHandler } from "./types.ts";
 
-export const MODIE_VERSION = "0.1.0";
+import { MODIE_VERSION } from "../../core/common/version.ts";
+
+export { MODIE_VERSION };
+
 
 export interface CommandNamespace {
   name: string;
@@ -118,34 +121,6 @@ export function printNamespaceHelp(
   ];
 
   stderr(lines.join("\n"));
-}
-
-/**
- * Prints task namespace usage to stderr.
- */
-export function printTaskNamespaceHelp(stderr: (msg: string) => void): void {
-  printNamespaceHelp("task", allCliCommands, stderr);
-}
-
-/**
- * Prints rule namespace usage to stderr.
- */
-export function printRuleNamespaceHelp(stderr: (msg: string) => void): void {
-  printNamespaceHelp("rule", allCliCommands, stderr);
-}
-
-/**
- * Prints ADR namespace usage to stderr.
- */
-export function printAdrNamespaceHelp(stderr: (msg: string) => void): void {
-  printNamespaceHelp("adr", allCliCommands, stderr);
-}
-
-/**
- * Prints motive namespace usage to stderr.
- */
-export function printMotiveNamespaceHelp(stderr: (msg: string) => void): void {
-  printNamespaceHelp("motive", allCliCommands, stderr);
 }
 
 /**

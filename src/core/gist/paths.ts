@@ -13,9 +13,9 @@ import {
   isAbsolute,
   join,
   normalize,
-  relative,
   resolve,
 } from "node:path";
+import { toPosixRelative } from "../common/index.ts";
 import type {
   FileGistPaths,
   GistPaths,
@@ -32,11 +32,6 @@ function extractCwd(cwdOrOptions?: string | ResolveGistOptions): string {
     return normalize(resolve(cwdOrOptions));
   }
   return normalize(resolve(cwdOrOptions?.cwd ?? process.cwd()));
-}
-
-function toPosixRelative(from: string, to: string): string {
-  const rel = relative(from, to).replace(/\\/g, "/");
-  return rel === "" ? "." : rel;
 }
 
 /**

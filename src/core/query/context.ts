@@ -13,11 +13,11 @@ import {
   isAbsolute,
   join,
   normalize,
-  relative,
   resolve,
 } from "node:path";
 import { resolveGoverningScope } from "../common/directories.ts";
 import { parseArtifactFilename } from "../common/filename.ts";
+import { slugToTitle, toPosixRelative } from "../common/index.ts";
 import { discoverGistsForScope } from "../gist/reader.ts";
 import { collectAncestralMotives } from "../motive/reader.ts";
 import { getTaskStatus, type TaskStatusDetails } from "../task/query.ts";
@@ -38,13 +38,9 @@ import type {
   ResolvedArtifact,
 } from "./types.ts";
 
-function toPosixRelative(from: string, to: string): string {
-  const rel = relative(from, to).replace(/\\/g, "/");
-  return rel === "" ? "." : rel;
-}
-
 /**
  * Computes the ancestry scope path vector walking from `targetScope` upward to root `.`
+
  * (or root `.` down to `targetScope`).
  */
 function buildAncestralScopes(targetScope: string): string[] {
@@ -370,10 +366,10 @@ export async function compileContext(
           tag: details.tag,
           id: details.id,
           slug: details.slug,
-          title: details.slug.replace(/-/g, " "),
+          title: slugToTitle(details.slug),
           scope: details.scope,
           relativePath: details.relativePath,
-          summary: details.summary ?? details.slug.replace(/-/g, " "),
+          summary: details.summary ?? slugToTitle(details.slug),
           links: details.links,
         });
       }

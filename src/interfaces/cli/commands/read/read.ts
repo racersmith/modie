@@ -9,13 +9,10 @@ import {
   type ArtifactDetails,
 } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
   type CliExecutionContext,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const readSchema = z.object({
   tag: z
@@ -174,17 +171,3 @@ export const readCommand: CliCommandDefinition<
   renderJson: renderArtifactDetailsJson,
 });
 
-/**
- * CLI command handler for `modie read`.
- */
-export const handleRead: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(readCommand);
-
-/**
- * Prints usage instructions for `modie read`.
- */
-export function printReadHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(readCommand));
-}

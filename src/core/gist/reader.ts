@@ -4,7 +4,8 @@
  */
 
 import { readdir, readFile, stat } from "node:fs/promises";
-import { join, normalize, relative, resolve } from "node:path";
+import { join, normalize, resolve } from "node:path";
+import { toPosixRelative } from "../common/index.ts";
 import {
   DIRECTORY_GIST_FILENAME,
   parseFileGistFilename,
@@ -36,11 +37,6 @@ function extractCwd(cwdOrOptions?: string | ResolveGistOptions): string {
     return normalize(resolve(cwdOrOptions));
   }
   return normalize(resolve(cwdOrOptions?.cwd ?? process.cwd()));
-}
-
-function toPosixRelative(from: string, to: string): string {
-  const rel = relative(from, to).replace(/\\/g, "/");
-  return rel === "" ? "." : rel;
 }
 
 /**

@@ -4,58 +4,34 @@
  */
 
 import type { CliCommandDefinition } from "../framework/index.ts";
-import { findCommand, handleFind } from "./find/index.ts";
-import { readCommand, handleRead } from "./read/index.ts";
-import { scopeCommand, handleScope } from "./scope/index.ts";
-import { contextCommand, handleContext } from "./context/index.ts";
-import {
-  referencesCommandDefinition,
-  handleReferences,
-} from "./references/index.ts";
-import { archiveCommand, handleArchive } from "./archive/index.ts";
-import {
-  linkCommand,
-  handleLink,
-  unlinkCommand,
-  handleUnlink,
-} from "./link/index.ts";
+import { findCommand } from "./find/index.ts";
+import { readCommand } from "./read/index.ts";
+import { scopeCommand } from "./scope/index.ts";
+import { contextCommand } from "./context/index.ts";
+import { referencesCommandDefinition } from "./references/index.ts";
+import { archiveCommand } from "./archive/index.ts";
+import { linkCommand, unlinkCommand } from "./link/index.ts";
 import {
   ruleCreateCommand,
-  handleRuleCreate,
   ruleArchiveCommand,
-  handleRuleArchive,
   ruleListCommand,
-  handleRuleList,
 } from "./rule/index.ts";
 import {
   adrCreateCommand,
-  handleAdrCreate,
   adrArchiveCommand,
-  handleAdrArchive,
   adrListCommand,
-  handleAdrList,
 } from "./adr/index.ts";
-import {
-  motiveCreateCommand,
-  handleMotiveCreate,
-} from "./motive/index.ts";
+import { motiveCreateCommand } from "./motive/index.ts";
 import {
   taskCreateCommand,
-  handleTaskCreate,
   taskListCommand,
-  handleTaskList,
   taskStatusCommand,
-  handleTaskStatus,
   taskCheckCommand,
-  handleTaskCheck,
   taskStartCommand,
-  handleTaskStart,
   taskCompleteCommand,
-  handleTaskComplete,
   taskMergeCommand,
-  handleTaskMerge,
 } from "./task/index.ts";
-import { mcpCommand, handleMcp } from "./mcp/index.ts";
+import { mcpCommand } from "./mcp/index.ts";
 
 export * from "./find/index.ts";
 export * from "./read/index.ts";

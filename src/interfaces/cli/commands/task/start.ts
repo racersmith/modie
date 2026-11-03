@@ -10,12 +10,9 @@ import {
   type StartTaskBranchResult,
 } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const taskStartSchema = z.object({
   id: z
@@ -99,17 +96,3 @@ export const taskStartCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie task start`.
- */
-export const handleTaskStart: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(taskStartCommand);
-
-/**
- * Prints usage instructions for `modie task start`.
- */
-export function printTaskStartHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(taskStartCommand));
-}
