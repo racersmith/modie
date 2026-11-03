@@ -20,6 +20,14 @@ export function toCamelCase(str: string): string {
 }
 
 /**
+ * Converts a string to PascalCase (e.g. "force-trunk" -> "ForceTrunk").
+ */
+export function toPascalCase(str: string): string {
+  const camel = toCamelCase(str);
+  return camel.charAt(0).toUpperCase() + camel.slice(1);
+}
+
+/**
  * Converts a string to kebab-case (e.g. "forceTrunk" -> "force-trunk").
  */
 export function toKebabCase(str: string): string {
@@ -124,27 +132,22 @@ function resolveFlagSchemaProperty(
   if (flagDef.property && shape[flagDef.property]) {
     return flagDef.property;
   }
-  const candidates = [
-    flagName,
-    toCamelCase(flagName),
-    toSnakeCase(flagName),
-    ...(flagDef.aliases ?? []).flatMap((a) => [
-      a,
-      toCamelCase(a),
-      toSnakeCase(a),
-    ]),
-  ];
-  for (const cand of candidates) {
-    if (shape[cand]) {
-      return cand;
+  const rawNames = [flagName, ...(flagDef.aliases ?? [])];
+  for (const name of rawNames) {
+    const candidates = [
+      name,
+      toCamelCase(name),
+      toSnakeCase(name),
+      `${name}s`,
+      `${toCamelCase(name)}s`,
+      `${toSnakeCase(name)}s`,
+    ];
+    for (const cand of candidates) {
+      if (shape[cand]) {
+        return cand;
+      }
     }
   }
-  if (flagName === "link" && shape.links) return "links";
-  if (flagName === "depend-on" && shape.depends_on) return "depends_on";
-  if (flagName === "criterion" && shape.criteria) return "criteria";
-  if (flagName === "acceptance-criteria" && shape.criteria) return "criteria";
-  if (flagName === "plan-rule" && shape.plan_rules) return "plan_rules";
-  if (flagName === "plan-adr" && shape.plan_adrs) return "plan_adrs";
   return flagDef.property;
 }
 
@@ -308,6 +311,155 @@ export function formatZodIssue(
   return issue.message;
 }
 
+function mapPositionals(
+  positionals: CliPositionalDefinition[],
+  positionalArgs: string[],
+  shape: Record<string, any>,
+  rawInput: Record<string, any>,
+): void {
+  for (let i = 0; i < positionals.length; i++) {
+    const posDef = positionals[i]!;
+    const targetProp =
+      posDef.property ?? resolvePositionalSchemaProperty(posDef, shape);
+    if (!targetProp || !shape[targetProp]) continue;
+
+    const val = posDef.variadic
+      ? positionalArgs.slice(i).join(" ").trim()
+      : positionalArgs[i]?.trim();
+
+    if (val !== undefined && val !== "") {
+      rawInput[targetProp] = val;
+    }
+  }
+}
+
+function getPropertyFlagCandidates(
+  propName: string,
+  flags: Record<string, CliFlagDefinition> | undefined,
+): string[] {
+  const candidates = new Set<string>([
+    propName,
+    toKebabCase(propName),
+    toSnakeCase(propName),
+    toCamelCase(propName),
+  ]);
+
+  if (flags) {
+    for (const [fname, fdef] of Object.entries(flags)) {
+      if (fdef.property === propName || candidates.has(fname)) {
+        candidates.add(fname);
+        for (const alias of fdef.aliases ?? []) {
+          candidates.add(alias);
+        }
+      }
+    }
+  }
+
+  return Array.from(candidates);
+}
+
+function extractArrayValue(
+  flags: Record<string, any>,
+  flagNames: string[],
+  allFlags: Record<string, CliFlagDefinition> | undefined,
+): string[] | undefined {
+  const aggregated: string[] = [];
+
+  for (const name of flagNames) {
+    const rawVal = flags[name];
+    if (rawVal === undefined || rawVal === null) continue;
+
+    const flagDef = allFlags?.[name];
+    const splitCommas = flagDef?.splitCommas ?? true;
+    const values = Array.isArray(rawVal) ? rawVal : [rawVal];
+
+    for (const item of values) {
+      if (typeof item !== "string") continue;
+      if (!splitCommas) {
+        aggregated.push(item.trim());
+      } else {
+        const parts = item
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        aggregated.push(...parts);
+      }
+    }
+  }
+
+  return aggregated.length > 0 ? aggregated : undefined;
+}
+
+function extractBooleanValue(
+  flags: Record<string, any>,
+  flagNames: string[],
+): boolean | undefined {
+  // Check boolean negation flags (--no-*)
+  for (const name of flagNames) {
+    const kebab = toKebabCase(name);
+    const negationKeys = [
+      `no-${kebab}`,
+      `no${toPascalCase(name)}`,
+      `no_${toSnakeCase(name)}`,
+      ...(kebab.startsWith("no-") ? [name, kebab] : []),
+    ];
+    for (const negKey of negationKeys) {
+      if (flags[negKey] === true) {
+        return false;
+      }
+    }
+  }
+
+  // Check positive flag presence
+  for (const name of flagNames) {
+    if (flags[name] !== undefined) {
+      return Boolean(flags[name]);
+    }
+  }
+
+  return undefined;
+}
+
+function extractScalarValue(
+  flags: Record<string, any>,
+  flagNames: string[],
+): any {
+  for (const name of flagNames) {
+    const val = flags[name];
+    if (val !== undefined && val !== "") {
+      return val;
+    }
+  }
+  return undefined;
+}
+
+function mapFlagsToInput(
+  definition: CliCommandDefinition<any, any, any>,
+  flags: Record<string, any>,
+  shape: Record<string, any>,
+  rawInput: Record<string, any>,
+): void {
+  for (const [propName, propSchema] of Object.entries(shape)) {
+    if (rawInput[propName] !== undefined) continue;
+
+    const flagNames = getPropertyFlagCandidates(propName, definition.flags);
+    const kind = getZodKind(propSchema);
+
+    let val: any;
+    if (kind === "array") {
+      val = extractArrayValue(flags, flagNames, definition.flags);
+    } else if (kind === "boolean") {
+      val = extractBooleanValue(flags, flagNames);
+    } else {
+      val = extractScalarValue(flags, flagNames);
+    }
+
+    if (val !== undefined) {
+      rawInput[propName] = val;
+    }
+  }
+}
+
 /**
  * Maps raw CLI execution context (positionals and flags) into a typed object conforming to a Zod schema.
  */
@@ -316,186 +468,18 @@ export function mapContextToSchemaInput(
   context: CliExecutionContext<any>,
 ): Record<string, any> {
   const schema = definition.schema;
-  if (!schema || !schema.shape) {
+  if (!schema?.shape) {
     return { ...context.flags };
   }
 
   const rawInput: Record<string, any> = {};
-  const shape = schema.shape;
-  const declaredPositionals = definition.positionals ?? [];
-
-  // 1. Map positional arguments
-  for (let i = 0; i < declaredPositionals.length; i++) {
-    const posDef = declaredPositionals[i]!;
-    let targetProp = posDef.property;
-
-    if (!targetProp) {
-      // Find matching schema property
-      if (shape[posDef.name]) {
-        targetProp = posDef.name;
-      } else {
-        const camel = toCamelCase(posDef.name);
-        const snake = toSnakeCase(posDef.name);
-        if (shape[camel]) {
-          targetProp = camel;
-        } else if (shape[snake]) {
-          targetProp = snake;
-        } else if (posDef.name === "id-or-path" && shape.id) {
-          targetProp = "id";
-        } else if (posDef.name === "tag-or-identifier" && shape.tag) {
-          targetProp = "tag";
-        }
-      }
-    }
-
-    if (targetProp && shape[targetProp]) {
-      const val = posDef.variadic
-        ? context.positionals.slice(i).join(" ").trim()
-        : context.positionals[i]?.trim();
-
-      if (val !== undefined && val !== "") {
-        rawInput[targetProp] = val;
-      }
-    }
-  }
-
-  // 2. Map flags into schema properties
-  for (const [propName, propSchema] of Object.entries(shape)) {
-    // If positional already supplied a value, skip flag mapping unless omitted
-    if (rawInput[propName] !== undefined) {
-      continue;
-    }
-
-    const kind = getZodKind(propSchema);
-    const candidates = [
-      propName,
-      toKebabCase(propName),
-      toSnakeCase(propName),
-      toCamelCase(propName),
-    ];
-
-    // Find any explicit flag definition targeting this property
-    let explicitFlagDef: CliFlagDefinition | undefined;
-    let explicitFlagName: string | undefined;
-
-    if (definition.flags) {
-      for (const [fname, fdef] of Object.entries(definition.flags)) {
-        if (fdef.property === propName || candidates.includes(fname)) {
-          if (!explicitFlagDef) {
-            explicitFlagDef = fdef;
-            explicitFlagName = fname;
-          }
-          candidates.push(fname);
-          if (fdef.aliases) {
-            candidates.push(...fdef.aliases);
-          }
-        }
-      }
-    }
-
-    // Special flag naming conventions
-    if (propName === "depends_on") {
-      candidates.push("depends-on", "depend-on");
-    } else if (propName === "links") {
-      candidates.push("link", "links");
-    } else if (propName === "criteria") {
-      candidates.push("criterion", "criteria", "acceptance-criteria");
-    } else if (propName === "plan_rules") {
-      candidates.push(
-        "plan-rule",
-        "plan-rules",
-        "planned-rule",
-        "planned-rules",
-      );
-    } else if (propName === "plan_adrs") {
-      candidates.push("plan-adr", "plan-adrs", "planned-adr", "planned-adrs");
-    } else if (propName === "context") {
-      candidates.push("assertion");
-    } else if (propName === "keepFile") {
-      candidates.push("keep-file", "no-delete");
-    } else if (propName === "keepBranch") {
-      candidates.push("keep-branch");
-    } else if (propName === "noCommit") {
-      candidates.push("no-commit");
-    }
-
-    const uniqueCandidates = Array.from(new Set(candidates));
-
-    if (kind === "array") {
-      // Aggregate values across all matching candidates
-      const aggregated: string[] = [];
-
-      for (const cand of uniqueCandidates) {
-        const val = context.flags[cand];
-        if (val === undefined || val === null) continue;
-
-        const candFlagDef = definition.flags?.[cand];
-        const isVerbatim =
-          candFlagDef?.splitCommas !== undefined
-            ? candFlagDef.splitCommas === false
-            : cand === "criterion" || cand === "link" || cand === "depend-on";
-
-        if (Array.isArray(val)) {
-          for (const item of val) {
-            if (typeof item === "string") {
-              if (isVerbatim) {
-                aggregated.push(item.trim());
-              } else {
-                aggregated.push(
-                  ...item
-                    .split(",")
-                    .map((s) => s.trim())
-                    .filter(Boolean),
-                );
-              }
-            }
-          }
-        } else if (typeof val === "string") {
-          if (isVerbatim) {
-            aggregated.push(val.trim());
-          } else {
-            aggregated.push(
-              ...val
-                .split(",")
-                .map((s) => s.trim())
-                .filter(Boolean),
-            );
-          }
-        }
-      }
-
-      if (aggregated.length > 0) {
-        rawInput[propName] = aggregated;
-      }
-    } else if (kind === "boolean") {
-      // Find first boolean candidate present
-      let boolVal: boolean | undefined;
-      for (const cand of candidates) {
-        if (context.flags[cand] !== undefined) {
-          boolVal = Boolean(context.flags[cand]);
-          break;
-        }
-      }
-
-      if (boolVal !== undefined) {
-        rawInput[propName] = boolVal;
-      }
-    } else {
-      // Strings, numbers, and other primitives
-      let matchedVal: any = undefined;
-      for (const cand of candidates) {
-        if (context.flags[cand] !== undefined) {
-          matchedVal = context.flags[cand];
-          break;
-        }
-      }
-
-      if (matchedVal !== undefined && matchedVal !== "") {
-        rawInput[propName] = matchedVal;
-      }
-    }
-  }
-
+  mapPositionals(
+    definition.positionals ?? [],
+    context.positionals,
+    schema.shape,
+    rawInput,
+  );
+  mapFlagsToInput(definition, context.flags, schema.shape, rawInput);
   return rawInput;
 }
 
@@ -537,6 +521,7 @@ export function defineCommand<
           throw new Error(errorMsg);
         }
 
+        (context as any).input = parsed.data;
         return definition.execute(parsed.data, context);
       }),
   };

@@ -27,13 +27,6 @@ export const taskListSchema = z.object({
 
 export type TaskListInput = z.infer<typeof taskListSchema>;
 
-export interface TaskListFlags {
-  ready?: boolean;
-  blocked?: boolean;
-  scope?: string;
-  json?: boolean;
-}
-
 /**
  * Formats task queue items into a human-readable aligned table.
  */
@@ -89,7 +82,7 @@ export function renderTaskQueueTable(tasks: TaskQueueItem[]): string {
  * Declarative definition for the `modie task list` command.
  */
 export const taskListCommand: CliCommandDefinition<
-  TaskListFlags,
+  Record<string, any>,
   TaskQueueItem[],
   typeof taskListSchema
 > = defineCommand({
@@ -125,9 +118,9 @@ export const taskListCommand: CliCommandDefinition<
       scope: input.scope,
     });
   },
-  render: (tasks, context) => {
-    const readyOnly = Boolean(context.flags.ready);
-    const blockedOnly = Boolean(context.flags.blocked);
+  render: (tasks, context, input) => {
+    const readyOnly = Boolean(input?.ready ?? context.flags.ready);
+    const blockedOnly = Boolean(input?.blocked ?? context.flags.blocked);
 
     if (tasks.length === 0) {
       if (readyOnly) {
@@ -156,9 +149,6 @@ export const taskListCommand: CliCommandDefinition<
 
     context.stderr(`Active Task Queue${filterSummary}:\n`);
     context.stderr(renderTaskQueueTable(tasks));
-  },
-  renderJson: (tasks, context) => {
-    context.stdout(JSON.stringify(tasks, null, 2));
   },
 });
 

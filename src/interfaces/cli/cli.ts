@@ -5,6 +5,7 @@
 
 import { allCliCommands } from "./commands/index.ts";
 import { createCommandHandler } from "./framework/execute.ts";
+import { formatCommandTable } from "./framework/help.ts";
 import type { CliCommandDefinition } from "./framework/types.ts";
 import type { CliIoOptions, CommandHandler } from "./types.ts";
 
@@ -109,14 +110,11 @@ export function printNamespaceHelp(
     rows.push({ invocation, description: desc });
   }
 
-  const padWidth = Math.max(29, ...rows.map((r) => r.invocation.length + 2));
   const lines: string[] = [
     `Usage: modie ${namespace} <subcommand> [options]`,
     "",
     "Subcommands:",
-    ...rows.map(
-      (r) => `  ${r.invocation.padEnd(padWidth)}${r.description}`,
-    ),
+    ...formatCommandTable(rows),
     "",
   ];
 
@@ -156,7 +154,6 @@ export function printGlobalHelp(
   rows.push({ invocation: "help", description: "Show help for a command" });
   rows.push({ invocation: "version", description: "Show Modie version" });
 
-  const padWidth = Math.max(29, ...rows.map((r) => r.invocation.length + 2));
   const lines: string[] = [
     "Modie: Architectural Governance Engine & Context Compiler",
     "",
@@ -164,9 +161,7 @@ export function printGlobalHelp(
     "  modie <command> [subcommand] [arguments] [options]",
     "",
     "Commands:",
-    ...rows.map(
-      (r) => `  ${r.invocation.padEnd(padWidth)}${r.description}`,
-    ),
+    ...formatCommandTable(rows),
     "",
     "Options:",
     "  -h, --help                   Show this help message",

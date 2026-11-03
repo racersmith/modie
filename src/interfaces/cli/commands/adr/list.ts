@@ -22,11 +22,6 @@ export const adrListSchema = z.object({
 
 export type AdrListInput = z.infer<typeof adrListSchema>;
 
-export interface AdrListFlags {
-  scope?: string;
-  json?: boolean;
-}
-
 /**
  * Formats listed ADR artifacts into a human-readable aligned table.
  */
@@ -60,7 +55,7 @@ export function renderAdrListTable(adrs: ListedArtifact[]): string {
  * Declarative definition for the `modie adr list` command.
  */
 export const adrListCommand: CliCommandDefinition<
-  AdrListFlags,
+  Record<string, any>,
   ListedArtifact[],
   typeof adrListSchema
 > = defineCommand({
@@ -90,8 +85,8 @@ export const adrListCommand: CliCommandDefinition<
       scope: input.scope,
     });
   },
-  render: (adrs, context) => {
-    const scope = context.flags.scope;
+  render: (adrs, context, input) => {
+    const scope = input?.scope ?? context.flags.scope;
     if (adrs.length === 0) {
       if (scope) {
         context.stderr(`No active ADRs found governing scope "${scope}".`);
@@ -106,9 +101,6 @@ export const adrListCommand: CliCommandDefinition<
       `Active ADRs (${adrs.length} ADR${adrs.length === 1 ? "" : "s"}${scopeSummary}):\n`,
     );
     context.stderr(renderAdrListTable(adrs));
-  },
-  renderJson: (adrs, context) => {
-    context.stdout(JSON.stringify(adrs, null, 2));
   },
 });
 

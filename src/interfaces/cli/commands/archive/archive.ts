@@ -29,16 +29,11 @@ export const archiveSchema = z.object({
 
 export type ArchiveInput = z.infer<typeof archiveSchema>;
 
-export interface ArchiveFlags {
-  force?: boolean;
-  json?: boolean;
-}
-
 /**
  * Declarative definition for the root `modie archive` command.
  */
 export const archiveCommand: CliCommandDefinition<
-  ArchiveFlags,
+  Record<string, any>,
   ArchiveArtifactResult,
   typeof archiveSchema
 > = defineCommand({

@@ -15,15 +15,11 @@ export const mcpSchema = z.object({});
 
 export type McpInput = z.infer<typeof mcpSchema>;
 
-export interface McpFlags {
-  help?: boolean;
-}
-
 /**
  * Declarative definition for the `modie mcp` command.
  */
 export const mcpCommand: CliCommandDefinition<
-  McpFlags,
+  Record<string, any>,
   void,
   typeof mcpSchema
 > = defineCommand({

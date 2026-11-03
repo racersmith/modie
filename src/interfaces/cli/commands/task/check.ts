@@ -35,18 +35,11 @@ export const taskCheckSchema = z.object({
 
 export type TaskCheckInput = z.infer<typeof taskCheckSchema>;
 
-export interface TaskCheckFlags {
-  item?: string;
-  index?: string;
-  uncheck?: boolean;
-  json?: boolean;
-}
-
 /**
  * Declarative definition for the `modie task check` command.
  */
 export const taskCheckCommand: CliCommandDefinition<
-  TaskCheckFlags,
+  Record<string, any>,
   CheckTaskItemResult,
   typeof taskCheckSchema
 > = defineCommand({

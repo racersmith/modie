@@ -90,7 +90,10 @@ export interface CliPositionalDefinition {
   property?: string;
 }
 
-export interface CliExecutionContext<TFlags = Record<string, any>> {
+export interface CliExecutionContext<
+  TFlags = Record<string, any>,
+  TInput = any,
+> {
   /**
    * Raw argv slice passed to the command.
    */
@@ -108,6 +111,11 @@ export interface CliExecutionContext<TFlags = Record<string, any>> {
     help?: boolean;
     json?: boolean;
   };
+
+  /**
+   * Validated schema input payload (when schema is present).
+   */
+  input?: TInput;
 
   /**
    * Machine-parsable stdout sink (RULE-27).
@@ -230,14 +238,24 @@ export interface CliCommandDefinition<
   /**
    * Presentation renderer for standard (non-JSON) mode.
    * Outputs machine data to stdout and diagnostics to stderr per RULE-27.
+   * Receives result, context, and validated schema input payload.
    */
-  render?: (result: TResult, context: CliExecutionContext<TFlags>) => void;
+  render?: (
+    result: TResult,
+    context: CliExecutionContext<TFlags, z.infer<TSchema>>,
+    input: z.infer<TSchema>,
+  ) => void;
 
   /**
    * Presentation renderer for `--json` mode.
    * If omitted, default behavior outputs `JSON.stringify(result, null, 2)` to stdout.
+   * Receives result, context, and validated schema input payload.
    */
-  renderJson?: (result: TResult, context: CliExecutionContext<TFlags>) => void;
+  renderJson?: (
+    result: TResult,
+    context: CliExecutionContext<TFlags, z.infer<TSchema>>,
+    input: z.infer<TSchema>,
+  ) => void;
 }
 
 export type DefineCommandOptions<

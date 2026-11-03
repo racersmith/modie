@@ -30,17 +30,11 @@ export const taskStartSchema = z.object({
 
 export type TaskStartInput = z.infer<typeof taskStartSchema>;
 
-export interface TaskStartFlags {
-  base?: string;
-  force?: boolean;
-  json?: boolean;
-}
-
 /**
  * Declarative definition for the `modie task start` command.
  */
 export const taskStartCommand: CliCommandDefinition<
-  TaskStartFlags,
+  Record<string, any>,
   StartTaskBranchResult,
   typeof taskStartSchema
 > = defineCommand({

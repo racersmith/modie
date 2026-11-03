@@ -35,17 +35,11 @@ export const taskStatusSchema = z.object({
 
 export type TaskStatusInput = z.infer<typeof taskStatusSchema>;
 
-export interface TaskStatusFlags {
-  current?: boolean;
-  history?: boolean;
-  json?: boolean;
-}
-
 /**
  * Declarative definition for the `modie task status` command.
  */
 export const taskStatusCommand: CliCommandDefinition<
-  TaskStatusFlags,
+  Record<string, any>,
   TaskStatusDetails | TaskQueueItem[],
   typeof taskStatusSchema
 > = defineCommand({
@@ -107,11 +101,11 @@ export const taskStatusCommand: CliCommandDefinition<
     // 5. Fallback to active task queue if not on a task branch
     return queryTaskQueue({ cwd: context.cwd });
   },
-  render: (status, context) => {
+  render: (status, context, input) => {
     if (!status || typeof status === "number") return;
     if (Array.isArray(status)) {
       if (status.length === 0) {
-        if (context.flags.history) {
+        if (input?.history ?? context.flags.history) {
           context.stderr(
             "No completed tasks or task branches found in Git history.",
           );

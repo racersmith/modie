@@ -78,37 +78,9 @@ export const taskCreateSchema = z.object({
     .boolean()
     .default(true)
     .describe("Automatically include a 'User Review' acceptance criterion (default: true)"),
-  noReview: z
-    .boolean()
-    .default(false)
-    .describe("Disable the automatic 'User Review' acceptance criterion"),
 });
 
 export type TaskCreateInput = z.infer<typeof taskCreateSchema>;
-
-export interface TaskCreateFlags {
-  scope?: string;
-  context?: string;
-  "depends-on"?: string[];
-  "depend-on"?: string[];
-  link?: string[];
-  links?: string[];
-  criterion?: string[];
-  criteria?: string[];
-  "acceptance-criteria"?: string[];
-  "plan-rule"?: string[];
-  "planned-rule"?: string[];
-  "plan-rules"?: string[];
-  "plan-adr"?: string[];
-  "planned-adr"?: string[];
-  "plan-adrs"?: string[];
-  prefix?: string;
-  branch?: string;
-  "force-trunk"?: boolean;
-  "allow-broad-scope"?: boolean;
-  review?: boolean;
-  "no-review"?: boolean;
-}
 
 export interface TaskCreateResultPayload {
   id: string;
@@ -128,7 +100,7 @@ export interface TaskCreateResultPayload {
  * Declarative definition for the `modie task create` command.
  */
 export const taskCreateCommand: CliCommandDefinition<
-  TaskCreateFlags,
+  Record<string, any>,
   TaskCreateResultPayload,
   typeof taskCreateSchema
 > = defineCommand({
@@ -168,15 +140,18 @@ export const taskCreateCommand: CliCommandDefinition<
       placeholder: "<text>",
     },
     "depends-on": {
+      property: "depends_on",
       short: "d",
       placeholder: "<ids>",
       aliases: ["depend-on"],
     },
     "depend-on": {
+      property: "depends_on",
       description: "Prerequisite TASK ID (verbatim)",
       splitCommas: false,
     },
     link: {
+      property: "links",
       short: "l",
       placeholder: "<targets>",
       description:
@@ -184,25 +159,30 @@ export const taskCreateCommand: CliCommandDefinition<
       splitCommas: false,
     },
     links: {
+      property: "links",
       placeholder: "<targets>",
       description: "ADR and RULE link targets (comma-separated list)",
       splitCommas: true,
     },
     criterion: {
+      property: "criteria",
       short: "a",
       placeholder: "<items>",
       splitCommas: false,
     },
     criteria: {
+      property: "criteria",
       placeholder: "<items>",
       description: "Acceptance criteria items (comma-separated list)",
       splitCommas: true,
     },
     "acceptance-criteria": {
+      property: "criteria",
       description: "Alias for --criteria",
       splitCommas: true,
     },
     "plan-rule": {
+      property: "plan_rules",
       aliases: ["planned-rule"],
       splitCommas: false,
       placeholder: "<rule-title>",
@@ -210,17 +190,20 @@ export const taskCreateCommand: CliCommandDefinition<
         "Planned RULE artifact to author before completing this task",
     },
     "plan-rules": {
+      property: "plan_rules",
       splitCommas: true,
       placeholder: "<rule-titles>",
       description: "Planned RULE artifacts (comma-separated list)",
     },
     "plan-adr": {
+      property: "plan_adrs",
       aliases: ["planned-adr"],
       splitCommas: false,
       placeholder: "<adr-title>",
       description: "Planned ADR artifact to author before completing this task",
     },
     "plan-adrs": {
+      property: "plan_adrs",
       splitCommas: true,
       placeholder: "<adr-titles>",
       description: "Planned ADR artifacts (comma-separated list)",
@@ -255,7 +238,7 @@ export const taskCreateCommand: CliCommandDefinition<
       branch: input.branch,
       forceTrunk: Boolean(input.forceTrunk),
       allowBroadScope: Boolean(input.allowBroadScope),
-      review: input.noReview ? false : (input.review ?? true),
+      review: input.review,
       cwd: context.cwd,
     };
 

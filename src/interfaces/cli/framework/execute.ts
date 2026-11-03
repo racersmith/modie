@@ -52,6 +52,18 @@ function buildParseOptions(
         optionsMap[alias] = aliasEntry;
       }
     }
+
+    // Auto-register --no-* negation flags for boolean options
+    if (flagType === "boolean") {
+      if (!flagName.startsWith("no-")) {
+        optionsMap[`no-${flagName}`] = { type: "boolean" };
+      }
+      for (const alias of flagDef.aliases ?? []) {
+        if (!alias.startsWith("no-")) {
+          optionsMap[`no-${alias}`] = { type: "boolean" };
+        }
+      }
+    }
   }
 
   // Always register standard help and json flags if not already defined
@@ -79,13 +91,26 @@ function normalizeFlags(
       normalized[flagName] = flagDef.default;
     }
 
-    if (flagDef.aliases && flagDef.aliases.length > 0) {
-      if (flagDef.type === "boolean") {
+    if (flagDef.type === "boolean") {
+      const negationKey = `no-${flagName}`;
+      const hasAliasNegation = flagDef.aliases?.some(
+        (a) => normalized[`no-${a}`] === true,
+      );
+      if (normalized[negationKey] === true || hasAliasNegation) {
+        normalized[flagName] = false;
+      } else if (flagDef.aliases && flagDef.aliases.length > 0) {
         const isTrue = Boolean(
           normalized[flagName] || flagDef.aliases.some((a) => normalized[a]),
         );
-        normalized[flagName] = isTrue;
-      } else if (normalized[flagName] === undefined) {
+        if (
+          normalized[flagName] !== undefined ||
+          flagDef.aliases.some((a) => normalized[a] !== undefined)
+        ) {
+          normalized[flagName] = isTrue;
+        }
+      }
+    } else if (flagDef.aliases && flagDef.aliases.length > 0) {
+      if (normalized[flagName] === undefined) {
         for (const alias of flagDef.aliases) {
           if (normalized[alias] !== undefined) {
             normalized[flagName] = normalized[alias];
@@ -200,6 +225,7 @@ export async function executeCliCommand<
 
   try {
     const result = await definition.run(context);
+    const input = (context as any).input;
 
     if (typeof result === "number") {
       return result;
@@ -207,13 +233,13 @@ export async function executeCliCommand<
 
     if (normalizedFlags.json) {
       if (definition.renderJson) {
-        definition.renderJson(result as TResult, context);
+        definition.renderJson(result as TResult, context, input);
       } else if (result !== undefined) {
         stdout(JSON.stringify(result, null, 2));
       }
     } else {
       if (definition.render) {
-        definition.render(result as TResult, context);
+        definition.render(result as TResult, context, input);
       }
     }
 

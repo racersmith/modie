@@ -41,17 +41,11 @@ export const linkSchema = z.object({
 
 export type LinkInput = z.infer<typeof linkSchema>;
 
-export interface LinkFlags {
-  type?: ArtifactLinkRelationship;
-  relationship?: ArtifactLinkRelationship;
-  json?: boolean;
-}
-
 /**
  * Declarative definition for the root `modie link` command (`link_artifact` MCP tool).
  */
 export const linkCommand: CliCommandDefinition<
-  LinkFlags,
+  Record<string, any>,
   LinkMutationResult,
   typeof linkSchema
 > = defineCommand({

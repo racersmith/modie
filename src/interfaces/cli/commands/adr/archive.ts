@@ -19,16 +19,11 @@ export const adrArchiveSchema = archiveSchema;
 
 export type AdrArchiveInput = z.infer<typeof adrArchiveSchema>;
 
-export interface AdrArchiveFlags {
-  force?: boolean;
-  json?: boolean;
-}
-
 /**
  * Declarative definition for the `modie adr archive` command alias.
  */
 export const adrArchiveCommand: CliCommandDefinition<
-  AdrArchiveFlags,
+  Record<string, any>,
   ArchiveArtifactResult,
   typeof adrArchiveSchema
 > = defineCommand({

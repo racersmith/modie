@@ -54,17 +54,6 @@ export const adrCreateSchema = z.object({
 
 export type AdrCreateInput = z.infer<typeof adrCreateSchema>;
 
-export interface AdrCreateFlags {
-  scope?: string;
-  summary?: string;
-  context?: string;
-  alternatives?: string;
-  decision?: string;
-  link?: string[];
-  links?: string[];
-  supersedes?: string[];
-}
-
 export interface AdrCreateResultPayload {
   id: string;
   tag: string;
@@ -85,7 +74,7 @@ export interface AdrCreateResultPayload {
  * Declarative definition for the `modie adr create` command.
  */
 export const adrCreateCommand: CliCommandDefinition<
-  AdrCreateFlags,
+  Record<string, any>,
   AdrCreateResultPayload,
   typeof adrCreateSchema
 > = defineCommand({
