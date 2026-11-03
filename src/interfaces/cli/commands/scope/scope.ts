@@ -9,13 +9,10 @@ import {
   type ScopeResolutionResult,
 } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
   type CliExecutionContext,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const scopeSchema = z.object({
   target: z
@@ -120,18 +117,4 @@ export const scopeCommand: CliCommandDefinition<
   renderJson: renderScopeDetailsJson,
 });
 
-/**
- * CLI command handler for `modie scope`.
- */
-export const handleScope: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(scopeCommand);
-
-/**
- * Prints usage instructions for `modie scope`.
- */
-export function printScopeHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(scopeCommand));
-}
 

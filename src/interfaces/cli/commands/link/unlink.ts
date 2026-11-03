@@ -11,12 +11,9 @@ import {
   type LinkMutationResult,
 } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const unlinkSchema = z.object({
   source: z
@@ -127,17 +124,3 @@ export const unlinkCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie unlink`.
- */
-export const handleUnlink: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(unlinkCommand);
-
-/**
- * Prints usage instructions for `modie unlink`.
- */
-export function printUnlinkHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(unlinkCommand));
-}

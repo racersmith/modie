@@ -7,12 +7,9 @@
 import { z } from "zod";
 import { listRules, type ListedArtifact } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const ruleListSchema = z.object({
   scope: z
@@ -115,17 +112,3 @@ export const ruleListCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie rule list`.
- */
-export const handleRuleList: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(ruleListCommand);
-
-/**
- * Prints usage instructions for `modie rule list`.
- */
-export function printRuleListHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(ruleListCommand));
-}

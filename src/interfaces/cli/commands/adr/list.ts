@@ -7,12 +7,9 @@
 import { z } from "zod";
 import { listAdrs, type ListedArtifact } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const adrListSchema = z.object({
   scope: z
@@ -115,17 +112,3 @@ export const adrListCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie adr list`.
- */
-export const handleAdrList: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(adrListCommand);
-
-/**
- * Prints usage instructions for `modie adr list`.
- */
-export function printAdrListHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(adrListCommand));
-}

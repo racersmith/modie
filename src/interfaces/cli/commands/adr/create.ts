@@ -6,12 +6,9 @@
 import { z } from "zod";
 import { createAdr, type CreateAdrOptions } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const adrCreateSchema = z.object({
   title: z
@@ -195,17 +192,3 @@ export const adrCreateCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie adr create`.
- */
-export const handleAdrCreate: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(adrCreateCommand);
-
-/**
- * Prints usage instructions for `modie adr create`.
- */
-export function printAdrCreateHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(adrCreateCommand));
-}

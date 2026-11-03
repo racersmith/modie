@@ -10,12 +10,9 @@ import {
   type ArchiveArtifactResult,
 } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 import { archiveCommand, archiveSchema } from "../archive/archive.ts";
 
 export const ruleArchiveSchema = archiveSchema;
@@ -67,17 +64,3 @@ export const ruleArchiveCommand: CliCommandDefinition<
   renderJson: archiveCommand.renderJson,
 });
 
-/**
- * CLI command handler for `modie rule archive`.
- */
-export const handleRuleArchive: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(ruleArchiveCommand);
-
-/**
- * Prints usage instructions for `modie rule archive`.
- */
-export function printRuleArchiveHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(ruleArchiveCommand));
-}

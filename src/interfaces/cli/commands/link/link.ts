@@ -12,12 +12,9 @@ import {
   type LinkMutationResult,
 } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const linkSchema = z.object({
   source: z
@@ -128,17 +125,3 @@ export const linkCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie link`.
- */
-export const handleLink: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(linkCommand);
-
-/**
- * Prints usage instructions for `modie link`.
- */
-export function printLinkHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(linkCommand));
-}

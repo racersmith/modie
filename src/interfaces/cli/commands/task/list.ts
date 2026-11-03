@@ -6,12 +6,9 @@
 import { z } from "zod";
 import { queryTaskQueue, type TaskQueueItem } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const taskListSchema = z.object({
   ready: z
@@ -165,17 +162,3 @@ export const taskListCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie task list`.
- */
-export const handleTaskList: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(taskListCommand);
-
-/**
- * Prints usage instructions for `modie task list`.
- */
-export function printTaskListHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(taskListCommand));
-}

@@ -4,9 +4,14 @@
  */
 
 import { readFile, stat } from "node:fs/promises";
-import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { dirname, isAbsolute, resolve } from "node:path";
 import { resolveGoverningScope } from "../common/directories.ts";
 import { parseArtifactFilename } from "../common/filename.ts";
+import {
+  parseTaskBranch,
+  slugToTitle,
+  toPosixRelative,
+} from "../common/index.ts";
 import type { IndexableSubtype } from "../common/types.ts";
 import {
   buildArtifactParseContext,
@@ -93,7 +98,7 @@ export async function resolveArtifactByTag(
     try {
       const fileStat = await stat(candidatePath);
       if (fileStat.isFile()) {
-        const rel = relative(cwd, candidatePath).replace(/\\/g, "/");
+        const rel = toPosixRelative(cwd, candidatePath);
         const scope = computeArtifactScope(
           candidatePath,
           parsedFromPath.subtype,
@@ -105,7 +110,7 @@ export async function resolveArtifactByTag(
             const rawContent = await readFile(candidatePath, "utf8");
             summary = extractAdrSummary(rawContent, parsedFromPath.slug);
           } catch {
-            summary = parsedFromPath.slug.replace(/-/g, " ");
+            summary = slugToTitle(parsedFromPath.slug);
           }
         }
         return {
@@ -165,7 +170,7 @@ export async function resolveArtifactByTag(
         const rawContent = await readFile(selected.filepath, "utf8");
         summary = extractAdrSummary(rawContent, selected.slug);
       } catch {
-        summary = selected.slug.replace(/-/g, " ");
+        summary = slugToTitle(selected.slug);
       }
     }
     return {
@@ -175,7 +180,7 @@ export async function resolveArtifactByTag(
       slug: selected.slug,
       filename: selected.filename,
       filepath: selected.filepath,
-      relativePath: relative(cwd, selected.filepath).replace(/\\/g, "/"),
+      relativePath: toPosixRelative(cwd, selected.filepath),
       scope,
       isArchived: selected.isArchived,
       ...(summary ? { summary } : {}),
@@ -200,12 +205,10 @@ export async function resolveArtifactByTag(
     if (!targetSubtype || targetSubtype === "TASK") {
       const branches = await listGitBranches(cwd, options.vcs);
       for (const b of branches) {
-        const branchMatch = b.match(
-          /^task\/(?:TASK-)?([A-Za-z0-9]+(?:-[0-9]+)*)-(.+)$/i,
-        );
-        if (branchMatch && branchMatch[1] && branchMatch[2]) {
-          const bId = branchMatch[1];
-          const bSlug = branchMatch[2];
+        const branchMatch = parseTaskBranch(b);
+        if (branchMatch && branchMatch.slug) {
+          const bId = branchMatch.taskId;
+          const bSlug = branchMatch.slug;
           const bTag = `TASK-${bId}`;
           if (
             !historicalCandidates.some(
@@ -247,7 +250,7 @@ export async function resolveArtifactByTag(
         selectedHist.filename || `${slug}.${selectedHist.tag}.md`;
       const relPath = selectedHist.filepath
         ? isAbsolute(selectedHist.filepath)
-          ? relative(cwd, selectedHist.filepath)
+          ? toPosixRelative(cwd, selectedHist.filepath)
           : selectedHist.filepath
         : `.modie/${selectedHist.subtype.toLowerCase()}s/${filename}`;
       const absPath = isAbsolute(selectedHist.filepath)

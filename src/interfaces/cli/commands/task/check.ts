@@ -11,12 +11,9 @@ import {
   type CheckTaskItemResult,
 } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const taskCheckSchema = z.object({
   id: z
@@ -132,17 +129,3 @@ export const taskCheckCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie task check`.
- */
-export const handleTaskCheck: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(taskCheckCommand);
-
-/**
- * Prints usage instructions for `modie task check`.
- */
-export function printTaskCheckHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(taskCheckCommand));
-}

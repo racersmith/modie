@@ -13,12 +13,9 @@ import {
   type TaskStatusDetails,
 } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 import { renderTaskQueueTable } from "./list.ts";
 
 export const taskStatusSchema = z.object({
@@ -167,17 +164,3 @@ export const taskStatusCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie task status`.
- */
-export const handleTaskStatus: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(taskStatusCommand);
-
-/**
- * Prints usage instructions for `modie task status`.
- */
-export function printTaskStatusHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(taskStatusCommand));
-}

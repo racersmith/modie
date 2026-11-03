@@ -3,6 +3,8 @@
  * Complies with ADR-4, RULE-1, RULE-25, and RULE-26.
  */
 
+import { slugToTitle } from "../common/index.ts";
+
 export interface ParsedFrontmatterFields {
   links: string[];
   depends_on?: string[];
@@ -324,7 +326,7 @@ export function extractAdrSummary(
     }
   }
 
-  return fallbackSlug ? fallbackSlug.replace(/-/g, " ").trim() : "";
+  return slugToTitle(fallbackSlug);
 }
 
 /**

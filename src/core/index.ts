@@ -15,7 +15,7 @@ export {
   registerArtifactSubtype,
   resetRegisteredArtifactSubtypes,
 } from "./common/filename.ts";
-export { generateSlug, isValidSlug } from "./common/slug.ts";
+export { generateSlug, isValidSlug, slugToTitle } from "./common/slug.ts";
 export {
   findDeepestCommonAncestor,
   getSubtypeContainerName,
@@ -23,6 +23,19 @@ export {
   resolveGoverningScope,
   type GoverningScope,
 } from "./common/directories.ts";
+export { toPosixRelative, escapeRegex } from "./common/paths.ts";
+export {
+  formatTaskBranch,
+  formatTaskBranchName,
+  normalizeTaskId,
+  parseSubtaskId,
+  parseTaskBranch,
+  parseTaskIdFromBranch,
+  taskBranchGlob,
+  taskKey,
+} from "./common/task-branch.ts";
+export { MODIE_VERSION } from "./common/version.ts";
+
 
 // Declarative artifact pipeline module
 export * as PipelinePrimitive from "./pipeline/index.ts";
@@ -55,7 +68,6 @@ export {
   detectZombieTasks,
   executeTwoPhaseTaskCommit,
   getTask,
-  normalizeTaskId,
   resolveTaskFile,
 } from "./task/completion.ts";
 export type {
@@ -68,7 +80,6 @@ export type {
 export {
   compareTaskIds,
   getTaskStatus,
-  parseTaskIdFromBranch,
   queryTaskHistory,
   queryTaskQueue,
   resolveCurrentTask,
@@ -81,11 +92,8 @@ export type {
   TaskStatusQueryOptions,
 } from "./task/query.ts";
 export {
-  branchExists,
   computeTaskBranchTopology,
-  formatTaskBranchName,
   mergeTaskBranch,
-  parseSubtaskId,
   startTaskBranch,
 } from "./task/branching.ts";
 export type {

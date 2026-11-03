@@ -6,7 +6,13 @@
 
 import { readFile } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
-import { parseTaskIdFromBranch } from "../common/index.ts";
+import {
+  normalizeTaskId,
+  parseTaskBranch,
+  parseTaskIdFromBranch,
+  slugToTitle,
+  taskKey,
+} from "../common/index.ts";
 import { scanActiveTasks } from "../resolver/active-scanner.ts";
 import {
   detectGitBranch,
@@ -17,11 +23,9 @@ import {
 import type { DiscoveredTask } from "../resolver/types.ts";
 import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
-import { normalizeTaskId, resolveTaskFile } from "./completion.ts";
+import { resolveTaskFile } from "./completion.ts";
 import { parseTaskMarkdown } from "./parser.ts";
 import type { TaskAcceptanceCriteriaItem } from "./types.ts";
-
-export { parseTaskIdFromBranch };
 
 export type TaskReadiness = "READY" | "BLOCKED" | "COMPLETED";
 
@@ -188,7 +192,7 @@ export async function queryTaskQueue(
   // 3. Build active task ID lookup map for DAG evaluation
   const activeTaskMap = new Map<string, string>();
   for (const item of rawTasks) {
-    const normId = normalizeTaskId(item.discovered.id).toLowerCase();
+    const normId = taskKey(item.discovered.id);
     const canonicalId = `TASK-${item.discovered.id}`;
     activeTaskMap.set(normId, canonicalId);
     activeTaskMap.set(canonicalId.toLowerCase(), canonicalId);
@@ -199,9 +203,7 @@ export async function queryTaskQueue(
   const currentTaskId =
     options.currentTaskId ??
     (currentBranch ? parseTaskIdFromBranch(currentBranch) : null);
-  const normCurrentId = currentTaskId
-    ? normalizeTaskId(currentTaskId).toLowerCase()
-    : null;
+  const normCurrentId = currentTaskId ? taskKey(currentTaskId) : null;
 
   // 5. Compute DAG dependency readiness and checklist progress for each task
   const items: TaskQueueItem[] = [];
@@ -211,7 +213,7 @@ export async function queryTaskQueue(
     const blockedBy: string[] = [];
 
     for (const dep of dependsOn) {
-      const normDep = normalizeTaskId(dep).toLowerCase();
+      const normDep = taskKey(dep);
       const blockingCanonical =
         activeTaskMap.get(normDep) ?? activeTaskMap.get(`task-${normDep}`);
 
@@ -232,9 +234,9 @@ export async function queryTaskQueue(
       criteriaTotal > 0 && criteriaCompleted === criteriaTotal;
 
     const fullTaskId = `TASK-${disc.id}`;
-    const title = disc.slug.replace(/-/g, " ");
+    const title = slugToTitle(disc.slug);
     const isCurrent = Boolean(
-      normCurrentId && normalizeTaskId(disc.id).toLowerCase() === normCurrentId,
+      normCurrentId && taskKey(disc.id) === normCurrentId,
     );
 
     items.push({
@@ -312,15 +314,13 @@ export async function queryTaskHistory(
   ]);
 
   const activeDiskIds = new Set(
-    activeOnDisk.map((t) => normalizeTaskId(t.id).toLowerCase()),
+    activeOnDisk.map((t) => taskKey(t.id)),
   );
 
   const currentTaskId = currentBranch
     ? parseTaskIdFromBranch(currentBranch)
     : null;
-  const normCurrentId = currentTaskId
-    ? normalizeTaskId(currentTaskId).toLowerCase()
-    : null;
+  const normCurrentId = currentTaskId ? taskKey(currentTaskId) : null;
 
   // Map normalized task ID -> branch metadata
   const branchMap = new Map<
@@ -328,11 +328,13 @@ export async function queryTaskHistory(
     { branch: string; id: string; slug: string }
   >();
   for (const b of localBranches) {
-    const match = b.match(/^task\/(?:TASK-)?([A-Za-z0-9]+(?:-[0-9]+)*)-(.+)$/i);
-    if (match && match[1] && match[2]) {
-      const id = match[1];
-      const slug = match[2];
-      branchMap.set(normalizeTaskId(id).toLowerCase(), { branch: b, id, slug });
+    const parsed = parseTaskBranch(b);
+    if (parsed && parsed.slug) {
+      branchMap.set(taskKey(parsed.taskId), {
+        branch: b,
+        id: parsed.taskId,
+        slug: parsed.slug,
+      });
     }
   }
 
@@ -348,7 +350,7 @@ export async function queryTaskHistory(
 
   // 1. Add tasks active on other branches
   for (const art of branchArtifacts) {
-    const normId = normalizeTaskId(art.id).toLowerCase();
+    const normId = taskKey(art.id);
     if (activeDiskIds.has(normId)) continue;
     const branchInfo = branchMap.get(normId);
     const relPath = isAbsolute(art.filepath)
@@ -365,7 +367,7 @@ export async function queryTaskHistory(
 
   // 2. Add completed/deleted tasks from Git history
   for (const del of deletedArtifacts) {
-    const normId = normalizeTaskId(del.id).toLowerCase();
+    const normId = taskKey(del.id);
     if (activeDiskIds.has(normId)) continue;
     const existing = entriesById.get(normId);
     const branchInfo = branchMap.get(normId);
@@ -449,7 +451,7 @@ export async function queryTaskHistory(
       : criteriaTotal > 0 && criteriaCompleted === criteriaTotal;
 
     const fullTaskId = `TASK-${entry.id}`;
-    const title = entry.slug.replace(/-/g, " ");
+    const title = slugToTitle(entry.slug);
     const isCurrent = Boolean(normCurrentId && normId === normCurrentId);
 
     items.push({
@@ -557,13 +559,13 @@ export async function getTaskStatus(
     }
 
     const trimmed = taskIdentifier.trim();
-    const normalizedInput = normalizeTaskId(trimmed).toLowerCase();
+    const normalizedInput = taskKey(trimmed);
     const historyItems = await queryTaskHistory({ cwd, vcs: options.vcs });
 
     const matched =
       historyItems.find(
         (t) =>
-          normalizeTaskId(t.id).toLowerCase() === normalizedInput ||
+          taskKey(t.id) === normalizedInput ||
           t.fullTaskId.toLowerCase() === trimmed.toLowerCase() ||
           t.slug.toLowerCase() === trimmed.toLowerCase(),
       ) ??

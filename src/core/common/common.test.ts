@@ -9,16 +9,27 @@ import {
   type FixtureWorkspace,
 } from "../testing/index.ts";
 import {
+  escapeRegex,
   findDeepestCommonAncestor,
   formatArtifactFilename,
+  formatTaskBranch,
   generateSlug,
   getSubtypeContainerName,
   isArtifactFilename,
   isValidArtifactId,
   isValidSlug,
+  MODIE_VERSION,
+  normalizeTaskId,
   parseArtifactFilename,
+  parseSubtaskId,
+  parseTaskBranch,
+  parseTaskIdFromBranch,
   resolveArtifactDirectories,
   resolveGoverningScope,
+  slugToTitle,
+  taskBranchGlob,
+  taskKey,
+  toPosixRelative,
 } from "./index.ts";
 
 describe("Common Primitives - Slug Generation & Validation (RULE-1, RULE-35)", () => {
@@ -369,3 +380,131 @@ describe("Common Primitives - Centralized Governing Scope Resolution (RULE-8, RU
     expect(cliDirScope.scopeDir).toBe(workspace.resolve("src/interfaces/cli"));
   });
 });
+
+describe("Common Primitives - Path Normalization & Regex Escaping", () => {
+  it("should normalize relative paths to POSIX format with forward slashes", () => {
+    expect(toPosixRelative("/a/b", "/a/b")).toBe(".");
+    expect(toPosixRelative("/a/b", "/a/b/c/d.ts")).toBe("c/d.ts");
+    expect(toPosixRelative("/a/b/c", "/a/b/d")).toBe("../d");
+  });
+
+  it("should escape regex special characters accurately", () => {
+    expect(escapeRegex("TASK-12.3[beta]+foo")).toBe("TASK-12\\.3\\[beta\\]\\+foo");
+    expect(escapeRegex("simple")).toBe("simple");
+    expect(escapeRegex("^$*+?.()|{}[]\\")).toBe(
+      "\\^\\$\\*\\+\\?\\.\\(\\)\\|\\{\\}\\[\\]\\\\",
+    );
+  });
+});
+
+describe("Common Primitives - String Idioms: slugToTitle, normalizeTaskId, taskKey", () => {
+  it("should convert kebab-case slugs into human titles", () => {
+    expect(slugToTitle("create-task-cli")).toBe("create task cli");
+    expect(slugToTitle("single")).toBe("single");
+    expect(slugToTitle("")).toBe("");
+    expect(slugToTitle(null)).toBe("");
+    expect(slugToTitle(undefined)).toBe("");
+  });
+
+  it("should normalize task IDs and strip prefixes consistently", () => {
+    expect(normalizeTaskId("TASK-42")).toBe("42");
+    expect(normalizeTaskId("task-2-1")).toBe("2-1");
+    expect(normalizeTaskId("TASK-J101")).toBe("J101");
+    expect(normalizeTaskId("42")).toBe("42");
+    expect(normalizeTaskId("7-1")).toBe("7-1");
+  });
+
+  it("should produce canonical lowercase task lookup keys", () => {
+    expect(taskKey("TASK-42")).toBe("42");
+    expect(taskKey("TASK-J101")).toBe("j101");
+    expect(taskKey("task-2-1")).toBe("2-1");
+    expect(taskKey("MY-TASK-SLUG")).toBe("my-task-slug");
+  });
+});
+
+describe("Common Primitives - Task Branch Grammar & Hierarchy (RULE-28, ADR-9)", () => {
+  // @verifies RULE-28, ADR-9
+  it("[RULE-28][ADR-9] should parse task branches into taskId and optional slug", () => {
+    expect(
+      parseTaskBranch("task/2-task-id-allocation-and-rule-alignment"),
+    ).toEqual({
+      taskId: "2",
+      slug: "task-id-allocation-and-rule-alignment",
+      parentId: "2",
+    });
+
+    expect(parseTaskBranch("task/2-1-subtask-test")).toEqual({
+      taskId: "2-1",
+      slug: "subtask-test",
+      parentId: "2-1",
+    });
+
+    expect(parseTaskBranch("task/J101-prefixed-task")).toEqual({
+      taskId: "J101",
+      slug: "prefixed-task",
+      parentId: "J101",
+    });
+
+    expect(parseTaskBranch("task/TASK-30-resolve-current-task")).toEqual({
+      taskId: "30",
+      slug: "resolve-current-task",
+      parentId: "30",
+    });
+
+    expect(parseTaskBranch("task/42")).toEqual({
+      taskId: "42",
+      slug: undefined,
+      parentId: "42",
+    });
+
+    expect(parseTaskBranch("dev")).toBeNull();
+    expect(parseTaskBranch("main")).toBeNull();
+    expect(parseTaskBranch("feature/user-auth")).toBeNull();
+    expect(parseTaskBranch("")).toBeNull();
+    expect(parseTaskBranch(null)).toBeNull();
+    expect(parseTaskBranch(undefined)).toBeNull();
+  });
+
+  // @verifies RULE-28
+  it("[RULE-28] should parse taskId directly from branch names", () => {
+    expect(parseTaskIdFromBranch("task/2-setup")).toBe("2");
+    expect(parseTaskIdFromBranch("task/TASK-2-setup")).toBe("2");
+    expect(parseTaskIdFromBranch("task/106-1-sub")).toBe("106-1");
+    expect(parseTaskIdFromBranch("task/J101-auth")).toBe("J101");
+    expect(parseTaskIdFromBranch("main")).toBeNull();
+  });
+
+  // @verifies RULE-28, ADR-9
+  it("[RULE-28][ADR-9] should parse subtask ID tokens into parentId and sequence", () => {
+    expect(parseSubtaskId("2-1")).toEqual({ parentId: "2", sequence: "1" });
+    expect(parseSubtaskId("TASK-106-2")).toEqual({
+      parentId: "106",
+      sequence: "2",
+    });
+    expect(parseSubtaskId("J101-3")).toEqual({
+      parentId: "J101",
+      sequence: "3",
+    });
+    expect(parseSubtaskId("42")).toBeNull();
+    expect(parseSubtaskId("TASK-42")).toBeNull();
+  });
+
+  // @verifies RULE-28
+  it("[RULE-28] should format task branch names and globs canonically", () => {
+    expect(formatTaskBranch("2", "setup-task")).toBe("task/2-setup-task");
+    expect(formatTaskBranch("TASK-2", "setup-task")).toBe("task/2-setup-task");
+    expect(formatTaskBranch("2")).toBe("task/2");
+    expect(taskBranchGlob("2")).toBe("task/2-*");
+    expect(taskBranchGlob("TASK-2")).toBe("task/2-*");
+    expect(taskBranchGlob()).toBe("task/*");
+  });
+});
+
+describe("Common Primitives - Dynamic Version Resolution", () => {
+  it("should export non-empty dynamic package version", () => {
+    expect(typeof MODIE_VERSION).toBe("string");
+    expect(MODIE_VERSION.length).toBeGreaterThan(0);
+    expect(MODIE_VERSION).toBe("0.0.1");
+  });
+});
+

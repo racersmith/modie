@@ -14,6 +14,7 @@ import {
 import {
   formatCompiledContextMarkdown,
   getArtifactDetails,
+  MODIE_VERSION,
   queryTaskQueue,
   scanActiveArtifacts,
 } from "../../core/index.ts";
@@ -92,7 +93,7 @@ export function createModieMcpServer(
   const server = new McpServer(
     {
       name: "modie",
-      version: "0.0.1",
+      version: MODIE_VERSION,
     },
     options.serverOptions,
   );

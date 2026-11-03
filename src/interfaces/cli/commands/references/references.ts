@@ -10,12 +10,9 @@ import {
   type ArtifactReferencesResult,
 } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const referencesSchema = z.object({
   tag: z
@@ -212,17 +209,3 @@ export const referencesCommandDefinition: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie references`.
- */
-export const handleReferences: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(referencesCommandDefinition);
-
-/**
- * Prints usage instructions for `modie references`.
- */
-export function printReferencesHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(referencesCommandDefinition));
-}

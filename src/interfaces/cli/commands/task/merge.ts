@@ -12,12 +12,9 @@ import {
   type MergeTaskBranchResult,
 } from "../../../../core/index.ts";
 import {
-  createCommandHandler,
   defineCommand,
-  generateCommandHelp,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
-import type { CliIoOptions } from "../../types.ts";
 
 export const taskMergeSchema = z.object({
   id: z
@@ -125,17 +122,3 @@ export const taskMergeCommand: CliCommandDefinition<
   },
 });
 
-/**
- * CLI command handler for `modie task merge`.
- */
-export const handleTaskMerge: (
-  args: string[],
-  options?: CliIoOptions,
-) => Promise<number> = createCommandHandler(taskMergeCommand);
-
-/**
- * Prints usage instructions for `modie task merge`.
- */
-export function printTaskMergeHelp(stderr: (msg: string) => void): void {
-  stderr(generateCommandHelp(taskMergeCommand));
-}

@@ -6,3 +6,7 @@ export * from "./types.ts";
 export * from "./slug.ts";
 export * from "./filename.ts";
 export * from "./directories.ts";
+export * from "./paths.ts";
+export * from "./task-branch.ts";
+export * from "./version.ts";
+

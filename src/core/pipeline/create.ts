@@ -14,6 +14,7 @@ import {
   parseArtifactFilename,
   registerArtifactSubtype,
   resolveArtifactDirectories,
+  slugToTitle,
 } from "../common/index.ts";
 import type { IndexableSubtype } from "../common/types.ts";
 import {
@@ -258,7 +259,7 @@ export function buildArtifactParseContext(
   }
 
   if (!title && slug) {
-    title = slug.replace(/-/g, " ");
+    title = slugToTitle(slug);
   }
 
   return {
