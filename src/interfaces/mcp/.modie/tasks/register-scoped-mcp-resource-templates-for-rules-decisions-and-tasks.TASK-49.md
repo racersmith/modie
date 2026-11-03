@@ -20,15 +20,12 @@ Per the maintainability review (§5) and the Agent-First MCP Design (`scratch/mc
    - Register dynamic URI templates that allow clients to hydrate specific contextual slices on-demand without overhead:
      - `modie://artifact/{tag}`: composite artifact inspection (file path, frontmatter, links, references, body/gist).
      - `modie://context/{target}`: pre-compiled architectural cones for tasks and files.
-     - `modie://scope/{path}`: spatial scope and container boundary discovery.
      - `modie://catalog/{kind}`: catalog listings with compact GIST summaries.
-     - `modie://templates/{subtype}`: scaffolding templates for governance artifacts.
      - `modie://task/current`: live checklist and blast-radius stream for the active branch.
 
 3. **Standardized Workflow Prompts**:
    - Register native MCP Workflow Prompts guiding multi-step agent interactions:
      - `modie_task_execution`: structured lifecycle progression from start to checklist verification and merge.
-     - `modie_architectural_review`: architectural alignment inspection and blast radius validation.
      - `modie_governance_authoring`: guided authoring of rules and ADRs with link policy validation.
 
 # Acceptance Criteria
@@ -36,10 +33,9 @@ Per the maintainability review (§5) and the Agent-First MCP Design (`scratch/mc
 - [ ] Implement `jsonResource(name, uri, meta, loader)` helper to eliminate repetitive MCP resource envelope boilerplate.
 - [ ] Register dynamic resource template `modie://artifact/{tag}` delivering composite artifact view (file path, frontmatter, links, referencedBy, body/gist).
 - [ ] Register dynamic resource template `modie://context/{target}` delivering pre-compiled architectural cones.
-- [ ] Register dynamic resource template `modie://scope/{path}` delivering spatial scope and container hierarchy.
 - [ ] Register dynamic resource template `modie://catalog/{kind}` delivering catalog listings with compact GIST summaries.
-- [ ] Register dynamic resource template `modie://templates/{subtype}` delivering raw scaffolding template skeletons.
+- [ ] Remove `scaffold_only` from `modie_create_artifact` to clean up its input and output schemas.
 - [ ] Register dynamic resource `modie://task/current` delivering active task branch checklist, progress, and blast radius stream.
-- [ ] Register native MCP Workflow Prompts (`modie_task_execution`, `modie_architectural_review`, `modie_governance_authoring`).
+- [ ] Register native MCP Workflow Prompts (`modie_task_execution`, `modie_governance_authoring`).
 - [ ] Verify client resource template discovery, parameterized reads, and prompt retrieval in MCP test suite.
 - [ ] User Review
