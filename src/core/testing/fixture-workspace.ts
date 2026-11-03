@@ -301,6 +301,9 @@ export async function createFixtureWorkspace(
             (!parsedBodySections["Alternatives Considered"] && options.body
               ? options.body
               : undefined);
+          const consequences =
+            options.consequences ??
+            parsedBodySections["Consequences"];
           const contextText =
             options.context ??
             parsedBodySections["Context"] ??
@@ -317,6 +320,7 @@ export async function createFixtureWorkspace(
             context: contextText,
             alternatives,
             decision,
+            consequences,
             skipValidation: true,
           });
         } else {
@@ -414,6 +418,7 @@ export async function createFixtureWorkspace(
         context: options.context,
         alternatives: options.alternatives,
         decision: options.decision,
+        consequences: options.consequences,
         links: options.links,
         supersedes: options.supersedes,
         superseded_by: options.superseded_by,

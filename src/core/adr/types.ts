@@ -64,6 +64,11 @@ export interface AdrArtifact {
   decision?: string;
 
   /**
+   * Positive outcomes, new risks, and accepted trade-offs (ADR-4).
+   */
+  consequences?: string;
+
+  /**
    * Absolute path to the ADR file on disk.
    */
   filePath: string;
@@ -126,6 +131,11 @@ export interface AdrRenderOptions {
   decision?: string;
 
   /**
+   * Positive outcomes, new risks, and accepted trade-offs (ADR-4).
+   */
+  consequences?: string;
+
+  /**
    * When true, skips frontmatter link validation (used by test fixtures).
    */
   skipValidation?: boolean;
@@ -163,6 +173,11 @@ export interface CreateAdrOptions {
    * Adopted decision description (ADR-4).
    */
   decision?: string;
+
+  /**
+   * Positive outcomes, new risks, and accepted trade-offs (ADR-4).
+   */
+  consequences?: string;
 
   /**
    * Artifact links (`links`). Must only reference `ADR-` and `RULE-` identifiers per RULE-14.

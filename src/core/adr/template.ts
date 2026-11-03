@@ -29,7 +29,7 @@ export function validateAdrLinks(links: string[] = []): void {
 
 /**
  * Renders a canonical ADR markdown document with YAML frontmatter and standard
- * sections (# Context, # Alternatives Considered, # Decision) per ADR-4.
+ * sections (# Context, # Alternatives Considered, # Decision, # Consequences) per ADR-4.
  */
 export function renderAdrMarkdown(options: AdrRenderOptions): string {
   const {
@@ -39,6 +39,7 @@ export function renderAdrMarkdown(options: AdrRenderOptions): string {
     context,
     alternatives,
     decision,
+    consequences,
     skipValidation,
   } = options;
 
@@ -93,6 +94,8 @@ export function renderAdrMarkdown(options: AdrRenderOptions): string {
       ? `Adopted decision regarding ${title.trim()}.`
       : "Adopted architectural decision.");
 
+  const consequencesContent = consequences?.trim() || "- None recorded.";
+
   const sections: string[] = [
     frontmatterLines.join("\n"),
     "",
@@ -107,6 +110,10 @@ export function renderAdrMarkdown(options: AdrRenderOptions): string {
     "# Decision",
     "",
     decisionContent,
+    "",
+    "# Consequences",
+    "",
+    consequencesContent,
     "",
   ];
 
@@ -143,6 +150,9 @@ export function parseAdrFromContext(
       : {}),
     ...(context.sections["Decision"] !== undefined
       ? { decision: context.sections["Decision"] }
+      : {}),
+    ...(context.sections["Consequences"] !== undefined
+      ? { consequences: context.sections["Consequences"] }
       : {}),
     filePath: context.filepath ?? "",
     rawContent: context.rawContent,

@@ -67,6 +67,7 @@ export const adrDefinition: AdrDefinition =
         context: options.context?.trim(),
         alternatives: options.alternatives?.trim(),
         decision: options.decision?.trim(),
+        consequences: options.consequences?.trim(),
       });
 
       const artifact: AdrArtifact = {
@@ -79,6 +80,7 @@ export const adrDefinition: AdrDefinition =
         context: options.context?.trim(),
         alternatives: options.alternatives?.trim(),
         decision: options.decision?.trim(),
+        consequences: options.consequences?.trim(),
         filePath: filepath,
         rawContent: markdown,
       };
