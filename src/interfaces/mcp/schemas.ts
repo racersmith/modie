@@ -379,6 +379,12 @@ export const createArtifactInputSchema = z.object({
     .array(z.string())
     .optional()
     .describe("Predecessor tags to supersede bidirectionally"),
+  target_paths: z
+    .array(z.string())
+    .optional()
+    .describe(
+      "Target mutation paths affected by this task (validated against blast radius RULE-6)",
+    ),
 });
 
 export const createArtifactOutputSchema = z
@@ -445,3 +451,44 @@ export type MutateGovernanceInput = z.infer<typeof mutateGovernanceInputSchema>;
 export type MutateGovernanceOutput = z.infer<
   typeof mutateGovernanceOutputSchema
 >;
+
+// 5. Self-Recovery Error Envelopes (RULE-25, RULE-26)
+export const mcpRecoverySchema = z
+  .object({
+    action: z.string().describe("Recommended recovery action"),
+    tool: z.string().describe("Recommended tool to invoke for remediation"),
+    parameters: z
+      .record(z.string(), z.unknown())
+      .optional()
+      .describe("Suggested parameters for recovery tool call"),
+    suggestion: z.string().optional().describe("Human-readable suggestion"),
+    uncheckedItems: z
+      .array(
+        z.object({
+          item: z.number(),
+          text: z.string().optional(),
+        }),
+      )
+      .optional()
+      .describe("Unchecked item indices when criteria are incomplete"),
+    allowedScopes: z
+      .array(z.string())
+      .optional()
+      .describe("Allowed scopes when a boundary breach occurs"),
+    validAlternatives: z
+      .array(z.string())
+      .optional()
+      .describe("Valid parameter alternatives when validation fails"),
+  })
+  .passthrough();
+
+export const mcpErrorPayloadSchema = z.object({
+  isError: z.literal(true),
+  code: z.string().describe("Standardized machine-readable error code"),
+  message: z.string().describe("Descriptive error summary"),
+  diagnostic: z.string().describe("Detailed architectural or invariant diagnostic"),
+  recovery: mcpRecoverySchema,
+});
+
+export type McpRecoverySchema = z.infer<typeof mcpRecoverySchema>;
+export type McpErrorPayloadSchema = z.infer<typeof mcpErrorPayloadSchema>;

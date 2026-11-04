@@ -5,4 +5,5 @@
 
 export * from "./schemas.ts";
 export * from "./handlers.ts";
+export * from "./errors.ts";
 export * from "./server.ts";

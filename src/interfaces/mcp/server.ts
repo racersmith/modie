@@ -26,6 +26,7 @@ import {
   handleMutateGovernance,
   handleTaskLifecycle,
 } from "./handlers.ts";
+import { formatMcpToolError } from "./errors.ts";
 import {
   compileContextInputSchema,
   compileContextOutputSchema,
@@ -105,16 +106,7 @@ export function createModieMcpServer(
           structuredContent: result,
         };
       } catch (error: any) {
-        stderr(`[modie_compile_context] error: ${error?.message ?? error}`);
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: error?.message ?? String(error),
-            },
-          ],
-        };
+        return formatMcpToolError(error, "modie_compile_context", args, stderr);
       }
     },
   );
@@ -146,16 +138,7 @@ export function createModieMcpServer(
           structuredContent: result,
         };
       } catch (error: any) {
-        stderr(`[modie_task_lifecycle] error: ${error?.message ?? error}`);
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: error?.message ?? String(error),
-            },
-          ],
-        };
+        return formatMcpToolError(error, "modie_task_lifecycle", args, stderr);
       }
     },
   );
@@ -187,16 +170,7 @@ export function createModieMcpServer(
           structuredContent: result,
         };
       } catch (error: any) {
-        stderr(`[modie_create_artifact] error: ${error?.message ?? error}`);
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: error?.message ?? String(error),
-            },
-          ],
-        };
+        return formatMcpToolError(error, "modie_create_artifact", args, stderr);
       }
     },
   );
@@ -228,16 +202,12 @@ export function createModieMcpServer(
           structuredContent: result,
         };
       } catch (error: any) {
-        stderr(`[modie_mutate_governance] error: ${error?.message ?? error}`);
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text" as const,
-              text: error?.message ?? String(error),
-            },
-          ],
-        };
+        return formatMcpToolError(
+          error,
+          "modie_mutate_governance",
+          args,
+          stderr,
+        );
       }
     },
   );
