@@ -27,7 +27,7 @@ Per the maintainability review (§5) and the Agent-First MCP Design (`scratch/mc
      - `modie_task_execution`: structured lifecycle progression from start to checklist verification and merge.
      - `modie_rule_authoring`: guided authoring of atomic, implementation-agnostic rules with least-scope placement and optional justifying ADR validation.
      - `modie_adr_authoring`: guided deliberation of architectural decisions, context, tradeoffs, consequences, and rule derivation.
-   *(Note: Architectural review prompt `modie_architectural_review` is deferred to a future task).*
+       _(Note: Architectural review prompt `modie_architectural_review` is deferred to a future task)._
 
 4. **Context Tool Simplification (YAGNI & Token Economy)**:
    - Streamline `modie_compile_context` input schema to a single optional `target` parameter (`target?: string`), eliminating speculative parameters (`mode`, `depth`, `detail_level`).
@@ -44,4 +44,4 @@ Per the maintainability review (§5) and the Agent-First MCP Design (`scratch/mc
 - [x] Register dynamic resource template `modie://catalog/{kind}` delivering catalog listings with compact GIST summaries.
 - [x] Register native MCP Workflow Prompts (`modie_task_execution`, `modie_rule_authoring`, `modie_adr_authoring`).
 - [x] Verify client resource template discovery, parameterized reads, and prompt retrieval in MCP test suite.
-- [ ] User Review
+- [x] User Review
