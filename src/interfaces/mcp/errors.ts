@@ -152,7 +152,6 @@ export class McpToolError extends Error {
           "Inspect container hierarchy and governing scopes via modie_compile_context before establishing links.",
         tool: "modie_compile_context",
         parameters: {
-          mode: "scope",
           target: options.sourceScope ?? ".",
         },
         suggestion:
@@ -176,7 +175,6 @@ export class McpToolError extends Error {
           "Confine mutations strictly within or below the active task's declared scope directory, or author a dedicated task at an ancestor scope.",
         tool: "modie_compile_context",
         parameters: {
-          mode: "scope",
           target: options.targetPath ?? options.scopeDir ?? ".",
         },
         suggestion:

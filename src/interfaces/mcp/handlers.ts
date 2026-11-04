@@ -25,6 +25,7 @@ import {
   parseTaskIdFromBranch,
   resolveGoverningScope,
   resolveScope,
+  slugToTitle,
   startTaskBranch,
   unlinkArtifact,
 } from "../../core/index.ts";
@@ -93,128 +94,21 @@ export async function handleCompileContext(
   cwd: string,
 ): Promise<CompileContextOutput> {
   const target = await resolveContextTarget(args.target, cwd);
-  const mode = args.mode ?? "context";
-  const detailLevel = args.detail_level ?? "gist";
+  const compiled = await compileContext(target, { cwd });
 
-  if (mode === "inspect") {
-    const details = await getArtifactDetails(target, { cwd });
-    const referencesResult = await findArtifactReferences(details.tag, { cwd });
+  const rules = compiled.rules.map((r) => ({
+    tag: r.tag,
+    title: r.title,
+    invariant: (r as any).invariant ?? r.body?.split("\n\n")[0]?.trim(),
+    scope: r.scope,
+  }));
 
-    const allFound = [
-      ...referencesResult.foundIn.governanceLinks,
-      ...referencesResult.foundIn.governanceProse,
-      ...referencesResult.foundIn.code,
-      ...referencesResult.foundIn.tests,
-      ...referencesResult.foundIn.documentation,
-    ];
-
-    const referencedBy = allFound.map((r) => ({
-      tag: r.sourceTag ?? r.relativePath,
-      sourceTag: r.sourceTag,
-      subtype: r.type,
-      scope: r.relativePath ? dirname(r.relativePath) : ".",
-      filepath: r.relativePath ?? r.filepath,
-      line: r.line,
-    }));
-
-    const result: CompileContextOutput = {
-      mode: "inspect",
-      tag: details.tag,
-      subtype: details.subtype,
-      filepath: details.filepath,
-      relativePath: details.relativePath,
-      scope: details.scope,
-      title: details.title,
-      summary: details.summary,
-      invariant:
-        details.sections["Invariant"] ??
-        details.sections["assertion"] ??
-        details.body.split("\n\n")[0]?.trim(),
-      links: details.links,
-      depends_on: details.depends_on,
-      supersedes: details.supersedes,
-      superseded_by: details.superseded_by,
-      referencedBy,
-    };
-
-    if (detailLevel === "full") {
-      result.content = details.rawContent;
-      result.body = details.body;
-      result.sections = details.sections;
-      result.acceptanceCriteria = details.acceptanceCriteria;
-    }
-
-    return result;
-  }
-
-  if (mode === "scope") {
-    const scopeRes = await resolveScope(target, { cwd });
-    const rules = scopeRes.rules ?? [];
-    const tasks = scopeRes.tasks ?? [];
-
-    return {
-      mode: "scope",
-      target: scopeRes.target,
-      type: scopeRes.type,
-      targetPath: scopeRes.targetPath,
-      targetAbsolutePath: scopeRes.targetAbsolutePath,
-      scope: scopeRes.scope,
-      scopeDir: scopeRes.scopeDir,
-      containerPath: scopeRes.enclosingModieDir,
-      ancestralChain: scopeRes.ancestralScopes,
-      ancestralRuleChain: scopeRes.ancestralRuleChains,
-      activeTasks: tasks.map((t) => ({
-        tag: t.tag,
-        title: t.title,
-        relativePath: t.relativePath,
-        scope: t.scope,
-        readiness: t.readiness,
-        criteriaProgress: t.criteriaProgress,
-      })),
-      activeRules:
-        detailLevel === "gist"
-          ? rules.map((r) => ({
-              tag: r.tag,
-              title: r.title,
-              invariant: r.invariant,
-              scope: r.scope,
-            }))
-          : rules.map((r) => ({
-              tag: r.tag,
-              title: r.title,
-              invariant: r.invariant,
-              scope: r.scope,
-              relativePath: r.relativePath,
-              links: r.links,
-              body: r.body,
-            })),
-    };
-  }
-
-  // mode === "context"
-  const compiled = await compileContext(target, {
-    cwd,
-  });
-
-  const rules =
-    detailLevel === "gist"
-      ? compiled.rules.map((r) => ({
-          tag: r.tag,
-          title: r.title,
-          invariant: (r as any).invariant ?? r.body?.split("\n\n")[0]?.trim(),
-          scope: r.scope,
-        }))
-      : compiled.rules;
-
-  const adrs =
-    detailLevel === "gist"
-      ? compiled.adrs.map((a) => ({
-          tag: a.tag,
-          title: a.title,
-          summary: a.summary,
-          scope: a.scope,
-        }))
-      : compiled.adrs;
+  const adrs = compiled.adrs.map((a) => ({
+    tag: a.tag,
+    title: a.title,
+    summary: a.summary,
+    scope: a.scope,
+  }));
 
   return {
     mode: "context",
@@ -224,7 +118,8 @@ export async function handleCompileContext(
     ancestralChain: compiled.ancestralScopes,
     ancestralScopes: compiled.ancestralScopes,
     motives: compiled.motives,
-    localGist: compiled.gists?.localGist,
+    localGist:
+      (compiled.gists as any)?.localGist ?? compiled.gists?.directoryGist,
     gists: compiled.gists,
     governingRules: rules,
     rules,
@@ -245,7 +140,7 @@ export async function handleTaskLifecycle(
   const taskId = await resolveActiveTaskId(args.task_id, cwd);
 
   if (args.action === "start") {
-    const branchResult = await startTaskBranch(taskId, {
+    const branchResult = await (startTaskBranch as any)(taskId, {
       baseBranch: args.base_branch,
       force: args.force,
       cwd,
@@ -272,7 +167,7 @@ export async function handleTaskLifecycle(
       try {
         const details = await getArtifactDetails(taskId, { cwd });
         if (details.plannedGovernance) {
-          plannedGov = details.plannedGovernance;
+          plannedGov = details.plannedGovernance as any;
         }
       } catch {}
 
@@ -286,7 +181,7 @@ export async function handleTaskLifecycle(
           if (link.startsWith("RULE-")) {
             governingRules.push({
               tag: details.tag,
-              title: details.title,
+              title: (details as any).title ?? slugToTitle(details.slug),
               invariant:
                 details.sections["Invariant"] ??
                 details.sections["assertion"] ??
@@ -331,7 +226,7 @@ export async function handleTaskLifecycle(
   if (args.action === "check") {
     const checkItems = args.check_items ?? [];
     for (const item of checkItems) {
-      await checkTaskItem(taskId, item, {
+      await (checkTaskItem as any)(taskId, item, {
         uncheck: args.uncheck,
         cwd,
       });
@@ -400,7 +295,7 @@ export async function handleTaskLifecycle(
   }
 
   if (args.action === "merge") {
-    const mergeResult = await mergeTaskBranch(taskId, {
+    const mergeResult = await (mergeTaskBranch as any)(taskId, {
       baseBranch: args.base_branch,
       keepBranch: args.keep_branch,
       cwd,
@@ -421,7 +316,7 @@ export async function handleTaskLifecycle(
       force: args.force,
       cwd,
     });
-    const mergeResult = await mergeTaskBranch(taskId, {
+    const mergeResult = await (mergeTaskBranch as any)(taskId, {
       baseBranch: args.base_branch,
       keepBranch: args.keep_branch,
       cwd,
@@ -548,7 +443,7 @@ export async function handleCreateArtifact(
             .filter(Boolean)
         : ["Implementation verified", "User Review"];
 
-      const res = await createTask({
+      const res = await (createTask as any)({
         title: args.title,
         scopeDir: resolvedScopeDir,
         context,
@@ -571,7 +466,7 @@ export async function handleCreateArtifact(
     }
     case "MOTIVE": {
       const intent = args.sections?.["Intent"] ?? args.content ?? args.title;
-      const res = await createMotive({
+      const res = await (createMotive as any)({
         scopeDir: resolvedScopeDir,
         intent,
         cwd,
@@ -587,7 +482,7 @@ export async function handleCreateArtifact(
       };
     }
     default: {
-      const res = await createArtifact({
+      const res = await (createArtifact as any)({
         definitionId: args.kind.toLowerCase(),
         title: args.title,
         scopeDir: resolvedScopeDir,
@@ -645,7 +540,7 @@ export async function handleMutateGovernance(
       const res = await linkArtifact({
         source: target,
         target: t,
-        relationship,
+        relationship: relationship as any,
         cwd,
       });
       if (res.changed) {
@@ -678,7 +573,7 @@ export async function handleMutateGovernance(
       const res = await unlinkArtifact({
         source: target,
         target: t,
-        relationship,
+        relationship: relationship as any,
         cwd,
       });
       if (res.changed) {
