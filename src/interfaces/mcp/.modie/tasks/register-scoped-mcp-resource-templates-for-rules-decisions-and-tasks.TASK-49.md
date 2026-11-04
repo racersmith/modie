@@ -29,9 +29,16 @@ Per the maintainability review (§5) and the Agent-First MCP Design (`scratch/mc
      - `modie_adr_authoring`: guided deliberation of architectural decisions, context, tradeoffs, consequences, and rule derivation.
    *(Note: Architectural review prompt `modie_architectural_review` is deferred to a future task).*
 
+4. **Context Tool Simplification (YAGNI & Token Economy)**:
+   - Streamline `modie_compile_context` input schema to a single optional `target` parameter (`target?: string`), eliminating speculative parameters (`mode`, `depth`, `detail_level`).
+   - Remove bloated `outputSchema` from `server.registerTool` to avoid serializing 14KB schemas into `tools/list` on every turn.
+   - Core `compileContext` already polymorphically resolves scopes, files, tasks, and artifact tags with high-signal default context.
+   - Symmetrizes `modie_compile_context({ target })` directly with `modie://context/{target}`.
+
 # Acceptance Criteria
 
 - [ ] Implement `jsonResource(name, uri, meta, loader)` helper to eliminate repetitive MCP resource envelope boilerplate.
+- [ ] Streamline `modie_compile_context` input schema to single `target` parameter and remove `outputSchema` bloat.
 - [ ] Register dynamic resource template `modie://artifact/{tag}` delivering composite artifact view (file path, frontmatter, links, referencedBy, body/gist).
 - [ ] Register dynamic resource template `modie://context/{target}` delivering pre-compiled architectural cones.
 - [ ] Register dynamic resource template `modie://catalog/{kind}` delivering catalog listings with compact GIST summaries.
