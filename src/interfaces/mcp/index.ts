@@ -7,4 +7,6 @@ export * from "./schemas.ts";
 export * from "./handlers.ts";
 export * from "./errors.ts";
 export * from "./instructions.ts";
+export * from "./resources.ts";
+export * from "./prompts.ts";
 export * from "./server.ts";

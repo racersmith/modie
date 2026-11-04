@@ -9,15 +9,7 @@ import {
   McpServer,
   type McpServerOptions,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
-import {
-  detectGitBranch,
-  getArtifactDetails,
-  getTaskStatus,
-  MODIE_VERSION,
-  parseTaskIdFromBranch,
-  queryTaskQueue,
-  scanActiveArtifacts,
-} from "../../core/index.ts";
+import { MODIE_VERSION } from "../../core/index.ts";
 import { loadMcpInstructions } from "./instructions.ts";
 import {
   handleCompileContext,
@@ -28,7 +20,6 @@ import {
 import { formatMcpToolError } from "./errors.ts";
 import {
   compileContextInputSchema,
-  compileContextOutputSchema,
   createArtifactInputSchema,
   createArtifactOutputSchema,
   mutateGovernanceInputSchema,
@@ -36,6 +27,8 @@ import {
   taskLifecycleInputSchema,
   taskLifecycleOutputSchema,
 } from "./schemas.ts";
+import { registerAllResources } from "./resources.ts";
+import { registerAllPrompts } from "./prompts.ts";
 
 export interface ModieMcpServerOptions {
   /**
@@ -89,16 +82,15 @@ export function createModieMcpServer(
     "modie_compile_context",
     {
       description:
-        "Compile spatial architectural context, composite artifact view (path + content + refs), or scope lookup.",
+        "Compile spatial architectural context, governing rules, and signposts for a target.",
       inputSchema: compileContextInputSchema.shape,
-      outputSchema: compileContextOutputSchema.shape,
       annotations: {
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
       },
     },
-    async (args: any) => {
+    (async (args: any): Promise<any> => {
       try {
         const result = await handleCompileContext(args, cwd);
         return {
@@ -113,7 +105,7 @@ export function createModieMcpServer(
       } catch (error: any) {
         return formatMcpToolError(error, "modie_compile_context", args, stderr);
       }
-    },
+    }) as any,
   );
 
   // 2. Tool 2: modie_task_lifecycle
@@ -130,7 +122,7 @@ export function createModieMcpServer(
         destructiveHint: true,
       },
     },
-    async (args: any) => {
+    (async (args: any): Promise<any> => {
       try {
         const result = await handleTaskLifecycle(args, cwd);
         return {
@@ -145,7 +137,7 @@ export function createModieMcpServer(
       } catch (error: any) {
         return formatMcpToolError(error, "modie_task_lifecycle", args, stderr);
       }
-    },
+    }) as any,
   );
 
   // 3. Tool 3: modie_create_artifact
@@ -162,7 +154,7 @@ export function createModieMcpServer(
         destructiveHint: false,
       },
     },
-    async (args: any) => {
+    (async (args: any): Promise<any> => {
       try {
         const result = await handleCreateArtifact(args, cwd);
         return {
@@ -177,7 +169,7 @@ export function createModieMcpServer(
       } catch (error: any) {
         return formatMcpToolError(error, "modie_create_artifact", args, stderr);
       }
-    },
+    }) as any,
   );
 
   // 4. Tool 4: modie_mutate_governance
@@ -194,7 +186,7 @@ export function createModieMcpServer(
         destructiveHint: true,
       },
     },
-    async (args: any) => {
+    (async (args: any): Promise<any> => {
       try {
         const result = await handleMutateGovernance(args, cwd);
         return {
@@ -214,160 +206,14 @@ export function createModieMcpServer(
           stderr,
         );
       }
-    },
+    }) as any,
   );
 
-  // 6. Resources Registration
-  // Active Ready Tasks Resource
-  server.registerResource(
-    "ready-tasks",
-    "modie://tasks/ready",
-    {
-      title: "Active Ready Tasks",
-      description:
-        "Active workspace tasks unblocked by dependencies and ready for execution",
-      mimeType: "application/json",
-    },
-    async (uri) => {
-      const tasks = await queryTaskQueue({ cwd, readyOnly: true });
-      return {
-        contents: [
-          {
-            uri: uri.href,
-            mimeType: "application/json",
-            text: JSON.stringify(tasks, null, 2),
-          },
-        ],
-      };
-    },
-  );
+  // 5. Scoped Resource Templates and Static/Dynamic Resources (TASK-49, RULE-25, RULE-26)
+  registerAllResources(server, { cwd, instructions });
 
-  // All Tasks Resource
-  server.registerResource(
-    "all-tasks",
-    "modie://tasks",
-    {
-      title: "All Active Tasks",
-      description:
-        "All active tasks in the repository with DAG readiness status",
-      mimeType: "application/json",
-    },
-    async (uri) => {
-      const tasks = await queryTaskQueue({ cwd });
-      return {
-        contents: [
-          {
-            uri: uri.href,
-            mimeType: "application/json",
-            text: JSON.stringify(tasks, null, 2),
-          },
-        ],
-      };
-    },
-  );
-
-  // Current Task Dynamic Resource
-  server.registerResource(
-    "current-task",
-    "modie://task/current",
-    {
-      title: "Active Task Branch State",
-      description:
-        "Ambient active task progress, checklist, and blast radius stream",
-      mimeType: "application/json",
-    },
-    async (uri) => {
-      const branch = await detectGitBranch(cwd);
-      const taskId = branch ? parseTaskIdFromBranch(branch) : null;
-      let status: any = null;
-      if (taskId) {
-        try {
-          status = await getTaskStatus(taskId, { cwd });
-        } catch {}
-      }
-      return {
-        contents: [
-          {
-            uri: uri.href,
-            mimeType: "application/json",
-            text: JSON.stringify({ branch, taskId, status }, null, 2),
-          },
-        ],
-      };
-    },
-  );
-
-  // Active Governance Rules Resource
-  server.registerResource(
-    "active-rules",
-    "modie://rules",
-    {
-      title: "Workspace Governance Rules",
-      description:
-        "Active architectural, interface, and workflow governance rules enforced across the repository",
-      mimeType: "application/json",
-    },
-    async (uri) => {
-      const discovered = await scanActiveArtifacts(cwd, "RULE");
-      const rules = await Promise.all(
-        discovered
-          .filter((r) => !r.isArchived)
-          .map(async (r) => {
-            try {
-              const details = await getArtifactDetails(r.tag, { cwd });
-              return {
-                tag: details.tag,
-                title: details.title,
-                relativePath: details.relativePath,
-                links: details.links,
-                body: details.body,
-              };
-            } catch {
-              return {
-                tag: r.tag,
-                title: r.title,
-                relativePath: r.filepath,
-              };
-            }
-          }),
-      );
-
-      return {
-        contents: [
-          {
-            uri: uri.href,
-            mimeType: "application/json",
-            text: JSON.stringify(rules, null, 2),
-          },
-        ],
-      };
-    },
-  );
-
-  // Agent Instructions Resource (RULE-21, RULE-26)
-  server.registerResource(
-    "instructions",
-    "modie://instructions",
-    {
-      title: "Agent Instructions & Governance Best Practices",
-      description:
-        "Comprehensive guidelines on ephemeral task decoupling, contract-based criteria, planned governance, and task lifecycle",
-      mimeType: "text/markdown",
-    },
-    async (uri) => {
-      const text =
-        options.serverOptions?.instructions ?? loadMcpInstructions();
-      return {
-        contents: [
-          {
-            uri: uri.href,
-            mimeType: "text/markdown",
-            text,
-          },
-        ],
-      };
-    },
-  );
+  // 6. Native MCP Workflow Prompts (TASK-49)
+  registerAllPrompts(server);
 
   return server;
 }

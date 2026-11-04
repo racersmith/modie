@@ -168,23 +168,7 @@ export const compileContextInputSchema = z.object({
     .string()
     .optional()
     .describe(
-      "File path, directory scope, task ID (e.g. 'TASK-XXXX'), or artifact tag (e.g. 'RULE-XXXX'). Defaults to active task branch or '.'",
-    ),
-  mode: z
-    .enum(["context", "inspect", "scope"])
-    .default("context")
-    .describe(
-      "Operation mode: 'context' for architectural cone compilation, 'inspect' for composite artifact view (path + content + refs), or 'scope' for spatial directory resolution",
-    ),
-  depth: z
-    .enum(["shallow", "full"])
-    .default("shallow")
-    .describe("Signpost traversal recursion depth"),
-  detail_level: z
-    .enum(["gist", "full"])
-    .default("gist")
-    .describe(
-      "Level of detail: compact GIST/invariant signposts ('gist') or full markdown content ('full')",
+      "Scope directory, file path, task ID, or artifact tag. Defaults to active task branch or '.'",
     ),
 });
 

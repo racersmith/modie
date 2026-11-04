@@ -68,7 +68,7 @@ describe("Modie MCP Server - Consolidated Four-Tool Architecture", () => {
     });
 
     // Set up a sample ADR in workspace
-    await workspace.createAdr({
+    await (workspace.createAdr as any)({
       id: 101,
       slug: "sample-decision",
       title: "Sample Decision",
@@ -162,7 +162,11 @@ describe("Modie MCP Server - Consolidated Four-Tool Architecture", () => {
     expect(compileTool.annotations?.readOnlyHint).toBe(true);
     expect(compileTool.annotations?.idempotentHint).toBe(true);
     expect(compileTool.annotations?.destructiveHint).toBe(false);
-    expect(compileTool.outputSchema).toBeDefined();
+    // TASK-49: outputSchema bloat removed to protect model context window
+    expect(compileTool.outputSchema).toBeUndefined();
+    expect(Object.keys((compileTool.inputSchema as any)?.properties ?? {})).toEqual([
+      "target",
+    ]);
 
     const lifecycleTool = response.tools.find(
       (t) => t.name === "modie_task_lifecycle",
@@ -207,37 +211,20 @@ describe("Modie MCP Server - Consolidated Four-Tool Architecture", () => {
       expect(content.governingRules[0].body).toBeUndefined(); // GIST mode omits full markdown body
     });
 
-    it("should support mode='inspect' to combine find + read + references in 1 turn", async () => {
+    it("should compile context for a specific artifact tag target", async () => {
       const res = await client.callTool({
         name: "modie_compile_context",
-        arguments: { target: ruleTag, mode: "inspect" },
+        arguments: { target: ruleTag },
       });
 
       expect(res.isError).toBeFalsy();
       const content = getStructuredContent(res);
-      expect(content.mode).toBe("inspect");
-      expect(content.tag).toBe(ruleTag);
-      expect(content.filepath).toContain(ruleTag);
-      expect(content.relativePath).toBeDefined();
-      expect(Array.isArray(content.referencedBy)).toBe(true);
-      // Inbound reference from adrTag and task101Tag
-      const referencingTags = content.referencedBy.map((r: any) => r.tag);
-      expect(referencingTags).toContain(adrTag);
-      expect(referencingTags).toContain(task101Tag);
-    });
-
-    it("should support mode='scope' for spatial directory resolution", async () => {
-      const res = await client.callTool({
-        name: "modie_compile_context",
-        arguments: { target: ".", mode: "scope" },
-      });
-
-      expect(res.isError).toBeFalsy();
-      const content = getStructuredContent(res);
-      expect(content.mode).toBe("scope");
-      expect(content.scope).toBe(".");
-      expect(content.scopeDir).toBeDefined();
-      expect(Array.isArray(content.ancestralChain)).toBe(true);
+      expect(content.mode).toBe("context");
+      expect(content.scope).toBeDefined();
+      expect(Array.isArray(content.governingRules)).toBe(true);
+      expect(content.governingRules.some((r: any) => r.tag === ruleTag)).toBe(
+        true,
+      );
     });
   });
 
@@ -560,7 +547,7 @@ describe("Modie MCP Server - Consolidated Four-Tool Architecture", () => {
       expect(content.diagnostic).toContain("RULE-19");
       expect(content.recovery).toBeDefined();
       expect(content.recovery.tool).toBe("modie_compile_context");
-      expect(content.recovery.parameters?.mode).toBe("scope");
+      expect(content.recovery.parameters?.target).toBeDefined();
     });
 
     it("should return BLAST_RADIUS_BREACH_RULE_6 envelope when task target escapes scope", async () => {
@@ -582,7 +569,7 @@ describe("Modie MCP Server - Consolidated Four-Tool Architecture", () => {
       expect(content.diagnostic).toContain("RULE-6");
       expect(content.recovery).toBeDefined();
       expect(content.recovery.tool).toBe("modie_compile_context");
-      expect(content.recovery.parameters?.mode).toBe("scope");
+      expect(content.recovery.parameters?.target).toBeDefined();
       expect(content.recovery.action).toContain("Confine mutations");
     });
 
@@ -794,6 +781,202 @@ describe("Modie MCP Server - Consolidated Four-Tool Architecture", () => {
       expect(response.result?.instructions).toContain("Modie Agent Instructions");
 
       child.kill("SIGTERM");
+    });
+  });
+
+  describe("Scoped Resource Templates & Helper (TASK-49, RULE-25, RULE-26)", () => {
+    it("should list dynamic resource templates for artifact, context, and catalog", async () => {
+      const result = await client.listResourceTemplates();
+      const templates = result.resourceTemplates ?? [];
+      const uriTemplates = templates.map((t) => t.uriTemplate);
+
+      expect(uriTemplates).toContain("modie://artifact/{tag}");
+      expect(uriTemplates).toContain("modie://context/{target}");
+      expect(uriTemplates).toContain("modie://catalog/{kind}");
+    });
+
+    it("should read modie://artifact/{tag} and return composite artifact view", async () => {
+      const res = await client.readResource({
+        uri: `modie://artifact/${ruleTag}`,
+      });
+
+      expect(res.contents).toBeDefined();
+      expect(res.contents.length).toBe(1);
+      const text = (res.contents[0] as any).text as string;
+      const parsed = JSON.parse(text);
+
+      expect(parsed.tag).toBe(ruleTag);
+      expect(parsed.subtype).toBe("RULE");
+      expect(parsed.filepath).toContain(ruleTag);
+      expect(parsed.relativePath).toBeDefined();
+      expect(parsed.scope).toBeDefined();
+      expect(parsed.title.toLowerCase()).toBe("sample rule");
+      expect(parsed.invariant).toBeDefined();
+      expect(Array.isArray(parsed.links)).toBe(true);
+      expect(Array.isArray(parsed.referencedBy)).toBe(true);
+
+      const referencingTags = parsed.referencedBy.map((r: any) => r.tag);
+      expect(referencingTags).toContain(adrTag);
+      expect(referencingTags).toContain(task101Tag);
+    });
+
+    it("should read modie://context and modie://context/{target} returning compiled cone", async () => {
+      // 1. Root context resource
+      const rootRes = await client.readResource({
+        uri: "modie://context",
+      });
+      expect(rootRes.contents).toBeDefined();
+      expect(rootRes.contents.length).toBe(1);
+      const rootParsed = JSON.parse((rootRes.contents[0] as any).text as string);
+      expect(rootParsed.scope).toBe(".");
+      expect(Array.isArray(rootParsed.governingRules)).toBe(true);
+
+      // 2. Scoped context template
+      const res = await client.readResource({
+        uri: "modie://context/root",
+      });
+
+      expect(res.contents).toBeDefined();
+      expect(res.contents.length).toBe(1);
+      const parsed = JSON.parse((res.contents[0] as any).text as string);
+
+      expect(parsed.scope).toBe(".");
+      expect(Array.isArray(parsed.ancestralScopes)).toBe(true);
+      expect(Array.isArray(parsed.governingRules)).toBe(true);
+      expect(parsed.governingRules.length).toBeGreaterThan(0);
+      expect(parsed.governingRules.some((r: any) => r.tag === ruleTag)).toBe(true);
+      expect(Array.isArray(parsed.linkedDecisions)).toBe(true);
+    });
+
+    it("should read modie://context/{target} for a task target and include compiled task", async () => {
+      const res = await client.readResource({
+        uri: `modie://context/${task101Tag}`,
+      });
+
+      expect(res.contents).toBeDefined();
+      const parsed = JSON.parse((res.contents[0] as any).text as string);
+      expect(parsed.task).toBeDefined();
+      expect(parsed.task.tag).toBe(task101Tag);
+      expect(parsed.task.criteriaProgress).toBeDefined();
+    });
+
+    it("should read modie://catalog/{kind} for tasks, rules, adrs, ready, and backlog", async () => {
+      // 1. Catalog tasks
+      const taskRes = await client.readResource({ uri: "modie://catalog/tasks" });
+      const tasks = JSON.parse((taskRes.contents[0] as any).text as string);
+      expect(Array.isArray(tasks)).toBe(true);
+      expect(tasks.some((t: any) => t.id === task101Id)).toBe(true);
+
+      // 2. Catalog rules
+      const ruleRes = await client.readResource({ uri: "modie://catalog/rules" });
+      const rules = JSON.parse((ruleRes.contents[0] as any).text as string);
+      expect(Array.isArray(rules)).toBe(true);
+      expect(rules.some((r: any) => r.tag === ruleTag)).toBe(true);
+
+      // 3. Catalog adrs
+      const adrRes = await client.readResource({ uri: "modie://catalog/adrs" });
+      const adrs = JSON.parse((adrRes.contents[0] as any).text as string);
+      expect(Array.isArray(adrs)).toBe(true);
+      expect(adrs.some((a: any) => a.tag === adrTag)).toBe(true);
+
+      // 4. Catalog ready
+      const readyRes = await client.readResource({ uri: "modie://catalog/ready" });
+      const ready = JSON.parse((readyRes.contents[0] as any).text as string);
+      expect(Array.isArray(ready)).toBe(true);
+
+      // 5. Catalog backlog
+      const backlogRes = await client.readResource({
+        uri: "modie://catalog/backlog",
+      });
+      const backlog = JSON.parse((backlogRes.contents[0] as any).text as string);
+      expect(Array.isArray(backlog)).toBe(true);
+    });
+  });
+
+  describe("Native MCP Workflow Prompts (TASK-49, RULE-26)", () => {
+    it("should list the 3 standardized workflow prompts", async () => {
+      const list = await client.listPrompts();
+      const promptNames = list.prompts.map((p) => p.name);
+
+      expect(promptNames).toContain("modie_task_execution");
+      expect(promptNames).toContain("modie_rule_authoring");
+      expect(promptNames).toContain("modie_adr_authoring");
+    });
+
+    it("should return modie_task_execution guidance for active task", async () => {
+      const prompt = await client.getPrompt({
+        name: "modie_task_execution",
+        arguments: { task_id: task101Tag },
+      });
+
+      expect(prompt.messages).toBeDefined();
+      expect(prompt.messages.length).toBe(1);
+      const text = (prompt.messages[0]!.content as any).text as string;
+
+      expect(text).toContain(task101Tag);
+      expect(text).toContain("modie_task_lifecycle");
+      expect(text).toContain("RULE-6");
+      expect(text).toContain("complete_and_merge");
+    });
+
+    it("should return modie_rule_authoring guidance with atomicity and ancestry enforcement", async () => {
+      const prompt = await client.getPrompt({
+        name: "modie_rule_authoring",
+        arguments: {
+          name: "test-rule-invariant",
+          justifying_adr: adrTag,
+          scope: "src/interfaces",
+        },
+      });
+
+      expect(prompt.messages).toBeDefined();
+      const text = (prompt.messages[0]!.content as any).text as string;
+
+      expect(text).toContain("test-rule-invariant");
+      expect(text).toContain(adrTag);
+      expect(text).toContain("src/interfaces");
+      expect(text).toContain("RULE-11");
+      expect(text).toContain("RULE-13");
+      expect(text).toContain("RULE-16");
+      expect(text).toContain("modie_create_artifact");
+    });
+
+    it("should support modie_rule_authoring when justifying_adr is omitted", async () => {
+      const prompt = await client.getPrompt({
+        name: "modie_rule_authoring",
+        arguments: {
+          name: "standalone-rule",
+          scope: ".",
+        },
+      });
+
+      expect(prompt.messages).toBeDefined();
+      const text = (prompt.messages[0]!.content as any).text as string;
+
+      expect(text).toContain("standalone-rule");
+      expect(text).toContain("Optional Justification");
+      expect(text).toContain("RULE-11");
+      expect(text).toContain("initial_links: []");
+    });
+
+    it("should return modie_adr_authoring guidance with tradeoff and consequence structure", async () => {
+      const prompt = await client.getPrompt({
+        name: "modie_adr_authoring",
+        arguments: {
+          name: "test-decision-record",
+          scope: ".",
+          supersedes: adrTag,
+        },
+      });
+
+      expect(prompt.messages).toBeDefined();
+      const text = (prompt.messages[0]!.content as any).text as string;
+
+      expect(text).toContain("test-decision-record");
+      expect(text).toContain(adrTag);
+      expect(text).toContain("RULE-4");
+      expect(text).toContain("RULE-17");
+      expect(text).toContain("modie_create_artifact");
     });
   });
 });
