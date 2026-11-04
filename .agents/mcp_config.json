@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "mcp-checkup": {
+      "command": "bunx",
+      "args": ["-y", "mcp-checkup"]
+    }
+  }
+}
