@@ -6,7 +6,7 @@ Modie is a decentralized architectural governance and task lifecycle engine. As 
 
 ## 1. Ephemeral Task Decoupling (Critical Invariant)
 
-> **CRITICAL RULE (RULE-21, ADR-6, RULE-35)**:
+> **CRITICAL RULE**:
 > Never cite ephemeral `TASK-XX` identifiers in unit test titles (e.g. `[TASK-XX]`), code comments, or docstrings (e.g. `@verifies TASK-XX`).
 
 - **Tasks are Ephemeral**: Once completed, a task artifact is permanently deleted from the repository. Any test or code comment referencing a `TASK-XX` tag becomes a stale citation pointing to a non-existent file.
@@ -23,7 +23,7 @@ Modie is a decentralized architectural governance and task lifecycle engine. As 
 
 ---
 
-## 3. Contract-Based Acceptance Criteria (RULE-30, RULE-22)
+## 3. Contract-Based Acceptance Criteria
 
 When planning and authoring tasks:
 - **Define Deliverables by Contract, Not Path**: Formulate acceptance criteria in terms of component roles, behavioral contracts, and testable outcomes.
@@ -41,13 +41,13 @@ When planning and authoring tasks:
 
 ---
 
-## 5. Spatial Graph Link Invariants (RULE-16, RULE-17, RULE-19)
+## 5. Spatial Graph Link Invariants
 
 Modie enforces a strict hierarchical directed acyclic graph (DAG):
-- **Rules (`RULE`)**: May only be justified by ADRs residing in the rule's directory or an ancestor directory up to the workspace root (`RULE-16`).
-- **Decisions (`ADR`)**: May link to rules residing in the ADR's directory or descendant subtrees (`RULE-17`), or ancestor ADRs (`RULE-19`).
-- **Tasks (`TASK`)**: May link to rules and ADRs residing in the task's directory or an ancestor directory (`RULE-7`, `RULE-18`).
-- **Prohibition of Sideways Links**: Artifacts may never cite sibling directories (`RULE-19`).
+- **Rules (`RULE`)**: May only be justified by ADRs residing in the rule's directory or an ancestor directory up to the workspace root.
+- **Decisions (`ADR`)**: May link to rules residing in the ADR's directory or descendant subtrees, or ancestor ADRs.
+- **Tasks (`TASK`)**: May link to rules and ADRs residing in the task's directory or an ancestor directory.
+- **Prohibition of Sideways Links**: Artifacts may never cite sibling directories.
 
 ---
 
@@ -64,7 +64,7 @@ Modie exposes 4 goal-oriented tools designed for minimal roundtrips and token ec
    - `action: "start"`: Creates/checks out the task branch and auto-injects the Mission Brief, criteria checklist, blast radius constraint, and ambient guardrails.
    - `action: "check"`: Batched verification of acceptance criteria (`check_items: [1, 2]`).
    - `action: "status"`: Real-time progress inspection of the active task branch.
-   - `action: "complete_and_merge"`: Executes the atomic two-phase commit ceremony (`RULE-32`, `RULE-21`) and merges back to trunk.
+   - `action: "complete_and_merge"`: Executes the atomic two-phase commit ceremony and merges back to trunk.
 
 3. **`modie_create_artifact`** (Declarative Authoring):
    - Creates `RULE`, `ADR`, `TASK`, `MOTIVE` artifacts with atomic initial links (`initial_links: [...]`).
