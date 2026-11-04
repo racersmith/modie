@@ -32,9 +32,9 @@ To unify agent guidance:
 
 # Acceptance Criteria
 
-- [ ] Consolidate agent guidance text into a single authoritative markdown source, eliminating duplication across MCP, CLI help, and plugin instructions.
-- [ ] Load instructions dynamically during server initialization and populate `McpServerOptions.instructions` in the `initialize` handshake response.
-- [ ] Emphasize ephemeral task decoupling (`RULE-21`), blast radius confinement (`RULE-6`), contract-based criteria (`RULE-30`), and consolidated 5-tool workflows.
-- [ ] Maintain `modie://instructions` read-only resource for standalone resource browsing.
-- [ ] Verify client receives populated instructions in initialize response without requiring explicit resource reads.
-- [ ] User Review
+- [x] Consolidate agent guidance text into a single authoritative markdown source, eliminating duplication across MCP, CLI help, and plugin instructions.
+- [x] Load instructions dynamically during server initialization and populate `McpServerOptions.instructions` in the `initialize` handshake response.
+- [x] Emphasize ephemeral task decoupling (`RULE-21`), blast radius confinement (`RULE-6`), contract-based criteria (`RULE-30`), and consolidated 5-tool workflows.
+- [x] Maintain `modie://instructions` read-only resource for standalone resource browsing.
+- [x] Verify client receives populated instructions in initialize response without requiring explicit resource reads.
+- [x] User Review
