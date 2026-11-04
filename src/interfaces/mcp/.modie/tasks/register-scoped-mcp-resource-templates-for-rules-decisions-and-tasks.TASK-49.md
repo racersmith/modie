@@ -25,7 +25,9 @@ Per the maintainability review (§5) and the Agent-First MCP Design (`scratch/mc
 3. **Standardized Workflow Prompts**:
    - Register native MCP Workflow Prompts guiding multi-step agent interactions:
      - `modie_task_execution`: structured lifecycle progression from start to checklist verification and merge.
-     - `modie_governance_authoring`: guided authoring of rules and ADRs with link policy validation.
+     - `modie_rule_authoring`: guided authoring of atomic, implementation-agnostic rules with least-scope placement and justifying ADR validation.
+     - `modie_adr_authoring`: guided deliberation of architectural decisions, context, tradeoffs, consequences, and rule derivation.
+   *(Note: Architectural review prompt `modie_architectural_review` is deferred to a future task).*
 
 # Acceptance Criteria
 
@@ -33,6 +35,6 @@ Per the maintainability review (§5) and the Agent-First MCP Design (`scratch/mc
 - [ ] Register dynamic resource template `modie://artifact/{tag}` delivering composite artifact view (file path, frontmatter, links, referencedBy, body/gist).
 - [ ] Register dynamic resource template `modie://context/{target}` delivering pre-compiled architectural cones.
 - [ ] Register dynamic resource template `modie://catalog/{kind}` delivering catalog listings with compact GIST summaries.
-- [ ] Register native MCP Workflow Prompts (`modie_task_execution`, `modie_governance_authoring`).
+- [ ] Register native MCP Workflow Prompts (`modie_task_execution`, `modie_rule_authoring`, `modie_adr_authoring`).
 - [ ] Verify client resource template discovery, parameterized reads, and prompt retrieval in MCP test suite.
 - [ ] User Review
