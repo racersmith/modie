@@ -7,7 +7,10 @@ import { describe, expect, it } from "bun:test";
 import {
   compileContext,
   formatCompiledContextMarkdown,
+  resolveContextTarget,
 } from "./context.ts";
+import { buildAncestralScopes } from "../common/index.ts";
+import { computeAncestralScopes } from "./scope.ts";
 import {
   createFixtureWorkspace,
   makeTestTag,
@@ -299,6 +302,77 @@ describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE
       "Project declarative command schemas into CLI and MCP tools.",
     );
     expect(markdown).toContain("src/interfaces/cli");
+  });
+
+  it("should resolve context targets across early-return candidates via resolveContextTarget", async () => {
+    await using workspace = await createFixtureWorkspace("modie-target-cand-");
+
+    await workspace.createRule({
+      id: 1,
+      slug: "root-rule",
+      body: "Root rule body",
+    });
+
+    await workspace.createTask({
+      id: 10,
+      slug: "test-task",
+      title: "Test Task Title",
+      scopeDir: "src/core",
+    });
+
+    // 1. Explicit task tag
+    const t1 = await resolveContextTarget("TASK-10", workspace.cwd);
+    expect(t1.type).toBe("task");
+    expect(t1.task?.id).toBe("10");
+    expect(t1.scope).toBe("src/core");
+
+    // 2. Explicit task filename
+    const t2 = await resolveContextTarget("test-task.TASK-10.md", workspace.cwd);
+    expect(t2.type).toBe("task");
+    expect(t2.task?.id).toBe("10");
+
+    // 3. Explicit artifact tag
+    const t3 = await resolveContextTarget("RULE-1", workspace.cwd);
+    expect(t3.type).toBe("artifact");
+    expect(t3.scope).toBe(".");
+
+    // 4. Bare numeric task ID
+    const t4 = await resolveContextTarget("10", workspace.cwd);
+    expect(t4.type).toBe("task");
+    expect(t4.task?.id).toBe("10");
+
+    // 5. Artifact slug
+    const t5 = await resolveContextTarget("root-rule", workspace.cwd);
+    expect(t5.type).toBe("artifact");
+    expect(t5.scope).toBe(".");
+
+    // 6. Existing directory path
+    const t6 = await resolveContextTarget("src/core", workspace.cwd);
+    expect(t6.type).toBe("path");
+    expect(t6.scope).toBe("src/core");
+
+    // 7. Root "."
+    const t7 = await resolveContextTarget(".", workspace.cwd);
+    expect(t7.type).toBe("path");
+    expect(t7.scope).toBe(".");
+  });
+
+  it("should support pure ancestral scope traversal and scoped .modie filtering", async () => {
+    await using workspace = await createFixtureWorkspace("modie-ancestral-opts-");
+
+    await workspace.createMotive({
+      scopeDir: "src/core/nested",
+      content: "Nested motive",
+    });
+
+    // Pure string vector without disk I/O
+    const all = buildAncestralScopes("src/core/nested");
+    expect(all).toEqual([".", "src", "src/core", "src/core/nested"]);
+
+    // Scoped governance filtering for .modie containers
+    const filtered = computeAncestralScopes("src/core/nested", workspace.cwd);
+    expect(filtered).toContain(".");
+    expect(filtered).toContain("src/core/nested");
   });
 });
 

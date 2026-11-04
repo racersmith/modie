@@ -13,6 +13,7 @@ import {
   relative,
   resolve,
 } from "node:path";
+import { toPosixRelative } from "./paths.ts";
 import type { IndexableSubtype } from "./types.ts";
 
 export interface GoverningScope {
@@ -207,3 +208,117 @@ export function resolveArtifactDirectories(
     targetDir: join(normalized, ".modie", containerName),
   };
 }
+
+/**
+ * Computes all ancestral directory scopes from root down to `targetScope`.
+ * Pure path segment decomposition with no disk I/O.
+ * Example: "src/core" -> [".", "src", "src/core"]
+ */
+export function buildAncestralScopes(targetScope: string): string[] {
+  const normalized = targetScope?.trim() || ".";
+  if (normalized === ".") {
+    return ["."];
+  }
+  const segments = normalized.split("/").filter(Boolean);
+  const scopes: string[] = ["."];
+  let accum = "";
+  for (const seg of segments) {
+    accum = accum ? `${accum}/${seg}` : seg;
+    scopes.push(accum);
+  }
+  return scopes;
+}
+
+/**
+ * Resolves the governing directory scope for a path or directory input,
+ * stripping `.modie` segments and file basenames, and validating that the scope
+ * resides within the workspace root `normCwd`.
+ *
+ * @param targetDirInput Raw directory or file path input.
+ * @param normCwd Normalized absolute workspace root directory.
+ * @param errorLabel Domain label for error messages (e.g. "GIST", "MOTIVE", "context").
+ */
+export function resolveScopeDirectory(
+  targetDirInput: string | undefined,
+  normCwd: string,
+  errorLabel: string = "scope",
+): { scopeDir: string; scope: string; targetPath: string } {
+  const trimmed = targetDirInput?.trim();
+  const rawResolved =
+    trimmed && trimmed !== "."
+      ? isAbsolute(trimmed)
+        ? normalize(trimmed)
+        : normalize(resolve(normCwd, trimmed))
+      : normCwd;
+
+  const relTarget = toPosixRelative(normCwd, rawResolved);
+
+  // 1. If path is inside a `.modie` segment, strip `.modie` and everything below it (RULE-8)
+  const segments = rawResolved.split(/[\\/]/);
+  const modieIdx = segments.indexOf(".modie");
+
+  let scopeDir: string;
+  if (modieIdx !== -1) {
+    scopeDir = segments.slice(0, modieIdx).join("/") || "/";
+  } else {
+    scopeDir = rawResolved;
+    try {
+      const st = statSync(rawResolved);
+      if (st.isFile()) {
+        scopeDir = dirname(rawResolved);
+      }
+    } catch {
+      if (basename(rawResolved).includes(".")) {
+        scopeDir = dirname(rawResolved);
+      }
+    }
+  }
+
+  const relScope = toPosixRelative(normCwd, scopeDir);
+  if (relScope.startsWith("..") || isAbsolute(relScope)) {
+    throw new Error(
+      `Invalid ${errorLabel} scope "${targetDirInput}": path must reside within the workspace root.`,
+    );
+  }
+
+  return {
+    scopeDir,
+    scope: relScope,
+    targetPath: relTarget,
+  };
+}
+
+/**
+ * Traverses directories from `startDir` upward toward `stopDir` (e.g. workspace root),
+ * executing `finder` at each directory node and returning collected results in leaf-to-root order.
+ */
+export async function walkAncestorsForFile<T>(
+  startDir: string,
+  stopDir: string,
+  finder: (
+    currentDir: string,
+  ) => Promise<T | null | undefined> | T | null | undefined,
+): Promise<T[]> {
+  const normStop = normalize(resolve(stopDir));
+  let currentDir = normalize(resolve(startDir));
+  const results: T[] = [];
+
+  while (currentDir.length >= normStop.length) {
+    const item = await finder(currentDir);
+    if (item !== null && item !== undefined) {
+      results.push(item);
+    }
+
+    if (
+      currentDir === normStop ||
+      currentDir === "/" ||
+      dirname(currentDir) === currentDir
+    ) {
+      break;
+    }
+    currentDir = dirname(currentDir);
+  }
+
+  return results;
+}
+

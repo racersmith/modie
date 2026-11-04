@@ -5,7 +5,10 @@
 
 import { existsSync } from "node:fs";
 import { isAbsolute, join, normalize, relative, resolve } from "node:path";
-import { resolveGoverningScope } from "../common/directories.ts";
+import {
+  buildAncestralScopes,
+  resolveGoverningScope,
+} from "../common/directories.ts";
 import { parseArtifactFilename } from "../common/filename.ts";
 import { queryTaskQueue } from "../task/query.ts";
 import { listActiveArtifacts } from "./artifact-list.ts";
@@ -21,35 +24,21 @@ import type {
 
 /**
  * Computes ancestral scope relative paths along the path vector from root down to `targetScope`.
- * Filters to directories having a `.modie` container (or root `.`).
+ * Filters to directories having a `.modie` container (or root `.` or targetScope) per RULE-9.
  */
 export function computeAncestralScopes(
   targetScope: string,
-  cwd: string,
+  cwd: string = process.cwd(),
 ): string[] {
   const normCwd = normalize(resolve(cwd));
-  const scopes: string[] = ["."];
+  const scopes = buildAncestralScopes(targetScope);
 
-  if (targetScope === ".") {
-    return scopes;
-  }
-
-  const segments = targetScope.split("/").filter(Boolean);
-  let accumulated = "";
-
-  for (const seg of segments) {
-    accumulated = accumulated ? `${accumulated}/${seg}` : seg;
-    const abs = resolve(normCwd, accumulated);
-    const modieDir = join(abs, ".modie");
-
-    if (existsSync(modieDir) || accumulated === targetScope) {
-      if (!scopes.includes(accumulated)) {
-        scopes.push(accumulated);
-      }
-    }
-  }
-
-  return scopes;
+  return scopes.filter(
+    (scope) =>
+      scope === "." ||
+      scope === targetScope ||
+      existsSync(join(normCwd, scope, ".modie")),
+  );
 }
 
 /**

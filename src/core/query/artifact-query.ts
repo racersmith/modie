@@ -5,6 +5,7 @@
 
 import { readFile, stat } from "node:fs/promises";
 import { dirname, isAbsolute, resolve } from "node:path";
+import { extractAdrSummary } from "../adr/summary.ts";
 import { resolveGoverningScope } from "../common/directories.ts";
 import { parseArtifactFilename } from "../common/filename.ts";
 import {
@@ -24,7 +25,6 @@ import {
   listGitBranches,
 } from "../resolver/git-inspector.ts";
 import type { TaskAcceptanceCriteriaItem } from "../task/types.ts";
-import { extractAdrSummary } from "./markdown-parser.ts";
 import type {
   ArtifactDetails,
   ResolveArtifactOptions,
@@ -71,12 +71,241 @@ function computeArtifactScope(
   return resolveGoverningScope(filepath, cwd).relativeScope;
 }
 
+interface ArtifactLookupContext {
+  cwd: string;
+  options: ResolveArtifactOptions;
+}
+
+interface ArtifactHit {
+  tag: string;
+  subtype: IndexableSubtype;
+  id: string;
+  slug: string;
+  filename: string;
+  filepath: string;
+  relativePath?: string;
+  isArchived: boolean;
+  isHistorical?: boolean;
+}
+
+type ArtifactLookupStrategy = (
+  ident: string,
+  ctx: ArtifactLookupContext,
+) => Promise<ArtifactHit | null>;
+
+async function resolveAdrSummary(
+  filepath: string,
+  slug: string,
+): Promise<string> {
+  try {
+    const rawContent = await readFile(filepath, "utf8");
+    return extractAdrSummary(rawContent, slug);
+  } catch {
+    return slugToTitle(slug);
+  }
+}
+
+async function byExistingPath(
+  ident: string,
+  ctx: ArtifactLookupContext,
+): Promise<ArtifactHit | null> {
+  const candidatePath = isAbsolute(ident) ? ident : resolve(ctx.cwd, ident);
+  const parsedFromPath = parseArtifactFilename(candidatePath);
+  if (!parsedFromPath) {
+    return null;
+  }
+  try {
+    const fileStat = await stat(candidatePath);
+    if (!fileStat.isFile()) {
+      return null;
+    }
+    return {
+      tag: parsedFromPath.tag,
+      subtype: parsedFromPath.subtype,
+      id: parsedFromPath.id,
+      slug: parsedFromPath.slug,
+      filename: parsedFromPath.filename,
+      filepath: candidatePath,
+      relativePath: toPosixRelative(ctx.cwd, candidatePath),
+      isArchived: parsedFromPath.isArchived,
+      isHistorical: false,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function byWorkspaceScan(
+  ident: string,
+  ctx: ArtifactLookupContext,
+): Promise<ArtifactHit | null> {
+  const tagInfo = parseCanonicalTag(ident);
+  const targetTag = tagInfo?.tag.toUpperCase();
+  const targetSubtype = tagInfo?.subtype ?? ctx.options.subtype;
+  const artifacts = await scanActiveArtifacts(ctx.cwd, targetSubtype);
+
+  let matches = artifacts.filter((a) => {
+    if (targetTag) {
+      return a.tag.toUpperCase() === targetTag;
+    }
+    return (
+      a.filename.toLowerCase() === ident.toLowerCase() ||
+      a.slug.toLowerCase() === ident.toLowerCase()
+    );
+  });
+
+  if (matches.length === 0) {
+    return null;
+  }
+
+  if (ctx.options.includeArchived === false) {
+    const nonArchived = matches.filter((a) => !a.isArchived);
+    if (nonArchived.length > 0) {
+      matches = nonArchived;
+    }
+  }
+
+  const activeMatch = matches.find((a) => !a.isArchived);
+  const selected = activeMatch ?? matches[0]!;
+
+  return {
+    tag: selected.tag,
+    subtype: selected.subtype,
+    id: selected.id,
+    slug: selected.slug,
+    filename: selected.filename,
+    filepath: selected.filepath,
+    relativePath: toPosixRelative(ctx.cwd, selected.filepath),
+    isArchived: selected.isArchived,
+    isHistorical: false,
+  };
+}
+
+async function byHistory(
+  ident: string,
+  ctx: ArtifactLookupContext,
+): Promise<ArtifactHit | null> {
+  const tagInfo = parseCanonicalTag(ident);
+  const targetTag = tagInfo?.tag.toUpperCase();
+  const targetSubtype = tagInfo?.subtype ?? ctx.options.subtype;
+
+  const [deletedArtifacts, branchArtifacts] = await Promise.all([
+    inspectGitDeletedArtifacts(ctx.cwd, targetSubtype, ctx.options.vcs),
+    inspectMultiBranchActiveArtifacts(
+      ctx.cwd,
+      targetSubtype,
+      { excludeCurrent: true },
+      ctx.options.vcs,
+    ),
+  ]);
+
+  const historicalCandidates = [...branchArtifacts, ...deletedArtifacts];
+
+  if (!targetSubtype || targetSubtype === "TASK") {
+    const branches = await listGitBranches(ctx.cwd, ctx.options.vcs);
+    for (const b of branches) {
+      const branchMatch = parseTaskBranch(b);
+      if (branchMatch?.slug) {
+        const bId = branchMatch.taskId;
+        const bSlug = branchMatch.slug;
+        const bTag = `TASK-${bId}`;
+        if (
+          !historicalCandidates.some(
+            (c) => c.tag.toUpperCase() === bTag.toUpperCase() && c.filepath,
+          )
+        ) {
+          const bFilename = `${bSlug}.${bTag}.md`;
+          historicalCandidates.push({
+            id: bId,
+            subtype: "TASK",
+            tag: bTag,
+            slug: bSlug,
+            filename: bFilename,
+            filepath: `.modie/tasks/${bFilename}`,
+            isArchived: false,
+            status: "deleted",
+          });
+        }
+      }
+    }
+  }
+
+  const histMatches = historicalCandidates.filter((a) => {
+    if (targetTag) {
+      return a.tag.toUpperCase() === targetTag;
+    }
+    return (
+      (a.filename && a.filename.toLowerCase() === ident.toLowerCase()) ||
+      (a.slug && a.slug.toLowerCase() === ident.toLowerCase())
+    );
+  });
+
+  const withPath = histMatches.find((a) => Boolean(a.filepath));
+  const selectedHist = withPath ?? histMatches[0];
+  if (!selectedHist) {
+    return null;
+  }
+
+  const slug = selectedHist.slug || `task-${selectedHist.id.toLowerCase()}`;
+  const filename = selectedHist.filename || `${slug}.${selectedHist.tag}.md`;
+  const relPath = selectedHist.filepath
+    ? isAbsolute(selectedHist.filepath)
+      ? toPosixRelative(ctx.cwd, selectedHist.filepath)
+      : selectedHist.filepath
+    : `.modie/${selectedHist.subtype.toLowerCase()}s/${filename}`;
+  const absPath = isAbsolute(selectedHist.filepath)
+    ? selectedHist.filepath
+    : resolve(ctx.cwd, relPath);
+
+  return {
+    tag: selectedHist.tag,
+    subtype: selectedHist.subtype,
+    id: selectedHist.id,
+    slug,
+    filename,
+    filepath: absPath,
+    relativePath: relPath.replace(/\\/g, "/"),
+    isArchived: selectedHist.isArchived,
+    isHistorical: true,
+  };
+}
+
+async function toResolvedArtifact(
+  hit: ArtifactHit,
+  ctx: ArtifactLookupContext,
+): Promise<ResolvedArtifact> {
+  const scope = computeArtifactScope(hit.filepath, hit.subtype, ctx.cwd);
+  const relativePath =
+    hit.relativePath ?? toPosixRelative(ctx.cwd, hit.filepath);
+  let summary: string | undefined;
+
+  if (hit.subtype === "ADR" && !hit.isHistorical) {
+    summary = await resolveAdrSummary(hit.filepath, hit.slug);
+  }
+
+  return {
+    tag: hit.tag,
+    subtype: hit.subtype,
+    id: hit.id,
+    slug: hit.slug,
+    filename: hit.filename,
+    filepath: hit.filepath,
+    relativePath,
+    scope,
+    isArchived: hit.isArchived,
+    ...(hit.isHistorical ? { isHistorical: true } : {}),
+    ...(summary ? { summary } : {}),
+  };
+}
+
 /**
  * Resolves an indexable artifact (RULE, ADR, or TASK) by its canonical tag,
  * filename, or filepath across the repository workspace.
  *
- * By default, strictly searches active (and archived) .md files on disk.
- * When `options.history` is true, also searches Git deletion history and branches (ADR-6).
+ * Uses an extensible strategy chain:
+ * 1. Direct path lookup on disk (`byExistingPath`)
+ * 2. Active/archived workspace file scan (`byWorkspaceScan`)
+ * 3. Git deletion logs and branches (`byHistory` when `options.history` is true)
  *
  * @throws Error if the artifact is not found or identifier is empty.
  */
@@ -91,188 +320,22 @@ export async function resolveArtifactByTag(
     throw new Error("Artifact identifier must not be empty.");
   }
 
-  // 1. Direct path check (only if the file actually exists on disk)
-  const candidatePath = isAbsolute(trimmed) ? trimmed : resolve(cwd, trimmed);
-  const parsedFromPath = parseArtifactFilename(candidatePath);
-  if (parsedFromPath) {
-    try {
-      const fileStat = await stat(candidatePath);
-      if (fileStat.isFile()) {
-        const rel = toPosixRelative(cwd, candidatePath);
-        const scope = computeArtifactScope(
-          candidatePath,
-          parsedFromPath.subtype,
-          cwd,
-        );
-        let summary: string | undefined;
-        if (parsedFromPath.subtype === "ADR") {
-          try {
-            const rawContent = await readFile(candidatePath, "utf8");
-            summary = extractAdrSummary(rawContent, parsedFromPath.slug);
-          } catch {
-            summary = slugToTitle(parsedFromPath.slug);
-          }
-        }
-        return {
-          tag: parsedFromPath.tag,
-          subtype: parsedFromPath.subtype,
-          id: parsedFromPath.id,
-          slug: parsedFromPath.slug,
-          filename: parsedFromPath.filename,
-          filepath: candidatePath,
-          relativePath: rel,
-          scope,
-          isArchived: parsedFromPath.isArchived,
-          ...(summary ? { summary } : {}),
-        };
-      }
-    } catch {
-      // Fall through to scanner if path does not exist on disk
+  const ctx: ArtifactLookupContext = { cwd, options };
+  const strategies: ArtifactLookupStrategy[] = [
+    byExistingPath,
+    byWorkspaceScan,
+    ...(options.history ? [byHistory] : []),
+  ];
+
+  for (const strategy of strategies) {
+    const hit = await strategy(trimmed, ctx);
+    if (hit) {
+      return toResolvedArtifact(hit, ctx);
     }
   }
 
-  // 2. Parse canonical tag or raw ID
   const tagInfo = parseCanonicalTag(trimmed);
-  const targetTag = tagInfo?.tag.toUpperCase();
-
-  // 3. Scan workspace for active/archived indexable artifacts on disk
   const targetSubtype = tagInfo?.subtype ?? options.subtype;
-  const artifacts = await scanActiveArtifacts(cwd, targetSubtype);
-
-  // Match by canonical tag, filename, or slug
-  let matches = artifacts.filter((a) => {
-    if (targetTag) {
-      return a.tag.toUpperCase() === targetTag;
-    }
-    return (
-      a.filename.toLowerCase() === trimmed.toLowerCase() ||
-      a.slug.toLowerCase() === trimmed.toLowerCase()
-    );
-  });
-
-  if (matches.length > 0) {
-    // Filter archived if requested (defaults to including archived)
-    if (options.includeArchived === false) {
-      const nonArchived = matches.filter((a) => !a.isArchived);
-      if (nonArchived.length > 0) {
-        matches = nonArchived;
-      }
-    }
-
-    // If both active and archived exist for the same tag, prefer the active artifact
-    const activeMatch = matches.find((a) => !a.isArchived);
-    const selected = activeMatch ?? matches[0]!;
-
-    const scope = computeArtifactScope(selected.filepath, selected.subtype, cwd);
-    let summary: string | undefined;
-    if (selected.subtype === "ADR") {
-      try {
-        const rawContent = await readFile(selected.filepath, "utf8");
-        summary = extractAdrSummary(rawContent, selected.slug);
-      } catch {
-        summary = slugToTitle(selected.slug);
-      }
-    }
-    return {
-      tag: selected.tag,
-      subtype: selected.subtype,
-      id: selected.id,
-      slug: selected.slug,
-      filename: selected.filename,
-      filepath: selected.filepath,
-      relativePath: toPosixRelative(cwd, selected.filepath),
-      scope,
-      isArchived: selected.isArchived,
-      ...(summary ? { summary } : {}),
-    };
-  }
-
-  // 4. Explicit historical query fallback (--history) across Git deletion logs and branches
-  if (options.history) {
-    const [deletedArtifacts, branchArtifacts] = await Promise.all([
-      inspectGitDeletedArtifacts(cwd, targetSubtype, options.vcs),
-      inspectMultiBranchActiveArtifacts(
-        cwd,
-        targetSubtype,
-        { excludeCurrent: true },
-        options.vcs,
-      ),
-    ]);
-
-    const historicalCandidates = [...branchArtifacts, ...deletedArtifacts];
-
-    // Also include task branches `task/<id>-<slug>` if not already present in candidates
-    if (!targetSubtype || targetSubtype === "TASK") {
-      const branches = await listGitBranches(cwd, options.vcs);
-      for (const b of branches) {
-        const branchMatch = parseTaskBranch(b);
-        if (branchMatch && branchMatch.slug) {
-          const bId = branchMatch.taskId;
-          const bSlug = branchMatch.slug;
-          const bTag = `TASK-${bId}`;
-          if (
-            !historicalCandidates.some(
-              (c) => c.tag.toUpperCase() === bTag.toUpperCase() && c.filepath,
-            )
-          ) {
-            const bFilename = `${bSlug}.${bTag}.md`;
-            historicalCandidates.push({
-              id: bId,
-              subtype: "TASK",
-              tag: bTag,
-              slug: bSlug,
-              filename: bFilename,
-              filepath: `.modie/tasks/${bFilename}`,
-              isArchived: false,
-              status: "deleted",
-            });
-          }
-        }
-      }
-    }
-
-    const histMatches = historicalCandidates.filter((a) => {
-      if (targetTag) {
-        return a.tag.toUpperCase() === targetTag;
-      }
-      return (
-        (a.filename && a.filename.toLowerCase() === trimmed.toLowerCase()) ||
-        (a.slug && a.slug.toLowerCase() === trimmed.toLowerCase())
-      );
-    });
-
-    const withPath = histMatches.find((a) => Boolean(a.filepath));
-    const selectedHist = withPath ?? histMatches[0];
-
-    if (selectedHist) {
-      const slug = selectedHist.slug || `task-${selectedHist.id.toLowerCase()}`;
-      const filename =
-        selectedHist.filename || `${slug}.${selectedHist.tag}.md`;
-      const relPath = selectedHist.filepath
-        ? isAbsolute(selectedHist.filepath)
-          ? toPosixRelative(cwd, selectedHist.filepath)
-          : selectedHist.filepath
-        : `.modie/${selectedHist.subtype.toLowerCase()}s/${filename}`;
-      const absPath = isAbsolute(selectedHist.filepath)
-        ? selectedHist.filepath
-        : resolve(cwd, relPath);
-
-      const scope = computeArtifactScope(absPath, selectedHist.subtype, cwd);
-      return {
-        tag: selectedHist.tag,
-        subtype: selectedHist.subtype,
-        id: selectedHist.id,
-        slug,
-        filename,
-        filepath: absPath,
-        relativePath: relPath.replace(/\\/g, "/"),
-        scope,
-        isArchived: selectedHist.isArchived,
-        isHistorical: true,
-      };
-    }
-  }
-
   const subtypeLabel = targetSubtype ? ` ${targetSubtype}` : "";
   throw new Error(
     `Artifact "${trimmed}" was not found across active or archived${subtypeLabel} artifacts on disk.`,
