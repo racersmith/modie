@@ -112,13 +112,7 @@ export const taskCreateCommand: CliCommandDefinition<
   description:
     "Create a new TASK artifact with automatic watermark resolution",
   agentGuidance:
-    "Call this tool to generate a new TASK artifact with automatic sequence watermark resolution, link validation, and least-scope directory placement.\n\n" +
-    "TASK AUTHORING BEST PRACTICES & INVARIANTS:\n" +
-    "1. Contract-Based Acceptance Criteria (RULE-30): Define deliverables in terms of component roles, behavioral contracts, and testable outcomes rather than concrete filesystem paths that rot during refactorings.\n" +
-    "2. Ephemeral Task Decoupling: ANTI-PATTERN WARNING: Never reference ephemeral TASK IDs (e.g. `[TASK-XX]`, `@verifies TASK-XX`) in tests or code implementation comments. Tasks are ephemeral and deleted upon completion (ADR-6, RULE-21). Tests and code must ONLY reference durable `RULE-` and `ADR-` artifacts. If you find yourself wanting to cite a TASK in code or tests, STOP and author a new `RULE` or `ADR` instead.\n" +
-    "3. Upfront Planned Governance: Front-load candidate rules and architectural decisions in `--plan-rule` and `--plan-adr` before starting implementation. All planned governance artifacts must be authored and satisfied before the task can be completed.\n" +
-    "4. Atomic Scope & Blast Radius (RULE-6, RULE-12): Tasks must represent a single, cohesive unit of work scoped at the deepest common ancestor.\n" +
-    "5. Human-in-the-Loop Review Gate: By default, a 'User Review' acceptance criterion is automatically appended to enforce a review checkpoint before completion. Use --no-review only for automated pipelines where human verification is unnecessary.",
+    "Call this tool to generate a new TASK artifact with automatic sequence watermark resolution, link validation, and least-scope directory placement.",
   helpUsage: "modie task create --help",
   schema: taskCreateSchema,
   positionals: [

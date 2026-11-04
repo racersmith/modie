@@ -15,6 +15,10 @@ import {
   type FixtureWorkspace,
 } from "../../core/testing/index.ts";
 import { createModieMcpServer } from "./server.ts";
+import {
+  DEFAULT_MCP_INSTRUCTIONS_PATH,
+  loadMcpInstructions,
+} from "./instructions.ts";
 
 function getTextContent(result: any): string {
   const item = result?.content?.[0];
@@ -673,6 +677,60 @@ describe("Modie MCP Server - Consolidated Four-Tool Architecture", () => {
       expect(rules[0].tag).toBe(ruleTag);
     });
 
+    // @verifies RULE-21, RULE-25, RULE-26
+    it("[RULE-21][RULE-25][RULE-26] should load authoritative instructions from src/interfaces/mcp/instructions.md", () => {
+      const instructions = loadMcpInstructions();
+      expect(typeof instructions).toBe("string");
+      expect(instructions.length).toBeGreaterThan(0);
+      expect(instructions).toContain("Modie Agent Instructions");
+      expect(instructions).toContain("Ephemeral Task Decoupling");
+      expect(instructions).toContain("Strict Blast Radius Confinement");
+      expect(instructions).toContain("Contract-Based Acceptance Criteria");
+
+      expect(() =>
+        loadMcpInstructions("/non/existent/path/instructions.md"),
+      ).toThrow("Failed to load agent instructions");
+    });
+
+    // @verifies RULE-21, RULE-25, RULE-26
+    it("[RULE-21][RULE-25][RULE-26] should provide native agent instructions in initialize handshake response without explicit resource reads", () => {
+      const instructions = client.getInstructions();
+      expect(instructions).toBeDefined();
+      expect(typeof instructions).toBe("string");
+      expect(instructions).toContain("Modie Agent Instructions");
+      expect(instructions).toContain("Ephemeral Task Decoupling");
+      expect(instructions).toContain("Strict Blast Radius Confinement");
+      expect(instructions).toContain("Contract-Based Acceptance Criteria");
+    });
+
+    // @verifies RULE-25, RULE-26
+    it("[RULE-25][RULE-26] should honor serverOptions.instructions override in initialize handshake and resource", async () => {
+      const customInstructions = "# Custom Instructions for Testing";
+      const customServer = createModieMcpServer({
+        cwd: workspace.cwd,
+        serverOptions: { instructions: customInstructions },
+      });
+      const [customClientTransport, customServerTransport] =
+        InMemoryTransport.createLinkedPair();
+      await customServer.connect(customServerTransport);
+
+      const customClient = new Client(
+        { name: "custom-test-client", version: "0.0.1" },
+        { capabilities: {} },
+      );
+      await customClient.connect(customClientTransport);
+
+      expect(customClient.getInstructions()).toBe(customInstructions);
+
+      const readRes = await customClient.readResource({
+        uri: "modie://instructions",
+      });
+      expect(getResourceText(readRes)).toBe(customInstructions);
+
+      await customClient.close();
+      await customServer.close();
+    });
+
     it("should read modie://instructions and return agent authoring guidance", async () => {
       const readRes = await client.readResource({
         uri: "modie://instructions",
@@ -732,6 +790,8 @@ describe("Modie MCP Server - Consolidated Four-Tool Architecture", () => {
 
       const response = JSON.parse(initLine!);
       expect(response.result?.serverInfo?.name).toBe("modie");
+      expect(response.result?.instructions).toBeDefined();
+      expect(response.result?.instructions).toContain("Modie Agent Instructions");
 
       child.kill("SIGTERM");
     });

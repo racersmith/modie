@@ -5,8 +5,6 @@
  * and token economy progressive disclosure (RULE-25, RULE-26, RULE-27).
  */
 
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import {
   McpServer,
   type McpServerOptions,
@@ -20,6 +18,7 @@ import {
   queryTaskQueue,
   scanActiveArtifacts,
 } from "../../core/index.ts";
+import { loadMcpInstructions } from "./instructions.ts";
 import {
   handleCompileContext,
   handleCreateArtifact,
@@ -71,12 +70,18 @@ export function createModieMcpServer(
   const stderr =
     options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
 
+  const instructions =
+    options.serverOptions?.instructions ?? loadMcpInstructions();
+
   const server = new McpServer(
     {
       name: "modie",
       version: MODIE_VERSION,
     },
-    options.serverOptions,
+    {
+      ...options.serverOptions,
+      instructions,
+    },
   );
 
   // 1. Tool 1: modie_compile_context
@@ -339,7 +344,7 @@ export function createModieMcpServer(
     },
   );
 
-  // Agent Instructions Resource
+  // Agent Instructions Resource (RULE-21, RULE-26)
   server.registerResource(
     "instructions",
     "modie://instructions",
@@ -350,41 +355,8 @@ export function createModieMcpServer(
       mimeType: "text/markdown",
     },
     async (uri) => {
-      let text = "";
-      const candidates = [
-        join(cwd, ".agents", "plugins", "modie", "instructions.md"),
-        join(
-          import.meta.dir,
-          "..",
-          "..",
-          "..",
-          ".agents",
-          "plugins",
-          "modie",
-          "instructions.md",
-        ),
-      ];
-
-      for (const path of candidates) {
-        try {
-          text = await readFile(path, "utf8");
-          if (text) break;
-        } catch {
-          // try next candidate
-        }
-      }
-
-      if (!text) {
-        text =
-          "# Modie Agent Instructions & Authoring Best Practices\n\n" +
-          "## 1. Ephemeral Task Decoupling (Critical Anti-Pattern)\n\n" +
-          "Never reference ephemeral `TASK-XX` IDs in test headers (`[TASK-XX]`) or code comments (`@verifies TASK-XX`). Tasks are ephemeral and deleted upon completion. Instead, author and cite durable `RULE-` and `ADR-` artifacts.\n\n" +
-          "## 2. Contract-Based Acceptance Criteria\n\n" +
-          "Define deliverables in terms of component roles, behavioral contracts, or testable capabilities rather than concrete filesystem paths.\n\n" +
-          "## 3. Front-Loaded Planned Governance\n\n" +
-          "Declare planned rules and ADRs upfront during task creation (`--plan-rule`, `--plan-adr`). All planned governance items must be generated before task completion.";
-      }
-
+      const text =
+        options.serverOptions?.instructions ?? loadMcpInstructions();
       return {
         contents: [
           {
