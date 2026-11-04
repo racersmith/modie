@@ -3,6 +3,7 @@
  * Complies with ADR-4, RULE-1, RULE-25, and RULE-26.
  */
 
+import { YAML } from "bun";
 import { slugToTitle } from "../common/index.ts";
 
 export interface ParsedFrontmatterFields {
@@ -54,38 +55,32 @@ export function splitMarkdownFrontmatter(content: string): {
   return { frontmatter, body };
 }
 
-function unquoteYamlScalar(raw: string): string {
-  const trimmed = raw.trim();
-  if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith("'") && trimmed.endsWith("'"))
-  ) {
-    return trimmed
-      .slice(1, -1)
-      .replace(/\\"/g, '"')
-      .replace(/\\'/g, "'")
-      .trim();
+function safeYamlParse(str: string): Record<string, unknown> {
+  try {
+    const parsed = YAML.parse(str);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+    return {};
+  } catch {
+    return {};
   }
-  return trimmed;
 }
 
-function parseInlineYamlListValue(inline: string): {
-  items: string[];
-  closed: boolean;
-} {
-  if (!inline) {
-    return { items: [], closed: false };
+function toList(val: unknown): string[] {
+  if (Array.isArray(val)) {
+    return val.map(String).map((s) => s.trim()).filter(Boolean);
   }
-  if (inline.startsWith("[") && inline.endsWith("]")) {
-    const items = inline
-      .slice(1, -1)
-      .split(",")
-      .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
-      .filter(Boolean);
-    return { items, closed: true };
-  }
-  const scalar = unquoteYamlScalar(inline);
-  return { items: scalar ? [scalar] : [], closed: true };
+  return typeof val === "string" && val.trim() ? [val.trim()] : [];
+}
+
+function assignOptionalList(
+  obj: ParsedFrontmatterFields,
+  key: "depends_on" | "supersedes" | "superseded_by",
+  val: unknown,
+): void {
+  const list = toList(val);
+  if (list.length > 0) obj[key] = list;
 }
 
 /**
@@ -94,114 +89,51 @@ function parseInlineYamlListValue(inline: string): {
 export function parseFrontmatterFields(
   frontmatterStr: string,
 ): ParsedFrontmatterFields {
-  const lines = frontmatterStr.split(/\r?\n/);
-  const links: string[] = [];
-  const depends_on: string[] = [];
-  const supersedes: string[] = [];
-  const superseded_by: string[] = [];
-  const summaryParts: string[] = [];
-  let currentKey:
-    | "links"
-    | "depends_on"
-    | "supersedes"
-    | "superseded_by"
-    | "summary"
-    | null = null;
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-
-    if (line.startsWith("summary:")) {
-      summaryParts.length = 0;
-      const inline = line.slice("summary:".length).trim();
-      if (
-        inline &&
-        inline !== ">" &&
-        inline !== "|" &&
-        inline !== ">-" &&
-        inline !== "|-"
-      ) {
-        const unquoted = unquoteYamlScalar(inline);
-        if (unquoted) {
-          summaryParts.push(unquoted);
-        }
-      }
-      currentKey = "summary";
-      continue;
-    }
-
-    if (line.startsWith("links:")) {
-      const inline = line.slice("links:".length).trim();
-      const { items, closed } = parseInlineYamlListValue(inline);
-      links.push(...items);
-      currentKey = closed ? null : "links";
-      continue;
-    }
-
-    if (line.startsWith("depends_on:")) {
-      const inline = line.slice("depends_on:".length).trim();
-      const { items, closed } = parseInlineYamlListValue(inline);
-      depends_on.push(...items);
-      currentKey = closed ? null : "depends_on";
-      continue;
-    }
-
-    if (line.startsWith("supersedes:")) {
-      const inline = line.slice("supersedes:".length).trim();
-      const { items, closed } = parseInlineYamlListValue(inline);
-      supersedes.push(...items);
-      currentKey = closed ? null : "supersedes";
-      continue;
-    }
-
-    if (line.startsWith("superseded_by:")) {
-      const inline = line.slice("superseded_by:".length).trim();
-      const { items, closed } = parseInlineYamlListValue(inline);
-      superseded_by.push(...items);
-      currentKey = closed ? null : "superseded_by";
-      continue;
-    }
-
-    if (line.startsWith("- ") || line === "-") {
-      const val = line
-        .slice(1)
-        .trim()
-        .replace(/^['"]|['"]$/g, "");
-      if (val) {
-        if (currentKey === "links") links.push(val);
-        if (currentKey === "depends_on") depends_on.push(val);
-        if (currentKey === "supersedes") supersedes.push(val);
-        if (currentKey === "superseded_by") superseded_by.push(val);
-      }
-      continue;
-    }
-
-    if (/^[a-zA-Z0-9_-]+:/.test(rawLine.trimStart()) && !/^\s+/.test(rawLine)) {
-      currentKey = null;
-      continue;
-    }
-
-    if (currentKey === "summary" && /^\s+/.test(rawLine)) {
-      summaryParts.push(unquoteYamlScalar(line));
-      continue;
-    }
-
-    if (/^[a-zA-Z0-9_-]+:/.test(line)) {
-      currentKey = null;
-    }
+  const data = safeYamlParse(frontmatterStr);
+  const result: ParsedFrontmatterFields = { links: toList(data.links) };
+  assignOptionalList(result, "depends_on", data.depends_on);
+  assignOptionalList(result, "supersedes", data.supersedes);
+  assignOptionalList(result, "superseded_by", data.superseded_by);
+  if (typeof data.summary === "string" && data.summary.trim()) {
+    result.summary = data.summary.trim();
   }
+  return result;
+}
 
-  const summary =
-    summaryParts.length > 0 ? summaryParts.join(" ").trim() : undefined;
+const LINK_KEYS = new Set([
+  "links",
+  "depends_on",
+  "supersedes",
+  "superseded_by",
+]);
 
-  return {
-    links,
-    depends_on: depends_on.length > 0 ? depends_on : undefined,
-    ...(supersedes.length > 0 ? { supersedes } : {}),
-    ...(superseded_by.length > 0 ? { superseded_by } : {}),
-    ...(summary ? { summary } : {}),
-  };
+function isIgnoredLine(trimmed: string): boolean {
+  return !trimmed || trimmed.startsWith("#");
+}
+
+function scanLineRelation(
+  trimmed: string,
+  currentKey: string | null,
+): [nextKey: string | null, emitKey: string | null] {
+  if (isIgnoredLine(trimmed)) return [currentKey, null];
+  const key = trimmed.match(/^([a-zA-Z0-9_-]+):/)?.[1];
+  if (key) {
+    const matched = LINK_KEYS.has(key) ? key : null;
+    return [matched, matched];
+  }
+  const itemKey = trimmed.startsWith("- ") ? currentKey : null;
+  return [itemKey, itemKey];
+}
+
+function findFrontmatterClosingLine(lines: string[]): number {
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i]!.trim() === "---") return i + 1;
+  }
+  return 0;
+}
+
+function hasValidFrontmatterBounds(lines: string[], endLine: number): boolean {
+  return endLine > 0 && lines[0]?.trim() === "---";
 }
 
 /**
@@ -212,62 +144,17 @@ export function parseFrontmatterLineMap(
   lines: string[],
 ): ParsedFrontmatterLinkLines {
   const linkLines = new Map<number, string>();
-  let frontmatterEndLine = 0;
-
-  if (lines.length === 0 || lines[0]!.trim() !== "---") {
+  const frontmatterEndLine = findFrontmatterClosingLine(lines);
+  if (!hasValidFrontmatterBounds(lines, frontmatterEndLine)) {
     return { linkLines, frontmatterEndLine: 0 };
   }
 
   let currentKey: string | null = null;
-
-  for (let i = 1; i < lines.length; i++) {
-    const lineNum = i + 1; // 1-based line index
-    const line = lines[i]!;
-
-    if (line.trim() === "---") {
-      frontmatterEndLine = lineNum;
-      break;
-    }
-
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) {
-      continue;
-    }
-
-    if (trimmed.startsWith("links:")) {
-      currentKey = "links";
-      linkLines.set(lineNum, "links");
-      continue;
-    }
-
-    if (trimmed.startsWith("depends_on:")) {
-      currentKey = "depends_on";
-      linkLines.set(lineNum, "depends_on");
-      continue;
-    }
-
-    if (trimmed.startsWith("supersedes:")) {
-      currentKey = "supersedes";
-      linkLines.set(lineNum, "supersedes");
-      continue;
-    }
-
-    if (trimmed.startsWith("superseded_by:")) {
-      currentKey = "superseded_by";
-      linkLines.set(lineNum, "superseded_by");
-      continue;
-    }
-
-    if (trimmed.startsWith("- ")) {
-      if (currentKey) {
-        linkLines.set(lineNum, currentKey);
-      }
-      continue;
-    }
-
-    if (/^[a-zA-Z0-9_-]+:/.test(trimmed)) {
-      currentKey = null;
-    }
+  for (let i = 1; i < frontmatterEndLine - 1; i++) {
+    const trimmed = lines[i]!.trim();
+    const [nextKey, emitKey] = scanLineRelation(trimmed, currentKey);
+    currentKey = nextKey;
+    if (emitKey) linkLines.set(i + 1, emitKey);
   }
 
   return { linkLines, frontmatterEndLine };
