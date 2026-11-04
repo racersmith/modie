@@ -26,10 +26,14 @@ import {
   parseTaskIdFromBranch,
   resolveArtifactDirectories,
   resolveGoverningScope,
+  resolveScopeDirectory,
   slugToTitle,
   taskBranchGlob,
   taskKey,
   toPosixRelative,
+  walkAncestorsForFile,
+  extractCwd,
+  buildAncestralScopes,
 } from "./index.ts";
 
 describe("Common Primitives - Slug Generation & Validation (RULE-1, RULE-35)", () => {
@@ -505,6 +509,65 @@ describe("Common Primitives - Dynamic Version Resolution", () => {
     expect(typeof MODIE_VERSION).toBe("string");
     expect(MODIE_VERSION.length).toBeGreaterThan(0);
     expect(MODIE_VERSION).toBe("0.0.1");
+  });
+});
+
+describe("Common Primitives - Scope Directory Resolution & Ancestral Walking", () => {
+  it("should resolve scope directories and strip .modie containers accurately", async () => {
+    await using workspace = await createFixtureWorkspace("modie-common-scope-");
+
+    const normCwd = workspace.cwd;
+
+    // Root
+    const r1 = resolveScopeDirectory(".", normCwd);
+    expect(r1.scope).toBe(".");
+    expect(r1.scopeDir).toBe(normCwd);
+
+    // Deep nested with .modie
+    const r2 = resolveScopeDirectory("src/core/.modie/gists", normCwd, "GIST");
+    expect(r2.scope).toBe("src/core");
+    expect(r2.scopeDir).toContain("src/core");
+
+    // Invalid outside workspace root
+    expect(() =>
+      resolveScopeDirectory("../outside", normCwd, "test"),
+    ).toThrow();
+  });
+
+  it("should extract cwd from string, options, or fallback", () => {
+    expect(extractCwd("/tmp")).toBe("/tmp");
+    expect(extractCwd({ cwd: "/tmp" })).toBe("/tmp");
+    expect(extractCwd()).toBe(process.cwd());
+  });
+
+  it("should walk ancestor directories from startDir to stopDir in leaf-to-root order", async () => {
+    await using workspace = await createFixtureWorkspace("modie-ancestor-walk-");
+
+    const visited: string[] = [];
+    const collected = await walkAncestorsForFile(
+      `${workspace.cwd}/src/core/nested`,
+      workspace.cwd,
+      (dir) => {
+        visited.push(dir);
+        return dir === workspace.cwd ? "root" : null;
+      },
+    );
+
+    expect(collected).toEqual(["root"]);
+    expect(visited.length).toBeGreaterThanOrEqual(3);
+    expect(visited[visited.length - 1]).toBe(workspace.cwd);
+  });
+
+  it("should compute pure ancestral scope prefix path vectors without I/O", () => {
+    expect(buildAncestralScopes(".")).toEqual(["."]);
+    expect(buildAncestralScopes("")).toEqual(["."]);
+    expect(buildAncestralScopes("src")).toEqual([".", "src"]);
+    expect(buildAncestralScopes("src/core/query")).toEqual([
+      ".",
+      "src",
+      "src/core",
+      "src/core/query",
+    ]);
   });
 });
 

@@ -5,20 +5,22 @@
  * local directory/file GISTs (RULE-9, RULE-20), and shallow downward child signposts (ADR-8).
  */
 
-import { existsSync, statSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { basename, isAbsolute, join, normalize, resolve } from "node:path";
 import {
-  basename,
-  dirname,
-  isAbsolute,
-  join,
-  normalize,
-  resolve,
-} from "node:path";
-import { resolveGoverningScope } from "../common/directories.ts";
+  buildAncestralScopes,
+  resolveGoverningScope,
+  resolveScopeDirectory,
+} from "../common/directories.ts";
 import { parseArtifactFilename } from "../common/filename.ts";
 import { slugToTitle, toPosixRelative } from "../common/index.ts";
 import { discoverGistsForScope } from "../gist/reader.ts";
+import type {
+  DirectoryGist,
+  FileGist,
+  GistSignpost,
+} from "../gist/types.ts";
 import { collectAncestralMotives } from "../motive/reader.ts";
 import { getTaskStatus, type TaskStatusDetails } from "../task/query.ts";
 import { compareArtifactIds, listAdrs, listRules } from "./artifact-list.ts";
@@ -39,26 +41,6 @@ import type {
 } from "./types.ts";
 
 /**
- * Computes the ancestry scope path vector walking from `targetScope` upward to root `.`
-
- * (or root `.` down to `targetScope`).
- */
-function buildAncestralScopes(targetScope: string): string[] {
-  const normalized = targetScope.trim() || ".";
-  if (normalized === ".") {
-    return ["."];
-  }
-  const segments = normalized.split("/").filter(Boolean);
-  const scopes: string[] = ["."];
-  let accum = "";
-  for (const seg of segments) {
-    accum = accum ? `${accum}/${seg}` : seg;
-    scopes.push(accum);
-  }
-  return scopes;
-}
-
-/**
  * Normalizes a filesystem path within `cwd` to its architectural directory `<dir>` (RULE-8),
  * stripping `.modie` container segments or file basenames while preserving exact directory paths
  * even if `<dir>/.modie` has not yet been created on disk.
@@ -71,47 +53,12 @@ function resolveTargetDirectoryScope(
   scopeDir: string;
   scope: string;
 } {
-  const trimmed = pathInput.trim() || ".";
-  const absResolved =
-    trimmed === "."
-      ? normCwd
-      : isAbsolute(trimmed)
-        ? normalize(trimmed)
-        : normalize(resolve(normCwd, trimmed));
-
-  const relTarget = toPosixRelative(normCwd, absResolved);
-  if (relTarget.startsWith("..") || isAbsolute(relTarget)) {
-    throw new Error(
-      `Invalid path "${pathInput}": path must reside within the workspace root.`,
-    );
-  }
-
-  const segments = absResolved.split(/[\\/]/);
-  const modieIdx = segments.indexOf(".modie");
-
-  let scopeDir: string;
-  if (modieIdx !== -1) {
-    scopeDir = segments.slice(0, modieIdx).join("/") || "/";
-  } else {
-    scopeDir = absResolved;
-    try {
-      const st = statSync(absResolved);
-      if (st.isFile()) {
-        scopeDir = dirname(absResolved);
-      }
-    } catch {
-      if (basename(absResolved).includes(".")) {
-        scopeDir = dirname(absResolved);
-      }
-    }
-  }
-
-  const scope = toPosixRelative(normCwd, scopeDir);
-  return {
-    targetPath: relTarget,
-    scopeDir,
-    scope,
-  };
+  const { scopeDir, scope, targetPath } = resolveScopeDirectory(
+    pathInput,
+    normCwd,
+    "path",
+  );
+  return { targetPath, scopeDir, scope };
 }
 
 function buildCompiledTask(
@@ -156,43 +103,68 @@ function buildCompiledTask(
   };
 }
 
-/**
- * Compiles the unified Cone of Governance & Orientation for a target directory,
- * file path, task identifier, or artifact tag.
- *
- * Enforces:
- * - RULE-2: Upward ancestral motive traversal without sibling pollution.
- * - RULE-6: Task blast radius boundary resolution when scoped to a task.
- * - RULE-8 & ADR-10: `.modie/` container scope normalization.
- * - RULE-9: Ancestral rules and motives from P to R; local GISTs strictly at P.
- * - RULE-20: Directory (`GIST.md`) and file-level (`<filename>.GIST.md`) GIST resolution.
- * - ADR-8 & RULE-26: Progressive disclosure via ADR summaries and shallow child directory signposts.
- */
-export async function compileContext(
-  targetInput: string = ".",
-  options: CompileContextOptions = {},
-): Promise<CompiledContextResult> {
-  const normCwd = normalize(resolve(options.cwd ?? process.cwd()));
-  const trimmed = targetInput?.trim() || ".";
+export interface ContextTarget {
+  target: string;
+  type: "path" | "task" | "artifact";
+  targetPath: string;
+  scope: string;
+  scopeDir: string;
+  task?: CompiledContextTask;
+}
 
-  let type: "path" | "task" | "artifact" = "path";
-  let targetPath = ".";
-  let scopeDir = normCwd;
-  let scope = ".";
-  let compiledTask: CompiledContextTask | undefined;
+function buildTaskTarget(
+  taskStatus: TaskStatusDetails,
+  normCwd: string,
+  target: string,
+): ContextTarget {
+  const compiledTask = buildCompiledTask(taskStatus, normCwd);
+  return {
+    target,
+    type: "task",
+    targetPath: compiledTask.relativePath,
+    scope: compiledTask.scope,
+    scopeDir: compiledTask.scopeDir,
+    task: compiledTask,
+  };
+}
 
-  // 1. Check if targetInput is an explicit artifact tag, task filename, or artifact slug
+function buildArtifactTarget(
+  artifact: ResolvedArtifact,
+  normCwd: string,
+  target: string,
+): ContextTarget {
+  const gov = resolveGoverningScope(artifact.filepath, normCwd);
+  return {
+    target,
+    type: "artifact",
+    targetPath: artifact.relativePath,
+    scope: gov.relativeScope,
+    scopeDir: gov.scopeDir,
+  };
+}
+
+async function tryTask(
+  trimmed: string,
+  normCwd: string,
+): Promise<ContextTarget | null> {
   const canonicalTag = parseCanonicalTag(trimmed);
   const parsedFilename = parseArtifactFilename(basename(trimmed));
 
   if (canonicalTag?.subtype === "TASK" || parsedFilename?.subtype === "TASK") {
     const taskStatus = await getTaskStatus(trimmed, { cwd: normCwd });
-    compiledTask = buildCompiledTask(taskStatus, normCwd);
-    type = "task";
-    targetPath = compiledTask.relativePath;
-    scopeDir = compiledTask.scopeDir;
-    scope = compiledTask.scope;
-  } else if (canonicalTag || parsedFilename) {
+    return buildTaskTarget(taskStatus, normCwd, trimmed);
+  }
+  return null;
+}
+
+async function tryArtifact(
+  trimmed: string,
+  normCwd: string,
+): Promise<ContextTarget | null> {
+  const canonicalTag = parseCanonicalTag(trimmed);
+  const parsedFilename = parseArtifactFilename(basename(trimmed));
+
+  if (canonicalTag || parsedFilename) {
     const resolvedArtifact = await resolveArtifactByTag(trimmed, {
       cwd: normCwd,
       includeArchived: true,
@@ -201,102 +173,102 @@ export async function compileContext(
       const taskStatus = await getTaskStatus(resolvedArtifact.tag, {
         cwd: normCwd,
       });
-      compiledTask = buildCompiledTask(taskStatus, normCwd);
-      type = "task";
-      targetPath = compiledTask.relativePath;
-      scopeDir = compiledTask.scopeDir;
-      scope = compiledTask.scope;
-    } else {
-      const gov = resolveGoverningScope(resolvedArtifact.filepath, normCwd);
-      type = "artifact";
-      targetPath = resolvedArtifact.relativePath;
-      scopeDir = gov.scopeDir;
-      scope = gov.relativeScope;
+      return buildTaskTarget(taskStatus, normCwd, trimmed);
     }
-  } else {
-    // Check if it's an existing path on disk or a path containing slashes
-    const candidatePath = resolve(normCwd, trimmed);
-    const existsOnDisk = existsSync(candidatePath);
+    return buildArtifactTarget(resolvedArtifact, normCwd, trimmed);
+  }
 
-    if (
-      !existsOnDisk &&
-      !trimmed.includes("/") &&
-      !trimmed.includes("\\") &&
-      trimmed !== "."
-    ) {
-      // Could be a bare numeric task ID (e.g. "54") or artifact slug
-      let matchedArtifact: ResolvedArtifact | null = null;
-      try {
-        matchedArtifact = await resolveArtifactByTag(trimmed, {
-          cwd: normCwd,
-          includeArchived: true,
-        });
-      } catch {
-        matchedArtifact = null;
-      }
+  // Also check if candidate could be an artifact slug (no slashes, doesn't exist on disk, not ".")
+  const candidatePath = resolve(normCwd, trimmed);
+  const existsOnDisk = existsSync(candidatePath);
 
-      if (matchedArtifact) {
-        if (matchedArtifact.subtype === "TASK") {
-          const taskStatus = await getTaskStatus(matchedArtifact.tag, {
-            cwd: normCwd,
-          });
-          compiledTask = buildCompiledTask(taskStatus, normCwd);
-          type = "task";
-          targetPath = compiledTask.relativePath;
-          scopeDir = compiledTask.scopeDir;
-          scope = compiledTask.scope;
-        } else {
-          const gov = resolveGoverningScope(matchedArtifact.filepath, normCwd);
-          type = "artifact";
-          targetPath = matchedArtifact.relativePath;
-          scopeDir = gov.scopeDir;
-          scope = gov.relativeScope;
-        }
-      } else {
-        // Also check bare numeric task ID
-        let taskStatus: TaskStatusDetails | null = null;
-        if (/^\d+(?:\.\d+)?$/.test(trimmed)) {
-          try {
-            taskStatus = await getTaskStatus(trimmed, { cwd: normCwd });
-          } catch {
-            taskStatus = null;
-          }
-        }
-        if (taskStatus) {
-          compiledTask = buildCompiledTask(taskStatus, normCwd);
-          type = "task";
-          targetPath = compiledTask.relativePath;
-          scopeDir = compiledTask.scopeDir;
-          scope = compiledTask.scope;
-        } else {
-          const resolvedDir = resolveTargetDirectoryScope(trimmed, normCwd);
-          type = "path";
-          targetPath = resolvedDir.targetPath;
-          scopeDir = resolvedDir.scopeDir;
-          scope = resolvedDir.scope;
-        }
+  if (
+    !existsOnDisk &&
+    !trimmed.includes("/") &&
+    !trimmed.includes("\\") &&
+    trimmed !== "."
+  ) {
+    try {
+      const matched = await resolveArtifactByTag(trimmed, {
+        cwd: normCwd,
+        includeArchived: true,
+      });
+      if (matched.subtype === "TASK") {
+        const taskStatus = await getTaskStatus(matched.tag, { cwd: normCwd });
+        return buildTaskTarget(taskStatus, normCwd, trimmed);
       }
-    } else {
-      const resolvedDir = resolveTargetDirectoryScope(trimmed, normCwd);
-      type = "path";
-      targetPath = resolvedDir.targetPath;
-      scopeDir = resolvedDir.scopeDir;
-      scope = resolvedDir.scope;
+      return buildArtifactTarget(matched, normCwd, trimmed);
+    } catch {
+      return null;
     }
   }
 
-  // 2. Compute ancestral scope chain
-  const ancestralScopes = buildAncestralScopes(scope);
+  return null;
+}
 
-  // 3. Collect upward ancestral motives (RULE-2, RULE-9)
+async function tryBareTaskId(
+  trimmed: string,
+  normCwd: string,
+): Promise<ContextTarget | null> {
+  if (!/^\d+(?:\.\d+)?$/.test(trimmed)) {
+    return null;
+  }
+  const candidatePath = resolve(normCwd, trimmed);
+  if (existsSync(candidatePath)) {
+    return null;
+  }
+  try {
+    const taskStatus = await getTaskStatus(trimmed, { cwd: normCwd });
+    return buildTaskTarget(taskStatus, normCwd, trimmed);
+  } catch {
+    return null;
+  }
+}
+
+function resolvePath(trimmed: string, normCwd: string): ContextTarget {
+  const resolvedDir = resolveTargetDirectoryScope(trimmed, normCwd);
+  return {
+    target: trimmed,
+    type: "path",
+    targetPath: resolvedDir.targetPath,
+    scope: resolvedDir.scope,
+    scopeDir: resolvedDir.scopeDir,
+  };
+}
+
+/**
+ * Resolves context target metadata by evaluating early-return candidates:
+ * `tryTask() ?? tryArtifact() ?? tryBareTaskId() ?? resolvePath()`.
+ */
+export async function resolveContextTarget(
+  targetInput: string,
+  normCwd: string,
+): Promise<ContextTarget> {
+  const trimmed = targetInput?.trim() || ".";
+  return (
+    (await tryTask(trimmed, normCwd)) ??
+    (await tryArtifact(trimmed, normCwd)) ??
+    (await tryBareTaskId(trimmed, normCwd)) ??
+    resolvePath(trimmed, normCwd)
+  );
+}
+
+async function collectMotives(
+  scopeDir: string,
+  normCwd: string,
+): Promise<CompiledContextMotive[]> {
   const rawMotives = await collectAncestralMotives(scopeDir, normCwd);
-  const motives: CompiledContextMotive[] = rawMotives.map((m) => ({
+  return rawMotives.map((m) => ({
     scope: m.scope,
     relativePath: m.relativePath,
     content: m.content,
   }));
+}
 
-  // 4. Collect active governing rules across upward ancestry (RULE-9)
+async function collectRules(
+  scope: string,
+  normCwd: string,
+): Promise<CompiledContextRule[]> {
   const listedRules = await listRules({ scope, cwd: normCwd });
   const rules: CompiledContextRule[] = [];
 
@@ -319,8 +291,15 @@ export async function compileContext(
       body,
     });
   }
+  return rules;
+}
 
-  // 5. Collect active ADRs in ancestral scope plus ADRs linked from active rules or task (ADR-8, RULE-26)
+async function collectAdrs(
+  scope: string,
+  rules: CompiledContextRule[],
+  task: CompiledContextTask | undefined,
+  normCwd: string,
+): Promise<CompiledContextAdr[]> {
   const ancestralAdrs = await listAdrs({ scope, cwd: normCwd });
   const adrByTag = new Map<string, CompiledContextAdr>();
 
@@ -346,8 +325,8 @@ export async function compileContext(
       }
     }
   }
-  if (compiledTask) {
-    for (const l of compiledTask.links) {
+  if (task) {
+    for (const l of task.links) {
       if (l.toUpperCase().startsWith("ADR-")) {
         linkedAdrTags.add(l.toUpperCase());
       }
@@ -378,41 +357,81 @@ export async function compileContext(
     }
   }
 
-  const adrs = Array.from(adrByTag.values()).sort((a, b) =>
+  return Array.from(adrByTag.values()).sort((a, b) =>
     compareArtifactIds(a.id, b.id),
   );
+}
 
-  // 6. Collect local directory/file GISTs strictly at target scope `scope` and shallow downward signposts (RULE-9, RULE-20, ADR-8)
+async function collectGists(
+  scopeDir: string,
+  normCwd: string,
+): Promise<{
+  directoryGist: Omit<DirectoryGist, "rawContent"> | null;
+  fileGists: Omit<FileGist, "rawContent">[];
+  signposts: (GistSignpost & { childScope: string })[];
+}> {
   const gistDiscovery = await discoverGistsForScope(scopeDir, { cwd: normCwd });
 
-  const cleanDirectoryGist = gistDiscovery.directoryGist
+  const directoryGist = gistDiscovery.directoryGist
     ? (({ rawContent: _raw, ...rest }) => rest)(gistDiscovery.directoryGist)
     : null;
-  const cleanFileGists = gistDiscovery.fileGists.map(
+  const fileGists = gistDiscovery.fileGists.map(
     ({ rawContent: _raw, ...rest }) => rest,
   );
-  const compiledSignposts = gistDiscovery.signposts.map((sp) => ({
+  const signposts = gistDiscovery.signposts.map((sp) => ({
     ...sp,
     childScope: sp.scope,
   }));
 
   return {
-    target: trimmed,
-    type,
-    targetPath,
-    scope,
-    scopeDir,
+    directoryGist,
+    fileGists,
+    signposts,
+  };
+}
+
+/**
+ * Compiles the unified Cone of Governance & Orientation for a target directory,
+ * file path, task identifier, or artifact tag.
+ *
+ * Enforces:
+ * - RULE-2: Upward ancestral motive traversal without sibling pollution.
+ * - RULE-6: Task blast radius boundary resolution when scoped to a task.
+ * - RULE-8 & ADR-10: `.modie/` container scope normalization.
+ * - RULE-9: Ancestral rules and motives from P to R; local GISTs strictly at P.
+ * - RULE-20: Directory (`GIST.md`) and file-level (`<filename>.GIST.md`) GIST resolution.
+ * - ADR-8 & RULE-26: Progressive disclosure via ADR summaries and shallow child directory signposts.
+ */
+export async function compileContext(
+  targetInput: string = ".",
+  options: CompileContextOptions = {},
+): Promise<CompiledContextResult> {
+  const normCwd = normalize(resolve(options.cwd ?? process.cwd()));
+  const target = await resolveContextTarget(targetInput, normCwd);
+  const ancestralScopes = buildAncestralScopes(target.scope);
+
+  const motives = await collectMotives(target.scopeDir, normCwd);
+  const rules = await collectRules(target.scope, normCwd);
+  const adrs = await collectAdrs(target.scope, rules, target.task, normCwd);
+  const gists = await collectGists(target.scopeDir, normCwd);
+
+  return {
+    target: target.target,
+    type: target.type,
+    targetPath: target.targetPath,
+    scope: target.scope,
+    scopeDir: target.scopeDir,
     ancestralScopes,
-    ...(compiledTask ? { task: compiledTask } : {}),
+    ...(target.task ? { task: target.task } : {}),
     motives,
     rules,
     adrs,
     gists: {
-      directoryGist: cleanDirectoryGist,
-      fileGists: cleanFileGists,
-      signposts: compiledSignposts,
+      directoryGist: gists.directoryGist,
+      fileGists: gists.fileGists,
+      signposts: gists.signposts,
     },
-    signposts: compiledSignposts,
+    signposts: gists.signposts,
   };
 }
 

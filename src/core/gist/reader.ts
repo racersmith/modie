@@ -4,8 +4,8 @@
  */
 
 import { readdir, readFile, stat } from "node:fs/promises";
-import { join, normalize, resolve } from "node:path";
-import { toPosixRelative } from "../common/index.ts";
+import { join } from "node:path";
+import { extractCwd, toPosixRelative } from "../common/index.ts";
 import {
   DIRECTORY_GIST_FILENAME,
   parseFileGistFilename,
@@ -31,13 +31,6 @@ const IGNORED_CHILD_DIRECTORIES = new Set([
   ".next",
   ".turbo",
 ]);
-
-function extractCwd(cwdOrOptions?: string | ResolveGistOptions): string {
-  if (typeof cwdOrOptions === "string") {
-    return normalize(resolve(cwdOrOptions));
-  }
-  return normalize(resolve(cwdOrOptions?.cwd ?? process.cwd()));
-}
 
 /**
  * Reads the directory-level GIST summary (`<dir>/.modie/gists/GIST.md`) for a target path,

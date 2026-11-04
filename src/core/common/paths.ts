@@ -2,7 +2,18 @@
  * Shared path normalization and regex escaping utilities.
  */
 
-import { relative } from "node:path";
+import { normalize, relative, resolve } from "node:path";
+
+/**
+ * Resolves and normalizes a working directory from a string, an options object with `cwd`,
+ * or falls back to `process.cwd()`.
+ */
+export function extractCwd(cwdOrOptions?: string | { cwd?: string }): string {
+  if (typeof cwdOrOptions === "string") {
+    return normalize(resolve(cwdOrOptions));
+  }
+  return normalize(resolve(cwdOrOptions?.cwd ?? process.cwd()));
+}
 
 /**
  * Normalizes a relative path from `from` to `to` with POSIX forward slashes,

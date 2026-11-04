@@ -4,17 +4,10 @@
  */
 
 import { readFile } from "node:fs/promises";
-import { dirname, join, normalize, resolve } from "node:path";
+import { extractCwd, walkAncestorsForFile } from "../common/index.ts";
 import { resolveMotivePaths } from "./paths.ts";
 import { validateMotiveContent } from "./template.ts";
 import type { MotiveArtifact, ResolveMotiveOptions } from "./types.ts";
-
-function extractCwd(cwdOrOptions?: string | ResolveMotiveOptions): string {
-  if (typeof cwdOrOptions === "string") {
-    return normalize(resolve(cwdOrOptions));
-  }
-  return normalize(resolve(cwdOrOptions?.cwd ?? process.cwd()));
-}
 
 /**
  * Reads the singleton `<dir>/.modie/MOTIVE.md` for a target directory scope.
@@ -61,24 +54,11 @@ export async function collectAncestralMotives(
   const normCwd = extractCwd(cwdOrOptions);
   const leafPaths = resolveMotivePaths(targetDirInput, normCwd);
 
-  const motives: MotiveArtifact[] = [];
-  let currentDir = leafPaths.scopeDir;
-
-  while (currentDir.length >= normCwd.length) {
-    const motive = await readMotive(currentDir, normCwd);
-    if (motive) {
-      motives.push(motive);
-    }
-
-    if (
-      currentDir === normCwd ||
-      currentDir === "/" ||
-      dirname(currentDir) === currentDir
-    ) {
-      break;
-    }
-    currentDir = dirname(currentDir);
-  }
+  const motives = await walkAncestorsForFile(
+    leafPaths.scopeDir,
+    normCwd,
+    (currentDir) => readMotive(currentDir, normCwd),
+  );
 
   // Verify no sibling scopes leaked
   return motives.filter((m) =>

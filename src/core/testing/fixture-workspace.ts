@@ -73,6 +73,7 @@ export interface CreateAdrOptions {
   context?: string;
   alternatives?: string;
   decision?: string;
+  consequences?: string;
   links?: string[];
   supersedes?: string | string[];
   superseded_by?: string | string[];
@@ -144,6 +145,7 @@ export interface CreateFixtureArtifactOptions {
   context?: string;
   alternatives?: string;
   decision?: string;
+  consequences?: string;
   body?: string;
   acceptanceCriteria?: TaskCriterionItem[];
   plannedGovernance?: {

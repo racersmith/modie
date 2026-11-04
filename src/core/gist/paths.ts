@@ -6,7 +6,6 @@
  * - Freshness Ledger: `<dir>/.modie/gists/.gists`
  */
 
-import { statSync } from "node:fs";
 import {
   basename,
   dirname,
@@ -15,7 +14,11 @@ import {
   normalize,
   resolve,
 } from "node:path";
-import { toPosixRelative } from "../common/index.ts";
+import {
+  extractCwd,
+  resolveScopeDirectory,
+  toPosixRelative,
+} from "../common/index.ts";
 import type {
   FileGistPaths,
   GistPaths,
@@ -26,13 +29,6 @@ export const GISTS_CONTAINER_DIR = "gists";
 export const DIRECTORY_GIST_FILENAME = "GIST.md";
 export const FILE_GIST_SUFFIX = ".GIST.md";
 export const GIST_LEDGER_FILENAME = ".gists";
-
-function extractCwd(cwdOrOptions?: string | ResolveGistOptions): string {
-  if (typeof cwdOrOptions === "string") {
-    return normalize(resolve(cwdOrOptions));
-  }
-  return normalize(resolve(cwdOrOptions?.cwd ?? process.cwd()));
-}
 
 /**
  * Checks whether a filename is the canonical directory GIST filename (`GIST.md`).
@@ -96,39 +92,11 @@ export function resolveGistPaths(
   cwdOrOptions?: string | ResolveGistOptions,
 ): GistPaths {
   const normCwd = extractCwd(cwdOrOptions);
-  const trimmed = targetDirInput?.trim();
-  const rawResolved =
-    trimmed && trimmed !== "."
-      ? isAbsolute(trimmed)
-        ? normalize(trimmed)
-        : normalize(resolve(normCwd, trimmed))
-      : normCwd;
-
-  // 1. If path is inside a `.modie` segment, strip `.modie` and everything below it
-  const segments = rawResolved.split(/[\\/]/);
-  const modieIdx = segments.indexOf(".modie");
-
-  let scopeDir: string;
-  if (modieIdx !== -1) {
-    scopeDir = segments.slice(0, modieIdx).join("/") || "/";
-  } else {
-    scopeDir = rawResolved;
-    try {
-      const st = statSync(rawResolved);
-      if (st.isFile()) {
-        scopeDir = dirname(rawResolved);
-      }
-    } catch {
-      // Path does not exist on disk; treat as directory path
-    }
-  }
-
-  const relScope = toPosixRelative(normCwd, scopeDir);
-  if (relScope.startsWith("..") || isAbsolute(relScope)) {
-    throw new Error(
-      `Invalid GIST scope "${targetDirInput}": path must reside within the workspace root.`,
-    );
-  }
+  const { scopeDir, scope } = resolveScopeDirectory(
+    targetDirInput,
+    normCwd,
+    "GIST",
+  );
 
   const gistsDir = join(scopeDir, ".modie", GISTS_CONTAINER_DIR);
   const directoryGistPath = join(gistsDir, DIRECTORY_GIST_FILENAME);
@@ -136,7 +104,7 @@ export function resolveGistPaths(
 
   return {
     scopeDir,
-    scope: relScope,
+    scope,
     gistsDir,
     relativeGistsDir: toPosixRelative(normCwd, gistsDir),
     directoryGistPath,

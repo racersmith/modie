@@ -33,11 +33,11 @@ Per the maintainability review (§3.4, §4.1, §4.2, §5), two high-complexity q
 
 # Acceptance Criteria
 
-- [ ] Extract `resolveContextTarget` with early-return candidate matching (`tryTask() ?? tryArtifact() ?? tryBareTaskId() ?? resolvePath()`), reducing `compileContext` cyclomatic complexity to <= 10.
-- [ ] Restructure `compileContext` into a linear collection pipeline (`collectMotives`, `collectRules`, `collectAdrs`, `collectGists`).
-- [ ] Decompose `resolveArtifactByTag` into a strategy chain (`byExistingPath`, `byWorkspaceScan`, `byHistory`), reducing cyclomatic complexity to <= 10.
-- [ ] Unify ADR summary extraction into a reusable helper decoupled from generic markdown parsing.
-- [ ] Unify `computeAncestralScopes` and `buildAncestralScopes` into a single shared ancestral traversal utility with filtering options.
-- [ ] Deduplicate ancestral file discovery between `gist/paths.ts` and `motive/paths.ts` via a shared `walkAncestorsForFile` helper.
-- [ ] Verify context compilation and artifact tag resolution contracts across all test suites with zero regressions.
-- [ ] User Review
+- [x] Extract `resolveContextTarget` with early-return candidate matching (`tryTask() ?? tryArtifact() ?? tryBareTaskId() ?? resolvePath()`), reducing `compileContext` cyclomatic complexity to <= 10.
+- [x] Restructure `compileContext` into a linear collection pipeline (`collectMotives`, `collectRules`, `collectAdrs`, `collectGists`).
+- [x] Decompose `resolveArtifactByTag` into a strategy chain (`byExistingPath`, `byWorkspaceScan`, `byHistory`), reducing cyclomatic complexity to <= 10.
+- [x] Unify ADR summary extraction into a reusable helper decoupled from generic markdown parsing.
+- [x] Unify `computeAncestralScopes` and `buildAncestralScopes` into a single shared ancestral traversal utility with filtering options.
+- [x] Deduplicate ancestral file discovery between `gist/paths.ts` and `motive/paths.ts` via a shared `walkAncestorsForFile` helper.
+- [x] Verify context compilation and artifact tag resolution contracts across all test suites with zero regressions.
+- [x] User Review
