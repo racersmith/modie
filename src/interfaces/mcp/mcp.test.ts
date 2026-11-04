@@ -486,6 +486,161 @@ describe("Modie MCP Server - Consolidated Four-Tool Architecture", () => {
     });
   });
 
+  describe("Self-Recovery Error Envelopes (RULE-6, RULE-16, RULE-25, RULE-26)", () => {
+    it("should return CRITERIA_INCOMPLETE envelope directing model to modie_task_lifecycle check", async () => {
+      const res = await client.callTool({
+        name: "modie_task_lifecycle",
+        arguments: {
+          action: "complete",
+          task_id: task101Id,
+        },
+      });
+
+      expect(res.isError).toBe(true);
+      const content = getStructuredContent(res);
+      expect(content.isError).toBe(true);
+      expect(content.code).toBe("CRITERIA_INCOMPLETE");
+      expect(content.message).toContain("acceptance criteria remain unchecked");
+      expect(content.diagnostic).toContain("RULE-21");
+      expect(content.diagnostic).toContain("RULE-22");
+      expect(content.recovery).toBeDefined();
+      expect(content.recovery.tool).toBe("modie_task_lifecycle");
+      expect(content.recovery.parameters?.action).toBe("check");
+      expect(content.recovery.action).toContain("modie_task_lifecycle");
+      expect(content.recovery.suggestion).toContain("force: true");
+    });
+
+    it("should return ANCESTRY_VIOLATION_RULE_16 envelope directing model to modie_compile_context scope", async () => {
+      // 1. Create a rule in src/sub and an ADR in sibling src/other
+      const ruleRes = await client.callTool({
+        name: "modie_create_artifact",
+        arguments: {
+          kind: "RULE",
+          title: "Scoped Sub Rule",
+          scope_dir: "src/sub",
+          sections: { Invariant: "Sub invariant." },
+        },
+      });
+      const subRuleTag = getStructuredContent(ruleRes).tag;
+
+      const adrRes = await client.callTool({
+        name: "modie_create_artifact",
+        arguments: {
+          kind: "ADR",
+          title: "Scoped Sibling Decision",
+          scope_dir: "src/other",
+          sections: {
+            Context: "Sibling context.",
+            Decision: "Sibling decision.",
+          },
+        },
+      });
+      const siblingAdrTag = getStructuredContent(adrRes).tag;
+
+      // 2. Attempt illegal link from rule in src/sub to ADR in sibling src/other
+      const linkRes = await client.callTool({
+        name: "modie_mutate_governance",
+        arguments: {
+          action: "link",
+          target: subRuleTag,
+          targets: [siblingAdrTag],
+        },
+      });
+
+      expect(linkRes.isError).toBe(true);
+      const content = getStructuredContent(linkRes);
+      expect(content.isError).toBe(true);
+      expect(content.code).toBe("ANCESTRY_VIOLATION_RULE_16");
+      expect(content.message).toContain("Rule justification ancestry violation");
+      expect(content.diagnostic).toContain("RULE-16");
+      expect(content.diagnostic).toContain("RULE-19");
+      expect(content.recovery).toBeDefined();
+      expect(content.recovery.tool).toBe("modie_compile_context");
+      expect(content.recovery.parameters?.mode).toBe("scope");
+    });
+
+    it("should return BLAST_RADIUS_BREACH_RULE_6 envelope when task target escapes scope", async () => {
+      const res = await client.callTool({
+        name: "modie_create_artifact",
+        arguments: {
+          kind: "TASK",
+          title: "Escaping Task",
+          scope_dir: "src/interfaces",
+          target_paths: ["src/core/linking/validator.ts"],
+        },
+      });
+
+      expect(res.isError).toBe(true);
+      const content = getStructuredContent(res);
+      expect(content.isError).toBe(true);
+      expect(content.code).toBe("BLAST_RADIUS_BREACH_RULE_6");
+      expect(content.message).toContain("Downward blast radius violation");
+      expect(content.diagnostic).toContain("RULE-6");
+      expect(content.recovery).toBeDefined();
+      expect(content.recovery.tool).toBe("modie_compile_context");
+      expect(content.recovery.parameters?.mode).toBe("scope");
+      expect(content.recovery.action).toContain("Confine mutations");
+    });
+
+    it("should return ARTIFACT_NOT_FOUND envelope directing model to discovery resources", async () => {
+      const res = await client.callTool({
+        name: "modie_compile_context",
+        arguments: {
+          mode: "inspect",
+          target: "RULE-9999",
+        },
+      });
+
+      expect(res.isError).toBe(true);
+      const content = getStructuredContent(res);
+      expect(content.isError).toBe(true);
+      expect(content.code).toBe("ARTIFACT_NOT_FOUND");
+      expect(content.message).toContain("not found");
+      expect(content.diagnostic).toContain("RULE-29");
+      expect(content.recovery).toBeDefined();
+      expect(content.recovery.tool).toBe("modie_compile_context");
+      expect(content.recovery.action).toContain("modie_compile_context");
+    });
+
+    it("should return INVALID_PARAMETER envelope when task_id is omitted outside task branch", async () => {
+      const res = await client.callTool({
+        name: "modie_task_lifecycle",
+        arguments: {
+          action: "status",
+        },
+      });
+
+      expect(res.isError).toBe(true);
+      const content = getStructuredContent(res);
+      expect(content.isError).toBe(true);
+      expect(content.code).toBe("INVALID_PARAMETER");
+      expect(content.message).toContain("No task_id specified");
+      expect(content.diagnostic).toBeDefined();
+      expect(content.recovery).toBeDefined();
+      expect(content.recovery.tool).toBe("modie_task_lifecycle");
+      expect(content.recovery.parameters?.task_id).toBeDefined();
+    });
+
+    it("should return INVALID_PARAMETER envelope when linking without targets", async () => {
+      const res = await client.callTool({
+        name: "modie_mutate_governance",
+        arguments: {
+          action: "link",
+          target: ruleTag,
+          targets: [],
+        },
+      });
+
+      expect(res.isError).toBe(true);
+      const content = getStructuredContent(res);
+      expect(content.isError).toBe(true);
+      expect(content.code).toBe("INVALID_PARAMETER");
+      expect(content.message).toContain("No target artifacts specified");
+      expect(content.recovery).toBeDefined();
+      expect(content.recovery.tool).toBe("modie_mutate_governance");
+    });
+  });
+
   describe("Ambient Governance Resources & Protocols", () => {
     it("should list ready tasks, all tasks, and active rules resources", async () => {
       const response = await client.listResources();

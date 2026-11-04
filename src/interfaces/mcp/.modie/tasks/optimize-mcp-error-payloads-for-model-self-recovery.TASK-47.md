@@ -28,8 +28,8 @@ Implement structured Self-Recovery Error Envelopes for all 4 consolidated MCP to
 
 # Acceptance Criteria
 
-- [ ] Standardize MCP tool execution error handler to construct structured `{ isError: true, code, message, diagnostic, recovery }` response payloads.
-- [ ] Implement standardized error codes including `CRITERIA_INCOMPLETE`, `ANCESTRY_VIOLATION_RULE_16`, `BLAST_RADIUS_BREACH_RULE_6`, `ARTIFACT_NOT_FOUND`, and `INVALID_PARAMETER`.
-- [ ] Provide actionable recovery objects suggesting discovery and remediation via `modie_compile_context` and `modie_task_lifecycle`.
-- [ ] Verify model-recoverable error envelopes across invalid arguments, boundary breaches, and missing artifact scenarios in MCP test suite.
-- [ ] User Review
+- [x] Standardize MCP tool execution error handler to construct structured `{ isError: true, code, message, diagnostic, recovery }` response payloads.
+- [x] Implement standardized error codes including `CRITERIA_INCOMPLETE`, `ANCESTRY_VIOLATION_RULE_16`, `BLAST_RADIUS_BREACH_RULE_6`, `ARTIFACT_NOT_FOUND`, and `INVALID_PARAMETER`.
+- [x] Provide actionable recovery objects suggesting discovery and remediation via `modie_compile_context` and `modie_task_lifecycle`.
+- [x] Verify model-recoverable error envelopes across invalid arguments, boundary breaches, and missing artifact scenarios in MCP test suite.
+- [x] User Review

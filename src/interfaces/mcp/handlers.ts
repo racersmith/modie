@@ -38,6 +38,7 @@ import type {
   TaskLifecycleInput,
   TaskLifecycleOutput,
 } from "./schemas.ts";
+import { McpToolError } from "./errors.ts";
 
 /**
  * Resolves the active task ID from an explicit argument or falls back to the current Git branch.
@@ -56,9 +57,12 @@ export async function resolveActiveTaskId(
       return fromBranch;
     }
   }
-  throw new Error(
-    `No task_id specified and active Git branch "${branch ?? "unknown"}" is not a task branch.`,
-  );
+  throw McpToolError.invalidParameter({
+    message: `No task_id specified and active Git branch "${branch ?? "unknown"}" is not a task branch.`,
+    parameter: "task_id",
+    tool: "modie_task_lifecycle",
+    suggestedParameters: { action: "start", task_id: "<TASK_ID>" },
+  });
 }
 
 /**
@@ -551,6 +555,7 @@ export async function handleCreateArtifact(
         criteria,
         depends_on: args.depends_on,
         links: args.initial_links,
+        targetPaths: args.target_paths,
         cwd,
       });
       const artifactObj = (res as any).artifact ?? {};
