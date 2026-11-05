@@ -410,7 +410,7 @@ export async function renderTaskMissionBrief(
     `**Active Branch**: \`${branchName}\`  `,
     `**Scope**: \`${scope}\` | **Progress**: ${progressText}  `,
     "",
-    "> **BLAST RADIUS CONSTRAINT (RULE-6)**  ",
+    "> **BLAST RADIUS CONSTRAINT**  ",
     `> ${blastRadiusAlert}`,
   ];
 

@@ -19,7 +19,7 @@ Modie is a decentralized architectural governance and task lifecycle engine. As 
 
 - Every task is scoped to a specific architectural directory (e.g., `src/interfaces/mcp`).
 - **Downward Confinement**: All code modifications, new files, and tests for that task must reside strictly at or below that declared scope directory.
-- Modifying sibling or ancestor directories violates the task's blast radius (`RULE-6`). If changes are needed in shared or ancestral directories, author a dedicated task scoped at that common ancestor.
+- Modifying sibling or ancestor directories violates the task's downward blast radius constraint. If changes are needed in shared or ancestral directories, author a dedicated task scoped at that common ancestor.
 
 ---
 
@@ -44,9 +44,9 @@ When planning and authoring tasks:
 ## 5. Spatial Graph Link Invariants
 
 Modie enforces a strict hierarchical directed acyclic graph (DAG):
-- **Rules (`RULE`)**: May only be justified by ADRs residing in the rule's directory or an ancestor directory up to the workspace root (`RULE-16`).
-- **Decisions (`ADR`)**: May link to rules residing in the ADR's directory or descendant subtrees, or ancestor ADRs (`RULE-17`, `RULE-19`).
-- **Tasks (`TASK`)**: May link to rules and ADRs residing in the task's directory or an ancestor directory (`RULE-7`, `RULE-18`).
+- **Rules (`RULE`)**: May only be justified by ADRs residing in the rule's directory or an ancestor directory up to the workspace root.
+- **Decisions (`ADR`)**: May link to rules residing in the ADR's directory or descendant subtrees, or ancestor ADRs.
+- **Tasks (`TASK`)**: May link to rules and ADRs residing in the task's directory or an ancestor directory.
 - **Prohibition of Sideways Links**: Artifacts may never cite sibling directories.
 
 ---
@@ -57,22 +57,22 @@ Modie exposes 11 singular-purpose tools designed for high signal-to-noise and pr
 
 ### Spatial & Artifact Exploration
 1. **`ls_better`**: Augmented directory listing returning clean plaintext tab-separated listings (`<file|dir/>\t<gist>\n`). Directories end with `/`. Provides instant file/directory GIST summaries without reading individual files.
-2. **`read_artifact`**: Tag-aware document reader (`RULE-XX`, `ADR-XX`, `TASK-XX`). Returns unescaped Markdown with file location comments and an agent-readable `## Appendix: Relationships & Governance` resolving linked rules to their invariants and titles.
+2. **`read_artifact`**: Tag-aware document reader (RULE, ADR, TASK). Returns unescaped Markdown with file location comments and an agent-readable `## Appendix: Relationships & Governance` resolving linked rules to their invariants and titles.
 3. **`task_context`**: High-signal Mission Brief in Markdown: active branch, scope directory, elevated blast radius constraint, numbered acceptance criteria checklist, and governing rule invariants.
 
 ### Task Lifecycle State Machine
 4. **`start_task`**: Checks out or creates the hierarchical task branch (`task/<id>-<slug>`), verifies dependencies, and returns the full active Mission Brief in Markdown.
 5. **`check_criteria`**: Atomically marks 1-based acceptance criteria complete or incomplete (`items: [1, 2]`). Returns updated checklist progress and remaining items.
-6. **`complete_task`**: Executes the atomic two-phase commit completion ceremony (`RULE-32`, `RULE-21`), verifies all criteria are checked, merges to trunk, and deletes the task branch.
+6. **`complete_task`**: Executes the atomic two-phase commit completion ceremony, verifies all criteria are checked, merges to trunk, and deletes the task branch.
 
 ### Dedicated Artifact Authoring
-7. **`create_rule`**: Authors an architectural governance rule (`RULE-XXXX`) with a strongly typed invariant assertion claim and optional justifying ADR links (`RULE-16`).
-8. **`create_adr`**: Authors an Architectural Decision Record (`ADR-XXXX`) with strongly typed context, decision, consequences, and links.
-9. **`create_task`**: Authors a scoped task specification (`TASK-XXXX`) with contract-based acceptance criteria (must end with `User Review`), prerequisite dependencies, and governing links.
+7. **`create_rule`**: Authors an architectural governance rule (RULE) with a strongly typed invariant assertion claim and optional justifying ADR links.
+8. **`create_adr`**: Authors an Architectural Decision Record (ADR) with strongly typed context, decision, consequences, and links.
+9. **`create_task`**: Authors a scoped task specification (TASK) with contract-based acceptance criteria (must end with `User Review`), prerequisite dependencies, and governing links.
 
 ### Graph Mutation
 10. **`link_artifacts`**: Establishes directional frontmatter relationships (`links`, `depends_on`) between artifacts after validating spatial ancestry and DAG constraints.
-11. **`archive_artifact`**: Archives an obsolete RULE or ADR artifact (`RULE-31`), safely marking it archived and auditing inbound references.
+11. **`archive_artifact`**: Archives an obsolete RULE or ADR artifact, safely marking it archived and auditing inbound references.
 
 ---
 

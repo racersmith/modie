@@ -6,8 +6,8 @@
 
 export const McpErrorCode = {
   CRITERIA_INCOMPLETE: "CRITERIA_INCOMPLETE",
-  ANCESTRY_VIOLATION_RULE_16: "ANCESTRY_VIOLATION_RULE_16",
-  BLAST_RADIUS_BREACH_RULE_6: "BLAST_RADIUS_BREACH_RULE_6",
+  ANCESTRY_VIOLATION: "ANCESTRY_VIOLATION",
+  BLAST_RADIUS_BREACH: "BLAST_RADIUS_BREACH",
   ARTIFACT_NOT_FOUND: "ARTIFACT_NOT_FOUND",
   INVALID_PARAMETER: "INVALID_PARAMETER",
   EXECUTION_FAILED: "EXECUTION_FAILED",
@@ -106,7 +106,7 @@ export class McpToolError extends Error {
       code: McpErrorCode.CRITERIA_INCOMPLETE,
       message: options.message,
       diagnostic:
-        "Task acceptance criteria checklist items remain incomplete. Per RULE-21 and RULE-22, all acceptance criteria must be satisfied before task completion or branch merging.",
+        "Task acceptance criteria checklist items remain incomplete. All acceptance criteria must be satisfied before task completion or branch merging.",
       recovery: {
         action:
           "Call check_criteria with items to verify remaining acceptance criteria before completing the task.",
@@ -130,21 +130,23 @@ export class McpToolError extends Error {
     sourceScope?: string;
     targetScope?: string;
   }): McpToolError {
-    const isRule17 = options.message.includes("RULE-17");
-    const isRule7 = options.message.includes("RULE-7");
+    const isAdrRule = /adr rule scope violation/i.test(options.message);
+    const isTaskGovernance = /task governance scope violation/i.test(
+      options.message,
+    );
     let diagnostic =
-      "Rule justification ancestry violation: Per RULE-16 and RULE-19, rules may only be justified by ADRs residing in the rule's directory or an ancestor directory up to the workspace root. Sideways and descendant links are prohibited.";
+      "Rule justification ancestry violation: rules may only be justified by ADRs residing in the rule's directory or an ancestor directory up to the workspace root. Sideways and descendant links are prohibited.";
 
-    if (isRule17) {
+    if (isAdrRule) {
       diagnostic =
-        "ADR rule scope violation: Per RULE-17, target RULEs must reside in the ADR's directory or a descendant subtree.";
-    } else if (isRule7) {
+        "ADR rule scope violation: target rules must reside in the ADR's directory or a descendant subtree.";
+    } else if (isTaskGovernance) {
       diagnostic =
-        "Task governance scope violation: Per RULE-7 and RULE-18, tasks may only cite rules and ADRs residing in the task's directory or an ancestor directory.";
+        "Task governance scope violation: tasks may only cite rules and ADRs residing in the task's directory or an ancestor directory.";
     }
 
     return new McpToolError({
-      code: McpErrorCode.ANCESTRY_VIOLATION_RULE_16,
+      code: McpErrorCode.ANCESTRY_VIOLATION,
       message: options.message,
       diagnostic,
       recovery: {
@@ -153,7 +155,7 @@ export class McpToolError extends Error {
         tool: "task_context",
         parameters: {},
         suggestion:
-          "Ensure source and target artifacts follow spatial hierarchy rules (RULE-16, RULE-17, RULE-19). Inspect enclosing scopes using task_context or ls_better.",
+          "Ensure source and target artifacts follow spatial hierarchy rules. Inspect enclosing scopes using task_context or ls_better.",
       },
     });
   }
@@ -164,10 +166,10 @@ export class McpToolError extends Error {
     scopeDir?: string;
   }): McpToolError {
     return new McpToolError({
-      code: McpErrorCode.BLAST_RADIUS_BREACH_RULE_6,
+      code: McpErrorCode.BLAST_RADIUS_BREACH,
       message: options.message,
       diagnostic:
-        "All task implementation mutations and declared targets must reside strictly at or below the governing task's scope directory (RULE-6). Modifying ancestral or sibling directories violates the task blast radius.",
+        "All task implementation mutations and declared targets must reside strictly at or below the governing task's scope directory. Modifying ancestral or sibling directories violates the task blast radius.",
       recovery: {
         action:
           "Confine mutations strictly within or below the active task's declared scope directory, or author a dedicated task at an ancestor scope.",
@@ -187,16 +189,14 @@ export class McpToolError extends Error {
       code: McpErrorCode.ARTIFACT_NOT_FOUND,
       message: options.message,
       diagnostic:
-        "The requested artifact tag or identifier could not be resolved in the workspace filesystem or active artifact registry (RULE-29, RULE-34).",
+        "The requested artifact tag or identifier could not be resolved in the workspace filesystem or active artifact registry.",
       recovery: {
         action:
           "Verify valid artifact tags using read_artifact, or inspect active tasks via modie://tasks/ready.",
         tool: "read_artifact",
-        parameters: {
-          tag: options.identifier ?? "TASK-1",
-        },
+        parameters: options.identifier ? { tag: options.identifier } : {},
         suggestion:
-          "Verify the artifact identifier (e.g. 'RULE-25', 'TASK-72'). Use modie://tasks/ready to discover ready tasks.",
+          "Verify the artifact identifier (e.g. 'RULE-<id>', 'TASK-<id>'). Use modie://tasks/ready to discover ready tasks.",
       },
     });
   }
@@ -276,9 +276,9 @@ export function toMcpErrorPayload(
     }).toPayload();
   }
 
-  // 2. Check for ancestry violations (RULE-16, RULE-17, RULE-19, RULE-7)
+  // 2. Check for ancestry violations
   if (
-    /ancestry violation|rule scope violation|adr scope violation|task governance scope violation|RULE-16|RULE-17|RULE-19|RULE-7|sideways link/i.test(
+    /ancestry violation|rule scope violation|adr scope violation|task governance scope violation|sideways link/i.test(
       rawMessage,
     )
   ) {

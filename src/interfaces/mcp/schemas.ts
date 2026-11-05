@@ -32,7 +32,7 @@ export const readArtifactSchema = z.object({
   tag: z
     .string()
     .describe(
-      "Canonical artifact tag (e.g. 'RULE-28', 'ADR-6', 'TASK-67')",
+      "Canonical artifact tag (e.g. 'RULE-<id>', 'ADR-<id>', 'TASK-<id>')",
     ),
 });
 export type ReadArtifactInput = z.infer<typeof readArtifactSchema>;

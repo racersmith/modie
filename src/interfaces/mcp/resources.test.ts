@@ -114,8 +114,8 @@ describe("Modie Ambient MCP Resources (RULE-25, RULE-26)", () => {
     const resWithTask = await client.readResource({ uri: "modie://task" });
     const contentWithTask = resWithTask.contents[0] as any;
     expect(contentWithTask.mimeType).toBe("text/markdown");
-    expect(contentWithTask.text).toContain("# Mission Brief: TASK-101");
-    expect(contentWithTask.text).toContain("BLAST RADIUS CONSTRAINT (RULE-6)");
+    expect(contentWithTask.text).toContain(`# Mission Brief: ${taskTag}`);
+    expect(contentWithTask.text).toContain("BLAST RADIUS CONSTRAINT");
     expect(contentWithTask.text).toContain("- [ ] 1. Criterion 1");
     expect(contentWithTask.text).toContain("- [ ] 2. Criterion 2");
     expect(contentWithTask.text).toContain("- [ ] 3. User Review");

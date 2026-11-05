@@ -254,7 +254,7 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
       expect(typeof text).toBe("string");
 
       expect(text).toContain(`# Mission Brief: ${task101Tag}`);
-      expect(text).toContain("BLAST RADIUS CONSTRAINT (RULE-6)");
+      expect(text).toContain("BLAST RADIUS CONSTRAINT");
       expect(text).toContain("## Acceptance Criteria");
       expect(text).toContain("- [ ] 1. First criterion");
       expect(text).toContain("- [ ] 2. Second criterion");
@@ -507,7 +507,7 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
 
       const res = await customClient.callTool({
         name: "read_artifact",
-        arguments: { tag: "RULE-9999" },
+        arguments: { tag: makeTestTag("RULE", 9999) },
       });
 
       expect(res.isError).toBe(true);
