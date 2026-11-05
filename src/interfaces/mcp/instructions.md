@@ -58,7 +58,7 @@ Modie exposes 11 singular-purpose tools designed for high signal-to-noise and pr
 ### Spatial & Artifact Exploration
 1. **`ls_better`**: Augmented directory listing returning clean plaintext tab-separated listings (`<file|dir/>\t<gist>\n`). Directories end with `/`. Provides instant file/directory GIST summaries without reading individual files.
 2. **`read_artifact`**: Tag-aware document reader (`RULE-XX`, `ADR-XX`, `TASK-XX`). Returns unescaped Markdown with file location comments and an agent-readable `## Appendix: Relationships & Governance` resolving linked rules to their invariants and titles.
-3. **`task_context`**: High-signal Mission Brief in Markdown: active branch, scope directory, elevated blast radius constraint (`RULE-6`), numbered acceptance criteria checklist, and governing rule invariants.
+3. **`task_context`**: High-signal Mission Brief in Markdown: active branch, scope directory, elevated blast radius constraint, numbered acceptance criteria checklist, and governing rule invariants.
 
 ### Task Lifecycle State Machine
 4. **`start_task`**: Checks out or creates the hierarchical task branch (`task/<id>-<slug>`), verifies dependencies, and returns the full active Mission Brief in Markdown.

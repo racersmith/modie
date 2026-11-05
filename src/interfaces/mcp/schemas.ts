@@ -118,7 +118,7 @@ export const completeTaskOutputSchema = z
     taskId: z.string(),
     merged: z.boolean(),
     targetBranch: z.string(),
-    deletedBranch: z.union([z.string(), z.boolean()]),
+    deletedBranch: z.string().describe("Name of the deleted task branch"),
     message: z.string(),
   })
   .passthrough();
@@ -140,7 +140,7 @@ export const createRuleSchema = z.object({
   links: z
     .array(z.string())
     .optional()
-    .describe("Justifying ancestor ADR tags (RULE-16)"),
+    .describe("Justifying ancestor ADR tags"),
   scope_dir: z
     .string()
     .optional()
@@ -204,7 +204,7 @@ export const createTaskSchema = z.object({
   depends_on: z
     .array(z.string())
     .optional()
-    .describe("Prerequisite task tags (RULE-18)"),
+    .describe("Prerequisite task tags"),
   links: z
     .array(z.string())
     .optional()
@@ -212,7 +212,7 @@ export const createTaskSchema = z.object({
   scope_dir: z
     .string()
     .optional()
-    .describe("Blast radius root directory (RULE-6)"),
+    .describe("Blast radius root directory"),
 });
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 
