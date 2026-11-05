@@ -19,3 +19,5 @@
 - Should we have an ignore or exclude list in the modie config file so files like the root README.md can utilize artifact tags without raising false positives?
 
 - Could we leverage the bun's builtin [YAML](https://bun.com/docs/runtime/yaml.md) parsing tool for modie artifact frontmatter?
+
+- What if task acceptance criteria had content-addressed short hashes (e.g. `[a42d]`) rendered dynamically in `task_context` and accepted by `check_criteria(["a42d"])` to prevent index drift if criteria items are inserted or reordered mid-flight?
