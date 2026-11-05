@@ -5,6 +5,7 @@
 import type { CreateArtifactResult } from "../pipeline/types.ts";
 
 export interface TaskFrontmatter {
+  summary?: string;
   depends_on?: string[];
   links?: string[];
 }
@@ -39,6 +40,7 @@ export interface TaskArtifact {
   id: string;
   slug: string;
   title?: string;
+  summary?: string;
   depends_on: string[];
   links: string[];
   context?: string;
@@ -52,6 +54,7 @@ export interface TaskRenderOptions {
   id: string | number;
   slug?: string;
   title?: string;
+  summary?: string;
   depends_on?: string[];
   links?: string[];
   context?: string;
@@ -121,6 +124,11 @@ export interface CreateTaskOptions {
    * E.g. "Create Task CLI"
    */
   title: string;
+
+  /**
+   * Concise 1-2 sentence summary of task intent for triage queues and backlog scanning.
+   */
+  summary?: string;
 
   /**
    * Optional target scope directory where the task should reside.

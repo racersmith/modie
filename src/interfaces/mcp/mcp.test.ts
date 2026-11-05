@@ -215,7 +215,7 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
     });
 
     // @verifies RULE-26, RULE-36
-    it("read_artifact should return pure Markdown with location header and semantic Appendix", async () => {
+    it("read_artifact should return pure Markdown with tag, title, scope header and semantic Appendix", async () => {
       const res = await client.callTool({
         name: "read_artifact",
         arguments: { tag: task101Tag },
@@ -225,9 +225,11 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
       const text = getTextContent(res);
       expect(typeof text).toBe("string");
 
-      // File & scope header comments
-      expect(text).toContain("<!-- File:");
-      expect(text).toContain("<!-- Scope:");
+      // Tag, Title, and Scope directory header
+      expect(text).toContain(`# ${task101Tag}: Sample Ready`);
+      expect(text).toContain("**Scope**: `./`");
+      expect(text).not.toContain("<!-- File:");
+      expect(text).not.toContain("<!-- Scope:");
 
       // Stripped body content without raw frontmatter
       expect(text).not.toContain("---\nlinks:\n");
@@ -396,11 +398,13 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
     });
 
     // @verifies RULE-30, RULE-26
-    it("create_task should author task with acceptance criteria ending with User Review", async () => {
+    it("create_task should author task with acceptance criteria ending with User Review and persist summary", async () => {
+      const summaryText = "Decompose legacy mega-tools into 11 singular tools";
       const res = await client.callTool({
         name: "create_task",
         arguments: {
           title: "Refactor Storage Pipeline",
+          summary: summaryText,
           acceptance_criteria: [
             "Implement typed file writer",
             "Verify zero data loss",
@@ -413,13 +417,21 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
       expect(content.kind).toBe("TASK");
       expect(content.tag).toMatch(/^TASK-\d+$/);
 
-      // Verify that User Review was auto-appended
+      // Verify that User Review was auto-appended and summary is in frontmatter on disk
+      const fileContents = await workspace.readFile(content.filepath);
+      expect(fileContents).toContain(`summary: ${summaryText}`);
+
       const readRes = await client.callTool({
         name: "read_artifact",
         arguments: { tag: content.tag },
       });
       const markdown = getTextContent(readRes);
       expect(markdown).toContain("User Review");
+
+      // Verify task summary appears in ambient ready tasks queue resource
+      const readyRes = await client.readResource({ uri: "modie://tasks/ready" });
+      const readyMarkdown = (readyRes.contents[0] as any).text;
+      expect(readyMarkdown).toContain(summaryText);
     });
   });
 

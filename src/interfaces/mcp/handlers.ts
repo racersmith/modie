@@ -437,6 +437,7 @@ export async function handleCreateTask(
 
   const res = await createTask({
     title: args.title,
+    summary: args.summary,
     context: args.context,
     acceptanceCriteria: criteria,
     depends_on: args.depends_on,

@@ -71,7 +71,7 @@ export function formatFileGistFilename(sourceFilename: string): string {
   }
   if (base === DIRECTORY_GIST_FILENAME) {
     throw new Error(
-      `Invalid source filename "${base}": "${DIRECTORY_GIST_FILENAME}" is reserved for directory GIST summaries (RULE-20).`,
+      `Invalid source filename "${base}": "${DIRECTORY_GIST_FILENAME}" is reserved for directory GIST summaries.`,
     );
   }
   if (base.endsWith(FILE_GIST_SUFFIX)) {

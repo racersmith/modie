@@ -191,6 +191,10 @@ export type CreateAdrInput = z.infer<typeof createAdrSchema>;
  */
 export const createTaskSchema = z.object({
   title: z.string().min(3).describe("Task title"),
+  summary: z
+    .string()
+    .optional()
+    .describe("Concise 1-2 sentence summary of task intent for triage queues"),
   acceptance_criteria: z
     .array(z.string())
     .min(1)

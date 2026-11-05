@@ -9,6 +9,7 @@ import {
   parseMarkdownSections,
 } from "../query/markdown-parser.ts";
 import { parseAcceptanceCriteria } from "./checklist.ts";
+import { extractTaskSummary } from "./summary.ts";
 import type {
   ParsedPlannedGovernance,
   PlannedGovernanceItem,
@@ -127,11 +128,15 @@ export function parseTaskFromContext(
     )?.[1];
   const plannedGovernance = parsePlannedGovernanceSection(context.body);
   const acceptanceCriteria = parseAcceptanceCriteria(context.body);
+  const summary =
+    context.frontmatterFields.summary ??
+    extractTaskSummary(context.rawContent, context.slug);
 
   return {
     id: context.id,
     slug: context.slug,
     ...(context.title ? { title: context.title } : {}),
+    ...(summary ? { summary } : {}),
     depends_on: context.frontmatterFields.depends_on ?? [],
     links: context.frontmatterFields.links,
     context: contextSection,

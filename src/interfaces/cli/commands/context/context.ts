@@ -159,7 +159,7 @@ export const contextCommand: CliCommandDefinition<
   description:
     "Compile unified architectural context (motives, rules, ADR summaries, task spec, GISTs, and signposts)",
   agentGuidance:
-    "PRIMARY ENTRY POINT: Call this tool first when starting a task or exploring a directory scope. Synthesizes the complete Cone of Governance & Orientation in a single token-efficient call: upward ancestral MOTIVEs (RULE-2), active governing RULE invariants (RULE-9), concise ADR summaries (ADR-8), task acceptance criteria and blast radius boundaries when given a TASK tag (RULE-6), local directory/file GISTs (RULE-20), and immediate child directory signposts (ADR-8).",
+    "PRIMARY ENTRY POINT: Call this tool first when starting a task or exploring a directory scope. Synthesizes the complete Cone of Governance & Orientation in a single token-efficient call: upward ancestral MOTIVEs, active governing RULE invariants, concise ADR summaries, task acceptance criteria and blast radius boundaries when given a TASK tag, local directory/file GISTs, and immediate child directory signposts.",
   helpUsage: "modie context --help",
   schema: contextSchema,
   positionals: [

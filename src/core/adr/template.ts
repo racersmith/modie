@@ -19,7 +19,7 @@ export function validateAdrLinks(links: string[] = []): void {
   for (const link of links) {
     if (!isValidGovernanceLinkTag(link)) {
       throw new Error(
-        `Invalid ADR link target: "${link}". An ADR artifact's frontmatter links must exclusively reference ADR or RULE artifacts (RULE-14).`,
+        `Invalid ADR link target: "${link}". An ADR artifact's frontmatter links must exclusively reference ADR or RULE artifacts.`,
       );
     }
   }

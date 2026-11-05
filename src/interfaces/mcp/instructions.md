@@ -57,7 +57,7 @@ Modie exposes 11 singular-purpose tools designed for high signal-to-noise and pr
 
 ### Spatial & Artifact Exploration
 1. **`ls_better`**: Augmented directory listing returning clean plaintext tab-separated listings (`<file|dir/>\t<gist>\n`). Directories end with `/`. Provides instant file/directory GIST summaries without reading individual files.
-2. **`read_artifact`**: Tag-aware document reader (RULE, ADR, TASK). Returns unescaped Markdown with file location comments and an agent-readable `## Appendix: Relationships & Governance` resolving linked rules to their invariants and titles.
+2. **`read_artifact`**: Tag-aware document reader (RULE, ADR, TASK). Returns unescaped Markdown with tag, title, and scope directory header (`# <TAG>: <Title>`, `**Scope**: <dir>/`), and an agent-readable `## Appendix: Relationships & Governance` resolving linked rules to their invariants and titles.
 3. **`task_context`**: High-signal Mission Brief in Markdown: active branch, scope directory, elevated blast radius constraint, numbered acceptance criteria checklist, and governing rule invariants.
 
 ### Task Lifecycle State Machine
@@ -80,5 +80,6 @@ Modie exposes 11 singular-purpose tools designed for high signal-to-noise and pr
 
 For zero-roundtrip context hydration:
 - `modie://task`: Dynamic, unescaped Markdown Mission Brief for the active task branch.
-- `modie://tasks/ready`: Real-time JSON queue of unblocked ready tasks.
+- `modie://tasks/ready`: Real-time Markdown triage queue of unblocked ready tasks with summary teasers and downstream leverage (`Blocks`).
+- `modie://tasks/all`: Condensed Markdown backlog of all workspace tasks for planning and scheduling, grouped by readiness with blockers and downstream leverage (`Blocks`).
 - `modie://instructions`: Authoritative agent governance rules and protocols.

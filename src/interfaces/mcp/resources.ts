@@ -1,9 +1,10 @@
 /**
  * Model Context Protocol (MCP) Ambient Resources.
- * Exposes strictly 3 parameterless, discoverable ambient resources (RULE-25, RULE-26):
+ * Exposes strictly 4 parameterless, discoverable ambient resources (RULE-25, RULE-26):
  * 1. modie://task (Markdown Mission Brief)
- * 2. modie://tasks/ready (JSON ready tasks queue)
- * 3. modie://instructions (Markdown governance protocol)
+ * 2. modie://tasks/ready (Markdown ready tasks queue)
+ * 3. modie://tasks/all (Markdown workspace tasks backlog)
+ * 4. modie://instructions (Markdown governance protocol)
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -14,7 +15,11 @@ import {
   queryTaskQueue,
 } from "../../core/index.ts";
 import { loadMcpInstructions } from "./instructions.ts";
-import { renderTaskMissionBrief } from "./renderers.ts";
+import {
+  renderReadyTasks,
+  renderTaskMissionBrief,
+  renderTasksBacklog,
+} from "./renderers.ts";
 
 export interface RegisterResourcesOptions {
   cwd?: string;
@@ -22,9 +27,10 @@ export interface RegisterResourcesOptions {
 }
 
 /**
- * Registers strictly 3 parameterless ambient resources on the Modie MCP server:
+ * Registers strictly 4 parameterless ambient resources on the Modie MCP server:
  * - modie://task: Dynamic unescaped Markdown Mission Brief for the active task branch.
- * - modie://tasks/ready: Real-time JSON triage queue of unblocked ready tasks.
+ * - modie://tasks/ready: Real-time Markdown triage queue of unblocked ready tasks.
+ * - modie://tasks/all: Condensed Markdown backlog of all workspace tasks with blockers and downstream leverage.
  * - modie://instructions: Static Markdown governance and ephemeral task instructions.
  */
 export function registerAllResources(
@@ -79,24 +85,51 @@ export function registerAllResources(
     {
       title: "Active Ready Tasks",
       description:
-        "Active workspace tasks unblocked by dependencies and ready for execution",
-      mimeType: "application/json",
+        "Active workspace tasks unblocked by dependencies and ready for execution in condensed Markdown",
+      mimeType: "text/markdown",
     },
     async (uri) => {
-      const readyTasks = await queryTaskQueue({ cwd, readyOnly: true });
+      const allTasks = await queryTaskQueue({ cwd, readyOnly: false });
+      const readyTasks = allTasks.filter((t) => t.readiness === "READY");
+      const text = renderReadyTasks(readyTasks, allTasks);
       return {
         contents: [
           {
             uri: uri.href,
-            mimeType: "application/json",
-            text: JSON.stringify(readyTasks, null, 2),
+            mimeType: "text/markdown",
+            text,
           },
         ],
       };
     },
   );
 
-  // 3. Agent Instructions Resource (modie://instructions)
+  // 3. Workspace Tasks Backlog (modie://tasks/all)
+  server.registerResource(
+    "all-tasks",
+    "modie://tasks/all",
+    {
+      title: "Workspace Tasks Backlog",
+      description:
+        "Condensed Markdown backlog of all workspace tasks categorized by readiness with dependency blockers and downstream leverage",
+      mimeType: "text/markdown",
+    },
+    async (uri) => {
+      const allTasks = await queryTaskQueue({ cwd, readyOnly: false });
+      const text = renderTasksBacklog(allTasks);
+      return {
+        contents: [
+          {
+            uri: uri.href,
+            mimeType: "text/markdown",
+            text,
+          },
+        ],
+      };
+    },
+  );
+
+  // 4. Agent Instructions Resource (modie://instructions)
   server.registerResource(
     "instructions",
     "modie://instructions",

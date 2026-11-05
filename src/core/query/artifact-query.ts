@@ -6,6 +6,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { dirname, isAbsolute, resolve } from "node:path";
 import { extractAdrSummary } from "../adr/summary.ts";
+import { extractTaskSummary } from "../task/summary.ts";
 import { resolveGoverningScope } from "../common/directories.ts";
 import { parseArtifactFilename } from "../common/filename.ts";
 import {
@@ -100,6 +101,18 @@ async function resolveAdrSummary(
   try {
     const rawContent = await readFile(filepath, "utf8");
     return extractAdrSummary(rawContent, slug);
+  } catch {
+    return slugToTitle(slug);
+  }
+}
+
+async function resolveTaskSummary(
+  filepath: string,
+  slug: string,
+): Promise<string> {
+  try {
+    const rawContent = await readFile(filepath, "utf8");
+    return extractTaskSummary(rawContent, slug);
   } catch {
     return slugToTitle(slug);
   }
@@ -281,6 +294,8 @@ async function toResolvedArtifact(
 
   if (hit.subtype === "ADR" && !hit.isHistorical) {
     summary = await resolveAdrSummary(hit.filepath, hit.slug);
+  } else if (hit.subtype === "TASK" && !hit.isHistorical) {
+    summary = await resolveTaskSummary(hit.filepath, hit.slug);
   }
 
   return {
@@ -378,7 +393,10 @@ export async function getArtifactDetails(
     resolved.subtype === "ADR"
       ? (parsedSubtypeArtifact?.summary ??
           extractAdrSummary(rawContent, resolved.slug))
-      : fmSummary;
+      : resolved.subtype === "TASK"
+        ? (parsedSubtypeArtifact?.summary ??
+            extractTaskSummary(rawContent, resolved.slug))
+        : fmSummary;
   const contextSection = parsedSubtypeArtifact?.context ?? sections["Context"];
   const acceptanceCriteria: TaskAcceptanceCriteriaItem[] | undefined =
     resolved.subtype === "TASK"

@@ -78,21 +78,21 @@ export function formatArtifactFilename(
 
   if (!isValidSlug(slug)) {
     throw new Error(
-      `Invalid slug for ${subtype} filename: "${slug}". Must be strict kebab-case (RULE-1).`,
+      `Invalid slug for ${subtype} filename: "${slug}". Must be strict kebab-case.`,
     );
   }
 
   const upperSubtype = subtype.toUpperCase();
   if (!/^[A-Z0-9]+$/.test(upperSubtype)) {
     throw new Error(
-      `Invalid artifact subtype "${subtype}". Expected uppercase alphanumeric token (RULE-1).`,
+      `Invalid artifact subtype "${subtype}". Expected uppercase alphanumeric token.`,
     );
   }
 
   if (!isValidArtifactId(strId)) {
     const subtypeDisplay = upperSubtype === "TASK" ? "task" : upperSubtype;
     throw new Error(
-      `Invalid ${subtypeDisplay} ID: "${id}". Must be unpadded integer or branch-namespaced token (RULE-1, ADR-1, ADR-9).`,
+      `Invalid ${subtypeDisplay} ID: "${id}". Must be unpadded integer or branch-namespaced token.`,
     );
   }
 

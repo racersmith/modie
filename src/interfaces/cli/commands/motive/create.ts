@@ -63,7 +63,7 @@ export const motiveCreateCommand: CliCommandDefinition<
   description: "Create or scaffold a MOTIVE.md scope intent file",
   agentGuidance:
     "Call this tool to create or scaffold a singleton `<dir>/.modie/MOTIVE.md` file expressing directory-level purpose and long-term trajectory.\n\n" +
-    "BEST PRACTICE: `MOTIVE.md` must never cite or link to any artifact IDs or other Modie documents (RULE-10). Creation fails if `MOTIVE.md` already exists in the target scope unless `overwrite: true` is explicitly passed.",
+    "BEST PRACTICE: `MOTIVE.md` must never cite or link to any artifact IDs or other Modie documents. Creation fails if `MOTIVE.md` already exists in the target scope unless `overwrite: true` is explicitly passed.",
   helpUsage: "modie motive create --help",
   schema: motiveCreateSchema,
   positionals: [

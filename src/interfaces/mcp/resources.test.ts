@@ -1,6 +1,6 @@
 /**
  * Unit and integration tests for Modie Ambient MCP Resources.
- * Verifies strictly 3 parameterless ambient resources (modie://task, modie://tasks/ready, modie://instructions).
+ * Verifies strictly 4 parameterless ambient resources (modie://task, modie://tasks/ready, modie://tasks/all, modie://instructions).
  * @verifies RULE-25, RULE-26
  */
 
@@ -53,13 +53,14 @@ describe("Modie Ambient MCP Resources (RULE-25, RULE-26)", () => {
   });
 
   // @verifies RULE-26
-  it("should expose strictly 3 ambient resources and no parameterized templates", async () => {
+  it("should expose strictly 4 ambient resources and no parameterized templates", async () => {
     const res = await client.listResources();
     const uris = res.resources.map((r) => r.uri);
 
     expect(uris.sort()).toEqual([
       "modie://instructions",
       "modie://task",
+      "modie://tasks/all",
       "modie://tasks/ready",
     ]);
 
@@ -74,18 +75,51 @@ describe("Modie Ambient MCP Resources (RULE-25, RULE-26)", () => {
   });
 
   // @verifies RULE-26
-  it("should serve modie://tasks/ready as JSON unblocked task queue", async () => {
+  it("should serve modie://tasks/ready as condensed Markdown unblocked task queue", async () => {
     const res = await client.readResource({ uri: "modie://tasks/ready" });
     expect(res.contents).toBeDefined();
     expect(res.contents.length).toBe(1);
 
     const item = res.contents[0] as any;
-    expect(item.mimeType).toBe("application/json");
-    const parsed = JSON.parse(item.text);
-    expect(Array.isArray(parsed)).toBe(true);
-    expect(parsed.length).toBe(1);
-    expect(parsed[0].slug).toBe("ready-task");
-    expect(parsed[0].readiness).toBe("READY");
+    expect(item.mimeType).toBe("text/markdown");
+    expect(item.text).toContain("# Ready Tasks Queue");
+    expect(item.text).toContain(
+      "1 task unblocked and ready for execution. Use `start_task` to begin a task.",
+    );
+    expect(item.text).toContain(`- **${taskTag}** (3 criteria) \`.\``);
+    expect(item.text).toContain("*Title*: ready task");
+    expect(item.text).toContain("*Summary*: Context for ready task.");
+  });
+
+  // @verifies RULE-26
+  it("should serve modie://tasks/all as grouped Markdown backlog with dependency leverage", async () => {
+    const task102Tag = makeTestTag("TASK", 102);
+    await workspace.createTask({
+      id: 102,
+      slug: "blocked-task",
+      title: "Blocked Task",
+      depends_on: [taskTag],
+      criteria: ["Implement blocked feature", "User Review"],
+    });
+
+    // On dev branch: task 101 is READY, task 102 is BLOCKED
+    const resDev = await client.readResource({ uri: "modie://tasks/all" });
+    const contentDev = resDev.contents[0] as any;
+    expect(contentDev.mimeType).toBe("text/markdown");
+    expect(contentDev.text).toContain("# Workspace Tasks Backlog");
+    expect(contentDev.text).toContain("## Ready (Unblocked)");
+    expect(contentDev.text).toContain(`- **${taskTag}** (0/3 criteria)`);
+    expect(contentDev.text).toContain(`*Blocks*: ${task102Tag}`);
+    expect(contentDev.text).toContain("## Blocked");
+    expect(contentDev.text).toContain(`- **${task102Tag}** (0/2 criteria)`);
+    expect(contentDev.text).toContain(`*Blocked by*: ${taskTag}`);
+
+    // Switch to task branch: task 101 becomes IN PROGRESS
+    await workspace.gitCheckout("task/101-ready-task", { create: true });
+    const resBranch = await client.readResource({ uri: "modie://tasks/all" });
+    const contentBranch = resBranch.contents[0] as any;
+    expect(contentBranch.text).toContain("## In Progress");
+    expect(contentBranch.text).toContain(`- **${taskTag}** (0/3 criteria)`);
   });
 
   // @verifies RULE-26
