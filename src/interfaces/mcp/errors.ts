@@ -108,15 +108,15 @@ export class McpToolError extends Error {
       diagnostic:
         "Task acceptance criteria checklist items remain incomplete. Per RULE-21 and RULE-22, all acceptance criteria must be satisfied before task completion or branch merging.",
       recovery: {
-        action: `Call modie_task_lifecycle with action='check' to verify remaining acceptance criteria, or pass force: true to complete without verification.`,
-        tool: "modie_task_lifecycle",
+        action:
+          "Call check_criteria with items to verify remaining acceptance criteria before completing the task.",
+        tool: "check_criteria",
         parameters: {
-          action: "check",
           task_id: taskId !== "current" ? taskId : undefined,
-          check_items: uncheckedIndices.length > 0 ? uncheckedIndices : [1],
+          items: uncheckedIndices.length > 0 ? uncheckedIndices : [1],
         },
         suggestion:
-          "Verify remaining acceptance criteria using modie_task_lifecycle(action='check'), or pass force: true if criteria are intentionally bypassed.",
+          "Verify remaining acceptance criteria using check_criteria(items=[...]).",
         uncheckedItems: options.uncheckedItems,
       },
     });
@@ -149,13 +149,11 @@ export class McpToolError extends Error {
       diagnostic,
       recovery: {
         action:
-          "Inspect container hierarchy and governing scopes via modie_compile_context before establishing links.",
-        tool: "modie_compile_context",
-        parameters: {
-          target: options.sourceScope ?? ".",
-        },
+          "Inspect container hierarchy and governing scopes via task_context before establishing links.",
+        tool: "task_context",
+        parameters: {},
         suggestion:
-          "Ensure source and target artifacts follow spatial hierarchy rules (RULE-16, RULE-17, RULE-19). Inspect enclosing scopes using modie_compile_context.",
+          "Ensure source and target artifacts follow spatial hierarchy rules (RULE-16, RULE-17, RULE-19). Inspect enclosing scopes using task_context or ls_better.",
       },
     });
   }
@@ -173,12 +171,10 @@ export class McpToolError extends Error {
       recovery: {
         action:
           "Confine mutations strictly within or below the active task's declared scope directory, or author a dedicated task at an ancestor scope.",
-        tool: "modie_compile_context",
-        parameters: {
-          target: options.targetPath ?? options.scopeDir ?? ".",
-        },
+        tool: "task_context",
+        parameters: {},
         suggestion:
-          "Check the active task's declared scope with modie_task_lifecycle(action='status') and confine modifications to that directory.",
+          "Check the active task's declared scope with task_context and confine modifications to that directory.",
       },
     });
   }
@@ -194,14 +190,13 @@ export class McpToolError extends Error {
         "The requested artifact tag or identifier could not be resolved in the workspace filesystem or active artifact registry (RULE-29, RULE-34).",
       recovery: {
         action:
-          "Verify valid artifact tags using modie_compile_context, or inspect active tasks via modie://tasks/ready and rules via modie://rules.",
-        tool: "modie_compile_context",
+          "Verify valid artifact tags using read_artifact, or inspect active tasks via modie://tasks/ready.",
+        tool: "read_artifact",
         parameters: {
-          mode: "context",
-          target: ".",
+          tag: options.identifier ?? "TASK-1",
         },
         suggestion:
-          "Verify the artifact identifier (e.g. 'RULE-25', 'TASK-52'). Use modie_compile_context to discover governing artifacts or inspect active resources.",
+          "Verify the artifact identifier (e.g. 'RULE-25', 'TASK-72'). Use modie://tasks/ready to discover ready tasks.",
       },
     });
   }
@@ -221,7 +216,7 @@ export class McpToolError extends Error {
       recovery: {
         action:
           "Correct the tool arguments according to the tool input schema.",
-        tool: options.tool ?? "modie_compile_context",
+        tool: options.tool ?? "task_context",
         parameters: options.suggestedParameters,
         validAlternatives: options.validAlternatives,
         suggestion:
@@ -247,7 +242,7 @@ export function toMcpErrorPayload(
       ? String((error as any).message)
       : String(error ?? "Unknown execution error");
 
-  const toolName = context.toolName ?? "modie_compile_context";
+  const toolName = context.toolName ?? "task_context";
   const args = context.args ?? {};
 
   // 1. Check for acceptance criteria incomplete (RULE-21, RULE-22)
@@ -334,22 +329,8 @@ export function toMcpErrorPayload(
       rawMessage,
     )
   ) {
-    const validAlternatives: string[] = [];
-    if (/unsupported task lifecycle action/i.test(rawMessage)) {
-      validAlternatives.push(
-        "start",
-        "check",
-        "status",
-        "complete",
-        "merge",
-        "complete_and_merge",
-      );
-    }
-
     return McpToolError.invalidParameter({
       message: rawMessage,
-      validAlternatives:
-        validAlternatives.length > 0 ? validAlternatives : undefined,
       tool: toolName,
       suggestedParameters: args,
     }).toPayload();
@@ -362,12 +343,10 @@ export function toMcpErrorPayload(
     message: rawMessage,
     diagnostic: `Execution failure encountered while executing MCP tool "${toolName}".`,
     recovery: {
-      action:
-        "Inspect current repository state and parameters using modie_compile_context.",
-      tool: "modie_compile_context",
-      parameters: { mode: "context", target: "." },
-      suggestion:
-        "Verify arguments and repository context before retrying.",
+      action: "Inspect current task context and parameters using task_context.",
+      tool: "task_context",
+      parameters: {},
+      suggestion: "Verify arguments and repository context before retrying.",
     },
   };
 }

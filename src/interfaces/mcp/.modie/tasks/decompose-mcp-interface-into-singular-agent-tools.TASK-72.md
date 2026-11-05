@@ -25,15 +25,15 @@ Decompose the MCP interface into **11 Singular-Purpose Agent Tools** (`ls_better
 
 # Acceptance Criteria
 
-- [ ] Define flat Zod parameter schemas for the 11 singular-purpose agent tools (`ls_better`, `read_artifact`, `task_context`, `start_task`, `check_criteria`, `complete_task`, `create_rule`, `create_adr`, `create_task`, `link_artifacts`, `archive_artifact`), completely retiring the 4 legacy polymorphic mega-tool schemas and freeform `sections` dictionaries.
-- [ ] Implement Frontmatter-to-Markdown field handlers (`depends_on`, `links`, `supersedes`, `referencedBy`) that transform frontmatter metadata into an agent-readable `## Appendix: Relationships & Governance` section, resolving rule tags to titles and single-line invariant statements.
-- [ ] Implement `read_artifact` returning unescaped Markdown with file location comments, inbound citations, and the rendered frontmatter appendix.
-- [ ] Implement `task_context` and `start_task` returning an unescaped Markdown Mission Brief featuring the elevated blast radius constraint (`RULE-6`), numbered acceptance criteria checklist, and governing rule invariants.
-- [ ] Implement `ls_better` returning clean plaintext tab-separated listings (`<file|dir/>\t<gist>\n`) with Unix `ls -F` trailing slashes for directories, saving ~80% in tokens over JSON envelopes.
-- [ ] Implement deterministic state transition handlers for `check_criteria` (toggling 1-based indices and returning updated checklist progress) and `complete_task` (verifying all criteria, executing two-phase commit ceremony, merging to trunk, and deleting task branch).
-- [ ] Implement dedicated, strongly typed authoring handlers (`create_rule`, `create_adr`, `create_task`) with explicit domain properties, and graph mutation handlers (`link_artifacts`, `archive_artifact`).
-- [ ] Prune bloated static resources, template resources, and micro-resources down to strictly 3 parameterless ambient resources (`modie://task` in Markdown, `modie://tasks/ready` in JSON, `modie://instructions` in Markdown).
-- [ ] Retire dead MCP workflow prompts (`prompts.ts`) from the MCP server per YAGNI.
-- [ ] Update `instructions.md` and handshake instructions to document the 11 singular tools and 3 ambient resources.
-- [ ] Verify all 11 tools, output formats, and ambient resources against automated test suites with 0 test failures and zero regressions.
+- [x] Define flat Zod parameter schemas for the 11 singular-purpose agent tools (`ls_better`, `read_artifact`, `task_context`, `start_task`, `check_criteria`, `complete_task`, `create_rule`, `create_adr`, `create_task`, `link_artifacts`, `archive_artifact`), completely retiring the 4 legacy polymorphic mega-tool schemas and freeform `sections` dictionaries.
+- [x] Implement Frontmatter-to-Markdown field handlers (`depends_on`, `links`, `supersedes`, `referencedBy`) that transform frontmatter metadata into an agent-readable `## Appendix: Relationships & Governance` section, resolving rule tags to titles and single-line invariant statements.
+- [x] Implement `read_artifact` returning unescaped Markdown with file location comments, inbound citations, and the rendered frontmatter appendix.
+- [x] Implement `task_context` and `start_task` returning an unescaped Markdown Mission Brief featuring the elevated blast radius constraint (`RULE-6`), numbered acceptance criteria checklist, and governing rule invariants.
+- [x] Implement `ls_better` returning clean plaintext tab-separated listings (`<file|dir/>\t<gist>\n`) with Unix `ls -F` trailing slashes for directories, saving ~80% in tokens over JSON envelopes.
+- [x] Implement deterministic state transition handlers for `check_criteria` (toggling 1-based indices and returning updated checklist progress) and `complete_task` (verifying all criteria, executing two-phase commit ceremony, merging to trunk, and deleting task branch).
+- [x] Implement dedicated, strongly typed authoring handlers (`create_rule`, `create_adr`, `create_task`) with explicit domain properties, and graph mutation handlers (`link_artifacts`, `archive_artifact`).
+- [x] Prune bloated static resources, template resources, and micro-resources down to strictly 3 parameterless ambient resources (`modie://task` in Markdown, `modie://tasks/ready` in JSON, `modie://instructions` in Markdown).
+- [x] Retire dead MCP workflow prompts (`prompts.ts`) from the MCP server per YAGNI.
+- [x] Update `instructions.md` and handshake instructions to document the 11 singular tools and 3 ambient resources.
+- [x] Verify all 11 tools, output formats, and ambient resources against automated test suites with 0 test failures and zero regressions.
 - [ ] User Review

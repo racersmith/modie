@@ -1,6 +1,6 @@
 /**
  * Model Context Protocol (MCP) server implementation for Modie.
- * Registers 4 consolidated, goal-oriented agent tools with flat Zod input/output schemas,
+ * Registers 11 singular-purpose agent tools with flat Zod input/output schemas,
  * declared behavioral annotations, stateless parameters with Git branch fallback,
  * and token economy progressive disclosure (RULE-25, RULE-26, RULE-27).
  */
@@ -10,25 +10,40 @@ import {
   type McpServerOptions,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { MODIE_VERSION } from "../../core/index.ts";
-import { loadMcpInstructions } from "./instructions.ts";
-import {
-  handleCompileContext,
-  handleCreateArtifact,
-  handleMutateGovernance,
-  handleTaskLifecycle,
-} from "./handlers.ts";
 import { formatMcpToolError } from "./errors.ts";
 import {
-  compileContextInputSchema,
-  createArtifactInputSchema,
-  createArtifactOutputSchema,
-  mutateGovernanceInputSchema,
-  mutateGovernanceOutputSchema,
-  taskLifecycleInputSchema,
-  taskLifecycleOutputSchema,
-} from "./schemas.ts";
+  handleArchiveArtifact,
+  handleCheckCriteria,
+  handleCompleteTask,
+  handleCreateAdr,
+  handleCreateRule,
+  handleCreateTask,
+  handleLinkArtifacts,
+  handleLsBetter,
+  handleReadArtifact,
+  handleStartTask,
+  handleTaskContext,
+} from "./handlers.ts";
+import { loadMcpInstructions } from "./instructions.ts";
 import { registerAllResources } from "./resources.ts";
-import { registerAllPrompts } from "./prompts.ts";
+import {
+  archiveArtifactOutputSchema,
+  archiveArtifactSchema,
+  checkCriteriaOutputSchema,
+  checkCriteriaSchema,
+  completeTaskOutputSchema,
+  completeTaskSchema,
+  createAdrSchema,
+  createArtifactOutputSchema,
+  createRuleSchema,
+  createTaskSchema,
+  linkArtifactsOutputSchema,
+  linkArtifactsSchema,
+  lsBetterSchema,
+  readArtifactSchema,
+  startTaskSchema,
+  taskContextSchema,
+} from "./schemas.ts";
 
 export interface ModieMcpServerOptions {
   /**
@@ -53,7 +68,7 @@ export interface ModieMcpServerOptions {
 }
 
 /**
- * Creates and initializes a Modie MCP server with the 5 consolidated agent tools
+ * Creates and initializes a Modie MCP server with the 11 singular agent tools
  * and ambient governance resources.
  */
 export function createModieMcpServer(
@@ -77,13 +92,17 @@ export function createModieMcpServer(
     },
   );
 
-  // 1. Tool 1: modie_compile_context
+  // ==========================================================================
+  // Cluster 1: Spatial & Artifact Exploration Tools (Plaintext/Markdown)
+  // ==========================================================================
+
+  // 1. ls_better
   server.registerTool(
-    "modie_compile_context",
+    "ls_better",
     {
       description:
-        "Compile spatial architectural context, governing rules, and signposts for a target.",
-      inputSchema: compileContextInputSchema.shape,
+        "Augmented directory listing with GIST summaries. Trailing slash indicates directory.",
+      inputSchema: lsBetterSchema.shape,
       annotations: {
         readOnlyHint: true,
         idempotentHint: true,
@@ -92,7 +111,112 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        const result = await handleCompileContext(args, cwd);
+        const text = await handleLsBetter(args, cwd);
+        return {
+          content: [{ type: "text" as const, text }],
+        };
+      } catch (error: any) {
+        return formatMcpToolError(error, "ls_better", args, stderr);
+      }
+    }) as any,
+  );
+
+  // 2. read_artifact
+  server.registerTool(
+    "read_artifact",
+    {
+      description:
+        "Inspect any governance artifact (RULE, ADR, TASK) by tag. Returns unescaped Markdown with an appendix.",
+      inputSchema: readArtifactSchema.shape,
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        destructiveHint: false,
+      },
+    },
+    (async (args: any): Promise<any> => {
+      try {
+        const text = await handleReadArtifact(args, cwd);
+        return {
+          content: [{ type: "text" as const, text }],
+        };
+      } catch (error: any) {
+        return formatMcpToolError(error, "read_artifact", args, stderr);
+      }
+    }) as any,
+  );
+
+  // 3. task_context
+  server.registerTool(
+    "task_context",
+    {
+      description:
+        "High-signal Mission Brief in Markdown: active branch, scope, blast radius constraint, acceptance criteria, and governing rule invariants.",
+      inputSchema: taskContextSchema.shape,
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        destructiveHint: false,
+      },
+    },
+    (async (args: any): Promise<any> => {
+      try {
+        const text = await handleTaskContext(args, cwd);
+        return {
+          content: [{ type: "text" as const, text }],
+        };
+      } catch (error: any) {
+        return formatMcpToolError(error, "task_context", args, stderr);
+      }
+    }) as any,
+  );
+
+  // ==========================================================================
+  // Cluster 2: Task Lifecycle State Machine Tools
+  // ==========================================================================
+
+  // 4. start_task
+  server.registerTool(
+    "start_task",
+    {
+      description:
+        "Check out or create task branch, verify dependencies, and return active Mission Brief in Markdown.",
+      inputSchema: startTaskSchema.shape,
+      annotations: {
+        readOnlyHint: false,
+        idempotentHint: true,
+        destructiveHint: false,
+      },
+    },
+    (async (args: any): Promise<any> => {
+      try {
+        const text = await handleStartTask(args, cwd);
+        return {
+          content: [{ type: "text" as const, text }],
+        };
+      } catch (error: any) {
+        return formatMcpToolError(error, "start_task", args, stderr);
+      }
+    }) as any,
+  );
+
+  // 5. check_criteria
+  server.registerTool(
+    "check_criteria",
+    {
+      description:
+        "Atomically mark 1-based acceptance criteria complete or incomplete. Returns updated progress.",
+      inputSchema: checkCriteriaSchema.shape,
+      outputSchema: checkCriteriaOutputSchema.shape,
+      annotations: {
+        readOnlyHint: false,
+        idempotentHint: true,
+        destructiveHint: false,
+      },
+    },
+    (async (args: any): Promise<any> => {
+      try {
+        const result = await handleCheckCriteria(args, cwd);
         return {
           content: [
             {
@@ -103,19 +227,19 @@ export function createModieMcpServer(
           structuredContent: result,
         };
       } catch (error: any) {
-        return formatMcpToolError(error, "modie_compile_context", args, stderr);
+        return formatMcpToolError(error, "check_criteria", args, stderr);
       }
     }) as any,
   );
 
-  // 2. Tool 2: modie_task_lifecycle
+  // 6. complete_task
   server.registerTool(
-    "modie_task_lifecycle",
+    "complete_task",
     {
       description:
-        "Manage task execution: start (with auto-injected context), batch check criteria, complete (2-phase commit), and merge.",
-      inputSchema: taskLifecycleInputSchema.shape,
-      outputSchema: taskLifecycleOutputSchema.shape,
+        "Execute atomic two-phase commit completion ceremony, verify criteria, merge to trunk, and delete task branch.",
+      inputSchema: completeTaskSchema.shape,
+      outputSchema: completeTaskOutputSchema.shape,
       annotations: {
         readOnlyHint: false,
         idempotentHint: false,
@@ -124,7 +248,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        const result = await handleTaskLifecycle(args, cwd);
+        const result = await handleCompleteTask(args, cwd);
         return {
           content: [
             {
@@ -135,18 +259,22 @@ export function createModieMcpServer(
           structuredContent: result,
         };
       } catch (error: any) {
-        return formatMcpToolError(error, "modie_task_lifecycle", args, stderr);
+        return formatMcpToolError(error, "complete_task", args, stderr);
       }
     }) as any,
   );
 
-  // 3. Tool 3: modie_create_artifact
+  // ==========================================================================
+  // Cluster 3: Dedicated Artifact Authoring Tools
+  // ==========================================================================
+
+  // 7. create_rule
   server.registerTool(
-    "modie_create_artifact",
+    "create_rule",
     {
       description:
-        "Universal declarative authoring for RULE, ADR, TASK, MOTIVE, IDEA, SPARK with atomic link creation.",
-      inputSchema: createArtifactInputSchema.shape,
+        "Author an architectural governance rule with an invariant assertion and justifying ADR links.",
+      inputSchema: createRuleSchema.shape,
       outputSchema: createArtifactOutputSchema.shape,
       annotations: {
         readOnlyHint: false,
@@ -156,7 +284,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        const result = await handleCreateArtifact(args, cwd);
+        const result = await handleCreateRule(args, cwd);
         return {
           content: [
             {
@@ -167,19 +295,119 @@ export function createModieMcpServer(
           structuredContent: result,
         };
       } catch (error: any) {
-        return formatMcpToolError(error, "modie_create_artifact", args, stderr);
+        return formatMcpToolError(error, "create_rule", args, stderr);
       }
     }) as any,
   );
 
-  // 4. Tool 4: modie_mutate_governance
+  // 8. create_adr
   server.registerTool(
-    "modie_mutate_governance",
+    "create_adr",
     {
       description:
-        "Batch link or unlink frontmatter relationships and archive obsolete rules/ADRs.",
-      inputSchema: mutateGovernanceInputSchema.shape,
-      outputSchema: mutateGovernanceOutputSchema.shape,
+        "Author an Architectural Decision Record capturing context, decision, consequences, and links.",
+      inputSchema: createAdrSchema.shape,
+      outputSchema: createArtifactOutputSchema.shape,
+      annotations: {
+        readOnlyHint: false,
+        idempotentHint: false,
+        destructiveHint: false,
+      },
+    },
+    (async (args: any): Promise<any> => {
+      try {
+        const result = await handleCreateAdr(args, cwd);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+          structuredContent: result,
+        };
+      } catch (error: any) {
+        return formatMcpToolError(error, "create_adr", args, stderr);
+      }
+    }) as any,
+  );
+
+  // 9. create_task
+  server.registerTool(
+    "create_task",
+    {
+      description:
+        "Author a scoped task specification with acceptance criteria, dependencies, and blast radius.",
+      inputSchema: createTaskSchema.shape,
+      outputSchema: createArtifactOutputSchema.shape,
+      annotations: {
+        readOnlyHint: false,
+        idempotentHint: false,
+        destructiveHint: false,
+      },
+    },
+    (async (args: any): Promise<any> => {
+      try {
+        const result = await handleCreateTask(args, cwd);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+          structuredContent: result,
+        };
+      } catch (error: any) {
+        return formatMcpToolError(error, "create_task", args, stderr);
+      }
+    }) as any,
+  );
+
+  // ==========================================================================
+  // Cluster 4: Graph Mutation Tools
+  // ==========================================================================
+
+  // 10. link_artifacts
+  server.registerTool(
+    "link_artifacts",
+    {
+      description:
+        "Establish directional frontmatter relationships (links, depends_on) between artifacts.",
+      inputSchema: linkArtifactsSchema.shape,
+      outputSchema: linkArtifactsOutputSchema.shape,
+      annotations: {
+        readOnlyHint: false,
+        idempotentHint: true,
+        destructiveHint: false,
+      },
+    },
+    (async (args: any): Promise<any> => {
+      try {
+        const result = await handleLinkArtifacts(args, cwd);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+          structuredContent: result,
+        };
+      } catch (error: any) {
+        return formatMcpToolError(error, "link_artifacts", args, stderr);
+      }
+    }) as any,
+  );
+
+  // 11. archive_artifact
+  server.registerTool(
+    "archive_artifact",
+    {
+      description:
+        "Archive an obsolete RULE or ADR artifact, marking it archived and auditing inbound references.",
+      inputSchema: archiveArtifactSchema.shape,
+      outputSchema: archiveArtifactOutputSchema.shape,
       annotations: {
         readOnlyHint: false,
         idempotentHint: false,
@@ -188,7 +416,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        const result = await handleMutateGovernance(args, cwd);
+        const result = await handleArchiveArtifact(args, cwd);
         return {
           content: [
             {
@@ -199,21 +427,15 @@ export function createModieMcpServer(
           structuredContent: result,
         };
       } catch (error: any) {
-        return formatMcpToolError(
-          error,
-          "modie_mutate_governance",
-          args,
-          stderr,
-        );
+        return formatMcpToolError(error, "archive_artifact", args, stderr);
       }
     }) as any,
   );
 
-  // 5. Scoped Resource Templates and Static/Dynamic Resources (TASK-49, RULE-25, RULE-26)
+  // ==========================================================================
+  // Ambient Resources (RULE-25, RULE-26)
+  // ==========================================================================
   registerAllResources(server, { cwd, instructions });
-
-  // 6. Native MCP Workflow Prompts (TASK-49)
-  registerAllPrompts(server);
 
   return server;
 }
