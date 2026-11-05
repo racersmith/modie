@@ -2,7 +2,23 @@
   "mcpServers": {
     "mcp-checkup": {
       "command": "bunx",
-      "args": ["-y", "mcp-checkup"]
+      "args": [
+        "-y",
+        "mcp-checkup"
+      ],
+      "type": "stdio"
+    },
+    "modie": {
+      "command": "/home/josh/.bun/bin/bun",
+      "args": [
+        "run",
+        "/home/josh/Documents/version_control/modie/src/interfaces/cli/bin.ts",
+        "mcp"
+      ],
+      "env": {
+        "MODIE_CWD": ""
+      },
+      "type": "stdio"
     }
   }
 }

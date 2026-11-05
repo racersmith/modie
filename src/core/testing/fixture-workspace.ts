@@ -40,6 +40,7 @@ export interface CreateTaskOptions {
   id?: number | string;
   slug?: string;
   title?: string;
+  summary?: string;
   context?: string;
   criteria?: TaskCriterionItem[];
   depends_on?: string[];
@@ -330,6 +331,7 @@ export async function createFixtureWorkspace(
             id,
             slug,
             title: options.title,
+            summary: options.summary,
             context:
               options.context ??
               options.body ??
@@ -372,6 +374,7 @@ export async function createFixtureWorkspace(
           (options.title
             ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
             : undefined),
+        summary: options.summary,
         context: options.context,
         acceptanceCriteria: options.criteria,
         plannedGovernance: options.plannedGovernance,

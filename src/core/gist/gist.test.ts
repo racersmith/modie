@@ -47,7 +47,9 @@ describe("GIST Pathing & Filename Utilities (RULE-8, RULE-20, ADR-10)", () => {
     expect(isFileGistFilename("active-scanner.ts.GIST.md")).toBe(true);
     expect(isFileGistFilename("GIST.md")).toBe(false);
 
-    expect(() => formatFileGistFilename("GIST.md")).toThrow("RULE-20");
+    expect(() => formatFileGistFilename("GIST.md")).toThrow(
+      "reserved for directory GIST summaries",
+    );
     expect(() => formatFileGistFilename("   ")).toThrow(
       "Source filename for file GIST must be non-empty",
     );

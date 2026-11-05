@@ -56,6 +56,7 @@ export type { UpdateSupersededFrontmatterOptions } from "./pipeline/index.ts";
 // Task domain module
 export * as TaskPrimitive from "./task/index.ts";
 export * from "./task/types.ts";
+export { extractTaskSummary } from "./task/summary.ts";
 export {
   createTask,
   resolveTaskDirectories,

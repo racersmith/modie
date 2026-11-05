@@ -20,7 +20,7 @@ export function validateTaskLinks(links: string[] = []): void {
   for (const link of links) {
     if (!isValidGovernanceLinkTag(link)) {
       throw new Error(
-        `Invalid task link target: "${link}". A TASK artifact's frontmatter links must exclusively reference ADR and RULE artifacts (RULE-15).`,
+        `Invalid task link target: "${link}". A TASK artifact's frontmatter links must exclusively reference ADR and RULE artifacts.`,
       );
     }
   }
@@ -33,7 +33,7 @@ export function validateTaskDependencies(dependsOn: string[] = []): void {
   for (const dep of dependsOn) {
     if (!isValidTaskDependencyTag(dep)) {
       throw new Error(
-        `Invalid task dependency: "${dep}". A TASK artifact's frontmatter depends_on must exclusively reference other TASK artifacts (RULE-18).`,
+        `Invalid task dependency: "${dep}". A TASK artifact's frontmatter depends_on must exclusively reference other TASK artifacts.`,
       );
     }
   }
@@ -93,6 +93,7 @@ export function renderPlannedGovernance(
 export function renderTaskMarkdown(options: TaskRenderOptions): string {
   const {
     title,
+    summary,
     context,
     depends_on = [],
     links = [],
@@ -109,6 +110,11 @@ export function renderTaskMarkdown(options: TaskRenderOptions): string {
   }
 
   const frontmatterLines: string[] = ["---"];
+
+  const trimmedSummary = summary?.trim().replace(/\s*\r?\n\s*/g, " ");
+  if (trimmedSummary) {
+    frontmatterLines.push(`summary: ${trimmedSummary}`);
+  }
 
   if (depends_on.length > 0) {
     frontmatterLines.push("depends_on:");

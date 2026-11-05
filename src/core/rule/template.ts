@@ -18,7 +18,7 @@ export function validateRuleLinks(links: string[] = []): void {
   for (const link of links) {
     if (!isValidAdrLinkTag(link)) {
       throw new Error(
-        `Invalid rule link target: "${link}". A RULE artifact's frontmatter links must exclusively reference ADR artifacts (RULE-13).`,
+        `Invalid rule link target: "${link}". A RULE artifact's frontmatter links must exclusively reference ADR artifacts.`,
       );
     }
   }

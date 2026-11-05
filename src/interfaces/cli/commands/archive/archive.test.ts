@@ -23,7 +23,6 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Usage: modie archive <tag-or-path>");
-    expect(stderr).toContain("RULE-31");
   });
 
   // @verifies RULE-27

@@ -23,7 +23,7 @@ export const archiveSchema = z.object({
     .boolean()
     .default(false)
     .describe(
-      "Force archival bypassing active incoming reference checks (RULE-31 override)",
+      "Force archival bypassing active incoming reference checks",
     ),
 });
 

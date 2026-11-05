@@ -8,6 +8,6 @@ To inspect the modie mcp server using the mcp-checkup mcp server the correct too
 ```json
 {
   "server_name": "modie",
-  "config_path": ".agents/plugins/modie/mcp_config.json"
+  "config_path": ".agents/mcp_config.json"
 }
 ```

@@ -33,17 +33,17 @@ describe("RULE Primitive - Frontmatter Links Validation (RULE-13, RULE-35)", () 
     const validAdr = makeTestTag("ADR", 101);
     const invalidRule2 = makeTestTag("RULE", 202);
     const invalidNonTag = "GIST";
-    const rule13 = makeTestTag("RULE", 13);
-
     expect(() => validateRuleLinks([invalidRule])).toThrow(
-      `Invalid rule link target: "${invalidRule}". A RULE artifact's frontmatter links must exclusively reference ADR artifacts (${rule13}).`,
+      `Invalid rule link target: "${invalidRule}". A RULE artifact's frontmatter links must exclusively reference ADR artifacts.`,
     );
-    expect(() => validateRuleLinks([invalidTask])).toThrow(new RegExp(rule13));
+    expect(() => validateRuleLinks([invalidTask])).toThrow(
+      "Invalid rule link target",
+    );
     expect(() => validateRuleLinks([validAdr, invalidRule2])).toThrow(
-      new RegExp(rule13),
+      "Invalid rule link target",
     );
     expect(() => validateRuleLinks([invalidNonTag])).toThrow(
-      new RegExp(rule13),
+      "Invalid rule link target",
     );
   });
 });

@@ -88,12 +88,12 @@ describe("TASK Primitive - Frontmatter Links & Dependencies (RULE-15, RULE-18)",
     const validRule = makeTestTag("RULE", 201);
     const invalidTask = makeTestTag("TASK", 301);
     const invalidCustom = makeTestTag("INVALID", 1);
-    const rule15 = makeTestTag("RULE", 15);
-
     expect(() => validateTaskLinks([validAdr, validRule])).not.toThrow();
-    expect(() => validateTaskLinks([invalidTask])).toThrow(new RegExp(rule15));
+    expect(() => validateTaskLinks([invalidTask])).toThrow(
+      "Invalid task link target",
+    );
     expect(() => validateTaskLinks([invalidCustom])).toThrow(
-      new RegExp(rule15),
+      "Invalid task link target",
     );
   });
 
@@ -103,14 +103,13 @@ describe("TASK Primitive - Frontmatter Links & Dependencies (RULE-15, RULE-18)",
     const taskDep2 = makeTestTag("TASK", "302-1");
     const invalidRule = makeTestTag("RULE", 201);
     const invalidAdr = makeTestTag("ADR", 101);
-    const rule18 = makeTestTag("RULE", 18);
 
     expect(() => validateTaskDependencies([taskDep1, taskDep2])).not.toThrow();
     expect(() => validateTaskDependencies([invalidRule])).toThrow(
-      new RegExp(rule18),
+      "Invalid task dependency",
     );
     expect(() => validateTaskDependencies([invalidAdr])).toThrow(
-      new RegExp(rule18),
+      "Invalid task dependency",
     );
   });
 });

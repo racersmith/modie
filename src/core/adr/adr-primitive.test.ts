@@ -5,14 +5,18 @@
 
 import { describe, expect, it } from "bun:test";
 import { formatArtifactFilename } from "../common/filename.ts";
+import { makeTestTag } from "../testing/index.ts";
 import { parseAdrMarkdown, renderAdrMarkdown, validateAdrLinks } from "./template.ts";
 
-describe("ADR Primitive - Frontmatter Links Validation (RULE-14)", () => {
-  // @verifies RULE-14
-  it("[RULE-14] should accept valid ADR and RULE link targets", () => {
-    expect(() => validateAdrLinks(["ADR-1"])).not.toThrow();
-    expect(() => validateAdrLinks(["RULE-8"])).not.toThrow();
-    expect(() => validateAdrLinks(["ADR-1", "RULE-8", "ADR-4"])).not.toThrow();
+describe("ADR Primitive - Frontmatter Links Validation (RULE-14, RULE-35)", () => {
+  // @verifies RULE-14, RULE-35
+  it("[RULE-14][RULE-35] should accept valid ADR and RULE link targets", () => {
+    const adr1 = makeTestTag("ADR", 1);
+    const rule8 = makeTestTag("RULE", 8);
+    const adr4 = makeTestTag("ADR", 4);
+    expect(() => validateAdrLinks([adr1])).not.toThrow();
+    expect(() => validateAdrLinks([rule8])).not.toThrow();
+    expect(() => validateAdrLinks([adr1, rule8, adr4])).not.toThrow();
   });
 
   // @verifies RULE-14
@@ -20,30 +24,42 @@ describe("ADR Primitive - Frontmatter Links Validation (RULE-14)", () => {
     expect(() => validateAdrLinks([])).not.toThrow();
   });
 
-  // @verifies RULE-14
-  it("[RULE-14] should reject TASK, MOTIVE, GIST and invalid link targets with RULE-14 error", () => {
-    expect(() => validateAdrLinks(["TASK-1"])).toThrow(
-      'Invalid ADR link target: "TASK-1". An ADR artifact\'s frontmatter links must exclusively reference ADR or RULE artifacts (RULE-14).',
+  // @verifies RULE-14, RULE-35
+  it("[RULE-14][RULE-35] should reject TASK, MOTIVE, GIST and invalid link targets with RULE-14 error", () => {
+    const task1 = makeTestTag("TASK", 1);
+    const motive1 = makeTestTag("MOTIVE", 1);
+    const gist1 = makeTestTag("GIST", 1);
+
+    expect(() => validateAdrLinks([task1])).toThrow(
+      `Invalid ADR link target: "${task1}". An ADR artifact's frontmatter links must exclusively reference ADR or RULE artifacts.`,
     );
-    expect(() => validateAdrLinks(["MOTIVE-1"])).toThrow("RULE-14");
-    expect(() => validateAdrLinks(["GIST-1"])).toThrow("RULE-14");
-    expect(() => validateAdrLinks(["INVALID"])).toThrow("RULE-14");
+    expect(() => validateAdrLinks([motive1])).toThrow(
+      `Invalid ADR link target: "${motive1}". An ADR artifact's frontmatter links must exclusively reference ADR or RULE artifacts.`,
+    );
+    expect(() => validateAdrLinks([gist1])).toThrow(
+      `Invalid ADR link target: "${gist1}". An ADR artifact's frontmatter links must exclusively reference ADR or RULE artifacts.`,
+    );
+    expect(() => validateAdrLinks(["INVALID"])).toThrow(
+      'Invalid ADR link target: "INVALID". An ADR artifact\'s frontmatter links must exclusively reference ADR or RULE artifacts.',
+    );
   });
 });
 
-describe("ADR Primitive - Template Rendering (ADR-4, RULE-14)", () => {
-  // @verifies ADR-4, RULE-14
-  it("[ADR-4][RULE-14] should render standard ADR sections with frontmatter links", () => {
+describe("ADR Primitive - Template Rendering (ADR-4, RULE-14, RULE-35)", () => {
+  // @verifies ADR-4, RULE-14, RULE-35
+  it("[ADR-4][RULE-14][RULE-35] should render standard ADR sections with frontmatter links", () => {
+    const rule8 = makeTestTag("RULE", 8);
+    const adr2 = makeTestTag("ADR", 2);
     const rendered = renderAdrMarkdown({
       title: "Subtype Directory Partitioning",
-      links: ["RULE-8", "ADR-2"],
+      links: [rule8, adr2],
       context:
         "Enforcing strict dedicated folders creates unnecessary directory sprawl.",
       alternatives: "- Strict Mandatory Folders\n- Strict Flat Colocation",
       decision: "We adopt a permissive containment model.",
     });
 
-    expect(rendered).toContain("links:\n  - RULE-8\n  - ADR-2");
+    expect(rendered).toContain(`links:\n  - ${rule8}\n  - ${adr2}`);
     expect(rendered).toContain(
       "# Context\n\nEnforcing strict dedicated folders creates unnecessary directory sprawl.",
     );
@@ -123,19 +139,21 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14)", () => {
     expect(parsed.consequences).toBe("Consequences content.");
   });
 
-  // @verifies ADR-4, ADR-8, RULE-26
-  it("[ADR-4][ADR-8][RULE-26] should render summary in canonical YAML frontmatter when provided", () => {
+  // @verifies ADR-4, ADR-8, RULE-26, RULE-35
+  it("[ADR-4][ADR-8][RULE-26][RULE-35] should render summary in canonical YAML frontmatter when provided", () => {
+    const adr4 = makeTestTag("ADR", 4);
+    const rule26 = makeTestTag("RULE", 26);
     const rendered = renderAdrMarkdown({
       title: "Signpost Progressive Disclosure",
       summary:
         "Emit 1-2 sentence ADR summaries during context compilation to prevent prompt bloat.",
-      links: ["ADR-4", "RULE-26"],
+      links: [adr4, rule26],
       context: "Full ADR bodies bloat upward context compilation.",
       decision: "Adopt frontmatter summary field.",
     });
 
     expect(rendered).toContain(
-      "---\nsummary: Emit 1-2 sentence ADR summaries during context compilation to prevent prompt bloat.\nlinks:\n  - ADR-4\n  - RULE-26\n---",
+      `---\nsummary: Emit 1-2 sentence ADR summaries during context compilation to prevent prompt bloat.\nlinks:\n  - ${adr4}\n  - ${rule26}\n---`,
     );
   });
 

@@ -45,6 +45,7 @@ export interface TaskQueueItem {
   criteriaProgress: string;
   acceptanceCriteria: TaskAcceptanceCriteriaItem[];
   allCriteriaSatisfied: boolean;
+  summary?: string;
   context?: string;
 
   /**
@@ -235,6 +236,7 @@ export async function queryTaskQueue(
 
     const fullTaskId = `TASK-${disc.id}`;
     const title = slugToTitle(disc.slug);
+    const summary = parsed.summary;
     const isCurrent = Boolean(
       normCurrentId && taskKey(disc.id) === normCurrentId,
     );
@@ -244,6 +246,7 @@ export async function queryTaskQueue(
       fullTaskId,
       slug: disc.slug,
       title,
+      summary,
       filepath: disc.filepath,
       relativePath,
       depends_on: dependsOn,

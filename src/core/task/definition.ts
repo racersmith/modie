@@ -35,7 +35,7 @@ export function validateTaskScope(
     const rel = relative(normalizedScopeDir, absTarget);
     if (rel.startsWith("..") || isAbsolute(rel)) {
       throw new Error(
-        `Downward blast radius violation: target path "${target}" escapes task scope directory "${normalizedScopeDir}" (RULE-6).`,
+        `Downward blast radius violation: target path "${target}" escapes task scope directory "${normalizedScopeDir}".`,
       );
     }
   }
@@ -47,8 +47,7 @@ export function validateTaskScope(
       const relToAncestor = relative(normalizedScopeDir, commonAncestor);
       if (relToAncestor.length > 0 && !relToAncestor.startsWith("..")) {
         throw new Error(
-          `Least scope placement violation: target paths share a deeper common ancestor "${commonAncestor}", but task was scoped at higher ancestor "${normalizedScopeDir}" (RULE-12).`,
-        );
+          `Least scope placement violation: target paths share a deeper common ancestor "${commonAncestor}", but task was scoped at higher ancestor "${normalizedScopeDir}".`,        );
       }
     }
   }
@@ -129,10 +128,13 @@ export const taskDefinition: ArtifactDefinition<
       normalizedCriteria.push({ text: "User Review", completed: false });
     }
 
+    const summary = options.summary?.trim() || undefined;
+
     const renderOptions: TaskRenderOptions = {
       id,
       slug,
       title,
+      summary,
       context: options.context ?? "",
       depends_on: options.depends_on ?? [],
       links: options.links ?? [],
@@ -146,6 +148,7 @@ export const taskDefinition: ArtifactDefinition<
       id,
       slug,
       title,
+      summary,
       depends_on: options.depends_on ?? [],
       links: options.links ?? [],
       context: options.context ?? "",
