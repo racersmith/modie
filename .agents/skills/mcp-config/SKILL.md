@@ -8,6 +8,6 @@ To inspect token usage of the modie mcp server using the mcp-checkup mcp server 
 ```json
 {
   "server_name": "modie",
-  "config_path": ".agents/mcp_config.json"
+  "config_path": ".agents/skills/mcp-config/modie_test_mcp.json"
 }
 ```
