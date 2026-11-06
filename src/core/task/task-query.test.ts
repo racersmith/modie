@@ -486,6 +486,7 @@ describe("Historical Task Collection Handlers (ADR-6, RULE-21, RULE-28)", () => 
           filename: "disk-task.TASK-1.md",
           filepath: "src/.modie/tasks/disk-task.TASK-1.md",
           status: "active",
+          isArchived: false,
         },
         {
           id: "2",
@@ -495,6 +496,7 @@ describe("Historical Task Collection Handlers (ADR-6, RULE-21, RULE-28)", () => 
           filename: "branch-task.TASK-2.md",
           filepath: "src/.modie/tasks/branch-task.TASK-2.md",
           status: "active",
+          isArchived: false,
         },
       ],
       activeDiskIds,
@@ -517,6 +519,7 @@ describe("Historical Task Collection Handlers (ADR-6, RULE-21, RULE-28)", () => 
           filename: "deleted-task.TASK-3.md",
           filepath: "src/.modie/tasks/deleted-task.TASK-3.md",
           status: "deleted",
+          isArchived: false,
         },
       ],
       activeDiskIds,

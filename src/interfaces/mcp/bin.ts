@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /**
  * Standalone executable entrypoint for the Modie Model Context Protocol (MCP) server.
  * Communicates via JSON-RPC over standard input/output (stdio) transport.
