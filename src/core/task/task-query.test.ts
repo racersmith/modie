@@ -6,12 +6,19 @@
 import { describe, expect, it } from "bun:test";
 import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
 import {
+  buildTaskBranchMap,
+  calculateCriteriaProgress,
+  collectBranchOnlyTasks,
+  collectBranchTasks,
+  collectDeletedTasks,
   compareTaskIds,
   getTaskStatus,
   queryTaskHistory,
   queryTaskQueue,
+  toTaskQueueItem,
 } from "./index.ts";
 import { parseTaskIdFromBranch } from "../common/index.ts";
+import { MockVcsAdapter } from "../vcs/mock-adapter.ts";
 
 describe("Task Queue Query Service - ID Comparison & Natural Ordering", () => {
   it("should sort monotonic integer task IDs numerically", () => {
@@ -372,5 +379,186 @@ describe("Task Branch Parsing Service - parseTaskIdFromBranch (RULE-28)", () => 
     expect(parseTaskIdFromBranch("")).toBeNull();
     expect(parseTaskIdFromBranch(null)).toBeNull();
     expect(parseTaskIdFromBranch(undefined)).toBeNull();
+  });
+});
+
+describe("Criteria Progress & Queue Item Construction (RULE-22, ADR-6)", () => {
+  // @verifies RULE-22, ADR-6
+  it("[RULE-22][ADR-6] should calculate progress correctly across empty, partial, and complete criteria", () => {
+    const emptyActive = calculateCriteriaProgress([]);
+    expect(emptyActive.criteriaTotal).toBe(0);
+    expect(emptyActive.criteriaCompleted).toBe(0);
+    expect(emptyActive.criteriaProgress).toBe("0/0");
+    expect(emptyActive.allCriteriaSatisfied).toBe(false);
+
+    const emptyDeleted = calculateCriteriaProgress([], { isDeleted: true });
+    expect(emptyDeleted.allCriteriaSatisfied).toBe(true);
+
+    const partial = calculateCriteriaProgress([
+      { text: "Item 1", completed: true },
+      { text: "Item 2", completed: false },
+      { text: "Item 3", completed: false },
+    ]);
+    expect(partial.criteriaTotal).toBe(3);
+    expect(partial.criteriaCompleted).toBe(1);
+    expect(partial.criteriaProgress).toBe("1/3");
+    expect(partial.allCriteriaSatisfied).toBe(false);
+
+    const satisfied = calculateCriteriaProgress([
+      { text: "Item 1", completed: true },
+      { text: "Item 2", completed: true },
+    ]);
+    expect(satisfied.criteriaTotal).toBe(2);
+    expect(satisfied.criteriaCompleted).toBe(2);
+    expect(satisfied.criteriaProgress).toBe("2/2");
+    expect(satisfied.allCriteriaSatisfied).toBe(true);
+  });
+
+  // @verifies RULE-22, ADR-6
+  it("[RULE-22][ADR-6] should map attributes to canonical TaskQueueItem via toTaskQueueItem", () => {
+    const item = toTaskQueueItem({
+      id: "99",
+      slug: "refactor-pipeline",
+      filepath: "/repo/src/.modie/tasks/refactor-pipeline.TASK-99.md",
+      relativePath: "src/.modie/tasks/refactor-pipeline.TASK-99.md",
+      summary: "Pipeline refactor",
+      context: "Context text",
+      depends_on: ["TASK-1"],
+      links: [makeTestTag("ADR", 6)],
+      acceptanceCriteria: [
+        { text: "Step 1", completed: true },
+        { text: "Step 2", completed: false },
+      ],
+      readiness: "READY",
+      blockedBy: [],
+      isCurrent: true,
+    });
+
+    expect(item.id).toBe("99");
+    expect(item.fullTaskId).toBe("TASK-99");
+    expect(item.slug).toBe("refactor-pipeline");
+    expect(item.title).toBe("refactor pipeline");
+    expect(item.summary).toBe("Pipeline refactor");
+    expect(item.context).toBe("Context text");
+    expect(item.depends_on).toEqual(["TASK-1"]);
+    expect(item.links).toEqual([makeTestTag("ADR", 6)]);
+    expect(item.readiness).toBe("READY");
+    expect(item.blockedBy).toEqual([]);
+    expect(item.criteriaTotal).toBe(2);
+    expect(item.criteriaCompleted).toBe(1);
+    expect(item.criteriaProgress).toBe("1/2");
+    expect(item.allCriteriaSatisfied).toBe(false);
+    expect(item.isCurrent).toBe(true);
+  });
+});
+
+describe("Historical Task Collection Handlers (ADR-6, RULE-21, RULE-28)", () => {
+  // @verifies ADR-6, RULE-28
+  it("[ADR-6][RULE-28] should map task branches to lookup dictionary", () => {
+    const map = buildTaskBranchMap([
+      "main",
+      "task/10-feature-one",
+      "task/20-1-subtask-two",
+    ]);
+    expect(map.size).toBe(2);
+    expect(map.get("10")?.slug).toBe("feature-one");
+    expect(map.get("20-1")?.slug).toBe("subtask-two");
+  });
+
+  // @verifies ADR-6, RULE-21, RULE-28
+  it("[ADR-6][RULE-21][RULE-28] should collect branch tasks, deleted tasks, and branch-only tasks without duplicates", () => {
+    const activeDiskIds = new Set(["1"]);
+    const branchMap = buildTaskBranchMap([
+      "task/2-branch-task",
+      "task/3-deleted-task",
+      "task/4-branch-only",
+    ]);
+    const entries = new Map();
+
+    // 1. Collect branch tasks
+    collectBranchTasks(
+      [
+        {
+          id: "1", // Should be skipped because it's active on disk
+          subtype: "TASK",
+          tag: "TASK-1",
+          slug: "disk-task",
+          filename: "disk-task.TASK-1.md",
+          filepath: "src/.modie/tasks/disk-task.TASK-1.md",
+          status: "active",
+        },
+        {
+          id: "2",
+          subtype: "TASK",
+          tag: "TASK-2",
+          slug: "branch-task",
+          filename: "branch-task.TASK-2.md",
+          filepath: "src/.modie/tasks/branch-task.TASK-2.md",
+          status: "active",
+        },
+      ],
+      activeDiskIds,
+      branchMap,
+      "/repo",
+      entries,
+    );
+    expect(entries.size).toBe(1);
+    expect(entries.get("2")?.id).toBe("2");
+    expect(entries.get("2")?.isDeleted).toBe(false);
+
+    // 2. Collect deleted tasks
+    collectDeletedTasks(
+      [
+        {
+          id: "3",
+          subtype: "TASK",
+          tag: "TASK-3",
+          slug: "deleted-task",
+          filename: "deleted-task.TASK-3.md",
+          filepath: "src/.modie/tasks/deleted-task.TASK-3.md",
+          status: "deleted",
+        },
+      ],
+      activeDiskIds,
+      branchMap,
+      "/repo",
+      entries,
+    );
+    expect(entries.size).toBe(2);
+    expect(entries.get("3")?.isDeleted).toBe(true);
+
+    // 3. Collect branch-only tasks
+    collectBranchOnlyTasks(branchMap, activeDiskIds, entries);
+    expect(entries.size).toBe(3);
+    expect(entries.get("4")?.id).toBe("4");
+    expect(entries.get("4")?.isDeleted).toBe(true);
+  });
+});
+
+describe("Typed VCS Methods for Historical Queries (ADR-6, RULE-21, RULE-25)", () => {
+  // @verifies ADR-6, RULE-21, RULE-25
+  it("[ADR-6][RULE-21][RULE-25] should read files at ref and read deleted files via typed IVcsAdapter", async () => {
+    const mockVcs = new MockVcsAdapter({
+      fileContentsAtRef: {
+        "task/10-test:src/.modie/tasks/test.TASK-10.md": "# Task 10 content",
+      },
+      deletedFiles: {
+        "src/.modie/tasks/old.TASK-9.md": "# Task 9 content",
+      },
+    });
+
+    const atRef = await mockVcs.readFileAtRef(
+      "task/10-test",
+      "src/.modie/tasks/test.TASK-10.md",
+    );
+    expect(atRef).toBe("# Task 10 content");
+    expect(mockVcs.history.readFileAtRefCalls.length).toBe(1);
+
+    const deleted = await mockVcs.readDeletedFile("src/.modie/tasks/old.TASK-9.md");
+    expect(deleted).toBe("# Task 9 content");
+    expect(mockVcs.history.readDeletedFileCalls.length).toBe(1);
+
+    const nonExistent = await mockVcs.readDeletedFile("non-existent.md");
+    expect(nonExistent).toBeNull();
   });
 });

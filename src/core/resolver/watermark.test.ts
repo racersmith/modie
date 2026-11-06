@@ -6,15 +6,20 @@ import { describe, expect, it } from "bun:test";
 import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
 import { parseTaskBranch } from "../common/index.ts";
 import {
+  allocateTaskStrategy,
   detectGitBranch,
   inspectGitDeletedArtifactIds,
   inspectGitDeletedArtifacts,
   inspectMultiBranchActiveArtifactIds,
   inspectMultiBranchActiveArtifacts,
+  nextSequence,
+  prefixedAllocationStrategy,
   resolveNextTaskId,
   resolveWatermark,
   scanActiveTaskIds,
   scanActiveTasks,
+  subtaskAllocationStrategy,
+  trunkAllocationStrategy,
 } from "./index.ts";
 
 describe("Watermark Resolver - Active Task Scanner (RULE-1, ADR-6, RULE-34, RULE-35)", () => {
@@ -497,5 +502,98 @@ describe("Watermark Resolver - Multi-Branch Collision Guard & Discovery (RULE-1,
     expect(activeIds).toEqual(["50"]);
 
     await workspace.cleanup();
+  });
+});
+
+describe("Sequence Calculator & Strategy Handlers (RULE-1, ADR-6, ADR-9, RULE-35)", () => {
+  // @verifies RULE-1, ADR-9, RULE-35
+  it("[RULE-1][ADR-9][RULE-35] should calculate next sequence from empty known IDs as sequence 1", () => {
+    const alloc = nextSequence([], {
+      match: /^[0-9]+$/,
+      format: (n) => String(n),
+    });
+    expect(alloc.sequence).toBe(1);
+    expect(alloc.id).toBe("1");
+    expect(String(alloc)).toBe("1");
+  });
+
+  // @verifies RULE-1, ADR-9, RULE-35
+  it("[RULE-1][ADR-9][RULE-35] should calculate max + 1 and skip existing collisions", () => {
+    const alloc = nextSequence(["1", "2", "3", "5"], {
+      match: /^[0-9]+$/,
+      format: (n) => String(n),
+    });
+    // Max is 5, max + 1 = 6 (no collision)
+    expect(alloc.sequence).toBe(6);
+    expect(alloc.id).toBe("6");
+
+    // Collision case: if 6 were also present
+    const collisionAlloc = nextSequence(["1", "2", "3", "4"], {
+      match: /^[0-9]+$/,
+      format: (n) => String(n),
+    });
+    expect(collisionAlloc.sequence).toBe(5);
+    expect(collisionAlloc.id).toBe("5");
+  });
+
+  // @verifies ADR-9, RULE-35
+  it("[ADR-9][RULE-35] should correctly extract sequence with prefix regex and format function", () => {
+    const alloc = nextSequence(["A1", "A2", "A99", "B100"], {
+      match: /^A([0-9]+)$/i,
+      format: (n) => `A${n}`,
+    });
+    expect(alloc.sequence).toBe(100);
+    expect(alloc.id).toBe("A100");
+  });
+
+  // @verifies RULE-1, ADR-6, ADR-9
+  it("[RULE-1][ADR-6][ADR-9] should allocate via trunk strategy", () => {
+    const result = trunkAllocationStrategy.allocate(["10", "20", "5"]);
+    expect(result.strategy).toBe("trunk");
+    expect(result.sequence).toBe(21);
+    expect(result.nextId).toBe("21");
+  });
+
+  // @verifies ADR-9
+  it("[ADR-9] should allocate via subtask strategy under parent ID", () => {
+    const result = subtaskAllocationStrategy.allocate(["4-1", "4-2"], "4");
+    expect(result.strategy).toBe("subtask");
+    expect(result.parentId).toBe("4");
+    expect(result.sequence).toBe(3);
+    expect(result.nextId).toBe("4-3");
+  });
+
+  // @verifies ADR-9
+  it("[ADR-9] should allocate via prefixed strategy", () => {
+    const result = prefixedAllocationStrategy.allocate(["J101", "J102"], "J");
+    expect(result.strategy).toBe("prefixed");
+    expect(result.prefix).toBe("J");
+    expect(result.sequence).toBe(103);
+    expect(result.nextId).toBe("J103");
+  });
+
+  // @verifies ADR-9, RULE-35
+  it("[ADR-9][RULE-35] should delegate strategy selection appropriately in allocateTaskStrategy", () => {
+    const trunkRes = allocateTaskStrategy(["1", "2"], {});
+    expect(trunkRes.strategy).toBe("trunk");
+    expect(trunkRes.nextId).toBe("3");
+
+    const prefixRes = allocateTaskStrategy(["J1"], { prefix: "J" });
+    expect(prefixRes.strategy).toBe("prefixed");
+    expect(prefixRes.nextId).toBe("J2");
+
+    const subtaskRes = allocateTaskStrategy(["5-1"], {
+      taskBranchInfo: { parentId: "5" },
+    });
+    expect(subtaskRes.strategy).toBe("subtask");
+    expect(subtaskRes.nextId).toBe("5-2");
+
+    const forcedTrunkRes = allocateTaskStrategy(["5-1", "10"], {
+      forceTrunk: true,
+      prefix: "J",
+      taskBranchInfo: { parentId: "5" },
+    });
+    expect(forcedTrunkRes.strategy).toBe("trunk");
+    expect(forcedTrunkRes.nextId).toBe("11");
   });
 });

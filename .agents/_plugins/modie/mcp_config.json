@@ -8,7 +8,7 @@
         "mcp"
       ],
       "env": {
-        "MODIE_CWD": ""
+        "MODIE_CWD": "/home/josh/Documents/version_control/modie/"
       },
       "type": "stdio"
     }

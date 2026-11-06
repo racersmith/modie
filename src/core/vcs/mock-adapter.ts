@@ -27,6 +27,8 @@ export interface MockVcsOptions {
   shortHash?: string;
   mergeBaseResult?: string | null;
   grepResults?: Record<string, GitGrepMatch[]> | Map<string, GitGrepMatch[]>;
+  fileContentsAtRef?: Record<string, string> | Map<string, string>;
+  deletedFiles?: Record<string, string> | Map<string, string>;
 }
 
 export class MockVcsAdapter implements IVcsAdapter {
@@ -41,6 +43,8 @@ export class MockVcsAdapter implements IVcsAdapter {
   public shortHash: string;
   public mergeBaseResult: string | null;
   public grepResults: Map<string, GitGrepMatch[]> | null = null;
+  public fileContentsAtRef: Map<string, string>;
+  public deletedFiles: Map<string, string>;
 
   // History tracking for test assertions
   public history: {
@@ -56,6 +60,8 @@ export class MockVcsAdapter implements IVcsAdapter {
     }>;
     stagedAllCount: number;
     stagedFileCalls: Array<{ files: string[]; updateOnly?: boolean }>;
+    readFileAtRefCalls: Array<{ ref: string; path: string; cwd?: string }>;
+    readDeletedFileCalls: Array<{ path: string; cwd?: string }>;
     rawRuns: Array<{ args: string[]; cwd?: string }>;
     rawCommands: Array<{ args: string[]; cwd?: string }>;
   };
@@ -84,6 +90,14 @@ export class MockVcsAdapter implements IVcsAdapter {
           ? new Map(options.grepResults)
           : new Map(Object.entries(options.grepResults));
     }
+    this.fileContentsAtRef =
+      options.fileContentsAtRef instanceof Map
+        ? new Map(options.fileContentsAtRef)
+        : new Map(Object.entries(options.fileContentsAtRef ?? {}));
+    this.deletedFiles =
+      options.deletedFiles instanceof Map
+        ? new Map(options.deletedFiles)
+        : new Map(Object.entries(options.deletedFiles ?? {}));
 
     this.history = {
       checkouts: [],
@@ -93,6 +107,8 @@ export class MockVcsAdapter implements IVcsAdapter {
       merges: [],
       stagedAllCount: 0,
       stagedFileCalls: [],
+      readFileAtRefCalls: [],
+      readDeletedFileCalls: [],
       rawRuns: [],
       rawCommands: [],
     };
@@ -295,6 +311,33 @@ export class MockVcsAdapter implements IVcsAdapter {
 
   async getConfig(key: string, _cwd?: string): Promise<string | null> {
     return this.config.get(key) ?? null;
+  }
+
+  async readFileAtRef(
+    ref: string,
+    path: string,
+    cwd?: string,
+  ): Promise<string | null> {
+    this.history.readFileAtRefCalls.push({ ref, path, cwd });
+    const key = `${ref}:${path}`;
+    if (this.fileContentsAtRef.has(key)) {
+      return this.fileContentsAtRef.get(key)!;
+    }
+    if (this.fileContentsAtRef.has(path)) {
+      return this.fileContentsAtRef.get(path)!;
+    }
+    return null;
+  }
+
+  async readDeletedFile(
+    path: string,
+    cwd?: string,
+  ): Promise<string | null> {
+    this.history.readDeletedFileCalls.push({ path, cwd });
+    if (this.deletedFiles.has(path)) {
+      return this.deletedFiles.get(path)!;
+    }
+    return null;
   }
 
   async run(args: string[], cwd?: string): Promise<string | null> {
