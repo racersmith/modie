@@ -6,10 +6,7 @@
         "run",
         "/home/josh/Documents/version_control/modie/src/interfaces/cli/bin.ts",
         "mcp"
-      ],
-      "env": {
-        "MODIE_CWD": "/home/josh/Documents/version_control/modie"
-      }
+      ]
     }
   }
 }
