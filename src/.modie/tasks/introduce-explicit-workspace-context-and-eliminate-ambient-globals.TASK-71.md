@@ -29,19 +29,13 @@ Per the maintainability review (§1, §2.1, §2.4, §6.16), deep domain function
    - Construct `WorkspaceContext` once at the interface entry points (CLI command execution boundary, MCP server startup).
    - Thread `WorkspaceContext` explicitly through domain pipelines, removing hidden `process.cwd()` and `defaultVcsAdapter` fallbacks.
    - Eliminate mutable module-level state in `registeredSubtypes` in favor of an instance-scoped registry on `WorkspaceContext`.
-
-3. **Dogfooding Governance via Automated Complexity & Layering Guard**:
-   - Author a formal Modie governance rule (`Architecture Layering and Complexity Guard`) codifying:
-     - Zero circular dependencies across core modules.
-     - Maximum function cyclomatic complexity threshold of CC ≤ 15 for all non-composition functions.
-   - Implement an automated architecture test suite that executes AST complexity analysis (`check:complexity`) and cycle detection against `src/core`, ensuring that Modie permanently enforces its own architectural integrity.
+   - Clean up leaky test seams across core domain signatures.
 
 # Acceptance Criteria
 
-- [ ] Introduce `WorkspaceContext` interface (`cwd`, `vcs`, `config`, `registry`) initialized at interface boundaries and passed explicitly into domain services.
+- [ ] Introduce `WorkspaceContext` interface (`root`/`cwd`, `vcs`, `config`, `registry`) initialized at interface boundaries and passed explicitly into domain services.
 - [ ] Replace implicit `process.cwd()` and `defaultVcsAdapter` defaults in domain functions with explicit `WorkspaceContext` references.
 - [ ] Eliminate mutable module-level state in `registeredSubtypes` in favor of instance-scoped registry on `WorkspaceContext`.
-- [ ] Author formal Modie governance new rule `Architecture Layering and Complexity Guard` specifying zero circular dependencies and maximum function cyclomatic complexity CC <= 15.
-- [ ] Add an automated architecture test asserting zero circular dependencies and that no function exceeds cyclomatic complexity threshold (CC <= 15) per new `Architecture Layering and Complexity Guard`.
-- [ ] Verify complete test suite with zero false positive citations or regressions.
+- [ ] Clean up leaky test seams across core domain signatures.
+- [ ] Verify complete test suite passes with zero regressions.
 - [ ] User Review
