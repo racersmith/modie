@@ -12,11 +12,11 @@ import {
   generateSlug,
   parseArtifactFilename,
   parseCanonicalTag,
-  registerArtifactSubtype,
   resolveArtifactDirectories,
   slugToTitle,
 } from "../common/index.ts";
 import type { IndexableSubtype } from "../common/types.ts";
+import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
 import { buildArtifactParseContext } from "../markdown/index.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
 import { resolveNextArtifactId } from "../resolver/watermark.ts";
@@ -39,10 +39,11 @@ export async function createArtifact<
   definition: ArtifactDefinition<TOptions, TArtifact>,
   options: TOptions,
 ): Promise<CreateArtifactResult<TArtifact>> {
-  const cwd = options.cwd ?? process.cwd();
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
 
-  // Register subtype with filename grammar and active scanner
-  registerArtifactSubtype(definition.subtype);
+  // Register subtype on instance registry
+  ctx.registry.register(definition);
 
   if (!options.title || options.title.trim().length === 0) {
     const subtypeDisplay =
@@ -124,6 +125,7 @@ export async function createArtifact<
   } else {
     id = await resolveNextArtifactId(definition.subtype as IndexableSubtype, {
       cwd,
+      context: ctx,
     });
   }
 

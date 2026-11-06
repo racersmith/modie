@@ -3,75 +3,21 @@
  * Complies with ADR-1, ADR-2, ADR-4, RULE-9, RULE-25, RULE-27, and RULE-31.
  */
 
-import type { IndexableSubtype } from "../common/types.ts";
+import type { IndexableSubtype, ResolvedArtifact } from "../common/types.ts";
+import type { WorkspaceContext } from "../context/types.ts";
 import type {
   DirectoryGist,
   FileGist,
   GistSignpost,
 } from "../gist/types.ts";
-import type { TaskReadiness } from "../task/query.ts";
+import type { TaskReadiness } from "../task/types.ts";
 import type {
   ParsedPlannedGovernance,
   TaskAcceptanceCriteriaItem,
 } from "../task/types.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
 
-export interface ResolvedArtifact {
-  /**
-   * Canonical uppercase tag, e.g. "RULE-1", "ADR-6", "TASK-12".
-   */
-  tag: string;
-
-  /**
-   * Indexable subtype: "RULE", "ADR", or "TASK".
-   */
-  subtype: IndexableSubtype;
-
-  /**
-   * Monotonic unpadded integer or namespaced ID token.
-   */
-  id: string;
-
-  /**
-   * Kebab-case slug.
-   */
-  slug: string;
-
-  /**
-   * Basename of the file.
-   */
-  filename: string;
-
-  /**
-   * Absolute filepath on disk.
-   */
-  filepath: string;
-
-  /**
-   * Path relative to cwd.
-   */
-  relativePath: string;
-
-  /**
-   * Normalized scope directory relative to cwd (e.g. "." or "src/interfaces/cli").
-   */
-  scope: string;
-
-  /**
-   * Whether the artifact has a .ARCHIVED marker.
-   */
-  isArchived: boolean;
-
-  /**
-   * Whether the artifact was resolved from Git history or another branch (--history).
-   */
-  isHistorical?: boolean;
-
-  /**
-   * Concise summary of the artifact (for ADR artifacts, extracted from frontmatter with fallback).
-   */
-  summary?: string;
-}
+export type { ResolvedArtifact };
 
 export interface ArtifactDetails extends ResolvedArtifact {
   /**
@@ -140,6 +86,11 @@ export interface ResolveArtifactOptions {
    * Workspace root directory (defaults to process.cwd()).
    */
   cwd?: string;
+
+  /**
+   * Explicit workspace context container.
+   */
+  context?: WorkspaceContext;
 
   /**
    * Explicit subtype filter.
@@ -226,6 +177,11 @@ export interface ListArtifactsOptions {
    * Workspace root directory (defaults to process.cwd()).
    */
   cwd?: string;
+
+  /**
+   * Explicit workspace context container.
+   */
+  context?: WorkspaceContext;
 
   /**
    * Optional target directory or file scope for ancestral scope traversal (RULE-9).
@@ -396,12 +352,17 @@ export interface FindArtifactReferencesOptions {
   cwd?: string;
 
   /**
+   * Explicit workspace context container.
+   */
+  context?: WorkspaceContext;
+
+  /**
    * Custom directory ignore list.
    */
   ignoredDirectories?: string[];
 
   /**
-   * Optional VCS adapter for git operations (defaults to defaultVcsAdapter).
+   * Optional VCS adapter for git operations.
    */
   vcs?: IVcsAdapter;
 }
@@ -498,6 +459,11 @@ export interface ResolveScopeOptions {
    * Workspace root directory (defaults to process.cwd()).
    */
   cwd?: string;
+
+  /**
+   * Explicit workspace context container.
+   */
+  context?: WorkspaceContext;
 }
 
 export interface CompileContextOptions {
@@ -505,6 +471,11 @@ export interface CompileContextOptions {
    * Workspace root directory (defaults to process.cwd()).
    */
   cwd?: string;
+
+  /**
+   * Explicit workspace context container.
+   */
+  context?: WorkspaceContext;
 }
 
 export interface CompiledContextMotive {

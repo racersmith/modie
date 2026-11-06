@@ -6,6 +6,7 @@
  */
 
 import { resolveArtifactDirectories } from "../common/index.ts";
+import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
 import { createArtifact } from "../pipeline/create.ts";
 import { ruleDefinition, validateRuleAncestry } from "./definition.ts";
 import type { CreateRuleOptions, CreateRuleResult } from "./types.ts";
@@ -18,9 +19,10 @@ export { validateRuleAncestry } from "./definition.ts";
  */
 export function resolveRuleDirectories(
   scopeDirInput: string | undefined,
-  cwd: string = process.cwd(),
+  cwdOrContext?: string | WorkspaceContext,
 ): { normalizedScopeDir: string; targetDir: string } {
-  return resolveArtifactDirectories("RULE", scopeDirInput, cwd);
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  return resolveArtifactDirectories("RULE", scopeDirInput, ctx.root);
 }
 
 /**

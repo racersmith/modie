@@ -33,9 +33,10 @@ Per the maintainability review (§1, §2.1, §2.4, §6.16), deep domain function
 
 # Acceptance Criteria
 
-- [ ] Introduce `WorkspaceContext` interface (`root`/`cwd`, `vcs`, `config`, `registry`) initialized at interface boundaries and passed explicitly into domain services.
-- [ ] Replace implicit `process.cwd()` and `defaultVcsAdapter` defaults in domain functions with explicit `WorkspaceContext` references.
-- [ ] Eliminate mutable module-level state in `registeredSubtypes` in favor of instance-scoped registry on `WorkspaceContext`.
-- [ ] Clean up leaky test seams across core domain signatures.
-- [ ] Verify complete test suite passes with zero regressions.
-- [ ] User Review
+- [x] Introduce `WorkspaceContext` interface (`root`/`cwd`, `vcs`, `config`, `registry`) initialized at interface boundaries and passed explicitly into domain services.
+- [x] Replace implicit `process.cwd()` and `defaultVcsAdapter` defaults in domain functions with explicit `WorkspaceContext` references.
+- [x] Eliminate mutable module-level state in `registeredSubtypes` in favor of instance-scoped registry on `WorkspaceContext`.
+- [x] Clean up leaky test seams across core domain signatures.
+- [x] Verify `bun test:parallel && bun check` pass without errors
+- [x] Verify that we have no circular dependencies with `bun check:circular`
+- [x] User Review

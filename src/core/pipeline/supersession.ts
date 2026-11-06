@@ -7,6 +7,7 @@
 
 import { readFile, writeFile } from "node:fs/promises";
 import type { IndexableSubtype } from "../common/types.ts";
+import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
 import { mutateFrontmatterListField } from "../linking/mutation.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
 
@@ -15,6 +16,11 @@ export interface UpdateSupersededFrontmatterOptions {
    * Root working directory for workspace operations (defaults to process.cwd()).
    */
   cwd?: string;
+
+  /**
+   * Explicit workspace context container.
+   */
+  context?: WorkspaceContext;
 
   /**
    * Expected artifact subtype constraint (e.g. "ADR", "RULE").
@@ -38,10 +44,12 @@ export async function updateSupersededArtifactFrontmatter(
   const options: UpdateSupersededFrontmatterOptions =
     typeof optionsOrCwd === "string" ? { cwd: optionsOrCwd } : optionsOrCwd;
 
-  const cwd = options.cwd ?? process.cwd();
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
 
   const target = await resolveArtifactByTag(targetTag, {
     cwd,
+    context: ctx,
     subtype: options.expectedSubtype as IndexableSubtype,
     includeArchived: true,
   });

@@ -27,7 +27,7 @@ import {
   taskBranchGlob,
   taskKey,
 } from "../common/index.ts";
-import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
+import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
 import { resolveTaskFile } from "./completion.ts";
 import {
@@ -54,12 +54,16 @@ import type {
 export async function detectArtifactCollisions(
   sourceBranch: string,
   targetBranch: string,
-  cwd: string = process.cwd(),
-  vcs: IVcsAdapter = defaultVcsAdapter,
+  cwdOrContext?: string | WorkspaceContext,
+  vcs?: IVcsAdapter,
 ): Promise<ArtifactCollision[]> {
+  const ctx = resolveWorkspaceContext(cwdOrContext, vcs);
+  const cwd = ctx.root;
+  const effectiveVcs = ctx.vcs;
+
   const [sourceArtifacts, targetArtifacts] = await Promise.all([
-    inspectGitTreeArtifacts(sourceBranch, cwd, undefined, vcs),
-    inspectGitTreeArtifacts(targetBranch, cwd, undefined, vcs),
+    inspectGitTreeArtifacts(sourceBranch, cwd, undefined, effectiveVcs),
+    inspectGitTreeArtifacts(targetBranch, cwd, undefined, effectiveVcs),
   ]);
 
   if (sourceArtifacts.length === 0 || targetArtifacts.length === 0) {
@@ -67,7 +71,7 @@ export async function detectArtifactCollisions(
   }
 
   // Find common ancestor commit between target and source branches
-  const mergeBase = await vcs.mergeBase(targetBranch, sourceBranch, cwd);
+  const mergeBase = await effectiveVcs.mergeBase(targetBranch, sourceBranch, cwd);
 
   const baseArtifacts = mergeBase
     ? await inspectGitTreeArtifacts(mergeBase, cwd, undefined, vcs)
@@ -160,7 +164,7 @@ export async function detectArtifactCollisions(
 async function resolveTaskMetaForBranching(
   taskIdentifier: string,
   cwd: string,
-  vcs: IVcsAdapter = defaultVcsAdapter,
+  vcs: IVcsAdapter,
 ): Promise<{ id: string; slug: string; filepath?: string }> {
   // 1. Attempt to resolve active task on disk
   try {
@@ -222,7 +226,7 @@ async function resolveTaskMetaForBranching(
 async function findParentTaskBranch(
   parentId: string,
   cwd: string,
-  vcs: IVcsAdapter = defaultVcsAdapter,
+  vcs: IVcsAdapter,
 ): Promise<string | undefined> {
   const normParent = normalizeTaskId(parentId);
   const normParentKey = taskKey(parentId);
@@ -273,10 +277,11 @@ async function findParentTaskBranch(
  */
 export async function computeTaskBranchTopology(
   taskIdentifier: string,
-  options: { base?: string; cwd?: string; vcs?: IVcsAdapter } = {},
+  options: { base?: string; cwd?: string; vcs?: IVcsAdapter; context?: WorkspaceContext } = {},
 ): Promise<TaskBranchTopology> {
-  const cwd = options.cwd ?? process.cwd();
-  const vcs = options.vcs ?? defaultVcsAdapter;
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
+  const vcs = ctx.vcs;
   const config = await loadModieConfig(cwd, vcs);
   const meta = await resolveTaskMetaForBranching(taskIdentifier, cwd, vcs);
   const currentBranch = await vcs.detectCurrentBranch(cwd);
@@ -329,10 +334,13 @@ export async function startTaskBranch(
   taskIdentifier: string,
   options: StartTaskBranchOptions = {},
 ): Promise<StartTaskBranchResult> {
-  const cwd = options.cwd ?? process.cwd();
-  const vcs = options.vcs ?? defaultVcsAdapter;
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
+  const vcs = ctx.vcs;
   const topology = await computeTaskBranchTopology(taskIdentifier, {
     ...options,
+    context: ctx,
+    cwd,
     vcs,
   });
 
@@ -474,14 +482,15 @@ export async function assertTaskCompleted(
   taskIdentifier: string | undefined,
   taskId: string,
   sourceBranch: string,
-  options: { cwd?: string; vcs?: IVcsAdapter; force?: boolean } = {},
+  options: { cwd?: string; vcs?: IVcsAdapter; force?: boolean; context?: WorkspaceContext } = {},
 ): Promise<void> {
   if (options.force) {
     return;
   }
 
-  const cwd = options.cwd ?? process.cwd();
-  const vcs = options.vcs ?? defaultVcsAdapter;
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
+  const vcs = ctx.vcs;
   const filepath = await findTaskFileOnDisk(taskIdentifier, taskId, cwd);
 
   if (filepath !== null) {
@@ -726,11 +735,14 @@ export async function mergeTaskBranch(
   taskIdentifier?: string,
   options: MergeTaskBranchOptions = {},
 ): Promise<MergeTaskBranchResult> {
-  const cwd = options.cwd ?? process.cwd();
-  const vcs = options.vcs ?? defaultVcsAdapter;
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
+  const vcs = ctx.vcs;
   const targetId = await resolveTaskIdentifier(taskIdentifier, vcs, cwd);
   const topology = await computeTaskBranchTopology(targetId, {
     ...options,
+    context: ctx,
+    cwd,
     vcs,
   });
   const sourceBranch = topology.branchName;

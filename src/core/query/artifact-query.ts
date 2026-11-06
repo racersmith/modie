@@ -17,7 +17,7 @@ import {
 import type { IndexableSubtype } from "../common/types.ts";
 import { parseCanonicalTag } from "../common/index.ts";
 import { buildArtifactParseContext } from "../markdown/index.ts";
-import { getArtifactDefinition } from "../registry.ts";
+import { resolveWorkspaceContext } from "../context/resolver.ts";
 import { scanActiveArtifacts } from "../resolver/active-scanner.ts";
 import { listGitBranches } from "../resolver/git-inspector.ts";
 import {
@@ -294,7 +294,8 @@ export async function resolveArtifactByTag(
   tagOrIdentifier: string,
   options: ResolveArtifactOptions = {},
 ): Promise<ResolvedArtifact> {
-  const cwd = options.cwd ?? process.cwd();
+  const workspaceCtx = resolveWorkspaceContext(options);
+  const cwd = workspaceCtx.root;
   const trimmed = tagOrIdentifier.trim();
 
   if (!trimmed) {
@@ -331,6 +332,7 @@ export async function getArtifactDetails(
   tagOrIdentifier: string,
   options: ResolveArtifactOptions = {},
 ): Promise<ArtifactDetails> {
+  const ctx = resolveWorkspaceContext(options);
   const resolved = await resolveArtifactByTag(tagOrIdentifier, options);
   const rawContent = await readFile(resolved.filepath, "utf8");
 
@@ -350,7 +352,7 @@ export async function getArtifactDetails(
   } = context.frontmatterFields;
   const sections = context.sections;
 
-  const definition = getArtifactDefinition(resolved.subtype);
+  const definition = ctx.registry.get(resolved.subtype);
   const parsedSubtypeArtifact = definition?.parse
     ? definition.parse(context)
     : undefined;

@@ -4,45 +4,51 @@
 
 import type { ArtifactSubtype, ArtifactTag } from "./types.ts";
 
+export type SubtypeLookup =
+  | { has(subtype: string): boolean }
+  | Set<string>
+  | ReadonlySet<string>;
+
 /**
  * Valid ID pattern: unpadded integer (1, 42) or branch/author-namespaced (2-1, J101, A102).
  */
 export const ARTIFACT_ID_REGEX = /^[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*$/;
 
-export const DEFAULT_INDEXABLE_SUBTYPES = new Set<string>([
+export const DEFAULT_INDEXABLE_SUBTYPES: ReadonlySet<string> = new Set<string>([
   "RULE",
   "ADR",
   "TASK",
 ]);
 
-const registeredSubtypes = new Set<string>(DEFAULT_INDEXABLE_SUBTYPES);
-
 /**
- * Registers an artifact subtype (e.g. "SPEC", "GIST") so that canonical tag parsing,
- * filename parsing, and active scanners recognize it as a valid indexable artifact.
+ * Registers an artifact subtype.
+ * @deprecated Subtype registration is now instance-scoped to WorkspaceContext.registry.
  */
-export function registerArtifactSubtype(subtype: string): void {
-  const upper = asArtifactSubtype(subtype);
-  if (/^[A-Z0-9]+$/.test(upper)) {
-    registeredSubtypes.add(upper);
-  }
+export function registerArtifactSubtype(_subtype: string): void {
+  // No-op: module-level state eliminated in favor of instance-scoped WorkspaceContext.registry
 }
 
 /**
  * Checks whether an artifact subtype is currently recognized as an indexable subtype.
+ * Queries registry if supplied, otherwise checks DEFAULT_INDEXABLE_SUBTYPES.
  */
-export function isRegisteredArtifactSubtype(subtype: string): boolean {
-  return registeredSubtypes.has(asArtifactSubtype(subtype));
+export function isRegisteredArtifactSubtype(
+  subtype: string,
+  registry?: SubtypeLookup,
+): boolean {
+  const upper = asArtifactSubtype(subtype);
+  if (registry) {
+    return registry.has(upper) || DEFAULT_INDEXABLE_SUBTYPES.has(upper);
+  }
+  return DEFAULT_INDEXABLE_SUBTYPES.has(upper);
 }
 
 /**
  * Resets registered subtypes back to the default core set (RULE, ADR, TASK).
+ * @deprecated Subtype registration is now instance-scoped to WorkspaceContext.registry.
  */
 export function resetRegisteredArtifactSubtypes(): void {
-  registeredSubtypes.clear();
-  for (const s of DEFAULT_INDEXABLE_SUBTYPES) {
-    registeredSubtypes.add(s);
-  }
+  // No-op: module-level state eliminated in favor of instance-scoped WorkspaceContext.registry
 }
 
 /**
@@ -85,6 +91,7 @@ export function formatArtifactTag(
  */
 export function parseCanonicalTag(
   raw: string,
+  registry?: SubtypeLookup,
 ): { subtype: ArtifactSubtype; id: string; tag: ArtifactTag } | null {
   const trimmed = raw.trim();
   const match = trimmed.match(
@@ -95,7 +102,7 @@ export function parseCanonicalTag(
   }
   const rawSubtype = match[1];
   const subtype = asArtifactSubtype(rawSubtype);
-  if (!isRegisteredArtifactSubtype(subtype)) {
+  if (!isRegisteredArtifactSubtype(subtype, registry)) {
     return null;
   }
   const id = match[2];
@@ -114,6 +121,6 @@ export function parseCanonicalTag(
 /**
  * Checks whether a given raw string conforms to canonical tag grammar.
  */
-export function isValidArtifactTag(raw: string): boolean {
-  return parseCanonicalTag(raw) !== null;
+export function isValidArtifactTag(raw: string, registry?: SubtypeLookup): boolean {
+  return parseCanonicalTag(raw, registry) !== null;
 }

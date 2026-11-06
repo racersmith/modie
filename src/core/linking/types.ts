@@ -5,7 +5,7 @@
  * RULE-18, RULE-19, RULE-25, and RULE-36.
  */
 
-import type { ResolvedArtifact } from "../query/types.ts";
+import type { ResolvedArtifact } from "../common/types.ts";
 
 export type ArtifactLinkRelationship = "links" | "depends_on";
 
@@ -49,6 +49,12 @@ export interface ValidateLinkOptions {
    * Workspace root directory (defaults to process.cwd()).
    */
   cwd?: string;
+
+  /**
+   * Explicit workspace context container.
+   */
+  workspace?: any;
+  context?: any;
 
   /**
    * Optional explicit relationship override ("links" or "depends_on").

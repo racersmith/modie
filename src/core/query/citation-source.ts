@@ -12,7 +12,7 @@ import {
   resolve,
 } from "node:path";
 import { escapeRegex, toPosixRelative } from "../common/index.ts";
-import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
+import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
 
 export const DEFAULT_IGNORED_DIRECTORIES = new Set([
@@ -128,7 +128,17 @@ export interface CitationSource {
  * High-performance citation discovery source leveraging git grep index queries.
  */
 export class GitGrepSource implements CitationSource {
-  constructor(private vcs: IVcsAdapter = defaultVcsAdapter) {}
+  private vcs: IVcsAdapter;
+
+  constructor(contextOrVcs?: WorkspaceContext | IVcsAdapter) {
+    if (contextOrVcs && "vcs" in contextOrVcs) {
+      this.vcs = contextOrVcs.vcs;
+    } else if (contextOrVcs) {
+      this.vcs = contextOrVcs;
+    } else {
+      this.vcs = resolveWorkspaceContext().vcs;
+    }
+  }
 
   /**
    * Checks whether the directory is an active git working tree.

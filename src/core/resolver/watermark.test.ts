@@ -3,7 +3,11 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
+import { MockVcsAdapter } from "../vcs/mock-adapter.ts";
 import { parseTaskBranch } from "../common/index.ts";
 import {
   allocateTaskStrategy,
@@ -21,6 +25,41 @@ import {
   subtaskAllocationStrategy,
   trunkAllocationStrategy,
 } from "./index.ts";
+
+async function withWatermarkFixture(
+  options: {
+    branch?: string;
+    activeFiles?: string[];
+    deletedFiles?: string[];
+    treeFiles?: Record<string, string[]>;
+    config?: Record<string, string>;
+  },
+  fn: (cwd: string, vcs: MockVcsAdapter) => Promise<void>,
+) {
+  const dir = await mkdtemp(join(tmpdir(), "modie-watermark-fixture-"));
+  const vcs = new MockVcsAdapter({
+    insideWorkTree: true,
+    currentBranch: options.branch ?? "dev",
+    branches: Object.keys(options.treeFiles ?? {}).concat([options.branch ?? "dev"]),
+    deletedFilesList: options.deletedFiles ?? [],
+    treeFiles: options.treeFiles ?? {},
+    config: options.config,
+  });
+
+  if (options.activeFiles) {
+    for (const f of options.activeFiles) {
+      const full = join(dir, f);
+      await mkdir(dirname(full), { recursive: true });
+      await writeFile(full, "# content");
+    }
+  }
+
+  try {
+    await fn(dir, vcs);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
 
 describe("Watermark Resolver - Active Task Scanner (RULE-1, ADR-6, RULE-34, RULE-35)", () => {
   // @verifies RULE-1, ADR-6, RULE-34, RULE-35
@@ -139,52 +178,76 @@ describe("Watermark Resolver - Trunk Monotonic Integer Progression (ADR-6, ADR-9
   // @verifies ADR-6, ADR-9, RULE-35
   it("[ADR-6][ADR-9][RULE-35] should return next ID 1 for fresh repositories with no prior tasks", async () => {
     const expectedTag = makeTestTag("TASK", 1);
-    const details = await resolveWatermark({
-      activeIds: [],
-      deletedIds: [],
-      branch: "dev",
+    await withWatermarkFixture({ branch: "dev" }, async (cwd, vcs) => {
+      const details = await resolveWatermark({ cwd, vcs });
+      expect(details.strategy).toBe("trunk");
+      expect(details.nextId).toBe("1");
+      expect(details.fullTaskId).toBe(expectedTag);
+      expect(details.sequence).toBe(1);
     });
-
-    expect(details.strategy).toBe("trunk");
-    expect(details.nextId).toBe("1");
-    expect(details.fullTaskId).toBe(expectedTag);
-    expect(details.sequence).toBe(1);
   });
 
   // @verifies ADR-6, ADR-9, RULE-21, RULE-35
   it("[ADR-6][ADR-9][RULE-21][RULE-35] should compute monotonic watermark across active and deleted tasks", async () => {
     const expectedTag = makeTestTag("TASK", 4);
-    const details = await resolveWatermark({
-      activeIds: ["1"],
-      deletedIds: ["2", "3"],
-      branch: "main",
-    });
-
-    expect(details.strategy).toBe("trunk");
-    expect(details.nextId).toBe("4");
-    expect(details.fullTaskId).toBe(expectedTag);
+    await withWatermarkFixture(
+      {
+        branch: "main",
+        activeFiles: [`.modie/tasks/task-one.${makeTestTag("TASK", 1)}.md`],
+        deletedFiles: [
+          `task-two.${makeTestTag("TASK", 2)}.md`,
+          `task-three.${makeTestTag("TASK", 3)}.md`,
+        ],
+      },
+      async (cwd, vcs) => {
+        const details = await resolveWatermark({ cwd, vcs });
+        expect(details.strategy).toBe("trunk");
+        expect(details.nextId).toBe("4");
+        expect(details.fullTaskId).toBe(expectedTag);
+      },
+    );
   });
 
   // @verifies ADR-6, RULE-21
   it("[ADR-6][RULE-21] should advance monotonically when ALL active tasks on disk are deleted", async () => {
-    const nextId = await resolveNextTaskId({
-      activeIds: [],
-      deletedIds: ["1", "2", "3", "4", "5"],
-      branch: "dev",
-    });
-
-    expect(nextId).toBe("6");
+    await withWatermarkFixture(
+      {
+        branch: "dev",
+        deletedFiles: [
+          `task-1.${makeTestTag("TASK", 1)}.md`,
+          `task-2.${makeTestTag("TASK", 2)}.md`,
+          `task-3.${makeTestTag("TASK", 3)}.md`,
+          `task-4.${makeTestTag("TASK", 4)}.md`,
+          `task-5.${makeTestTag("TASK", 5)}.md`,
+        ],
+      },
+      async (cwd, vcs) => {
+        const nextId = await resolveNextTaskId({ cwd, vcs });
+        expect(nextId).toBe("6");
+      },
+    );
   });
 
   // @verifies ADR-9
   it("[ADR-9] should handle non-contiguous task IDs safely without collision", async () => {
-    const nextId = await resolveNextTaskId({
-      activeIds: ["1", "5", "8"],
-      deletedIds: ["2", "3"],
-      branch: "master",
-    });
-
-    expect(nextId).toBe("9");
+    await withWatermarkFixture(
+      {
+        branch: "master",
+        activeFiles: [
+          `.modie/tasks/task-1.${makeTestTag("TASK", 1)}.md`,
+          `.modie/tasks/task-5.${makeTestTag("TASK", 5)}.md`,
+          `.modie/tasks/task-8.${makeTestTag("TASK", 8)}.md`,
+        ],
+        deletedFiles: [
+          `task-2.${makeTestTag("TASK", 2)}.md`,
+          `task-3.${makeTestTag("TASK", 3)}.md`,
+        ],
+      },
+      async (cwd, vcs) => {
+        const nextId = await resolveNextTaskId({ cwd, vcs });
+        expect(nextId).toBe("9");
+      },
+    );
   });
 });
 
@@ -192,67 +255,98 @@ describe("Watermark Resolver - Branch-Aware Sub-Task Namespacing (ADR-9, RULE-21
   // @verifies ADR-9, RULE-35
   it("[ADR-9][RULE-35] should allocate first sub-task ID under parent on task branch", async () => {
     const expectedTag = makeTestTag("TASK", "2-1");
-    const details = await resolveWatermark({
-      activeIds: ["1", "2", "3"],
-      deletedIds: [],
-      branch: "task/2-task-id-allocation-and-rule-alignment",
-    });
-
-    expect(details.strategy).toBe("subtask");
-    expect(details.parentId).toBe("2");
-    expect(details.sequence).toBe(1);
-    expect(details.nextId).toBe("2-1");
-    expect(details.fullTaskId).toBe(expectedTag);
+    await withWatermarkFixture(
+      {
+        branch: "task/2-task-id-allocation-and-rule-alignment",
+        activeFiles: [
+          `.modie/tasks/task-1.${makeTestTag("TASK", 1)}.md`,
+          `.modie/tasks/task-2.${makeTestTag("TASK", 2)}.md`,
+          `.modie/tasks/task-3.${makeTestTag("TASK", 3)}.md`,
+        ],
+      },
+      async (cwd, vcs) => {
+        const details = await resolveWatermark({ cwd, vcs });
+        expect(details.strategy).toBe("subtask");
+        expect(details.parentId).toBe("2");
+        expect(details.sequence).toBe(1);
+        expect(details.nextId).toBe("2-1");
+        expect(details.fullTaskId).toBe(expectedTag);
+      },
+    );
   });
 
   // @verifies ADR-9, RULE-35
   it("[ADR-9][RULE-35] should increment sub-task sequence monotonically for existing sub-tasks", async () => {
     const expectedTag = makeTestTag("TASK", "2-2");
-    const details = await resolveWatermark({
-      activeIds: ["2-1"],
-      deletedIds: [],
-      branch: "task/2-task-id-allocation-and-rule-alignment",
-    });
-
-    expect(details.strategy).toBe("subtask");
-    expect(details.parentId).toBe("2");
-    expect(details.sequence).toBe(2);
-    expect(details.nextId).toBe("2-2");
-    expect(details.fullTaskId).toBe(expectedTag);
+    await withWatermarkFixture(
+      {
+        branch: "task/2-task-id-allocation-and-rule-alignment",
+        activeFiles: [`.modie/tasks/task-sub.${makeTestTag("TASK", "2-1")}.md`],
+      },
+      async (cwd, vcs) => {
+        const details = await resolveWatermark({ cwd, vcs });
+        expect(details.strategy).toBe("subtask");
+        expect(details.parentId).toBe("2");
+        expect(details.sequence).toBe(2);
+        expect(details.nextId).toBe("2-2");
+        expect(details.fullTaskId).toBe(expectedTag);
+      },
+    );
   });
 
   // @verifies ADR-9, RULE-21, RULE-35
   it("[ADR-9][RULE-21][RULE-35] should respect deleted sub-tasks in git history to prevent subtask reuse", async () => {
     const expectedTag = makeTestTag("TASK", "2-3");
-    const details = await resolveWatermark({
-      activeIds: [],
-      deletedIds: ["2-1", "2-2"],
-      branch: "task/2-something",
-    });
-
-    expect(details.strategy).toBe("subtask");
-    expect(details.parentId).toBe("2");
-    expect(details.sequence).toBe(3);
-    expect(details.nextId).toBe("2-3");
-    expect(details.fullTaskId).toBe(expectedTag);
+    await withWatermarkFixture(
+      {
+        branch: "task/2-something",
+        deletedFiles: [
+          `sub-1.${makeTestTag("TASK", "2-1")}.md`,
+          `sub-2.${makeTestTag("TASK", "2-2")}.md`,
+        ],
+      },
+      async (cwd, vcs) => {
+        const details = await resolveWatermark({ cwd, vcs });
+        expect(details.strategy).toBe("subtask");
+        expect(details.parentId).toBe("2");
+        expect(details.sequence).toBe(3);
+        expect(details.nextId).toBe("2-3");
+        expect(details.fullTaskId).toBe(expectedTag);
+      },
+    );
   });
 
   // @verifies ADR-9
   it("[ADR-9] should isolate sub-task namespaces between different parent branches", async () => {
-    const idForParent2 = await resolveNextTaskId({
-      activeIds: ["2-1", "3-1", "3-2"],
-      deletedIds: [],
-      branch: "task/2-parent-two",
-    });
+    await withWatermarkFixture(
+      {
+        branch: "task/2-parent-two",
+        activeFiles: [
+          `.modie/tasks/sub-1.${makeTestTag("TASK", "2-1")}.md`,
+          `.modie/tasks/sub-2.${makeTestTag("TASK", "3-1")}.md`,
+          `.modie/tasks/sub-3.${makeTestTag("TASK", "3-2")}.md`,
+        ],
+      },
+      async (cwd, vcs) => {
+        const idForParent2 = await resolveNextTaskId({ cwd, vcs });
+        expect(idForParent2).toBe("2-2");
+      },
+    );
 
-    const idForParent3 = await resolveNextTaskId({
-      activeIds: ["2-1", "3-1", "3-2"],
-      deletedIds: [],
-      branch: "task/3-parent-three",
-    });
-
-    expect(idForParent2).toBe("2-2");
-    expect(idForParent3).toBe("3-3");
+    await withWatermarkFixture(
+      {
+        branch: "task/3-parent-three",
+        activeFiles: [
+          `.modie/tasks/sub-1.${makeTestTag("TASK", "2-1")}.md`,
+          `.modie/tasks/sub-2.${makeTestTag("TASK", "3-1")}.md`,
+          `.modie/tasks/sub-3.${makeTestTag("TASK", "3-2")}.md`,
+        ],
+      },
+      async (cwd, vcs) => {
+        const idForParent3 = await resolveNextTaskId({ cwd, vcs });
+        expect(idForParent3).toBe("3-3");
+      },
+    );
   });
 });
 
@@ -260,64 +354,85 @@ describe("Watermark Resolver - Author / Agent Prefix Namespacing (ADR-9, RULE-35
   // @verifies ADR-9, RULE-35
   it("[ADR-9][RULE-35] should allocate first prefixed ID when explicit prefix is provided", async () => {
     const expectedTag = makeTestTag("TASK", "J1");
-    const details = await resolveWatermark({
-      activeIds: ["1", "2"],
-      deletedIds: [],
-      prefix: "J",
-      branch: "feature/awesome-ui",
-    });
-
-    expect(details.strategy).toBe("prefixed");
-    expect(details.prefix).toBe("J");
-    expect(details.sequence).toBe(1);
-    expect(details.nextId).toBe("J1");
-    expect(details.fullTaskId).toBe(expectedTag);
+    await withWatermarkFixture(
+      {
+        branch: "feature/awesome-ui",
+        activeFiles: [
+          `.modie/tasks/task-1.${makeTestTag("TASK", 1)}.md`,
+          `.modie/tasks/task-2.${makeTestTag("TASK", 2)}.md`,
+        ],
+      },
+      async (cwd, vcs) => {
+        const details = await resolveWatermark({ cwd, vcs, prefix: "J" });
+        expect(details.strategy).toBe("prefixed");
+        expect(details.prefix).toBe("J");
+        expect(details.sequence).toBe(1);
+        expect(details.nextId).toBe("J1");
+        expect(details.fullTaskId).toBe(expectedTag);
+      },
+    );
   });
 
   // @verifies ADR-9, RULE-35
   it("[ADR-9][RULE-35] should advance from highest existing prefixed sequence (e.g. J101 -> J102)", async () => {
     const expectedTag = makeTestTag("TASK", "J102");
-    const details = await resolveWatermark({
-      activeIds: ["J101"],
-      deletedIds: [],
-      prefix: "J",
-      branch: "feature/awesome-ui",
-    });
-
-    expect(details.strategy).toBe("prefixed");
-    expect(details.prefix).toBe("J");
-    expect(details.sequence).toBe(102);
-    expect(details.nextId).toBe("J102");
-    expect(details.fullTaskId).toBe(expectedTag);
+    await withWatermarkFixture(
+      {
+        branch: "feature/awesome-ui",
+        activeFiles: [".modie/tasks/task-j101.TASK-J101.md"],
+      },
+      async (cwd, vcs) => {
+        const details = await resolveWatermark({ cwd, vcs, prefix: "J" });
+        expect(details.strategy).toBe("prefixed");
+        expect(details.prefix).toBe("J");
+        expect(details.sequence).toBe(102);
+        expect(details.nextId).toBe("J102");
+        expect(details.fullTaskId).toBe(expectedTag);
+      },
+    );
   });
 
   // @verifies ADR-9, RULE-35
   it("[ADR-9][RULE-35] should fall back to trunk monotonic integer on feature branches without prefix", async () => {
     const expectedTag = makeTestTag("TASK", 5);
-    const details = await resolveWatermark({
-      activeIds: ["1", "2", "3"],
-      deletedIds: ["4"],
-      branch: "feature/no-prefix",
-    });
-
-    expect(details.strategy).toBe("trunk");
-    expect(details.nextId).toBe("5");
-    expect(details.fullTaskId).toBe(expectedTag);
+    await withWatermarkFixture(
+      {
+        branch: "feature/no-prefix",
+        activeFiles: [
+          `.modie/tasks/task-1.${makeTestTag("TASK", 1)}.md`,
+          `.modie/tasks/task-2.${makeTestTag("TASK", 2)}.md`,
+          `.modie/tasks/task-3.${makeTestTag("TASK", 3)}.md`,
+        ],
+        deletedFiles: [`task-4.${makeTestTag("TASK", 4)}.md`],
+      },
+      async (cwd, vcs) => {
+        const details = await resolveWatermark({ cwd, vcs });
+        expect(details.strategy).toBe("trunk");
+        expect(details.nextId).toBe("5");
+        expect(details.fullTaskId).toBe(expectedTag);
+      },
+    );
   });
 
   // @verifies ADR-9, RULE-35
   it("[ADR-9][RULE-35] should allow forceTrunk to bypass branch subtask namespacing", async () => {
     const expectedTag = makeTestTag("TASK", 4);
-    const details = await resolveWatermark({
-      activeIds: ["1", "2"],
-      deletedIds: ["3"],
-      branch: "task/4-resolver",
-      forceTrunk: true,
-    });
-
-    expect(details.strategy).toBe("trunk");
-    expect(details.nextId).toBe("4");
-    expect(details.fullTaskId).toBe(expectedTag);
+    await withWatermarkFixture(
+      {
+        branch: "task/4-resolver",
+        activeFiles: [
+          `.modie/tasks/task-1.${makeTestTag("TASK", 1)}.md`,
+          `.modie/tasks/task-2.${makeTestTag("TASK", 2)}.md`,
+        ],
+        deletedFiles: [`task-3.${makeTestTag("TASK", 3)}.md`],
+      },
+      async (cwd, vcs) => {
+        const details = await resolveWatermark({ cwd, vcs, forceTrunk: true });
+        expect(details.strategy).toBe("trunk");
+        expect(details.nextId).toBe("4");
+        expect(details.fullTaskId).toBe(expectedTag);
+      },
+    );
   });
 });
 
@@ -363,31 +478,53 @@ describe("Watermark Resolver - Multi-Subtype Monotonic Allocation (ADR-1, ADR-2,
   // @verifies ADR-1, ADR-2, RULE-1, RULE-35
   it("[ADR-1][ADR-2][RULE-1][RULE-35] should allocate next RULE ID monotonically across active and deleted IDs", async () => {
     const expectedTag = makeTestTag("RULE", 5);
-    const details = await resolveWatermark({
-      subtype: "RULE",
-      activeIds: ["1", "2", "3"],
-      deletedIds: ["4"],
-    });
-
-    expect(details.subtype).toBe("RULE");
-    expect(details.nextId).toBe("5");
-    expect(details.tag).toBe(expectedTag);
-    expect(details.strategy).toBe("trunk");
+    await withWatermarkFixture(
+      {
+        branch: "main",
+        activeFiles: [
+          `.modie/rules/rule-1.${makeTestTag("RULE", 1)}.md`,
+          `.modie/rules/rule-2.${makeTestTag("RULE", 2)}.md`,
+          `.modie/rules/rule-3.${makeTestTag("RULE", 3)}.md`,
+        ],
+        deletedFiles: [`rule-4.${makeTestTag("RULE", 4)}.md`],
+      },
+      async (cwd, vcs) => {
+        const details = await resolveWatermark({
+          subtype: "RULE",
+          cwd,
+          vcs,
+        });
+        expect(details.subtype).toBe("RULE");
+        expect(details.nextId).toBe("5");
+        expect(details.tag).toBe(expectedTag);
+        expect(details.strategy).toBe("trunk");
+      },
+    );
   });
 
   // @verifies ADR-1, ADR-2, RULE-1, RULE-35
   it("[ADR-1][ADR-2][RULE-1][RULE-35] should allocate next ADR ID monotonically across active and deleted IDs", async () => {
     const expectedTag = makeTestTag("ADR", 3);
-    const details = await resolveWatermark({
-      subtype: "ADR",
-      activeIds: ["1", "2"],
-      deletedIds: [],
-    });
-
-    expect(details.subtype).toBe("ADR");
-    expect(details.nextId).toBe("3");
-    expect(details.tag).toBe(expectedTag);
-    expect(details.strategy).toBe("trunk");
+    await withWatermarkFixture(
+      {
+        branch: "main",
+        activeFiles: [
+          `.modie/adrs/adr-1.${makeTestTag("ADR", 1)}.md`,
+          `.modie/adrs/adr-2.${makeTestTag("ADR", 2)}.md`,
+        ],
+      },
+      async (cwd, vcs) => {
+        const details = await resolveWatermark({
+          subtype: "ADR",
+          cwd,
+          vcs,
+        });
+        expect(details.subtype).toBe("ADR");
+        expect(details.nextId).toBe("3");
+        expect(details.tag).toBe(expectedTag);
+        expect(details.strategy).toBe("trunk");
+      },
+    );
   });
 
   // @verifies ADR-1, ADR-2, RULE-1, RULE-34, RULE-35
@@ -428,40 +565,79 @@ describe("Watermark Resolver - Multi-Branch Collision Guard & Discovery (RULE-1,
   // @verifies RULE-33, ADR-6, ADR-9, RULE-35
   it("[RULE-33][ADR-6][ADR-9][RULE-35] should incorporate active IDs from other branches during ID allocation", async () => {
     const expectedTag = makeTestTag("TASK", 6);
-    const details = await resolveWatermark({
-      activeIds: ["1", "2"],
-      otherBranchActiveIds: ["4", "5"],
-      deletedIds: ["3"],
-      branch: "dev",
-    });
-
-    expect(details.strategy).toBe("trunk");
-    expect(details.nextId).toBe("6");
-    expect(details.fullTaskId).toBe(expectedTag);
-    expect(details.otherBranchActiveIds).toEqual(["4", "5"]);
+    await withWatermarkFixture(
+      {
+        branch: "dev",
+        activeFiles: [
+          `.modie/tasks/task-1.${makeTestTag("TASK", 1)}.md`,
+          `.modie/tasks/task-2.${makeTestTag("TASK", 2)}.md`,
+        ],
+        deletedFiles: [`task-3.${makeTestTag("TASK", 3)}.md`],
+        treeFiles: {
+          "feature/other": [
+            `src/.modie/tasks/task-4.${makeTestTag("TASK", 4)}.md`,
+            `src/.modie/tasks/task-5.${makeTestTag("TASK", 5)}.md`,
+          ],
+        },
+      },
+      async (cwd, vcs) => {
+        const details = await resolveWatermark({ cwd, vcs });
+        expect(details.strategy).toBe("trunk");
+        expect(details.nextId).toBe("6");
+        expect(details.fullTaskId).toBe(expectedTag);
+        expect(details.otherBranchActiveIds).toEqual(["4", "5"]);
+      },
+    );
   });
 
   // @verifies RULE-1, RULE-33, ADR-1, ADR-2, RULE-35
   it("[RULE-1][RULE-33][ADR-1][ADR-2][RULE-35] should allocate monotonic RULE and ADR IDs skipping other branch IDs", async () => {
-    const ruleDetails = await resolveWatermark({
-      subtype: "RULE",
-      activeIds: ["1"],
-      otherBranchActiveIds: ["2", "5"],
-      deletedIds: [],
-    });
+    await withWatermarkFixture(
+      {
+        branch: "main",
+        activeFiles: [`.modie/rules/rule-1.${makeTestTag("RULE", 1)}.md`],
+        treeFiles: {
+          "feature/other": [
+            `src/.modie/rules/rule-2.${makeTestTag("RULE", 2)}.md`,
+            `src/.modie/rules/rule-5.${makeTestTag("RULE", 5)}.md`,
+          ],
+        },
+      },
+      async (cwd, vcs) => {
+        const ruleDetails = await resolveWatermark({
+          subtype: "RULE",
+          cwd,
+          vcs,
+        });
+        expect(ruleDetails.nextId).toBe("6");
+        expect(ruleDetails.tag).toBe(makeTestTag("RULE", 6));
+      },
+    );
 
-    expect(ruleDetails.nextId).toBe("6");
-    expect(ruleDetails.tag).toBe(makeTestTag("RULE", 6));
-
-    const adrDetails = await resolveWatermark({
-      subtype: "ADR",
-      activeIds: ["1", "2"],
-      otherBranchActiveIds: ["3", "7"],
-      deletedIds: [],
-    });
-
-    expect(adrDetails.nextId).toBe("8");
-    expect(adrDetails.tag).toBe(makeTestTag("ADR", 8));
+    await withWatermarkFixture(
+      {
+        branch: "main",
+        activeFiles: [
+          `.modie/adrs/adr-1.${makeTestTag("ADR", 1)}.md`,
+          `.modie/adrs/adr-2.${makeTestTag("ADR", 2)}.md`,
+        ],
+        treeFiles: {
+          "feature/other": [
+            `src/.modie/adrs/adr-3.${makeTestTag("ADR", 3)}.md`,
+            `src/.modie/adrs/adr-7.${makeTestTag("ADR", 7)}.md`,
+          ],
+        },
+      },
+      async (cwd, vcs) => {
+        const adrDetails = await resolveWatermark({
+          subtype: "ADR",
+          cwd,
+          vcs,
+        });
+        expect(adrDetails.nextId).toBe("8");
+        expect(adrDetails.tag).toBe(makeTestTag("ADR", 8));
+      },
+    );
   });
 
   // @verifies RULE-33, RULE-34, RULE-35

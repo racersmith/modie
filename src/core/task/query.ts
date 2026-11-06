@@ -26,13 +26,14 @@ import type {
   DiscoveredArtifact,
   DiscoveredTask,
 } from "../resolver/types.ts";
-import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
+import { resolveWorkspaceContext } from "../context/resolver.ts";
+import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
 import { resolveTaskFile } from "./completion.ts";
 import { parseTaskMarkdown } from "./parser.ts";
-import type { TaskAcceptanceCriteriaItem } from "./types.ts";
+import type { TaskAcceptanceCriteriaItem, TaskReadiness } from "./types.ts";
 
-export type TaskReadiness = "READY" | "BLOCKED" | "COMPLETED";
+export type { TaskReadiness };
 
 export interface TaskQueueItem {
   id: string;
@@ -71,9 +72,14 @@ export interface TaskQueueItem {
 
 export interface TaskQueueQueryOptions {
   /**
-   * Root directory for active task scanning (defaults to process.cwd()).
+   * Root directory for active task scanning.
    */
   cwd?: string;
+
+  /**
+   * Explicit workspace context container.
+   */
+  context?: WorkspaceContext;
 
   /**
    * Filter to only include unblocked tasks ready for execution (readiness === "READY").
@@ -113,9 +119,14 @@ export interface TaskQueueQueryOptions {
 
 export interface TaskStatusQueryOptions {
   /**
-   * Root directory for task resolution (defaults to process.cwd()).
+   * Root directory for task resolution.
    */
   cwd?: string;
+
+  /**
+   * Explicit workspace context container.
+   */
+  context?: WorkspaceContext;
 
   /**
    * Whether to query completed task history and branches in Git when the task
@@ -388,7 +399,8 @@ function buildTaskQueueItems(
 export async function queryTaskQueue(
   options: TaskQueueQueryOptions = {},
 ): Promise<TaskQueueItem[]> {
-  const cwd = options.cwd ?? process.cwd();
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
 
   // 1. Discover active task files on disk and read markdown content
   const discovered = options.activeTasks ?? (await scanActiveTasks(cwd));
@@ -556,10 +568,11 @@ async function readHistoricalTaskMarkdown(
  * Queries completed tasks in Git deletion history and tasks on other Git branches per ADR-6.
  */
 export async function queryTaskHistory(
-  options: { cwd?: string; vcs?: IVcsAdapter } = {},
+  options: { cwd?: string; vcs?: IVcsAdapter; context?: WorkspaceContext } = {},
 ): Promise<TaskQueueItem[]> {
-  const cwd = options.cwd ?? process.cwd();
-  const vcs = options.vcs ?? defaultVcsAdapter;
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
+  const vcs = ctx.vcs;
 
   const [
     activeOnDisk,
@@ -651,10 +664,12 @@ export async function resolveCurrentTask(
     branch?: string;
     history?: boolean;
     vcs?: IVcsAdapter;
+    context?: WorkspaceContext;
   } = {},
 ): Promise<TaskStatusDetails | null> {
-  const cwd = options.cwd ?? process.cwd();
-  const branch = options.branch ?? (await detectGitBranch(cwd, options.vcs));
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
+  const branch = options.branch ?? (await detectGitBranch(cwd, ctx.vcs));
   if (!branch) {
     return null;
   }
@@ -668,7 +683,8 @@ export async function resolveCurrentTask(
     return await getTaskStatus(taskId, {
       cwd,
       history: options.history,
-      vcs: options.vcs,
+      vcs: ctx.vcs,
+      context: ctx,
     });
   } catch {
     return null;
@@ -687,15 +703,17 @@ export async function getTaskStatus(
   taskIdentifier: string,
   options: TaskStatusQueryOptions = {},
 ): Promise<TaskStatusDetails> {
-  const cwd = options.cwd ?? process.cwd();
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
 
   try {
     const filepath = await resolveTaskFile(taskIdentifier, {
       cwd,
-      vcs: options.vcs,
+      vcs: ctx.vcs,
+      context: ctx,
     });
 
-    const queue = await queryTaskQueue({ cwd });
+    const queue = await queryTaskQueue({ cwd, context: ctx });
     const item = queue.find((t) => t.filepath === filepath);
 
     if (!item) {

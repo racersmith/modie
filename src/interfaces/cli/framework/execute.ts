@@ -10,6 +10,7 @@ import type {
   CommandHandler,
 } from "../types.ts";
 import { generateCommandHelp } from "./help.ts";
+import { createWorkspaceContext } from "../../../core/context.ts";
 import type {
   CliCommandDefinition,
   CliExecutionContext,
@@ -213,6 +214,11 @@ export async function executeCliCommand<
     }
   }
 
+  const workspace = await createWorkspaceContext({
+    root: cwd,
+    vcs: (options as any).vcs,
+  });
+
   const context: CliExecutionContext<TFlags> = {
     args,
     positionals,
@@ -220,6 +226,7 @@ export async function executeCliCommand<
     stdout,
     stderr,
     cwd,
+    workspace,
     io: options,
   };
 

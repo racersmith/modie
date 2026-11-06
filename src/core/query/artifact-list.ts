@@ -5,6 +5,7 @@
 
 import { readFile, stat } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { resolveWorkspaceContext } from "../context.ts";
 import { resolveGoverningScope } from "../common/directories.ts";
 import { slugToTitle, toPosixRelative } from "../common/index.ts";
 import type { IndexableSubtype } from "../common/types.ts";
@@ -42,7 +43,8 @@ export async function listActiveArtifacts(
   subtype: IndexableSubtype,
   options: ListArtifactsOptions = {},
 ): Promise<ListedArtifact[]> {
-  const cwd = resolve(options.cwd ?? process.cwd());
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
   const normalizedSubtype = subtype.toUpperCase() as IndexableSubtype;
 
   let targetScopeDir: string | undefined;

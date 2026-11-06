@@ -21,6 +21,8 @@ import {
 } from "../markdown/index.ts";
 import type { ResolvedArtifact } from "../query/types.ts";
 import { scanActiveTasks } from "../resolver/active-scanner.ts";
+import { resolveWorkspaceContext } from "../context/resolver.ts";
+import type { WorkspaceContext } from "../context/types.ts";
 import { resolveSubtypeLinkPolicy } from "./policy.ts";
 import type {
   ArtifactLinkRelationship,
@@ -60,8 +62,10 @@ export function inferLinkRelationship(
 export async function detectTaskDependencyCycle(
   sourceTag: string,
   targetTag: string,
-  cwd: string = process.cwd(),
+  cwdOrContext?: string | WorkspaceContext,
 ): Promise<string[] | null> {
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const cwd = ctx.root;
   const normSource = sourceTag.trim().toUpperCase();
   const normTarget = targetTag.trim().toUpperCase();
 
@@ -419,7 +423,8 @@ export async function validateLinkTarget(
   targetTag: string,
   options: ValidateLinkTargetOptions = {},
 ): Promise<ValidatedTargetResult> {
-  const cwd = resolve(options.cwd ?? process.cwd());
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
   const normSourceSubtype = sourceSubtype.toUpperCase();
   const trimmedTargetTag = targetTag.trim().toUpperCase();
   const sourceDisplayTag = options.sourceTag ?? normSourceSubtype;
@@ -494,7 +499,8 @@ export async function validateArtifactLink(
   targetInput: string,
   options: ValidateLinkOptions = {},
 ): Promise<ValidatedLinkContext> {
-  const cwd = resolve(options.cwd ?? process.cwd());
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
 
   const source = await resolveArtifactByTag(sourceInput, { cwd });
   const target = await resolveArtifactByTag(targetInput, { cwd });

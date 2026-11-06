@@ -23,11 +23,13 @@ import {
   parseTaskIdFromBranch,
   readDirectoryGist,
   readFileGist,
+  resolveWorkspaceContext,
   startTaskBranch,
   toPosixRelative,
   type ArtifactDetails,
   type ArtifactReferencesResult,
   type TaskStatusDetails,
+  type WorkspaceContext,
 } from "../../core/index.ts";
 import { McpToolError } from "./errors.ts";
 import {
@@ -60,12 +62,13 @@ import type {
  */
 export async function resolveActiveTaskId(
   explicitId: string | undefined,
-  cwd: string,
+  cwdOrContext?: string | WorkspaceContext,
 ): Promise<string> {
   if (explicitId && explicitId.trim().length > 0) {
     return normalizeTaskId(explicitId.trim());
   }
-  const branch = await detectGitBranch(cwd);
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const branch = await detectGitBranch(ctx);
   if (branch) {
     const fromBranch = parseTaskIdFromBranch(branch);
     if (fromBranch) {
@@ -90,16 +93,18 @@ export async function resolveActiveTaskId(
  */
 export async function handleLsBetter(
   args: LsBetterInput,
-  cwd: string,
+  cwdOrContext?: string | WorkspaceContext,
 ): Promise<string> {
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const cwd = ctx.root;
   let targetPath = args.path?.trim();
   if (!targetPath) {
     try {
-      const branch = await detectGitBranch(cwd);
+      const branch = await detectGitBranch(ctx);
       if (branch) {
         const fromBranch = parseTaskIdFromBranch(branch);
         if (fromBranch) {
-          const status = await getTaskStatus(fromBranch, { cwd });
+          const status = await getTaskStatus(fromBranch, { cwd, context: ctx });
           targetPath = status.relativePath
             ? dirname(status.relativePath).replace(/\/\.modie\/tasks$/, "") ||
               "."
@@ -172,12 +177,14 @@ export async function handleLsBetter(
  */
 export async function handleReadArtifact(
   args: ReadArtifactInput,
-  cwd: string,
+  cwdOrContext?: string | WorkspaceContext,
 ): Promise<string> {
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const cwd = ctx.root;
   const tag = args.tag.trim();
   let details: ArtifactDetails;
   try {
-    details = await getArtifactDetails(tag, { cwd });
+    details = await getArtifactDetails(tag, { cwd, context: ctx });
   } catch (err: any) {
     throw McpToolError.artifactNotFound({
       message: err?.message ?? `Artifact "${tag}" was not found.`,
@@ -187,7 +194,7 @@ export async function handleReadArtifact(
 
   let references: ArtifactReferencesResult | null = null;
   try {
-    references = await findArtifactReferences(details.tag, { cwd });
+    references = await findArtifactReferences(details.tag, { cwd, context: ctx });
   } catch {
     // Graceful fallback if reference discovery fails
   }
@@ -201,12 +208,14 @@ export async function handleReadArtifact(
  */
 export async function handleTaskContext(
   args: TaskContextInput,
-  cwd: string,
+  cwdOrContext?: string | WorkspaceContext,
 ): Promise<string> {
-  const taskId = await resolveActiveTaskId(args.task_id, cwd);
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const cwd = ctx.root;
+  const taskId = await resolveActiveTaskId(args.task_id, ctx);
   let status: TaskStatusDetails;
   try {
-    status = await getTaskStatus(taskId, { cwd });
+    status = await getTaskStatus(taskId, { cwd, context: ctx });
   } catch (err: any) {
     throw McpToolError.artifactNotFound({
       message: err?.message ?? `Task "${taskId}" was not found.`,
@@ -214,7 +223,7 @@ export async function handleTaskContext(
     });
   }
 
-  const activeBranch = await detectGitBranch(cwd);
+  const activeBranch = await detectGitBranch(ctx);
   return renderTaskMissionBrief(status, activeBranch, cwd);
 }
 
@@ -228,11 +237,13 @@ export async function handleTaskContext(
  */
 export async function handleStartTask(
   args: StartTaskInput,
-  cwd: string,
+  cwdOrContext?: string | WorkspaceContext,
 ): Promise<string> {
-  const taskId = await resolveActiveTaskId(args.task_id, cwd);
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const cwd = ctx.root;
+  const taskId = await resolveActiveTaskId(args.task_id, ctx);
   try {
-    await startTaskBranch(taskId, { cwd });
+    await startTaskBranch(taskId, { cwd, context: ctx });
   } catch (err: any) {
     throw McpToolError.invalidParameter({
       message: `Failed to start task "${taskId}": ${err?.message}`,
@@ -243,7 +254,7 @@ export async function handleStartTask(
 
   let status: TaskStatusDetails;
   try {
-    status = await getTaskStatus(taskId, { cwd });
+    status = await getTaskStatus(taskId, { cwd, context: ctx });
   } catch (err: any) {
     throw McpToolError.artifactNotFound({
       message: err?.message ?? `Task "${taskId}" was not found.`,
@@ -251,7 +262,7 @@ export async function handleStartTask(
     });
   }
 
-  const activeBranch = await detectGitBranch(cwd);
+  const activeBranch = await detectGitBranch(ctx);
   return renderTaskMissionBrief(status, activeBranch, cwd);
 }
 
@@ -261,15 +272,18 @@ export async function handleStartTask(
  */
 export async function handleCheckCriteria(
   args: CheckCriteriaInput,
-  cwd: string,
+  cwdOrContext?: string | WorkspaceContext,
 ): Promise<CheckCriteriaOutput> {
-  const taskId = await resolveActiveTaskId(args.task_id, cwd);
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const cwd = ctx.root;
+  const taskId = await resolveActiveTaskId(args.task_id, ctx);
 
   for (const itemIndex of args.items) {
     try {
       await checkTaskItem(taskId, itemIndex, {
         completed: !args.uncheck,
         cwd,
+        context: ctx,
       });
     } catch (err: any) {
       throw McpToolError.invalidParameter({
@@ -280,7 +294,7 @@ export async function handleCheckCriteria(
     }
   }
 
-  const status = await getTaskStatus(taskId, { cwd });
+  const status = await getTaskStatus(taskId, { cwd, context: ctx });
   const acceptanceCriteria = (status.acceptanceCriteria ?? []).map((c, i) => ({
     item: i + 1,
     text: c.text,
@@ -302,19 +316,23 @@ export async function handleCheckCriteria(
  */
 export async function handleCompleteTask(
   args: CompleteTaskInput,
-  cwd: string,
+  cwdOrContext?: string | WorkspaceContext,
 ): Promise<CompleteTaskOutput> {
-  const taskId = await resolveActiveTaskId(args.task_id, cwd);
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const cwd = ctx.root;
+  const taskId = await resolveActiveTaskId(args.task_id, ctx);
 
   // 1. Complete task (verifies criteria, two-phase commit, deletes task artifact)
   const completeResult = await completeTask(taskId, {
     commit: true,
     cwd,
+    workspace: ctx,
   });
 
   // 2. Merge task branch to trunk and delete task branch
   const mergeResult = await mergeTaskBranch(taskId, {
     cwd,
+    workspace: ctx,
   });
 
   return {
@@ -335,16 +353,18 @@ export async function handleCompleteTask(
  */
 export async function handleCreateRule(
   args: CreateRuleInput,
-  cwd: string,
+  cwdOrContext?: string | WorkspaceContext,
 ): Promise<CreateArtifactOutput> {
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const cwd = ctx.root;
   let resolvedScopeDir = args.scope_dir;
   if (!resolvedScopeDir || resolvedScopeDir === ".") {
     try {
-      const branch = await detectGitBranch(cwd);
+      const branch = await detectGitBranch(ctx);
       if (branch) {
         const fromBranch = parseTaskIdFromBranch(branch);
         if (fromBranch) {
-          const status = await getTaskStatus(fromBranch, { cwd });
+          const status = await getTaskStatus(fromBranch, { cwd, context: ctx });
           resolvedScopeDir = status.relativePath
             ? dirname(status.relativePath).replace(/\/\.modie\/tasks$/, "") ||
               "."
@@ -362,6 +382,7 @@ export async function handleCreateRule(
     scopeDir: resolvedScopeDir,
     supersedes: args.supersedes,
     cwd,
+    workspace: ctx,
   });
 
   const artifactObj = (res as any).artifact ?? {};
@@ -380,16 +401,18 @@ export async function handleCreateRule(
  */
 export async function handleCreateAdr(
   args: CreateAdrInput,
-  cwd: string,
+  cwdOrContext?: string | WorkspaceContext,
 ): Promise<CreateArtifactOutput> {
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const cwd = ctx.root;
   let resolvedScopeDir = args.scope_dir;
   if (!resolvedScopeDir || resolvedScopeDir === ".") {
     try {
-      const branch = await detectGitBranch(cwd);
+      const branch = await detectGitBranch(ctx);
       if (branch) {
         const fromBranch = parseTaskIdFromBranch(branch);
         if (fromBranch) {
-          const status = await getTaskStatus(fromBranch, { cwd });
+          const status = await getTaskStatus(fromBranch, { cwd, context: ctx });
           resolvedScopeDir = status.relativePath
             ? dirname(status.relativePath).replace(/\/\.modie\/tasks$/, "") ||
               "."
@@ -410,6 +433,7 @@ export async function handleCreateAdr(
     scopeDir: resolvedScopeDir,
     supersedes: args.supersedes,
     cwd,
+    workspace: ctx,
   });
 
   const artifactObj = (res as any).artifact ?? {};
@@ -428,8 +452,10 @@ export async function handleCreateAdr(
  */
 export async function handleCreateTask(
   args: CreateTaskInput,
-  cwd: string,
+  cwdOrContext?: string | WorkspaceContext,
 ): Promise<CreateArtifactOutput> {
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const cwd = ctx.root;
   const criteria = [...args.acceptance_criteria];
   if (!criteria.some((c) => /user review/i.test(c))) {
     criteria.push("User Review");
@@ -444,6 +470,7 @@ export async function handleCreateTask(
     links: args.links,
     scopeDir: args.scope_dir || ".",
     cwd,
+    workspace: ctx,
   });
 
   return {
@@ -465,11 +492,13 @@ export async function handleCreateTask(
  */
 export async function handleLinkArtifacts(
   args: LinkArtifactsInput,
-  cwd: string,
+  cwdOrContext?: string | WorkspaceContext,
 ): Promise<LinkArtifactsOutput> {
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const cwd = ctx.root;
   let sourceTag = args.source?.trim();
   if (!sourceTag) {
-    const taskId = await resolveActiveTaskId(undefined, cwd);
+    const taskId = await resolveActiveTaskId(undefined, ctx);
     sourceTag = taskId.startsWith("TASK-") ? taskId : `TASK-${taskId}`;
   }
 
@@ -481,6 +510,7 @@ export async function handleLinkArtifacts(
       source: sourceTag,
       target,
       cwd,
+      context: ctx,
     });
     relationship = result.relationship;
     if (result.changed) {
@@ -501,11 +531,14 @@ export async function handleLinkArtifacts(
  */
 export async function handleArchiveArtifact(
   args: ArchiveArtifactInput,
-  cwd: string,
+  cwdOrContext?: string | WorkspaceContext,
 ): Promise<ArchiveArtifactOutput> {
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const cwd = ctx.root;
   const result = await archiveArtifact({
     tag: args.tag,
     cwd,
+    workspace: ctx,
   });
 
   return {

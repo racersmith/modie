@@ -4,6 +4,7 @@
  */
 
 import type { CreateArtifactResult } from "../pipeline/types.ts";
+import type { WorkspaceContext } from "../context/types.ts";
 
 export interface RuleArtifact {
   /**
@@ -132,6 +133,11 @@ export interface CreateRuleOptions {
    * Workspace root directory. Defaults to process.cwd().
    */
   cwd?: string;
+
+  /**
+   * Explicit workspace context container.
+   */
+  workspace?: WorkspaceContext;
 }
 
 export type CreateRuleResult = CreateArtifactResult<RuleArtifact>;

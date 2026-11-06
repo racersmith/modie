@@ -6,6 +6,7 @@
  */
 
 import { resolveArtifactDirectories } from "../common/index.ts";
+import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
 import { createArtifact } from "../pipeline/create.ts";
 import { updateSupersededArtifactFrontmatter } from "../pipeline/supersession.ts";
 import {
@@ -29,10 +30,12 @@ export {
 export async function updateSupersededAdrFrontmatter(
   targetTag: string,
   newAdrTag: string,
-  cwd: string = process.cwd(),
+  cwdOrContext?: string | WorkspaceContext,
 ): Promise<void> {
+  const ctx = resolveWorkspaceContext(cwdOrContext);
   return updateSupersededArtifactFrontmatter(targetTag, newAdrTag, {
-    cwd,
+    cwd: ctx.root,
+    context: ctx,
     expectedSubtype: "ADR",
   });
 }
@@ -42,9 +45,10 @@ export async function updateSupersededAdrFrontmatter(
  */
 export function resolveAdrDirectories(
   scopeDirInput: string | undefined,
-  cwd: string = process.cwd(),
+  cwdOrContext?: string | WorkspaceContext,
 ): { normalizedScopeDir: string; targetDir: string } {
-  return resolveArtifactDirectories("ADR", scopeDirInput, cwd);
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  return resolveArtifactDirectories("ADR", scopeDirInput, ctx.root);
 }
 
 /**

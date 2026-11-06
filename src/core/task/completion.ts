@@ -22,7 +22,8 @@ import { inspectGitDeletedArtifactIds } from "../resolver/artifact-history.ts";
 import { normalizeTaskId } from "../common/index.ts";
 
 import type { DiscoveredTask } from "../resolver/types.ts";
-import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
+import { resolveWorkspaceContext } from "../context/resolver.ts";
+import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
 import { parseAcceptanceCriteria } from "./checklist.ts";
 import { parseTaskMarkdown } from "./parser.ts";
@@ -30,21 +31,38 @@ import type { TaskArtifact } from "./types.ts";
 
 export interface ResolveTaskOptions {
   /**
-   * Root directory for active task scanning (defaults to process.cwd()).
+   * Root directory for active task scanning.
    */
   cwd?: string;
 
   /**
-   * Optional VCS adapter (defaults to defaultVcsAdapter).
+   * Optional VCS adapter.
    */
   vcs?: IVcsAdapter;
+
+  /**
+   * Explicit workspace context container.
+   */
+  workspace?: WorkspaceContext;
+  context?: WorkspaceContext;
 }
 
 export interface CheckTaskItemOptions {
   /**
-   * Root directory for active task scanning (defaults to process.cwd()).
+   * Root directory for active task scanning.
    */
   cwd?: string;
+
+  /**
+   * Optional VCS adapter.
+   */
+  vcs?: IVcsAdapter;
+
+  /**
+   * Explicit workspace context container.
+   */
+  workspace?: WorkspaceContext;
+  context?: WorkspaceContext;
 
   /**
    * Target checked state. Defaults to true (checked / complete).
@@ -65,7 +83,7 @@ export interface CheckTaskItemResult {
 
 export interface CompleteTaskOptions {
   /**
-   * Root directory for active task scanning (defaults to process.cwd()).
+   * Root directory for active task scanning.
    */
   cwd?: string;
 
@@ -89,9 +107,15 @@ export interface CompleteTaskOptions {
   commit?: boolean;
 
   /**
-   * Optional VCS adapter (defaults to defaultVcsAdapter).
+   * Optional VCS adapter.
    */
   vcs?: IVcsAdapter;
+
+  /**
+   * Explicit workspace context container.
+   */
+  workspace?: WorkspaceContext;
+  context?: WorkspaceContext;
 }
 
 export interface CompleteTaskResult {
@@ -113,11 +137,12 @@ export interface CompleteTaskResult {
  * Scans active tasks on disk and detects any tasks whose IDs were previously deleted in Git history.
  */
 export async function detectZombieTasks(
-  cwd: string = process.cwd(),
+  cwdOrContext?: string | WorkspaceContext,
   vcs?: IVcsAdapter,
 ): Promise<DiscoveredTask[]> {
-  const activeTasks = await scanActiveTasks(cwd);
-  const deletedIds = await inspectGitDeletedArtifactIds(cwd, "TASK", vcs);
+  const ctx = resolveWorkspaceContext(cwdOrContext, vcs);
+  const activeTasks = await scanActiveTasks(ctx);
+  const deletedIds = await inspectGitDeletedArtifactIds(ctx, "TASK");
   const deletedSet = new Set(deletedIds);
   return activeTasks.filter((t) => deletedSet.has(t.id));
 }
@@ -148,11 +173,12 @@ export async function resolveTaskFile(
   taskIdentifier?: string,
   options: ResolveTaskOptions = {},
 ): Promise<string> {
-  const cwd = options.cwd ?? process.cwd();
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
   let trimmed = taskIdentifier?.trim();
 
   if (!trimmed) {
-    const branch = await detectGitBranch(cwd, options.vcs);
+    const branch = await detectGitBranch(cwd, ctx.vcs);
     const inferredId = parseTaskIdFromBranch(branch);
     if (!inferredId) {
       const branchDisplay = branch ? ` "${branch}"` : "";
@@ -439,8 +465,9 @@ export async function completeTask(
   taskIdentifier?: string,
   options: CompleteTaskOptions = {},
 ): Promise<CompleteTaskResult> {
-  const cwd = options.cwd ?? process.cwd();
-  const vcs = options.vcs ?? defaultVcsAdapter;
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
+  const vcs = ctx.vcs;
   const filepath = await resolveTaskFile(taskIdentifier, options);
   const content = await readFile(filepath, "utf8");
   const parsed = parseTaskMarkdown(content, filepath);

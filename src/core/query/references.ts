@@ -5,7 +5,7 @@
 
 import { basename, resolve } from "node:path";
 import { parseArtifactFilename } from "../common/filename.ts";
-import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
+import { resolveWorkspaceContext } from "../context.ts";
 import { getArtifactDetails } from "./artifact-query.ts";
 import {
   parseFrontmatterFields,
@@ -158,19 +158,20 @@ export async function findArtifactReferences(
   tagOrIdentifier: string,
   options: FindArtifactReferencesOptions = {},
 ): Promise<ArtifactReferencesResult> {
-  const cwd = options.cwd ?? process.cwd();
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
+  const vcs = ctx.vcs;
   const ignoredDirs = options.ignoredDirectories
     ? new Set(options.ignoredDirectories)
     : DEFAULT_IGNORED_DIRECTORIES;
 
   // 1. Resolve target artifact details & outbound declared links
-  const details = await getArtifactDetails(tagOrIdentifier, { cwd });
+  const details = await getArtifactDetails(tagOrIdentifier, { cwd, context: ctx });
   const targetTag = details.tag.toUpperCase();
   const targetFilepath = resolve(cwd, details.filepath);
   const linksTo = buildLinksTo(details);
 
   // 2. Select citation discovery source and collect match tokens
-  const vcs = options.vcs ?? defaultVcsAdapter;
   const sourceOptions: CitationSourceOptions = {
     cwd,
     targetFilepath,
