@@ -1,6 +1,6 @@
 ---
 depends_on:
-  - TASK-71
+  - TASK-77
 
 links:
   - RULE-1
