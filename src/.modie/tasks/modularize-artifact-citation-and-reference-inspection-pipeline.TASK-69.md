@@ -29,10 +29,10 @@ Refactor the pipeline into modular, single-responsibility components:
 
 # Acceptance Criteria
 
-- [ ] Extract pure `buildLinksTo(details)` for computing outbound declared links.
-- [ ] Define a `CitationSource` abstraction with `GitGrepSource` and `FsWalkSource` implementations returning normalized file match tokens.
-- [ ] Extract pure citation classifier `classifyCitation(match, targetTag, cache)` with isolated unit tests.
-- [ ] Remove dead conditional logic (`isCode ? "code" : "code"`).
-- [ ] Reassemble `findArtifactReferences` as a pipeline orchestrating source extraction and classification, reducing length to < 100 lines.
-- [ ] Verify citation discovery and archival invariance tests pass with zero regressions.
-- [ ] User Review
+- [x] Extract pure `buildLinksTo(details)` for computing outbound declared links.
+- [x] Define a `CitationSource` abstraction with `GitGrepSource` and `FsWalkSource` implementations returning normalized file match tokens.
+- [x] Extract pure citation classifier `classifyCitation(match, targetTag, cache)` with isolated unit tests.
+- [x] Remove dead conditional logic (`isCode ? "code" : "code"`).
+- [x] Reassemble `findArtifactReferences` as a pipeline orchestrating source extraction and classification, reducing length to < 100 lines.
+- [x] Verify citation discovery and archival invariance tests pass with zero regressions.
+- [x] User Review
