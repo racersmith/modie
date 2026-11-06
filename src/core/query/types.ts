@@ -75,6 +75,11 @@ export interface ResolvedArtifact {
 
 export interface ArtifactDetails extends ResolvedArtifact {
   /**
+   * Title of the artifact, if declared in document.
+   */
+  title?: string;
+
+  /**
    * Concise summary of the artifact (for ADR artifacts, extracted from frontmatter with fallback).
    */
   summary?: string;

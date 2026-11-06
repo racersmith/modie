@@ -93,11 +93,30 @@ export type {
   TaskStatusQueryOptions,
 } from "./task/query.ts";
 export {
+  assertNoActiveSubtasks,
+  assertNoCollisions,
+  assertSourceBranchExists,
+  assertTargetBranchExists,
+  assertTaskCompleted,
   computeTaskBranchTopology,
+  detectArtifactCollisions,
+  executeBranchMerge,
   mergeTaskBranch,
+  resolveMergeTarget,
   startTaskBranch,
 } from "./task/branching.ts";
+export {
+  ActiveSubtaskPendingError,
+  ArtifactCollisionError,
+  TaskIncompleteError,
+} from "./task/errors.ts";
 export type {
+  ActiveSubtaskPendingErrorDetails,
+  ArtifactCollisionErrorDetails,
+  TaskIncompleteErrorDetails,
+} from "./task/errors.ts";
+export type {
+  ArtifactCollision,
   MergeTaskBranchOptions,
   MergeTaskBranchResult,
   StartTaskBranchOptions,
@@ -226,6 +245,10 @@ export type { ArchiveRuleOptions } from "./rule/archive.ts";
 export * as LinkingPrimitive from "./linking/index.ts";
 export * from "./linking/types.ts";
 export {
+  LINK_POLICY,
+  resolveSubtypeLinkPolicy,
+} from "./linking/policy.ts";
+export {
   ADR_LINK_TAG_REGEX,
   GOVERNANCE_LINK_TAG_REGEX,
   TASK_DEPENDENCY_TAG_REGEX,
@@ -238,6 +261,7 @@ export {
   validateLinkTarget,
 } from "./linking/validator.ts";
 export {
+  applyLinkMutation,
   linkArtifact,
   mutateFrontmatterListField,
   unlinkArtifact,

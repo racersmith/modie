@@ -41,10 +41,10 @@ Per the maintainability review (§3.1, §4.3, §4.4, §5), two major validation 
 
 # Acceptance Criteria
 
-- [ ] Define a declarative `LinkPolicyTable` specifying allowed target subtypes, ancestry directionality (`ancestor` vs `descendant`), and cycle requirements per subtype, architected for inclusion on `ArtifactDefinition`.
-- [ ] Refactor `validateLinkTarget` to evaluate links against the declarative policy table, reducing cyclomatic complexity from 39 to <= 10.
-- [ ] Replace error message string inspection in `mergeTaskBranch` with explicit pre-merge guard functions and typed domain error classes (`TaskIncompleteError`, `ActiveSubtaskPendingError`, `ArtifactCollisionError`).
-- [ ] Decompose `mergeTaskBranch` into linear lifecycle stages, reducing cyclomatic complexity from 36 to <= 10.
-- [ ] Deduplicate link/unlink mutation result shaping in `src/core/linking/mutation.ts` via a shared `applyLinkMutation` helper.
-- [ ] Verify link validation, task branch merge behavior, and error recovery against all link and task lifecycle test suites.
+- [x] Define a declarative `LinkPolicyTable` specifying allowed target subtypes, ancestry directionality (`ancestor` vs `descendant`), and cycle requirements per subtype, architected for inclusion on `ArtifactDefinition`.
+- [x] Refactor `validateLinkTarget` to evaluate links against the declarative policy table, reducing cyclomatic complexity from 39 to <= 10.
+- [x] Replace error message string inspection in `mergeTaskBranch` with explicit pre-merge guard functions and typed domain error classes (`TaskIncompleteError`, `ActiveSubtaskPendingError`, `ArtifactCollisionError`).
+- [x] Decompose `mergeTaskBranch` into linear lifecycle stages, reducing cyclomatic complexity from 36 to <= 10.
+- [x] Deduplicate link/unlink mutation result shaping in `src/core/linking/mutation.ts` via a shared `applyLinkMutation` helper.
+- [x] Verify link validation, task branch merge behavior, and error recovery against all link and task lifecycle test suites.
 - [ ] User Review

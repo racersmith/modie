@@ -203,3 +203,12 @@ export interface CreateTaskOptions {
 export type CreateTaskResult = CreateArtifactResult<TaskArtifact> & {
   watermark: import("../resolver/types.ts").WatermarkDetails;
 };
+
+export interface ArtifactCollision {
+  tag: string;
+  subtype: import("../common/types.ts").IndexableSubtype;
+  id: string;
+  sourceFilepath: string;
+  targetFilepath: string;
+  reason: "duplicate_tag" | "divergent_filepath" | "filepath_conflict";
+}

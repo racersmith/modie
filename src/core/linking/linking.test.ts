@@ -8,6 +8,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { readFile, writeFile } from "node:fs/promises";
 import {
+  LINK_POLICY,
+  applyLinkMutation,
   detectTaskDependencyCycle,
   inferLinkRelationship,
   isValidAdrLinkTag,
@@ -15,6 +17,8 @@ import {
   isValidTaskDependencyTag,
   linkArtifact,
   mutateFrontmatterListField,
+  resolveArtifactByTag,
+  resolveSubtypeLinkPolicy,
   unlinkArtifact,
   validateArtifactLink,
   validateLinkTarget,
@@ -773,5 +777,61 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     );
     expect(validDep.target.tag).toBe(taskATag);
     expect(validDep.relationship).toBe("depends_on");
+  });
+
+  // @verifies ADR-5, RULE-13, RULE-14, RULE-15, RULE-18
+  it("[ADR-5][RULE-13..15][RULE-18] should define declarative LinkPolicyTable and resolve link policies correctly", () => {
+    expect(LINK_POLICY.RULE).toEqual({
+      links: { ADR: "ancestor" },
+    });
+    expect(LINK_POLICY.ADR).toEqual({
+      links: { ADR: "ancestor", RULE: "descendant" },
+    });
+    expect(LINK_POLICY.TASK).toEqual({
+      links: { ADR: "ancestor", RULE: "ancestor" },
+      depends_on: { TASK: "acyclic" },
+    });
+
+    expect(resolveSubtypeLinkPolicy("RULE")).toBe(LINK_POLICY.RULE);
+    expect(resolveSubtypeLinkPolicy("rule")).toBe(LINK_POLICY.RULE);
+    expect(resolveSubtypeLinkPolicy("ADR")).toBe(LINK_POLICY.ADR);
+    expect(resolveSubtypeLinkPolicy("TASK")).toBe(LINK_POLICY.TASK);
+    expect(resolveSubtypeLinkPolicy("UNKNOWN")).toBeUndefined();
+
+    // Custom policy override
+    const customPolicy = {
+      links: { SPEC: "ancestor" as const },
+    };
+    expect(resolveSubtypeLinkPolicy("SPEC", customPolicy)).toBe(customPolicy);
+  });
+
+  it("[ADR-5][RULE-36] should apply link and unlink mutations via shared applyLinkMutation helper", async () => {
+    const source = await resolveArtifactByTag(coreAdrTag, {
+      cwd: workspace.cwd,
+    });
+    const target = await resolveArtifactByTag(rootAdrTag, {
+      cwd: workspace.cwd,
+    });
+
+    // Apply link mutation
+    const linkRes = await applyLinkMutation(source, target, "links", "link");
+    expect(linkRes.action).toBe("link");
+    expect(linkRes.changed).toBe(true);
+    expect(linkRes.links).toContain(rootAdrTag);
+
+    // Apply idempotent link mutation
+    const idempotentRes = await applyLinkMutation(
+      source,
+      target,
+      "links",
+      "link",
+    );
+    expect(idempotentRes.changed).toBe(false);
+
+    // Apply unlink mutation
+    const unlinkRes = await applyLinkMutation(source, target, "links", "unlink");
+    expect(unlinkRes.action).toBe("unlink");
+    expect(unlinkRes.changed).toBe(true);
+    expect(unlinkRes.links).not.toContain(rootAdrTag);
   });
 });

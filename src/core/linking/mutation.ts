@@ -85,6 +85,50 @@ export function mutateFrontmatterListField(
 }
 
 /**
+ * Applies a frontmatter link/unlink mutation on `source`, updates disk if changed,
+ * and shapes the standard `LinkMutationResult` response payload.
+ * Eliminates structural duplication across `linkArtifact` and `unlinkArtifact`.
+ */
+export async function applyLinkMutation(
+  source: ResolvedArtifact,
+  target: ResolvedArtifact,
+  relationship: ArtifactLinkRelationship,
+  action: "link" | "unlink",
+): Promise<LinkMutationResult> {
+  const mutationAction = action === "link" ? "add" : "remove";
+  const rawContent = await readFile(source.filepath, "utf8");
+
+  const { updatedContent, changed } = mutateFrontmatterListField(
+    rawContent,
+    relationship,
+    mutationAction,
+    target.tag,
+  );
+
+  if (changed) {
+    await writeFile(source.filepath, updatedContent, "utf8");
+  }
+
+  const { frontmatter } = splitMarkdownFrontmatter(updatedContent);
+  const parsed = parseFrontmatterFields(frontmatter);
+
+  return {
+    action,
+    relationship,
+    changed,
+    source,
+    target,
+    links: parsed.links,
+    depends_on:
+      source.subtype === "TASK" || parsed.depends_on !== undefined
+        ? (parsed.depends_on ?? [])
+        : undefined,
+    filepath: source.filepath,
+    relativePath: source.relativePath,
+  };
+}
+
+/**
  * Validates and adds a frontmatter link or dependency from `options.source` to `options.target`.
  * Enforces all subtype, spatial scope, and DAG acyclicity invariants prior to writing to disk.
  * Complies with ADR-5, RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, RULE-17, RULE-18, RULE-19, and RULE-36.
@@ -99,37 +143,12 @@ export async function linkArtifact(
     relationship: options.relationship,
   });
 
-  const { source, target, relationship } = validated;
-  const rawContent = await readFile(source.filepath, "utf8");
-
-  const { updatedContent, changed } = mutateFrontmatterListField(
-    rawContent,
-    relationship,
-    "add",
-    target.tag,
+  return applyLinkMutation(
+    validated.source,
+    validated.target,
+    validated.relationship,
+    "link",
   );
-
-  if (changed) {
-    await writeFile(source.filepath, updatedContent, "utf8");
-  }
-
-  const { frontmatter } = splitMarkdownFrontmatter(updatedContent);
-  const parsed = parseFrontmatterFields(frontmatter);
-
-  return {
-    action: "link",
-    relationship,
-    changed,
-    source,
-    target,
-    links: parsed.links,
-    depends_on:
-      source.subtype === "TASK" || parsed.depends_on !== undefined
-        ? (parsed.depends_on ?? [])
-        : undefined,
-    filepath: source.filepath,
-    relativePath: source.relativePath,
-  };
 }
 
 /**
@@ -176,34 +195,5 @@ export async function unlinkArtifact(
     );
   }
 
-  const rawContent = await readFile(source.filepath, "utf8");
-
-  const { updatedContent, changed } = mutateFrontmatterListField(
-    rawContent,
-    relationship,
-    "remove",
-    target.tag,
-  );
-
-  if (changed) {
-    await writeFile(source.filepath, updatedContent, "utf8");
-  }
-
-  const { frontmatter } = splitMarkdownFrontmatter(updatedContent);
-  const parsed = parseFrontmatterFields(frontmatter);
-
-  return {
-    action: "unlink",
-    relationship,
-    changed,
-    source,
-    target,
-    links: parsed.links,
-    depends_on:
-      source.subtype === "TASK" || parsed.depends_on !== undefined
-        ? (parsed.depends_on ?? [])
-        : undefined,
-    filepath: source.filepath,
-    relativePath: source.relativePath,
-  };
+  return applyLinkMutation(source, target, relationship, "unlink");
 }

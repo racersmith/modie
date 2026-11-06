@@ -5,6 +5,7 @@
 
 import { isAbsolute, relative, resolve } from "node:path";
 import { findDeepestCommonAncestor } from "../common/index.ts";
+import { LINK_POLICY } from "../linking/policy.ts";
 import { validateLinkTarget } from "../linking/validator.ts";
 import type { ArtifactDefinition } from "../pipeline/types.ts";
 import { resolveWatermark } from "../resolver/watermark.ts";
@@ -59,6 +60,7 @@ export const taskDefinition: ArtifactDefinition<
 > = {
   subtype: "TASK",
   containerName: "tasks",
+  linkPolicy: LINK_POLICY.TASK,
   validate: async ({ normalizedScopeDir, options, cwd }) => {
     if (options.targetPaths && options.targetPaths.length > 0) {
       validateTaskScope(

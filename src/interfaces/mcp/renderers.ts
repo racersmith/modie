@@ -320,7 +320,7 @@ export function resolveArtifactDisplayTitle(details: ArtifactDetails): string {
   return candidate
     .replace(/-/g, " ")
     .split(/\s+/)
-    .map((w) => (w.length > 0 ? w[0]!.toUpperCase() + w.slice(1) : ""))
+    .map((w: string) => (w.length > 0 ? w[0]!.toUpperCase() + w.slice(1) : ""))
     .join(" ")
     .trim();
 }

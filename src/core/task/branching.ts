@@ -3,7 +3,8 @@
  * Complies with ADR-6, ADR-9, ADR-10, RULE-21, RULE-28, and RULE-33.
  */
 
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
+import { basename, isAbsolute, resolve } from "node:path";
 import { loadModieConfig } from "../config/loader.ts";
 import {
   detectGitBranch,
@@ -17,6 +18,7 @@ import {
   formatTaskBranch,
   formatTaskBranchName,
   normalizeTaskId,
+  parseArtifactFilename,
   parseSubtaskId,
   parseTaskBranch,
   parseTaskIdFromBranch,
@@ -26,10 +28,16 @@ import {
 import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
 import { resolveTaskFile } from "./completion.ts";
+import {
+  ActiveSubtaskPendingError,
+  ArtifactCollisionError,
+  TaskIncompleteError,
+} from "./errors.ts";
 import { parseTaskMarkdown } from "./parser.ts";
 import { scanActiveTasks } from "../resolver/active-scanner.ts";
 
 import type {
+  ArtifactCollision,
   MergeTaskBranchOptions,
   MergeTaskBranchResult,
   StartTaskBranchOptions,
@@ -37,14 +45,12 @@ import type {
   TaskBranchTopology,
 } from "./types.ts";
 
-export interface ArtifactCollision {
-  tag: string;
-  subtype: IndexableSubtype;
-  id: string;
-  sourceFilepath: string;
-  targetFilepath: string;
-  reason: "duplicate_tag" | "divergent_filepath" | "filepath_conflict";
-}
+export type { ArtifactCollision };
+export {
+  ActiveSubtaskPendingError,
+  ArtifactCollisionError,
+  TaskIncompleteError,
+};
 
 /**
  * Detects indexable artifact collisions between a source branch and a target branch prior to merge.
@@ -391,176 +397,308 @@ export async function startTaskBranch(
   };
 }
 
-/**
- * Merges a completed task branch back into its parent branch or trunk per RULE-28.
- * Validates branch hierarchy, verifies criteria satisfaction & artifact deletion,
- * guards against protected branch violations, and performs atomic merge.
- */
-export async function mergeTaskBranch(
-  taskIdentifier?: string,
-  options: MergeTaskBranchOptions = {},
-): Promise<MergeTaskBranchResult> {
-  const cwd = options.cwd ?? process.cwd();
-  const vcs = options.vcs ?? defaultVcsAdapter;
-  let targetId = taskIdentifier?.trim();
-
-  if (!targetId) {
-    const currentBranch = await vcs.detectCurrentBranch(cwd);
-    const inferredId = parseTaskIdFromBranch(currentBranch);
-    if (!inferredId) {
-      const branchDisplay = currentBranch ? ` "${currentBranch}"` : "";
-      throw new Error(
-        `No task identifier provided and current git branch${branchDisplay} is not a task branch (expected "task/<id>-<slug>").`,
-      );
-    }
-    targetId = inferredId;
+async function resolveTaskIdentifier(
+  taskIdentifier: string | undefined,
+  vcs: IVcsAdapter,
+  cwd: string,
+): Promise<string> {
+  const trimmed = taskIdentifier?.trim();
+  if (trimmed) {
+    return trimmed;
   }
-  const topology = await computeTaskBranchTopology(targetId, {
-    ...options,
-    vcs,
-  });
-  const sourceBranch = topology.branchName;
+  const currentBranch = await vcs.detectCurrentBranch(cwd);
+  const inferredId = parseTaskIdFromBranch(currentBranch);
+  if (!inferredId) {
+    const branchDisplay = currentBranch ? ` "${currentBranch}"` : "";
+    throw new Error(
+      `No task identifier provided and current git branch${branchDisplay} is not a task branch (expected "task/<id>-<slug>").`,
+    );
+  }
+  return inferredId;
+}
 
-  // 1. Verify source branch exists
+/**
+ * Verifies that the source task branch exists in the local git repository.
+ */
+export async function assertSourceBranchExists(
+  vcs: IVcsAdapter,
+  sourceBranch: string,
+  taskId: string,
+  cwd: string,
+): Promise<void> {
   const sourceExists = await vcs.branchExists(sourceBranch, cwd);
   if (!sourceExists) {
     throw new Error(
-      `Cannot merge task "TASK-${topology.taskId}": Task branch "${sourceBranch}" does not exist in local git branches.`,
+      `Cannot merge task "TASK-${taskId}": Task branch "${sourceBranch}" does not exist in local git branches.`,
     );
   }
+}
 
-  // 2. Verify completion status per RULE-21 and RULE-22
-  try {
-    const filepath = await resolveTaskFile(taskIdentifier, {
-      cwd,
-      vcs,
-    });
+/**
+ * Searches for an active task file on disk matching taskIdentifier or canonical taskId.
+ */
+async function findTaskFileOnDisk(
+  taskIdentifier: string | undefined,
+  taskId: string,
+  cwd: string,
+): Promise<string | null> {
+  if (taskIdentifier) {
+    const candidatePath = isAbsolute(taskIdentifier)
+      ? taskIdentifier
+      : resolve(cwd, taskIdentifier);
+    try {
+      const fileStat = await stat(candidatePath);
+      if (fileStat.isFile()) {
+        const parsed = parseArtifactFilename(basename(candidatePath));
+        if (parsed && parsed.subtype === "TASK" && !parsed.isArchived) {
+          return candidatePath;
+        }
+      }
+    } catch {
+      // not a direct accessible file path
+    }
+  }
+
+  const activeTasks = await scanActiveTasks(cwd);
+  const normId = normalizeTaskId(taskId);
+  const trimmedIdent = taskIdentifier?.trim().toLowerCase();
+  const match = activeTasks.find(
+    (t) =>
+      normalizeTaskId(t.id) === normId ||
+      (trimmedIdent && t.slug.toLowerCase() === trimmedIdent),
+  );
+  return match ? match.filepath : null;
+}
+
+/**
+ * Verifies that the task artifact has satisfied all acceptance criteria and completed
+ * the completion ceremony (deletion per RULE-21) before merge.
+ * Throws typed `TaskIncompleteError` on any completion failure.
+ */
+export async function assertTaskCompleted(
+  taskIdentifier: string | undefined,
+  taskId: string,
+  sourceBranch: string,
+  options: { cwd?: string; vcs?: IVcsAdapter; force?: boolean } = {},
+): Promise<void> {
+  if (options.force) {
+    return;
+  }
+
+  const cwd = options.cwd ?? process.cwd();
+  const vcs = options.vcs ?? defaultVcsAdapter;
+  const filepath = await findTaskFileOnDisk(taskIdentifier, taskId, cwd);
+
+  if (filepath !== null) {
     const content = await readFile(filepath, "utf8");
     const parsed = parseTaskMarkdown(content, filepath);
     const incomplete = parsed.acceptanceCriteria.filter((c) => !c.completed);
 
-    if (incomplete.length > 0 && !options.force) {
-      throw new Error(
-        `Cannot merge task branch "${sourceBranch}": Task "TASK-${topology.taskId}" has ${incomplete.length} incomplete acceptance criteria. Verify all criteria before merging per RULE-22 and RULE-28.`,
+    if (incomplete.length > 0) {
+      throw new TaskIncompleteError(
+        `Cannot merge task branch "${sourceBranch}": Task "TASK-${taskId}" has ${incomplete.length} incomplete acceptance criteria. Verify all criteria before merging per RULE-22 and RULE-28.`,
+        {
+          taskId,
+          reason: "incomplete_criteria",
+          incompleteCriteriaCount: incomplete.length,
+        },
       );
     }
 
-    if (!options.force) {
-      throw new Error(
-        `Cannot merge task branch "${sourceBranch}": Task "TASK-${topology.taskId}" artifact has not been completed. Run 'modie task complete ${topology.taskId}' to execute the completion ceremony before merging per RULE-21 and RULE-28.`,
-      );
-    }
-  } catch (error: unknown) {
-    // If resolveTaskFile fails because file was deleted (or zombie), verify completion
-    if (
-      error instanceof Error &&
-      error.message.includes("incomplete acceptance criteria")
-    ) {
-      throw error;
-    }
-    if (
-      error instanceof Error &&
-      error.message.includes("artifact has not been completed")
-    ) {
-      throw error;
-    }
-    // File not found on disk: verify that it was completed/deleted in Git
-    const deleted = await vcs.inspectDeletedArtifacts(cwd, "TASK");
-    const isDeletedInGit = deleted.some(
-      (d) => normalizeTaskId(d.id) === normalizeTaskId(topology.taskId),
+    throw new TaskIncompleteError(
+      `Cannot merge task branch "${sourceBranch}": Task "TASK-${taskId}" artifact has not been completed. Run 'modie task complete ${taskId}' to execute the completion ceremony before merging per RULE-21 and RULE-28.`,
+      {
+        taskId,
+        reason: "artifact_not_completed",
+      },
     );
-    if (!isDeletedInGit && !options.force) {
-      throw new Error(
-        `Cannot merge task branch "${sourceBranch}": Task "TASK-${topology.taskId}" has neither an active verified artifact nor a completion record in Git history per RULE-21.`,
-      );
-    }
   }
 
-  // 3. Determine and guard target branch
-  let targetBranch: string;
+  // File not found on disk: verify that it was completed/deleted in Git
+  const deleted = await vcs.inspectDeletedArtifacts(cwd, "TASK");
+  const isDeletedInGit = deleted.some(
+    (d) => normalizeTaskId(d.id) === normalizeTaskId(taskId),
+  );
 
-  if (topology.isSubtask) {
-    targetBranch =
-      options.target ??
-      topology.parentBranchName ??
-      topology.expectedBaseBranch;
-
-    // RULE-28: Subtasks must never be merged directly into trunk
-    if (targetBranch === topology.trunkBranch && !options.force) {
-      throw new Error(
-        `Subtask branch "${sourceBranch}" cannot be merged directly into trunk branch "${targetBranch}" per RULE-28. Subtasks must merge back into their parent task branch ("${topology.parentBranchName}").`,
-      );
-    }
-
-    // Prohibit merging into protected branches
-    if (topology.protectedBranches.includes(targetBranch) && !options.force) {
-      throw new Error(
-        `Cannot merge subtask branch "${sourceBranch}" into protected branch "${targetBranch}". Protected branches cannot receive direct task merges.`,
-      );
-    }
-  } else {
-    targetBranch = options.target ?? topology.trunkBranch;
-
-    // Prohibit merging root tasks directly into protected branches
-    if (topology.protectedBranches.includes(targetBranch) && !options.force) {
-      throw new Error(
-        `Cannot merge root task branch "${sourceBranch}" directly into protected branch "${targetBranch}". Merges must target trunk branch "${topology.trunkBranch}".`,
-      );
-    }
-
-    // Verify all child subtasks have completed and merged per RULE-28
-    const normId = normalizeTaskId(topology.taskId);
-    const subtaskBranchesOut = await vcs.run(
-      ["branch", "--list", `task/${normId}-*`],
-      cwd,
+  if (!isDeletedInGit) {
+    throw new TaskIncompleteError(
+      `Cannot merge task branch "${sourceBranch}": Task "TASK-${taskId}" has neither an active verified artifact nor a completion record in Git history per RULE-21.`,
+      {
+        taskId,
+        reason: "no_completion_record",
+      },
     );
-    if (subtaskBranchesOut && subtaskBranchesOut.length > 0) {
-      const activeChildBranches = subtaskBranchesOut
-        .split("\n")
-        .map((b) => b.replace(/^\*?\s+/, "").trim())
-        .filter(
-          (b) =>
-            new RegExp(`^task/${normId}-\\d+-`).test(b) && b !== sourceBranch,
-        );
+  }
+}
 
-      if (activeChildBranches.length > 0 && !options.force) {
-        throw new Error(
-          `Cannot merge parent task branch "${sourceBranch}" into trunk: Active child subtask branch "${activeChildBranches[0]}" has not been merged into parent branch per RULE-28.`,
-        );
-      }
-    }
+function resolveSubtaskTarget(
+  topology: TaskBranchTopology,
+  targetOverride?: string,
+  force?: boolean,
+): string {
+  const targetBranch =
+    targetOverride ??
+    topology.parentBranchName ??
+    topology.expectedBaseBranch;
+
+  // RULE-28: Subtasks must never be merged directly into trunk
+  if (targetBranch === topology.trunkBranch && !force) {
+    throw new Error(
+      `Subtask branch "${topology.branchName}" cannot be merged directly into trunk branch "${targetBranch}" per RULE-28. Subtasks must merge back into their parent task branch ("${topology.parentBranchName}").`,
+    );
   }
 
-  // 4. Verify target branch exists in local git branches
+  // Prohibit merging into protected branches
+  if (topology.protectedBranches.includes(targetBranch) && !force) {
+    throw new Error(
+      `Cannot merge subtask branch "${topology.branchName}" into protected branch "${targetBranch}". Protected branches cannot receive direct task merges.`,
+    );
+  }
+
+  return targetBranch;
+}
+
+function resolveRootTaskTarget(
+  topology: TaskBranchTopology,
+  targetOverride?: string,
+  force?: boolean,
+): string {
+  const targetBranch = targetOverride ?? topology.trunkBranch;
+
+  // Prohibit merging root tasks directly into protected branches
+  if (topology.protectedBranches.includes(targetBranch) && !force) {
+    throw new Error(
+      `Cannot merge root task branch "${topology.branchName}" directly into protected branch "${targetBranch}". Merges must target trunk branch "${topology.trunkBranch}".`,
+    );
+  }
+
+  return targetBranch;
+}
+
+/**
+ * Resolves the merge target branch and enforces trunk vs parent and protected branch policies per RULE-28.
+ */
+export function resolveMergeTarget(
+  topology: TaskBranchTopology,
+  options: { target?: string; force?: boolean } = {},
+): string {
+  return topology.isSubtask
+    ? resolveSubtaskTarget(topology, options.target, options.force)
+    : resolveRootTaskTarget(topology, options.target, options.force);
+}
+
+/**
+ * Verifies that the target merge branch exists in the local git repository.
+ */
+export async function assertTargetBranchExists(
+  vcs: IVcsAdapter,
+  targetBranch: string,
+  cwd: string,
+): Promise<void> {
   const targetExists = await vcs.branchExists(targetBranch, cwd);
   if (!targetExists) {
     throw new Error(
       `Cannot merge into target branch "${targetBranch}": Branch does not exist in local git repository.`,
     );
   }
+}
 
-  // Pre-merge artifact collision guard (RULE-33)
-  if (!options.force) {
-    const collisions = await detectArtifactCollisions(
-      sourceBranch,
-      targetBranch,
-      cwd,
-      vcs,
-    );
-    if (collisions.length > 0) {
-      const details = collisions
-        .map(
-          (c) =>
-            `  - ${c.tag}: source "${c.sourceFilepath}" collides with target "${c.targetFilepath}" (${c.reason})`,
-        )
-        .join("\n");
-      throw new Error(
-        `Cannot merge task branch "${sourceBranch}" into "${targetBranch}": ${collisions.length} artifact collision(s) detected:\n${details}\nResolve collisions or pass --force to override.`,
-      );
-    }
+/**
+ * Verifies that all child subtasks have completed and merged back into the parent
+ * task branch before merging into trunk per RULE-28.
+ * Throws typed `ActiveSubtaskPendingError` if active child subtask branches exist.
+ */
+export async function assertNoActiveSubtasks(
+  vcs: IVcsAdapter,
+  topology: TaskBranchTopology,
+  cwd: string,
+  options: { force?: boolean } = {},
+): Promise<void> {
+  if (topology.isSubtask || options.force) {
+    return;
   }
 
-  // 5. Execute checkout and merge
+  const normId = normalizeTaskId(topology.taskId);
+  const subtaskBranchesOut = await vcs.run(
+    ["branch", "--list", `task/${normId}-*`],
+    cwd,
+  );
+  if (!subtaskBranchesOut || subtaskBranchesOut.length === 0) {
+    return;
+  }
+
+  const activeChildBranches = subtaskBranchesOut
+    .split("\n")
+    .map((b) => b.replace(/^\*?\s+/, "").trim())
+    .filter(
+      (b) =>
+        new RegExp(`^task/${normId}-\\d+-`).test(b) &&
+        b !== topology.branchName,
+    );
+
+  if (activeChildBranches.length > 0) {
+    throw new ActiveSubtaskPendingError(
+      `Cannot merge parent task branch "${topology.branchName}" into trunk: Active child subtask branch "${activeChildBranches[0]}" has not been merged into parent branch per RULE-28.`,
+      {
+        parentTaskId: topology.taskId,
+        activeSubtaskBranches: activeChildBranches,
+      },
+    );
+  }
+}
+
+/**
+ * Verifies that no newly introduced or renamed artifacts collide with artifacts
+ * on the target branch per RULE-33.
+ * Throws typed `ArtifactCollisionError` when collisions are detected unless forced.
+ */
+export async function assertNoCollisions(
+  vcs: IVcsAdapter,
+  sourceBranch: string,
+  targetBranch: string,
+  cwd: string,
+  options: { force?: boolean } = {},
+): Promise<void> {
+  if (options.force) {
+    return;
+  }
+
+  const collisions = await detectArtifactCollisions(
+    sourceBranch,
+    targetBranch,
+    cwd,
+    vcs,
+  );
+
+  if (collisions.length > 0) {
+    const details = collisions
+      .map(
+        (c) =>
+          `  - ${c.tag}: source "${c.sourceFilepath}" collides with target "${c.targetFilepath}" (${c.reason})`,
+      )
+      .join("\n");
+    throw new ArtifactCollisionError(
+      `Cannot merge task branch "${sourceBranch}" into "${targetBranch}": ${collisions.length} artifact collision(s) detected:\n${details}\nResolve collisions or pass --force to override.`,
+      {
+        sourceBranch,
+        targetBranch,
+        collisions,
+      },
+    );
+  }
+}
+
+/**
+ * Executes the git merge ceremony and deletes the source task branch unless retained.
+ */
+export async function executeBranchMerge(
+  vcs: IVcsAdapter,
+  topology: TaskBranchTopology,
+  sourceBranch: string,
+  targetBranch: string,
+  cwd: string,
+  options: { keepBranch?: boolean } = {},
+): Promise<MergeTaskBranchResult> {
   const mergeHash = await vcs.merge(
     sourceBranch,
     targetBranch,
@@ -568,7 +706,6 @@ export async function mergeTaskBranch(
     cwd,
   );
 
-  // 6. Delete source branch unless keepBranch is specified
   const deleteSource = !Boolean(options.keepBranch);
   if (deleteSource) {
     await vcs.deleteBranch(sourceBranch, cwd);
@@ -583,4 +720,55 @@ export async function mergeTaskBranch(
     isSubtask: topology.isSubtask,
     mergeCommitHash: mergeHash || undefined,
   };
+}
+
+/**
+ * Merges a completed task branch back into its parent branch or trunk per RULE-28.
+ * Validates branch hierarchy, verifies criteria satisfaction & artifact deletion,
+ * guards against protected branch violations, and performs atomic merge.
+ */
+export async function mergeTaskBranch(
+  taskIdentifier?: string,
+  options: MergeTaskBranchOptions = {},
+): Promise<MergeTaskBranchResult> {
+  const cwd = options.cwd ?? process.cwd();
+  const vcs = options.vcs ?? defaultVcsAdapter;
+  const targetId = await resolveTaskIdentifier(taskIdentifier, vcs, cwd);
+  const topology = await computeTaskBranchTopology(targetId, {
+    ...options,
+    vcs,
+  });
+  const sourceBranch = topology.branchName;
+
+  // 1. Verify source branch exists
+  await assertSourceBranchExists(vcs, sourceBranch, topology.taskId, cwd);
+
+  // 2. Verify completion status per RULE-21 and RULE-22
+  await assertTaskCompleted(taskIdentifier, topology.taskId, sourceBranch, {
+    cwd,
+    vcs,
+    force: options.force,
+  });
+
+  // 3. Determine and guard target branch per RULE-28
+  const targetBranch = resolveMergeTarget(topology, options);
+
+  // 4. Verify target branch exists in local git branches
+  await assertTargetBranchExists(vcs, targetBranch, cwd);
+
+  // 5. Verify all child subtasks have completed and merged per RULE-28
+  await assertNoActiveSubtasks(vcs, topology, cwd, options);
+
+  // 6. Pre-merge artifact collision guard (RULE-33)
+  await assertNoCollisions(vcs, sourceBranch, targetBranch, cwd, options);
+
+  // 7. Execute checkout, merge, and source branch deletion
+  return executeBranchMerge(
+    vcs,
+    topology,
+    sourceBranch,
+    targetBranch,
+    cwd,
+    options,
+  );
 }

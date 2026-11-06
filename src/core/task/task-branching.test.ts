@@ -5,11 +5,22 @@ import {
   type FixtureWorkspace,
 } from "../testing/index.ts";
 import {
+  ActiveSubtaskPendingError,
+  ArtifactCollisionError,
+  TaskIncompleteError,
+  assertNoActiveSubtasks,
+  assertNoCollisions,
+  assertSourceBranchExists,
+  assertTargetBranchExists,
+  assertTaskCompleted,
   computeTaskBranchTopology,
   detectArtifactCollisions,
+  executeBranchMerge,
   mergeTaskBranch,
+  resolveMergeTarget,
   startTaskBranch,
 } from "./branching.ts";
+import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
 import {
   formatTaskBranchName,
   parseSubtaskId,
@@ -455,5 +466,271 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     expect(collisions.length).toBe(1);
     expect(collisions[0]?.tag).toBe(rule30Tag);
     expect(collisions[0]?.reason).toBe("divergent_filepath");
+  });
+
+  describe("Pre-Merge Guard Decomposition & Domain Errors (RULE-21, RULE-22, RULE-28, RULE-33)", () => {
+    it("assertSourceBranchExists should verify branch existence", async () => {
+      await expect(
+        assertSourceBranchExists(
+          defaultVcsAdapter,
+          "non-existent-branch",
+          "999",
+          workspace.cwd,
+        ),
+      ).rejects.toThrow(/Task branch "non-existent-branch" does not exist/);
+
+      await expect(
+        assertSourceBranchExists(
+          defaultVcsAdapter,
+          "dev",
+          "999",
+          workspace.cwd,
+        ),
+      ).resolves.toBeUndefined();
+    });
+
+    it("assertTargetBranchExists should verify target branch existence", async () => {
+      await expect(
+        assertTargetBranchExists(
+          defaultVcsAdapter,
+          "non-existent-target",
+          workspace.cwd,
+        ),
+      ).rejects.toThrow(/Branch does not exist in local git repository/);
+
+      await expect(
+        assertTargetBranchExists(defaultVcsAdapter, "dev", workspace.cwd),
+      ).resolves.toBeUndefined();
+    });
+
+    it("assertTaskCompleted should throw typed TaskIncompleteError with diagnostic details", async () => {
+      // 1. Incomplete criteria
+      const taskIncomplete = await workspace.createTask({
+        id: 201,
+        slug: "incomplete",
+        criteria: [
+          { text: "Done item", completed: true },
+          { text: "Pending item", completed: false },
+        ],
+      });
+
+      let thrownError: unknown;
+      try {
+        await assertTaskCompleted(
+          taskIncomplete.tag,
+          "201",
+          "task/201-incomplete",
+          { cwd: workspace.cwd, vcs: defaultVcsAdapter },
+        );
+      } catch (err) {
+        thrownError = err;
+      }
+
+      expect(thrownError).toBeInstanceOf(TaskIncompleteError);
+      const incErr = thrownError as TaskIncompleteError;
+      expect(incErr.taskId).toBe("201");
+      expect(incErr.reason).toBe("incomplete_criteria");
+      expect(incErr.incompleteCriteriaCount).toBe(1);
+
+      // 2. All criteria complete, but artifact still on disk (not deleted per ceremony)
+      const taskUnfinished = await workspace.createTask({
+        id: 202,
+        slug: "unfinished",
+        criteria: [{ text: "Done item", completed: true }],
+      });
+
+      thrownError = null;
+      try {
+        await assertTaskCompleted(
+          taskUnfinished.tag,
+          "202",
+          "task/202-unfinished",
+          { cwd: workspace.cwd, vcs: defaultVcsAdapter },
+        );
+      } catch (err) {
+        thrownError = err;
+      }
+
+      expect(thrownError).toBeInstanceOf(TaskIncompleteError);
+      const unfinErr = thrownError as TaskIncompleteError;
+      expect(unfinErr.taskId).toBe("202");
+      expect(unfinErr.reason).toBe("artifact_not_completed");
+
+      // 3. Artifact deleted on disk, but NOT in git history
+      await workspace.remove(taskUnfinished);
+      thrownError = null;
+      try {
+        await assertTaskCompleted(
+          undefined,
+          "202",
+          "task/202-unfinished",
+          { cwd: workspace.cwd, vcs: defaultVcsAdapter },
+        );
+      } catch (err) {
+        thrownError = err;
+      }
+
+      expect(thrownError).toBeInstanceOf(TaskIncompleteError);
+      const noRecErr = thrownError as TaskIncompleteError;
+      expect(noRecErr.taskId).toBe("202");
+      expect(noRecErr.reason).toBe("no_completion_record");
+
+      // 4. Force bypasses checks
+      await expect(
+        assertTaskCompleted(
+          taskIncomplete.tag,
+          "201",
+          "task/201-incomplete",
+          { cwd: workspace.cwd, vcs: defaultVcsAdapter, force: true },
+        ),
+      ).resolves.toBeUndefined();
+    });
+
+    it("resolveMergeTarget should resolve and guard subtask and root task targets", async () => {
+      const subtaskTopology = {
+        taskId: "10-1",
+        slug: "sub",
+        branchName: "task/10-1-sub",
+        currentBranch: "task/10-1-sub",
+        isCurrentBranchProtected: false,
+        isSubtask: true,
+        parentId: "10",
+        parentBranchName: "task/10-parent",
+        trunkBranch: "dev",
+        expectedBaseBranch: "task/10-parent",
+        protectedBranches: ["main"],
+      };
+
+      // Subtask default resolves to parent branch
+      expect(resolveMergeTarget(subtaskTopology)).toBe("task/10-parent");
+
+      // Subtask cannot merge directly into trunk per RULE-28
+      expect(() =>
+        resolveMergeTarget(subtaskTopology, { target: "dev" }),
+      ).toThrow(/Subtask branch .* cannot be merged directly into trunk/);
+
+      // Force allows subtask trunk override
+      expect(
+        resolveMergeTarget(subtaskTopology, { target: "dev", force: true }),
+      ).toBe("dev");
+
+      // Subtask cannot merge into protected branch
+      expect(() =>
+        resolveMergeTarget(subtaskTopology, { target: "main" }),
+      ).toThrow(/Cannot merge subtask branch .* into protected branch/);
+
+      const rootTopology = {
+        taskId: "10",
+        slug: "parent",
+        branchName: "task/10-parent",
+        currentBranch: "task/10-parent",
+        isCurrentBranchProtected: false,
+        isSubtask: false,
+        trunkBranch: "dev",
+        expectedBaseBranch: "dev",
+        protectedBranches: ["main"],
+      };
+
+      // Root default resolves to trunk
+      expect(resolveMergeTarget(rootTopology)).toBe("dev");
+
+      // Root cannot merge into protected branch
+      expect(() =>
+        resolveMergeTarget(rootTopology, { target: "main" }),
+      ).toThrow(/Cannot merge root task branch .* directly into protected branch/);
+    });
+
+    it("assertNoActiveSubtasks should throw typed ActiveSubtaskPendingError when child branches exist", async () => {
+      const parentTopology = {
+        taskId: "210",
+        slug: "parent",
+        branchName: "task/210-parent",
+        currentBranch: "task/210-parent",
+        isCurrentBranchProtected: false,
+        isSubtask: false,
+        trunkBranch: "dev",
+        expectedBaseBranch: "dev",
+        protectedBranches: ["main"],
+      };
+
+      // Create an active child subtask branch
+      await Bun.$`git branch task/210-1-child`.cwd(workspace.cwd).quiet();
+
+      let thrown: unknown;
+      try {
+        await assertNoActiveSubtasks(
+          defaultVcsAdapter,
+          parentTopology,
+          workspace.cwd,
+        );
+      } catch (err) {
+        thrown = err;
+      }
+
+      expect(thrown).toBeInstanceOf(ActiveSubtaskPendingError);
+      const subtaskErr = thrown as ActiveSubtaskPendingError;
+      expect(subtaskErr.parentTaskId).toBe("210");
+      expect(subtaskErr.activeSubtaskBranches).toContain("task/210-1-child");
+
+      // Force should bypass
+      await expect(
+        assertNoActiveSubtasks(
+          defaultVcsAdapter,
+          parentTopology,
+          workspace.cwd,
+          { force: true },
+        ),
+      ).resolves.toBeUndefined();
+
+      // Clean up child branch
+      await Bun.$`git branch -D task/210-1-child`.cwd(workspace.cwd).quiet();
+      await expect(
+        assertNoActiveSubtasks(
+          defaultVcsAdapter,
+          parentTopology,
+          workspace.cwd,
+        ),
+      ).resolves.toBeUndefined();
+    });
+
+    it("assertNoCollisions should throw typed ArtifactCollisionError on collision", async () => {
+      const ruleTag = makeTestTag("RULE", 88);
+      await workspace.createRule({ id: 88, slug: "a", body: "On dev" });
+      await workspace.gitCommit(`feat: ${ruleTag} on dev`);
+
+      await Bun.$`git checkout -b task/conflict HEAD~1`.cwd(workspace.cwd).quiet();
+      await workspace.createRule({ id: 88, slug: "b", body: "On branch" });
+      await workspace.gitCommit(`feat: conflicting ${ruleTag}`);
+
+      let thrown: unknown;
+      try {
+        await assertNoCollisions(
+          defaultVcsAdapter,
+          "task/conflict",
+          "dev",
+          workspace.cwd,
+        );
+      } catch (err) {
+        thrown = err;
+      }
+
+      expect(thrown).toBeInstanceOf(ArtifactCollisionError);
+      const colErr = thrown as ArtifactCollisionError;
+      expect(colErr.sourceBranch).toBe("task/conflict");
+      expect(colErr.targetBranch).toBe("dev");
+      expect(colErr.collisions.length).toBe(1);
+      expect(colErr.collisions[0]?.tag).toBe(ruleTag);
+
+      // Force should bypass
+      await expect(
+        assertNoCollisions(
+          defaultVcsAdapter,
+          "task/conflict",
+          "dev",
+          workspace.cwd,
+          { force: true },
+        ),
+      ).resolves.toBeUndefined();
+    });
   });
 });
