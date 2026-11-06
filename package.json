@@ -36,7 +36,7 @@
     "typecheck": "bun check",
     "test:parallel": "bun test --parallel",
     "format": "bun fmt",
-    "inspect_mcp": "npx @modelcontextprotocol/inspector --catalog .agents/mcp_config.json",
+    "mcp:inspect": "npx @modelcontextprotocol/inspector --catalog .agents/mcp_config.json",
     "prepublishOnly": "bun run build && bun test",
     "count:all": "find src -type f \\( -name \"*.ts\" -o -name \"*.tsx\" \\) | xargs wc -l",
     "count:src": "find src -type f \\( -name \"*.ts\" -o -name \"*.tsx\" \\) ! -name \"*.test.ts\" ! -name \"*.spec.ts\" | xargs wc -l",
