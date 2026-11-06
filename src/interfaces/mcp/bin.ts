@@ -7,11 +7,22 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createModieMcpServer } from "./server.ts";
 
-export async function runMcpServer(
-  cwd: string = process.env.MODIE_CWD ?? process.cwd(),
-): Promise<void> {
-  const server = createModieMcpServer({ cwd });
+export async function runMcpServer(cwd?: string): Promise<void> {
+  const envCwd = process.env.MODIE_CWD?.trim();
+  const resolvedCwd = cwd || (envCwd ? envCwd : process.cwd());
+  const server = createModieMcpServer({ cwd: resolvedCwd });
   const transport = new StdioServerTransport();
+
+  const cleanup = () => {
+    process.exit(0);
+  };
+
+  transport.onclose = cleanup;
+  process.stdin.on("close", cleanup);
+  process.stdin.on("end", cleanup);
+  process.on("SIGINT", cleanup);
+  process.on("SIGTERM", cleanup);
+
   await server.connect(transport);
 }
 

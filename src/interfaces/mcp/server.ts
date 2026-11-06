@@ -74,7 +74,8 @@ export interface ModieMcpServerOptions {
 export function createModieMcpServer(
   options: ModieMcpServerOptions = {},
 ): McpServer {
-  const cwd = options.cwd ?? process.env.MODIE_CWD ?? process.cwd();
+  const envCwd = process.env.MODIE_CWD?.trim();
+  const cwd = options.cwd || (envCwd ? envCwd : process.cwd());
   const stderr =
     options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
 

@@ -34,11 +34,23 @@ export const mcpCommand: CliCommandDefinition<
   schema: mcpSchema,
   flags: {},
   execute: async (_input, context) => {
+    const envCwd = process.env.MODIE_CWD?.trim();
     const server = createModieMcpServer({
-      cwd: process.env.MODIE_CWD ?? context.cwd,
+      cwd: envCwd ? envCwd : context.cwd,
       stderr: context.stderr,
     });
     const transport = new StdioServerTransport();
+
+    const cleanup = () => {
+      process.exit(0);
+    };
+
+    transport.onclose = cleanup;
+    process.stdin.on("close", cleanup);
+    process.stdin.on("end", cleanup);
+    process.on("SIGINT", cleanup);
+    process.on("SIGTERM", cleanup);
+
     await server.connect(transport);
     return new Promise<void>(() => {});
   },
