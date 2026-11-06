@@ -26,9 +26,9 @@ Per the maintainability review (§2.5, §3.1, §4.5, §4.6), sequence allocation
 
 # Acceptance Criteria
 
-- [ ] Extract reusable `nextSequence` calculation utility and encapsulate allocation strategies (`trunk`, `subtask`, `prefixed`) into strategy handlers, reducing `resolveWatermark` cyclomatic complexity to <= 10.
-- [ ] Extract shared `toTaskQueueItem` and `calculateCriteriaProgress` helpers used by both `queryTaskQueue` and `queryTaskHistory`.
-- [ ] Decompose `queryTaskHistory` into discrete source collection handlers (`collectBranchTasks`, `collectDeletedTasks`, `collectBranchOnlyTasks`), reducing cyclomatic complexity from 44 to <= 12.
-- [ ] Add typed VCS methods (`readFileAtRef`, `readDeletedFile`) to `IVcsAdapter` to replace raw `vcs.run()` calls in historical task parsing.
-- [ ] Verify watermark allocation and task queue/history querying across all resolver and task query tests.
-- [ ] User Review
+- [x] Extract reusable `nextSequence` calculation utility and encapsulate allocation strategies (`trunk`, `subtask`, `prefixed`) into strategy handlers, reducing `resolveWatermark` cyclomatic complexity to <= 10.
+- [x] Extract shared `toTaskQueueItem` and `calculateCriteriaProgress` helpers used by both `queryTaskQueue` and `queryTaskHistory`.
+- [x] Decompose `queryTaskHistory` into discrete source collection handlers (`collectBranchTasks`, `collectDeletedTasks`, `collectBranchOnlyTasks`), reducing cyclomatic complexity from 44 to <= 12.
+- [x] Add typed VCS methods (`readFileAtRef`, `readDeletedFile`) to `IVcsAdapter` to replace raw `vcs.run()` calls in historical task parsing.
+- [x] Verify watermark allocation and task queue/history querying across all resolver and task query tests.
+- [x] User Review

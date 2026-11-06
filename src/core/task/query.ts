@@ -20,7 +20,10 @@ import {
   inspectMultiBranchActiveArtifacts,
   listGitBranches,
 } from "../resolver/git-inspector.ts";
-import type { DiscoveredTask } from "../resolver/types.ts";
+import type {
+  DiscoveredArtifact,
+  DiscoveredTask,
+} from "../resolver/types.ts";
 import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
 import { resolveTaskFile } from "./completion.ts";
@@ -128,6 +131,98 @@ export interface TaskStatusDetails extends TaskQueueItem {
   incompleteCriteria: string[];
 }
 
+export interface CriteriaProgress {
+  criteriaTotal: number;
+  criteriaCompleted: number;
+  criteriaProgress: string;
+  allCriteriaSatisfied: boolean;
+}
+
+export interface ToTaskQueueItemParams {
+  id: string;
+  slug: string;
+  filepath: string;
+  relativePath: string;
+  summary?: string;
+  context?: string;
+  depends_on?: string[];
+  links?: string[];
+  acceptanceCriteria?: TaskAcceptanceCriteriaItem[];
+  readiness: TaskReadiness;
+  blockedBy?: string[];
+  isCurrent?: boolean;
+  isHistorical?: boolean;
+  branch?: string;
+  isDeleted?: boolean;
+}
+
+export interface HistoricalTaskEntry {
+  id: string;
+  slug: string;
+  relativePath: string;
+  isDeleted: boolean;
+  branch?: string;
+}
+
+export type TaskBranchInfoMap = Map<
+  string,
+  { branch: string; id: string; slug: string }
+>;
+
+/**
+ * Calculates criteria progress counts, ratio string, and satisfaction flag.
+ */
+export function calculateCriteriaProgress(
+  criteria: TaskAcceptanceCriteriaItem[] = [],
+  options: { isDeleted?: boolean } = {},
+): CriteriaProgress {
+  const criteriaTotal = criteria.length;
+  const criteriaCompleted = criteria.filter((c) => c.completed).length;
+  const allCriteriaSatisfied = options.isDeleted
+    ? criteriaTotal === 0 || criteriaCompleted === criteriaTotal
+    : criteriaTotal > 0 && criteriaCompleted === criteriaTotal;
+
+  return {
+    criteriaTotal,
+    criteriaCompleted,
+    criteriaProgress: `${criteriaCompleted}/${criteriaTotal}`,
+    allCriteriaSatisfied,
+  };
+}
+
+/**
+ * Constructs a normalized TaskQueueItem record from parsed attributes and criteria progress.
+ */
+export function toTaskQueueItem(params: ToTaskQueueItemParams): TaskQueueItem {
+  const criteria = params.acceptanceCriteria ?? [];
+  const progress = calculateCriteriaProgress(criteria, {
+    isDeleted: params.isDeleted,
+  });
+
+  return {
+    id: params.id,
+    fullTaskId: `TASK-${params.id}`,
+    slug: params.slug,
+    title: slugToTitle(params.slug),
+    summary: params.summary,
+    filepath: params.filepath,
+    relativePath: params.relativePath,
+    depends_on: params.depends_on ?? [],
+    links: params.links ?? [],
+    readiness: params.readiness,
+    blockedBy: params.blockedBy ?? [],
+    criteriaTotal: progress.criteriaTotal,
+    criteriaCompleted: progress.criteriaCompleted,
+    criteriaProgress: progress.criteriaProgress,
+    acceptanceCriteria: criteria,
+    allCriteriaSatisfied: progress.allCriteriaSatisfied,
+    context: params.context,
+    isCurrent: params.isCurrent,
+    isHistorical: params.isHistorical,
+    branch: params.branch,
+  };
+}
+
 /**
  * Natural comparator for sorting task IDs (e.g. 1, 2, 9, 10, 11, 2-1, J101).
  */
@@ -154,27 +249,17 @@ export function compareTaskIds(aId: string, bId: string): number {
   return aNorm.localeCompare(bNorm, undefined, { numeric: true });
 }
 
-/**
- * Queries the active task queue on disk, parses acceptance criteria progress,
- * and computes DAG dependency readiness (READY vs BLOCKED) per ADR-6 and RULE-18.
- *
- * @param options Query and filtering options.
- */
-export async function queryTaskQueue(
-  options: TaskQueueQueryOptions = {},
-): Promise<TaskQueueItem[]> {
-  const cwd = options.cwd ?? process.cwd();
+interface RawTaskRecord {
+  discovered: DiscoveredTask;
+  parsed: ReturnType<typeof parseTaskMarkdown>;
+  relativePath: string;
+}
 
-  // 1. Discover active task files on disk
-  const discovered = options.activeTasks ?? (await scanActiveTasks(cwd));
-
-  // 2. Read and parse markdown content for each task
-  const rawTasks: Array<{
-    discovered: DiscoveredTask;
-    parsed: ReturnType<typeof parseTaskMarkdown>;
-    relativePath: string;
-  }> = [];
-
+async function loadRawTaskFiles(
+  discovered: DiscoveredTask[],
+  cwd: string,
+): Promise<RawTaskRecord[]> {
+  const rawTasks: RawTaskRecord[] = [];
   for (const disc of discovered) {
     try {
       const content = await readFile(disc.filepath, "utf8");
@@ -189,8 +274,10 @@ export async function queryTaskQueue(
       // If a file cannot be read, skip gracefully
     }
   }
+  return rawTasks;
+}
 
-  // 3. Build active task ID lookup map for DAG evaluation
+function buildActiveTaskMap(rawTasks: RawTaskRecord[]): Map<string, string> {
   const activeTaskMap = new Map<string, string>();
   for (const item of rawTasks) {
     const normId = taskKey(item.discovered.id);
@@ -198,75 +285,29 @@ export async function queryTaskQueue(
     activeTaskMap.set(normId, canonicalId);
     activeTaskMap.set(canonicalId.toLowerCase(), canonicalId);
   }
+  return activeTaskMap;
+}
 
-  // 4. Resolve current task ID from active git branch topology or options
-  const currentBranch = options.currentBranch ?? (await detectGitBranch(cwd));
-  const currentTaskId =
-    options.currentTaskId ??
-    (currentBranch ? parseTaskIdFromBranch(currentBranch) : null);
-  const normCurrentId = currentTaskId ? taskKey(currentTaskId) : null;
-
-  // 5. Compute DAG dependency readiness and checklist progress for each task
-  const items: TaskQueueItem[] = [];
-
-  for (const { discovered: disc, parsed, relativePath } of rawTasks) {
-    const dependsOn = parsed.depends_on ?? [];
-    const blockedBy: string[] = [];
-
-    for (const dep of dependsOn) {
-      const normDep = taskKey(dep);
-      const blockingCanonical =
-        activeTaskMap.get(normDep) ?? activeTaskMap.get(`task-${normDep}`);
-
-      if (blockingCanonical) {
-        if (!blockedBy.includes(blockingCanonical)) {
-          blockedBy.push(blockingCanonical);
-        }
-      }
+function resolveTaskBlockers(
+  dependsOn: string[],
+  activeTaskMap: Map<string, string>,
+): string[] {
+  const blockedBy: string[] = [];
+  for (const dep of dependsOn) {
+    const normDep = taskKey(dep);
+    const blockingCanonical =
+      activeTaskMap.get(normDep) ?? activeTaskMap.get(`task-${normDep}`);
+    if (blockingCanonical && !blockedBy.includes(blockingCanonical)) {
+      blockedBy.push(blockingCanonical);
     }
-
-    const readiness: TaskReadiness =
-      blockedBy.length === 0 ? "READY" : "BLOCKED";
-
-    const criteria = parsed.acceptanceCriteria ?? [];
-    const criteriaTotal = criteria.length;
-    const criteriaCompleted = criteria.filter((c) => c.completed).length;
-    const allCriteriaSatisfied =
-      criteriaTotal > 0 && criteriaCompleted === criteriaTotal;
-
-    const fullTaskId = `TASK-${disc.id}`;
-    const title = slugToTitle(disc.slug);
-    const summary = parsed.summary;
-    const isCurrent = Boolean(
-      normCurrentId && taskKey(disc.id) === normCurrentId,
-    );
-
-    items.push({
-      id: disc.id,
-      fullTaskId,
-      slug: disc.slug,
-      title,
-      summary,
-      filepath: disc.filepath,
-      relativePath,
-      depends_on: dependsOn,
-      links: parsed.links ?? [],
-      readiness,
-      blockedBy,
-      criteriaTotal,
-      criteriaCompleted,
-      criteriaProgress: `${criteriaCompleted}/${criteriaTotal}`,
-      acceptanceCriteria: criteria,
-      allCriteriaSatisfied,
-      context: parsed.context,
-      isCurrent,
-    });
   }
+  return blockedBy;
+}
 
-  // 6. Sort tasks deterministically
-  items.sort((a, b) => compareTaskIds(a.id, b.id));
-
-  // 7. Apply filtering
+function filterTaskQueueItems(
+  items: TaskQueueItem[],
+  options: TaskQueueQueryOptions,
+): TaskQueueItem[] {
   const isReadyOnly = options.readyOnly || options.filter === "ready";
   const isBlockedOnly = options.blockedOnly || options.filter === "blocked";
 
@@ -286,6 +327,227 @@ export async function queryTaskQueue(
     }
     return true;
   });
+}
+
+async function resolveNormalizedCurrentTaskId(
+  cwd: string,
+  options: TaskQueueQueryOptions,
+): Promise<string | null> {
+  const currentBranch = options.currentBranch ?? (await detectGitBranch(cwd));
+  const currentTaskId =
+    options.currentTaskId ??
+    (currentBranch ? parseTaskIdFromBranch(currentBranch) : null);
+  return currentTaskId ? taskKey(currentTaskId) : null;
+}
+
+function buildTaskQueueItems(
+  rawTasks: RawTaskRecord[],
+  activeTaskMap: Map<string, string>,
+  normCurrentId: string | null,
+): TaskQueueItem[] {
+  const items: TaskQueueItem[] = [];
+
+  for (const { discovered: disc, parsed, relativePath } of rawTasks) {
+    const dependsOn = parsed.depends_on ?? [];
+    const blockedBy = resolveTaskBlockers(dependsOn, activeTaskMap);
+    const readiness: TaskReadiness =
+      blockedBy.length === 0 ? "READY" : "BLOCKED";
+    const isCurrent = Boolean(
+      normCurrentId && taskKey(disc.id) === normCurrentId,
+    );
+
+    items.push(
+      toTaskQueueItem({
+        id: disc.id,
+        slug: disc.slug,
+        filepath: disc.filepath,
+        relativePath,
+        summary: parsed.summary,
+        context: parsed.context,
+        depends_on: dependsOn,
+        links: parsed.links ?? [],
+        acceptanceCriteria: parsed.acceptanceCriteria,
+        readiness,
+        blockedBy,
+        isCurrent,
+      }),
+    );
+  }
+
+  return items;
+}
+
+/**
+ * Queries the active task queue on disk, parses acceptance criteria progress,
+ * and computes DAG dependency readiness (READY vs BLOCKED) per ADR-6 and RULE-18.
+ *
+ * @param options Query and filtering options.
+ */
+export async function queryTaskQueue(
+  options: TaskQueueQueryOptions = {},
+): Promise<TaskQueueItem[]> {
+  const cwd = options.cwd ?? process.cwd();
+
+  // 1. Discover active task files on disk and read markdown content
+  const discovered = options.activeTasks ?? (await scanActiveTasks(cwd));
+  const rawTasks = await loadRawTaskFiles(discovered, cwd);
+
+  // 2. Build active task ID lookup map for DAG evaluation
+  const activeTaskMap = buildActiveTaskMap(rawTasks);
+
+  // 3. Resolve current task ID from active git branch topology or options
+  const normCurrentId = await resolveNormalizedCurrentTaskId(cwd, options);
+
+  // 4. Compute DAG dependency readiness and criteria progress for each task
+  const items = buildTaskQueueItems(rawTasks, activeTaskMap, normCurrentId);
+
+  // 5. Sort tasks deterministically
+  items.sort((a, b) => compareTaskIds(a.id, b.id));
+
+  // 6. Apply filtering
+  return filterTaskQueueItems(items, options);
+}
+
+/**
+ * Builds a lookup map from normalized task ID to branch metadata.
+ */
+export function buildTaskBranchMap(branches: string[]): TaskBranchInfoMap {
+  const branchMap = new Map<
+    string,
+    { branch: string; id: string; slug: string }
+  >();
+  for (const b of branches) {
+    const parsed = parseTaskBranch(b);
+    if (parsed && parsed.slug) {
+      branchMap.set(taskKey(parsed.taskId), {
+        branch: b,
+        id: parsed.taskId,
+        slug: parsed.slug,
+      });
+    }
+  }
+  return branchMap;
+}
+
+/**
+ * Collects tasks active on other Git branches into the historical entries map.
+ */
+export function collectBranchTasks(
+  branchArtifacts: DiscoveredArtifact[],
+  activeDiskIds: Set<string>,
+  branchMap: TaskBranchInfoMap,
+  cwd: string,
+  entriesById: Map<string, HistoricalTaskEntry>,
+): void {
+  for (const art of branchArtifacts) {
+    const normId = taskKey(art.id);
+    if (activeDiskIds.has(normId)) continue;
+    const branchInfo = branchMap.get(normId);
+    const relPath = isAbsolute(art.filepath)
+      ? relative(cwd, art.filepath)
+      : art.filepath;
+    entriesById.set(normId, {
+      id: art.id,
+      slug: art.slug || branchInfo?.slug || `task-${art.id.toLowerCase()}`,
+      relativePath: relPath,
+      isDeleted: false,
+      branch: branchInfo?.branch,
+    });
+  }
+}
+
+function resolveDeletedTaskRelativePath(
+  filepath: string | undefined,
+  cwd: string,
+  fallbackFilename: string,
+  existingRelPath?: string,
+): string {
+  if (filepath) {
+    return isAbsolute(filepath) ? relative(cwd, filepath) : filepath;
+  }
+  return existingRelPath || `.modie/tasks/${fallbackFilename}`;
+}
+
+/**
+ * Collects completed/deleted tasks from Git history into the historical entries map.
+ */
+export function collectDeletedTasks(
+  deletedArtifacts: DiscoveredArtifact[],
+  activeDiskIds: Set<string>,
+  branchMap: TaskBranchInfoMap,
+  cwd: string,
+  entriesById: Map<string, HistoricalTaskEntry>,
+): void {
+  for (const del of deletedArtifacts) {
+    const normId = taskKey(del.id);
+    if (activeDiskIds.has(normId)) continue;
+    const existing = entriesById.get(normId);
+    const branchInfo = branchMap.get(normId);
+    const slug =
+      del.slug ||
+      existing?.slug ||
+      branchInfo?.slug ||
+      `task-${del.id.toLowerCase()}`;
+    const filename = del.filename || `${slug}.TASK-${del.id}.md`;
+    const relPath = resolveDeletedTaskRelativePath(
+      del.filepath,
+      cwd,
+      filename,
+      existing?.relativePath,
+    );
+
+    entriesById.set(normId, {
+      id: del.id,
+      slug,
+      relativePath: relPath,
+      isDeleted: true,
+      branch: branchInfo?.branch ?? existing?.branch,
+    });
+  }
+}
+
+/**
+ * Collects any remaining task branches not yet represented into the historical entries map.
+ */
+export function collectBranchOnlyTasks(
+  branchMap: TaskBranchInfoMap,
+  activeDiskIds: Set<string>,
+  entriesById: Map<string, HistoricalTaskEntry>,
+): void {
+  for (const [normId, info] of branchMap.entries()) {
+    if (activeDiskIds.has(normId) || entriesById.has(normId)) continue;
+    const filename = `${info.slug}.TASK-${info.id}.md`;
+    entriesById.set(normId, {
+      id: info.id,
+      slug: info.slug,
+      relativePath: `.modie/tasks/${filename}`,
+      isDeleted: true,
+      branch: info.branch,
+    });
+  }
+}
+
+async function readHistoricalTaskMarkdown(
+  entry: HistoricalTaskEntry,
+  cwd: string,
+  vcs: IVcsAdapter,
+): Promise<string | null> {
+  if (!entry.isDeleted && entry.branch && entry.relativePath) {
+    const fromBranch = await vcs.readFileAtRef(
+      entry.branch,
+      entry.relativePath,
+      cwd,
+    );
+    if (fromBranch) {
+      return fromBranch;
+    }
+  }
+
+  if (entry.relativePath) {
+    return await vcs.readDeletedFile(entry.relativePath, cwd);
+  }
+
+  return null;
 }
 
 /**
@@ -324,160 +586,52 @@ export async function queryTaskHistory(
     ? parseTaskIdFromBranch(currentBranch)
     : null;
   const normCurrentId = currentTaskId ? taskKey(currentTaskId) : null;
+  const branchMap = buildTaskBranchMap(localBranches);
 
-  // Map normalized task ID -> branch metadata
-  const branchMap = new Map<
-    string,
-    { branch: string; id: string; slug: string }
-  >();
-  for (const b of localBranches) {
-    const parsed = parseTaskBranch(b);
-    if (parsed && parsed.slug) {
-      branchMap.set(taskKey(parsed.taskId), {
-        branch: b,
-        id: parsed.taskId,
-        slug: parsed.slug,
-      });
-    }
-  }
-
-  interface HistoricalEntry {
-    id: string;
-    slug: string;
-    relativePath: string;
-    isDeleted: boolean;
-    branch?: string;
-  }
-
-  const entriesById = new Map<string, HistoricalEntry>();
-
-  // 1. Add tasks active on other branches
-  for (const art of branchArtifacts) {
-    const normId = taskKey(art.id);
-    if (activeDiskIds.has(normId)) continue;
-    const branchInfo = branchMap.get(normId);
-    const relPath = isAbsolute(art.filepath)
-      ? relative(cwd, art.filepath)
-      : art.filepath;
-    entriesById.set(normId, {
-      id: art.id,
-      slug: art.slug || branchInfo?.slug || `task-${art.id.toLowerCase()}`,
-      relativePath: relPath,
-      isDeleted: false,
-      branch: branchInfo?.branch,
-    });
-  }
-
-  // 2. Add completed/deleted tasks from Git history
-  for (const del of deletedArtifacts) {
-    const normId = taskKey(del.id);
-    if (activeDiskIds.has(normId)) continue;
-    const existing = entriesById.get(normId);
-    const branchInfo = branchMap.get(normId);
-    const slug =
-      del.slug ||
-      existing?.slug ||
-      branchInfo?.slug ||
-      `task-${del.id.toLowerCase()}`;
-    const filename = del.filename || `${slug}.TASK-${del.id}.md`;
-    const relPath = del.filepath
-      ? isAbsolute(del.filepath)
-        ? relative(cwd, del.filepath)
-        : del.filepath
-      : existing?.relativePath || `.modie/tasks/${filename}`;
-
-    entriesById.set(normId, {
-      id: del.id,
-      slug,
-      relativePath: relPath,
-      isDeleted: true,
-      branch: branchInfo?.branch ?? existing?.branch,
-    });
-  }
-
-  // 3. Add any remaining task branches not yet represented
-  for (const [normId, info] of branchMap.entries()) {
-    if (activeDiskIds.has(normId) || entriesById.has(normId)) continue;
-    const filename = `${info.slug}.TASK-${info.id}.md`;
-    entriesById.set(normId, {
-      id: info.id,
-      slug: info.slug,
-      relativePath: `.modie/tasks/${filename}`,
-      isDeleted: true,
-      branch: info.branch,
-    });
-  }
+  const entriesById = new Map<string, HistoricalTaskEntry>();
+  collectBranchTasks(
+    branchArtifacts,
+    activeDiskIds,
+    branchMap,
+    cwd,
+    entriesById,
+  );
+  collectDeletedTasks(
+    deletedArtifacts,
+    activeDiskIds,
+    branchMap,
+    cwd,
+    entriesById,
+  );
+  collectBranchOnlyTasks(branchMap, activeDiskIds, entriesById);
 
   const items: TaskQueueItem[] = [];
 
   for (const [normId, entry] of entriesById.entries()) {
-    let rawMarkdown: string | null = null;
-
-    if (!entry.isDeleted && entry.branch && entry.relativePath) {
-      rawMarkdown = await vcs.run(
-        ["show", `${entry.branch}:${entry.relativePath}`],
-        cwd,
-      );
-    }
-
-    if (!rawMarkdown && entry.relativePath) {
-      const delCommit = await vcs.run(
-        [
-          "log",
-          "-n",
-          "1",
-          "--all",
-          "--diff-filter=D",
-          "--format=%H",
-          "--",
-          entry.relativePath,
-        ],
-        cwd,
-      );
-      if (delCommit && delCommit.trim()) {
-        rawMarkdown = await vcs.run(
-          ["show", `${delCommit.trim()}~1:${entry.relativePath}`],
-          cwd,
-        );
-      }
-    }
-
+    const rawMarkdown = await readHistoricalTaskMarkdown(entry, cwd, vcs);
     const parsed = rawMarkdown
       ? parseTaskMarkdown(rawMarkdown, entry.relativePath)
       : undefined;
 
-    const criteria = parsed?.acceptanceCriteria ?? [];
-    const criteriaTotal = criteria.length;
-    const criteriaCompleted = criteria.filter((c) => c.completed).length;
-    const allCriteriaSatisfied = entry.isDeleted
-      ? criteriaTotal === 0 || criteriaCompleted === criteriaTotal
-      : criteriaTotal > 0 && criteriaCompleted === criteriaTotal;
-
-    const fullTaskId = `TASK-${entry.id}`;
-    const title = slugToTitle(entry.slug);
-    const isCurrent = Boolean(normCurrentId && normId === normCurrentId);
-
-    items.push({
-      id: entry.id,
-      fullTaskId,
-      slug: entry.slug,
-      title,
-      filepath: resolve(cwd, entry.relativePath),
-      relativePath: entry.relativePath,
-      depends_on: parsed?.depends_on ?? [],
-      links: parsed?.links ?? [],
-      readiness: entry.isDeleted ? "COMPLETED" : "READY",
-      blockedBy: [],
-      criteriaTotal,
-      criteriaCompleted,
-      criteriaProgress: `${criteriaCompleted}/${criteriaTotal}`,
-      acceptanceCriteria: criteria,
-      allCriteriaSatisfied,
-      context: parsed?.context,
-      isCurrent,
-      isHistorical: true,
-      branch: entry.branch,
-    });
+    items.push(
+      toTaskQueueItem({
+        id: entry.id,
+        slug: entry.slug,
+        filepath: resolve(cwd, entry.relativePath),
+        relativePath: entry.relativePath,
+        summary: parsed?.summary,
+        context: parsed?.context,
+        depends_on: parsed?.depends_on,
+        links: parsed?.links,
+        acceptanceCriteria: parsed?.acceptanceCriteria,
+        readiness: entry.isDeleted ? "COMPLETED" : "READY",
+        blockedBy: [],
+        isCurrent: Boolean(normCurrentId && normId === normCurrentId),
+        isHistorical: true,
+        branch: entry.branch,
+        isDeleted: entry.isDeleted,
+      }),
+    );
   }
 
   items.sort((a, b) => compareTaskIds(a.id, b.id));

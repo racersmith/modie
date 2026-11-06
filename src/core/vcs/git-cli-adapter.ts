@@ -467,6 +467,37 @@ export class GitCliAdapter implements IVcsAdapter {
       return null;
     }
   }
+
+  async readFileAtRef(
+    ref: string,
+    path: string,
+    cwd: string = process.cwd(),
+  ): Promise<string | null> {
+    return this.run(["show", `${ref}:${path}`], cwd);
+  }
+
+  async readDeletedFile(
+    path: string,
+    cwd: string = process.cwd(),
+  ): Promise<string | null> {
+    const delCommit = await this.run(
+      [
+        "log",
+        "-n",
+        "1",
+        "--all",
+        "--diff-filter=D",
+        "--format=%H",
+        "--",
+        path,
+      ],
+      cwd,
+    );
+    if (!delCommit || !delCommit.trim()) {
+      return null;
+    }
+    return this.run(["show", `${delCommit.trim()}~1:${path}`], cwd);
+  }
 }
 
 /**

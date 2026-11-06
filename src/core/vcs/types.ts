@@ -109,6 +109,17 @@ export interface IVcsAdapter {
     options?: GitGrepOptions,
   ): Promise<GitGrepMatch[] | null>;
 
+  // Historical & Ref File Content
+  readFileAtRef(
+    ref: string,
+    path: string,
+    cwd?: string,
+  ): Promise<string | null>;
+  readDeletedFile(
+    path: string,
+    cwd?: string,
+  ): Promise<string | null>;
+
   // Configuration & Raw Execution (Escape Hatch)
   getConfig(key: string, cwd?: string): Promise<string | null>;
   run(args: string[], cwd?: string): Promise<string | null>;

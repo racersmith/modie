@@ -18,7 +18,184 @@ import type {
   WatermarkDetails,
   WatermarkResolutionOptions,
 } from "./types.ts";
+import type { IVcsAdapter } from "../vcs/types.ts";
 import { escapeRegex, parseTaskBranch } from "../common/index.ts";
+
+export interface SequenceAllocationOptions {
+  match: RegExp;
+  format: (n: number) => string;
+}
+
+export class SequenceAllocation {
+  constructor(
+    public readonly sequence: number,
+    public readonly id: string,
+  ) {}
+
+  toString(): string {
+    return this.id;
+  }
+}
+
+/**
+ * Reusable sequence calculator that extracts matching sequence integers from known IDs,
+ * finds the maximum existing sequence, computes max + 1, and advances past any ID collisions.
+ */
+export function nextSequence(
+  knownIds: Iterable<string>,
+  options: SequenceAllocationOptions,
+): SequenceAllocation {
+  const knownSet = knownIds instanceof Set ? knownIds : new Set(knownIds);
+  const existingSeqs: number[] = [];
+
+  for (const id of knownIds) {
+    const match = id.match(options.match);
+    if (match) {
+      const captured = match[1] !== undefined ? match[1] : match[0];
+      const parsed = parseInt(captured, 10);
+      if (!Number.isNaN(parsed)) {
+        existingSeqs.push(parsed);
+      }
+    }
+  }
+
+  const maxSeq = existingSeqs.length > 0 ? Math.max(...existingSeqs) : 0;
+  let candidateSeq = maxSeq + 1;
+
+  while (knownSet.has(options.format(candidateSeq))) {
+    candidateSeq++;
+  }
+
+  return new SequenceAllocation(candidateSeq, options.format(candidateSeq));
+}
+
+export interface AllocationStrategyResult {
+  strategy: AllocationStrategy;
+  nextId: string;
+  sequence: number;
+  parentId?: string;
+  prefix?: string;
+}
+
+export const trunkAllocationStrategy = {
+  allocate(knownIds: Iterable<string>): AllocationStrategyResult {
+    const alloc = nextSequence(knownIds, {
+      match: /^[0-9]+$/,
+      format: (n) => String(n),
+    });
+    return {
+      strategy: "trunk",
+      nextId: alloc.id,
+      sequence: alloc.sequence,
+    };
+  },
+};
+
+export const subtaskAllocationStrategy = {
+  allocate(
+    knownIds: Iterable<string>,
+    parentId: string,
+  ): AllocationStrategyResult {
+    const alloc = nextSequence(knownIds, {
+      match: new RegExp(`^${escapeRegex(parentId)}-([0-9]+)$`),
+      format: (n) => `${parentId}-${n}`,
+    });
+    return {
+      strategy: "subtask",
+      nextId: alloc.id,
+      sequence: alloc.sequence,
+      parentId,
+    };
+  },
+};
+
+export const prefixedAllocationStrategy = {
+  allocate(
+    knownIds: Iterable<string>,
+    prefix: string,
+  ): AllocationStrategyResult {
+    const alloc = nextSequence(knownIds, {
+      match: new RegExp(`^${escapeRegex(prefix)}([0-9]+)$`, "i"),
+      format: (n) => `${prefix}${n}`,
+    });
+    return {
+      strategy: "prefixed",
+      nextId: alloc.id,
+      sequence: alloc.sequence,
+      prefix,
+    };
+  },
+};
+
+export function allocateTaskStrategy(
+  knownIds: Iterable<string>,
+  options: {
+    forceTrunk?: boolean;
+    prefix?: string;
+    taskBranchInfo?: { parentId: string } | null;
+  },
+): AllocationStrategyResult {
+  if (!options.forceTrunk && options.prefix) {
+    return prefixedAllocationStrategy.allocate(knownIds, options.prefix);
+  }
+  if (!options.forceTrunk && options.taskBranchInfo) {
+    return subtaskAllocationStrategy.allocate(
+      knownIds,
+      options.taskBranchInfo.parentId,
+    );
+  }
+  return trunkAllocationStrategy.allocate(knownIds);
+}
+
+async function gatherKnownArtifactIds(
+  cwd: string,
+  subtype: IndexableSubtype,
+  options: WatermarkResolutionOptions,
+  vcs: IVcsAdapter,
+) {
+  const activeIds =
+    options.activeIds !== undefined
+      ? options.activeIds
+      : await scanActiveArtifactIds(cwd, subtype);
+
+  const otherBranchActiveIds =
+    options.otherBranchActiveIds !== undefined
+      ? options.otherBranchActiveIds
+      : options.activeIds !== undefined
+        ? []
+        : await inspectMultiBranchActiveArtifactIds(
+            cwd,
+            subtype,
+            { excludeCurrent: true },
+            vcs,
+          );
+
+  const deletedIds =
+    options.deletedIds !== undefined
+      ? options.deletedIds
+      : await inspectGitDeletedArtifactIds(cwd, subtype, vcs);
+
+  const allKnownIds = Array.from(
+    new Set([...activeIds, ...otherBranchActiveIds, ...deletedIds]),
+  );
+
+  return { activeIds, otherBranchActiveIds, deletedIds, allKnownIds };
+}
+
+async function resolveTaskPrefix(
+  options: WatermarkResolutionOptions,
+  cwd: string,
+  vcs: IVcsAdapter,
+): Promise<string | undefined> {
+  if (options.prefix) {
+    return options.prefix;
+  }
+  if (options.gitConfigPrefix !== undefined) {
+    return options.gitConfigPrefix || undefined;
+  }
+  const gitPrefix = await getGitConfigPrefix(cwd, vcs);
+  return gitPrefix || undefined;
+}
 
 /**
  * Resolves comprehensive watermark details and calculates the next unique, collision-free ID
@@ -36,61 +213,20 @@ export async function resolveWatermark(
     (options.subtype?.toUpperCase() as IndexableSubtype) ?? "TASK";
   registerArtifactSubtype(subtype);
 
-  // 1. Gather active IDs from disk (or use provided overrides for testing)
-  const activeIds =
-    options.activeIds !== undefined
-      ? options.activeIds
-      : await scanActiveArtifactIds(cwd, subtype);
+  const { activeIds, otherBranchActiveIds, deletedIds, allKnownIds } =
+    await gatherKnownArtifactIds(cwd, subtype, options, vcs);
 
-  // 2. Gather active IDs from other git branches (RULE-33)
-  const otherBranchActiveIds =
-    options.otherBranchActiveIds !== undefined
-      ? options.otherBranchActiveIds
-      : options.activeIds !== undefined
-        ? []
-        : await inspectMultiBranchActiveArtifactIds(
-            cwd,
-            subtype,
-            { excludeCurrent: true },
-            vcs,
-          );
-
-  // 3. Gather deleted IDs from Git history (or use provided overrides for testing)
-  const deletedIds =
-    options.deletedIds !== undefined
-      ? options.deletedIds
-      : await inspectGitDeletedArtifactIds(cwd, subtype, vcs);
-
-  // 4. Aggregate all known historical and active IDs (including active on other branches)
-  const allKnownIds = Array.from(
-    new Set([...activeIds, ...otherBranchActiveIds, ...deletedIds]),
-  );
-  const allKnownIdSet = new Set(allKnownIds);
-
-  // 4. Resolve branch context
-  const detectedBranch =
+  const branch =
     options.branch !== undefined
       ? options.branch
       : ((await detectGitBranch(cwd, vcs)) ?? "dev");
 
-  // 5. Allocation Strategy: Non-TASK subtypes always follow pure monotonic progression (RULE-1)
   if (subtype !== "TASK") {
-    const pureIntegerIds = allKnownIds
-      .map((id) => (/^[0-9]+$/.test(id) ? parseInt(id, 10) : null))
-      .filter((n): n is number => n !== null);
-
-    const maxInt = pureIntegerIds.length > 0 ? Math.max(...pureIntegerIds) : 0;
-    let candidateInt = maxInt + 1;
-
-    while (allKnownIdSet.has(String(candidateInt))) {
-      candidateInt++;
-    }
-
-    const nextId = String(candidateInt);
-    const tag = `${subtype}-${nextId}`;
+    const alloc = trunkAllocationStrategy.allocate(allKnownIds);
+    const tag = `${subtype}-${alloc.nextId}`;
 
     return {
-      nextId,
+      nextId: alloc.nextId,
       tag,
       fullTaskId: tag,
       subtype,
@@ -98,112 +234,34 @@ export async function resolveWatermark(
       activeIds,
       otherBranchActiveIds,
       deletedIds,
-      branch: detectedBranch,
-      sequence: candidateInt,
+      branch,
+      sequence: alloc.sequence,
     };
   }
 
-  // 6. TASK subtype branch-aware allocation strategy selection (ADR-9)
-  let resolvedPrefix: string | undefined = options.prefix;
-  if (!resolvedPrefix && options.gitConfigPrefix !== undefined) {
-    resolvedPrefix = options.gitConfigPrefix;
-  }
-  if (!resolvedPrefix && !options.prefix) {
-    const gitPrefix = await getGitConfigPrefix(cwd, vcs);
-    if (gitPrefix) {
-      resolvedPrefix = gitPrefix;
-    }
-  }
+  const prefix = await resolveTaskPrefix(options, cwd, vcs);
+  const taskBranchInfo = !options.forceTrunk ? parseTaskBranch(branch) : null;
+  const alloc = allocateTaskStrategy(allKnownIds, {
+    forceTrunk: options.forceTrunk,
+    prefix,
+    taskBranchInfo,
+  });
 
-  let strategy: AllocationStrategy = "trunk";
-  let nextId: string;
-  let parentId: string | undefined;
-  let sequence: number;
-
-  const taskBranchInfo = !options.forceTrunk
-    ? parseTaskBranch(detectedBranch)
-    : null;
-
-  if (!options.forceTrunk && resolvedPrefix) {
-    // Strategy 3: Feature Branch & Agent/Author Namespacing (TASK-<prefix><sequence>)
-    strategy = "prefixed";
-    const prefixRegex = new RegExp(
-      `^${escapeRegex(resolvedPrefix)}([0-9]+)$`,
-      "i",
-    );
-
-    const existingSeqs = allKnownIds
-      .map((id) => {
-        const match = id.match(prefixRegex);
-        return match && match[1] ? parseInt(match[1], 10) : null;
-      })
-      .filter((n): n is number => n !== null);
-
-    const maxSeq = existingSeqs.length > 0 ? Math.max(...existingSeqs) : 0;
-    let candidateSeq = maxSeq + 1;
-
-    while (allKnownIdSet.has(`${resolvedPrefix}${candidateSeq}`)) {
-      candidateSeq++;
-    }
-
-    sequence = candidateSeq;
-    nextId = `${resolvedPrefix}${candidateSeq}`;
-  } else if (taskBranchInfo) {
-    // Strategy 2: Task Branch Sub-Task Namespacing (TASK-<parent_id>-<sequence>)
-    strategy = "subtask";
-    parentId = taskBranchInfo.parentId;
-
-    const subtaskRegex = new RegExp(`^${escapeRegex(parentId)}-([0-9]+)$`);
-    const existingSeqs = allKnownIds
-      .map((id) => {
-        const match = id.match(subtaskRegex);
-        return match && match[1] ? parseInt(match[1], 10) : null;
-      })
-      .filter((n): n is number => n !== null);
-
-    const maxSeq = existingSeqs.length > 0 ? Math.max(...existingSeqs) : 0;
-    let candidateSeq = maxSeq + 1;
-
-    while (allKnownIdSet.has(`${parentId}-${candidateSeq}`)) {
-      candidateSeq++;
-    }
-
-    sequence = candidateSeq;
-    nextId = `${parentId}-${candidateSeq}`;
-  } else {
-    // Strategy 1: Trunk Monotonic Progression (TASK-1, TASK-2, TASK-3...)
-    strategy = "trunk";
-
-    const pureIntegerIds = allKnownIds
-      .map((id) => (/^[0-9]+$/.test(id) ? parseInt(id, 10) : null))
-      .filter((n): n is number => n !== null);
-
-    const maxInt = pureIntegerIds.length > 0 ? Math.max(...pureIntegerIds) : 0;
-    let candidateInt = maxInt + 1;
-
-    while (allKnownIdSet.has(String(candidateInt))) {
-      candidateInt++;
-    }
-
-    sequence = candidateInt;
-    nextId = String(candidateInt);
-  }
-
-  const tag = `TASK-${nextId}`;
+  const tag = `TASK-${alloc.nextId}`;
 
   return {
-    nextId,
+    nextId: alloc.nextId,
     tag,
     fullTaskId: tag,
     subtype: "TASK",
-    strategy,
+    strategy: alloc.strategy,
     activeIds,
     otherBranchActiveIds,
     deletedIds,
-    branch: detectedBranch,
-    parentId,
-    prefix: resolvedPrefix,
-    sequence,
+    branch,
+    parentId: alloc.parentId,
+    prefix: alloc.prefix,
+    sequence: alloc.sequence,
   };
 }
 
