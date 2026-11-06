@@ -40,14 +40,14 @@ export function registerAllResources(
   const cwd = options.cwd ?? process.cwd();
   const instructions = options.instructions;
 
-  // 1. Dynamic Active Task Mission Brief (modie://task)
+  // 1. Dynamic Active Task Brief (modie://task)
   server.registerResource(
     "task",
     "modie://task",
     {
-      title: "Active Task Mission Brief",
+      title: "Current Task Brief",
       description:
-        "Ambient zero-roundtrip hydration of the full active branch Mission Brief in Markdown",
+        "Document for the current task that synesises the task document as well as relevant supporting documents.",
       mimeType: "text/markdown",
     },
     async (uri) => {
@@ -83,9 +83,9 @@ export function registerAllResources(
     "ready-tasks",
     "modie://tasks/ready",
     {
-      title: "Active Ready Tasks",
+      title: "Ready Tasks",
       description:
-        "Active workspace tasks unblocked by dependencies and ready for execution in condensed Markdown",
+        "List of available tasks that are unblocked and ready to be started.",
       mimeType: "text/markdown",
     },
     async (uri) => {
@@ -109,9 +109,9 @@ export function registerAllResources(
     "all-tasks",
     "modie://tasks/all",
     {
-      title: "Workspace Tasks Backlog",
+      title: "All Tasks",
       description:
-        "Condensed Markdown backlog of all workspace tasks categorized by readiness with dependency blockers and downstream leverage",
+        "Condensed Markdown backlog of all tasks categorized by readiness with dependency blockers and downstream leverage",
       mimeType: "text/markdown",
     },
     async (uri) => {
