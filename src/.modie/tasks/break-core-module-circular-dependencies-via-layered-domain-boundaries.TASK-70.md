@@ -36,13 +36,13 @@ Per the maintainability review (§2.1, §3.2, §3.3, §5), `src/core` currently 
 
 # Acceptance Criteria
 
-- [ ] Establish foundational layer (`src/core/common`, `src/core/markdown`) for tag grammar, path normalization, and frontmatter handling without upward imports.
-- [ ] Invert `ArtifactDefinition` registration: `pipeline` defines `DefinitionRegistry`; concrete definitions register via a composition root `src/core/registry.ts`.
-- [ ] Separate `IVcsAdapter` into pure VCS operations and move artifact-specific git tree inspection into `src/core/resolver/artifact-history.ts`.
-- [ ] Consolidate `adr/archive.ts` and `rule/archive.ts` into a shared subtype-agnostic core archival service.
-- [ ] Introduce branded `ArtifactTag` and `ArtifactSubtype` types to eliminate redundant `.toUpperCase()` and defensive string checks.
-- [ ] Unify `ArtifactValidationContext` and `ArtifactAllocationContext` into `ArtifactPlanContext` in `src/core/pipeline/types.ts`.
-- [ ] Streamline `src/core/index.ts` to export canonical flat named exports backed by module-level `index.ts` entry points, retiring redundant namespace objects.
-- [ ] Break all 8 mutual 2-cycles across `src/core`, verified via `bun run check:complexity cycles`.
-- [ ] Verify entire test suite passes cleanly with zero regressions.
-- [ ] User Review
+- [x] Establish foundational layer (`src/core/common`, `src/core/markdown`) for tag grammar, path normalization, and frontmatter handling without upward imports.
+- [x] Invert `ArtifactDefinition` registration: `pipeline` defines `DefinitionRegistry`; concrete definitions register via a composition root `src/core/registry.ts`.
+- [x] Separate `IVcsAdapter` into pure VCS operations and move artifact-specific git tree inspection into `src/core/resolver/artifact-history.ts`.
+- [x] Consolidate `adr/archive.ts` and `rule/archive.ts` into a shared subtype-agnostic core archival service.
+- [x] Introduce branded `ArtifactTag` and `ArtifactSubtype` types to eliminate redundant `.toUpperCase()` and defensive string checks.
+- [x] Unify `ArtifactValidationContext` and `ArtifactAllocationContext` into `ArtifactPlanContext` in `src/core/pipeline/types.ts`.
+- [x] Streamline `src/core/index.ts` to export canonical flat named exports backed by module-level `index.ts` entry points, retiring redundant namespace objects.
+- [x] Break all 8 mutual 2-cycles across `src/core`, verified via `bun run check:complexity cycles`.
+- [x] Verify entire test suite passes cleanly with zero regressions.
+- [x] User Review

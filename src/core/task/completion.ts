@@ -9,17 +9,16 @@ import {
   parseArtifactFilename,
   parseTaskIdFromBranch,
 } from "../common/index.ts";
-import { resolveArtifactByTag } from "../query/artifact-query.ts";
 import {
   scanActiveArtifacts,
   scanActiveTasks,
 } from "../resolver/active-scanner.ts";
 import {
   detectGitBranch,
-  inspectGitDeletedArtifactIds,
   runGit,
   runGitCommand,
 } from "../resolver/git-inspector.ts";
+import { inspectGitDeletedArtifactIds } from "../resolver/artifact-history.ts";
 import { normalizeTaskId } from "../common/index.ts";
 
 import type { DiscoveredTask } from "../resolver/types.ts";
@@ -369,12 +368,10 @@ export async function assertPlannedGovernanceSatisfied(
       // Verify rule artifact exists on disk
       let exists = false;
       if (rule.tag) {
-        try {
-          await resolveArtifactByTag(rule.tag, { cwd });
-          exists = true;
-        } catch {
-          exists = false;
-        }
+        const normTag = rule.tag.trim().toUpperCase();
+        exists = activeRules.some(
+          (r) => r.tag.toUpperCase() === normTag || (r.id && normTag.endsWith(`-${r.id}`)),
+        );
       } else if (rule.slug) {
         exists = activeRules.some(
           (r) =>
@@ -406,12 +403,10 @@ export async function assertPlannedGovernanceSatisfied(
       // Verify ADR artifact exists on disk
       let exists = false;
       if (adr.tag) {
-        try {
-          await resolveArtifactByTag(adr.tag, { cwd });
-          exists = true;
-        } catch {
-          exists = false;
-        }
+        const normTag = adr.tag.trim().toUpperCase();
+        exists = activeAdrs.some(
+          (a) => a.tag.toUpperCase() === normTag || (a.id && normTag.endsWith(`-${a.id}`)),
+        );
       } else if (adr.slug) {
         exists = activeAdrs.some(
           (a) =>

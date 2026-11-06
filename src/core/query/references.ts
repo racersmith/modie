@@ -10,7 +10,7 @@ import { getArtifactDetails } from "./artifact-query.ts";
 import {
   parseFrontmatterFields,
   splitMarkdownFrontmatter,
-} from "./markdown-parser.ts";
+} from "../markdown/index.ts";
 import {
   type CitationMatch,
   type CitationSource,

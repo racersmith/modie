@@ -4,66 +4,35 @@
  */
 
 import { isValidSlug } from "./slug.ts";
+import {
+  asArtifactSubtype,
+  formatArtifactTag,
+  isRegisteredArtifactSubtype,
+  isValidArtifactId,
+  parseCanonicalTag,
+  registerArtifactSubtype,
+  resetRegisteredArtifactSubtypes,
+} from "./tag.ts";
 import type {
+  ArtifactSubtype,
+  ArtifactTag,
   FormatArtifactFilenameOptions,
   IndexableSubtype,
   ParsedArtifactFilename,
 } from "./types.ts";
 
-/**
- * Valid ID pattern: unpadded integer (1, 42) or branch/author-namespaced (2-1, J101, A102).
- */
-export const ARTIFACT_ID_REGEX = /^[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*$/;
-
-export const DEFAULT_INDEXABLE_SUBTYPES = new Set<string>([
-  "RULE",
-  "ADR",
-  "TASK",
-]);
-const registeredSubtypes = new Set<string>(DEFAULT_INDEXABLE_SUBTYPES);
-
-/**
- * Registers an artifact subtype (e.g. "SPEC", "GIST") so that filename parsing
- * and active scanners recognize it as a valid indexable artifact.
- */
-export function registerArtifactSubtype(subtype: string): void {
-  const upper = subtype.trim().toUpperCase();
-  if (/^[A-Z0-9]+$/.test(upper)) {
-    registeredSubtypes.add(upper);
-  }
-}
-
-/**
- * Checks whether an artifact subtype is currently recognized as an indexable subtype.
- */
-export function isRegisteredArtifactSubtype(subtype: string): boolean {
-  return registeredSubtypes.has(subtype.trim().toUpperCase());
-}
-
-/**
- * Resets registered subtypes back to the default core set (RULE, ADR, TASK).
- */
-export function resetRegisteredArtifactSubtypes(): void {
-  registeredSubtypes.clear();
-  for (const s of DEFAULT_INDEXABLE_SUBTYPES) {
-    registeredSubtypes.add(s);
-  }
-}
+export {
+  isValidArtifactId,
+  registerArtifactSubtype,
+  resetRegisteredArtifactSubtypes,
+};
 
 /**
  * Regex matching any indexable artifact filename:
  * `[slug].[SUBTYPE]-[ID](.ARCHIVED)?.md`
  */
 export const ARTIFACT_FILENAME_REGEX =
-  /^([a-z0-9]+(?:-[a-z0-9]+)*)\.([A-Za-z0-9]+)-([A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*)(?:\.(ARCHIVED))?\.md$/i;
-
-/**
- * Validates whether an ID token conforms to Modie's unpadded / branch-namespaced grammar.
- */
-export function isValidArtifactId(id: string | number): boolean {
-  const strId = String(id).trim();
-  return ARTIFACT_ID_REGEX.test(strId);
-}
+  /^([a-z0-9]+(?:-[a-z0-9]+)*)\.([A-Za-z0-9]+-[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*)(?:\.(ARCHIVED))?\.md$/i;
 
 /**
  * Formats a canonical artifact filename: `[slug].[SUBTYPE]-[ID](.ARCHIVED)?.md`
@@ -82,8 +51,8 @@ export function formatArtifactFilename(
     );
   }
 
-  const upperSubtype = subtype.toUpperCase();
-  if (!/^[A-Z0-9]+$/.test(upperSubtype)) {
+  const upperSubtype = asArtifactSubtype(subtype);
+  if (!isRegisteredArtifactSubtype(upperSubtype) && !/^[A-Z0-9]+$/.test(upperSubtype)) {
     throw new Error(
       `Invalid artifact subtype "${subtype}". Expected uppercase alphanumeric token.`,
     );
@@ -96,8 +65,9 @@ export function formatArtifactFilename(
     );
   }
 
+  const tag = formatArtifactTag(upperSubtype, strId);
   const archiveSuffix = isArchived ? ".ARCHIVED" : "";
-  return `${slug}.${upperSubtype}-${strId}${archiveSuffix}.md`;
+  return `${slug}.${tag}${archiveSuffix}.md`;
 }
 
 /**
@@ -115,27 +85,28 @@ export function parseArtifactFilename(
     : filename;
 
   const match = normalizedFilename.match(
-    /^([a-z0-9]+(?:-[a-z0-9]+)*)\.([A-Za-z0-9]+)-([A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*)\.md$/i,
+    /^([a-z0-9]+(?:-[a-z0-9]+)*)\.([A-Za-z0-9]+-[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*)\.md$/i,
   );
 
-  if (!match || !match[1] || !match[2] || !match[3]) {
+  if (!match || !match[1] || !match[2]) {
     return null;
   }
 
   const slug = match[1];
-  const subtype = match[2].toUpperCase();
-  if (!registeredSubtypes.has(subtype)) {
+  if (!isValidSlug(slug)) {
     return null;
   }
 
-  const id = match[3];
-  const tag = `${subtype}-${id}`;
+  const tagInfo = parseCanonicalTag(match[2]);
+  if (!tagInfo) {
+    return null;
+  }
 
   return {
     slug,
-    subtype: subtype as IndexableSubtype,
-    id,
-    tag,
+    subtype: tagInfo.subtype,
+    id: tagInfo.id,
+    tag: tagInfo.tag,
     isArchived,
     filename,
   };
@@ -154,5 +125,3 @@ export function isArtifactFilename(
   if (subtype && parsed.subtype !== subtype.toUpperCase()) return false;
   return true;
 }
-
-

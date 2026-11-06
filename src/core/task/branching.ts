@@ -8,11 +8,13 @@ import { basename, isAbsolute, resolve } from "node:path";
 import { loadModieConfig } from "../config/loader.ts";
 import {
   detectGitBranch,
-  inspectGitDeletedArtifacts,
-  inspectGitTreeArtifacts,
   runGit,
   runGitCommand,
 } from "../resolver/git-inspector.ts";
+import {
+  inspectGitDeletedArtifacts,
+  inspectGitTreeArtifacts,
+} from "../resolver/artifact-history.ts";
 import type { DiscoveredArtifact, IndexableSubtype } from "../common/types.ts";
 import {
   formatTaskBranch,
@@ -45,13 +47,6 @@ import type {
   TaskBranchTopology,
 } from "./types.ts";
 
-export type { ArtifactCollision };
-export {
-  ActiveSubtaskPendingError,
-  ArtifactCollisionError,
-  TaskIncompleteError,
-};
-
 /**
  * Detects indexable artifact collisions between a source branch and a target branch prior to merge.
  * Complies with RULE-1, ADR-6, ADR-9, and RULE-33.
@@ -63,8 +58,8 @@ export async function detectArtifactCollisions(
   vcs: IVcsAdapter = defaultVcsAdapter,
 ): Promise<ArtifactCollision[]> {
   const [sourceArtifacts, targetArtifacts] = await Promise.all([
-    vcs.inspectTreeArtifacts(sourceBranch, cwd),
-    vcs.inspectTreeArtifacts(targetBranch, cwd),
+    inspectGitTreeArtifacts(sourceBranch, cwd, undefined, vcs),
+    inspectGitTreeArtifacts(targetBranch, cwd, undefined, vcs),
   ]);
 
   if (sourceArtifacts.length === 0 || targetArtifacts.length === 0) {
@@ -75,7 +70,7 @@ export async function detectArtifactCollisions(
   const mergeBase = await vcs.mergeBase(targetBranch, sourceBranch, cwd);
 
   const baseArtifacts = mergeBase
-    ? await vcs.inspectTreeArtifacts(mergeBase, cwd)
+    ? await inspectGitTreeArtifacts(mergeBase, cwd, undefined, vcs)
     : [];
 
   const baseMap = new Map<string, DiscoveredArtifact>();
@@ -187,7 +182,7 @@ async function resolveTaskMetaForBranching(
   const normalized = normalizeTaskId(taskIdentifier);
 
   // 2. Inspect deleted artifacts in Git history (ground truth for completed tasks)
-  const deleted = await vcs.inspectDeletedArtifacts(cwd, "TASK");
+  const deleted = await inspectGitDeletedArtifacts(cwd, "TASK", vcs);
   const matchDeleted = deleted.find(
     (d) => normalizeTaskId(d.id) === normalized,
   );
@@ -261,7 +256,7 @@ async function findParentTaskBranch(
   }
 
   // 3. Check deleted artifacts in Git
-  const deleted = await vcs.inspectDeletedArtifacts(cwd, "TASK");
+  const deleted = await inspectGitDeletedArtifacts(cwd, "TASK", vcs);
   const matchDeleted = deleted.find(
     (d) => taskKey(d.id) === normParentKey,
   );
@@ -515,7 +510,7 @@ export async function assertTaskCompleted(
   }
 
   // File not found on disk: verify that it was completed/deleted in Git
-  const deleted = await vcs.inspectDeletedArtifacts(cwd, "TASK");
+  const deleted = await inspectGitDeletedArtifacts(cwd, "TASK", vcs);
   const isDeletedInGit = deleted.some(
     (d) => normalizeTaskId(d.id) === normalizeTaskId(taskId),
   );

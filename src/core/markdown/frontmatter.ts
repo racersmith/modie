@@ -1,10 +1,9 @@
 /**
- * Markdown frontmatter and level-1 section parsing helpers for governance artifacts.
+ * Markdown frontmatter parsing and line-mapping helpers for governance artifacts.
  * Complies with ADR-4, RULE-1, RULE-25, and RULE-26.
  */
 
 import { YAML } from "bun";
-import { slugToTitle } from "../common/index.ts";
 
 export interface ParsedFrontmatterFields {
   links: string[];
@@ -19,13 +18,6 @@ export interface ParsedFrontmatterLinkLines {
   linkLines: Map<number, string>;
   /** 1-based end line of the frontmatter block */
   frontmatterEndLine: number;
-}
-
-export interface ParsedMarkdownDocument {
-  frontmatter: string;
-  body: string;
-  frontmatterFields: ParsedFrontmatterFields;
-  sections: Record<string, string>;
 }
 
 /**
@@ -160,73 +152,3 @@ export function parseFrontmatterLineMap(
   return { linkLines, frontmatterEndLine };
 }
 
-export { extractAdrSummary } from "../adr/summary.ts";
-
-/**
- * Parses level-1 Markdown sections starting with `# <Heading>`, ignoring `#` lines
- * that appear inside fenced code blocks (` ``` ` or ` ~~~ `).
- */
-export function parseMarkdownSections(body: string): Record<string, string> {
-  const sections: Record<string, string> = {};
-  const lines = body.split(/\r?\n/);
-
-  let currentHeading: string | null = null;
-  let currentLines: string[] = [];
-  let activeFence: string | null = null;
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    // Track fenced code blocks (e.g. ```, ````, ~~~)
-    const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
-    if (fenceMatch && fenceMatch[1]) {
-      const fenceToken = fenceMatch[1];
-      if (!activeFence) {
-        activeFence = fenceToken;
-      } else if (
-        trimmed.startsWith(activeFence[0]!.repeat(activeFence.length)) &&
-        new RegExp(`^${activeFence[0]}+\\s*$`).test(trimmed)
-      ) {
-        activeFence = null;
-      }
-    }
-
-    if (!activeFence) {
-      const headingMatch = line.match(/^#\s+(.+)$/);
-      if (headingMatch && headingMatch[1]) {
-        if (currentHeading !== null) {
-          sections[currentHeading] = currentLines.join("\n").trim();
-        }
-        currentHeading = headingMatch[1].trim();
-        currentLines = [];
-        continue;
-      }
-    }
-
-    if (currentHeading !== null) {
-      currentLines.push(line);
-    }
-  }
-
-  if (currentHeading !== null) {
-    sections[currentHeading] = currentLines.join("\n").trim();
-  }
-
-  return sections;
-}
-
-/**
- * Parses a markdown document into its frontmatter string, body string,
- * parsed frontmatter fields, and level-1 sections map in a single unified pass.
- */
-export function parseMarkdownDocument(content: string): ParsedMarkdownDocument {
-  const { frontmatter, body } = splitMarkdownFrontmatter(content);
-  const frontmatterFields = parseFrontmatterFields(frontmatter);
-  const sections = parseMarkdownSections(body);
-  return {
-    frontmatter,
-    body,
-    frontmatterFields,
-    sections,
-  };
-}

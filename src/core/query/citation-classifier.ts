@@ -11,7 +11,7 @@ import {
   parseFrontmatterFields,
   parseFrontmatterLineMap,
   splitMarkdownFrontmatter,
-} from "./markdown-parser.ts";
+} from "../markdown/index.ts";
 import { createTagRegex, type CitationMatch } from "./citation-source.ts";
 import type { FoundInItem } from "./types.ts";
 

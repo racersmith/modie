@@ -8,9 +8,11 @@ import { scanActiveArtifactIds } from "./active-scanner.ts";
 import {
   detectGitBranch,
   getGitConfigPrefix,
+} from "./git-inspector.ts";
+import {
   inspectGitDeletedArtifactIds,
   inspectMultiBranchActiveArtifactIds,
-} from "./git-inspector.ts";
+} from "./artifact-history.ts";
 import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
 import type {
   AllocationStrategy,

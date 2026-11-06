@@ -4,10 +4,6 @@
  */
 
 import type {
-  DiscoveredArtifact,
-  IndexableSubtype,
-} from "../resolver/types.ts";
-import type {
   GitGrepMatch,
   GitGrepOptions,
   IVcsAdapter,
@@ -19,8 +15,20 @@ export interface MockVcsOptions {
   insideWorkTree?: boolean;
   currentBranch?: string | null;
   branches?: string[];
-  treeArtifacts?: Record<string, DiscoveredArtifact[]>;
-  deletedArtifacts?: DiscoveredArtifact[];
+  treeFiles?: Record<string, string[]> | Map<string, string[]>;
+  deletedFilesList?: string[];
+  activeTrackedFiles?: string[];
+  logGrepResults?: Record<string, string[]> | Map<string, string[]>;
+  // Backwards compatibility for existing test setup objects:
+  treeArtifacts?: Record<
+    string,
+    Array<{ filepath?: string; filename?: string; [k: string]: any }>
+  >;
+  deletedArtifacts?: Array<{
+    filepath?: string;
+    filename?: string;
+    [k: string]: any;
+  }>;
   config?: Record<string, string>;
   workingTreeChanged?: boolean;
   stagedFiles?: string[];
@@ -35,8 +43,19 @@ export class MockVcsAdapter implements IVcsAdapter {
   public insideWorkTree: boolean;
   public currentBranch: string | null;
   public branches: Set<string>;
-  public treeArtifacts: Map<string, DiscoveredArtifact[]>;
-  public deletedArtifacts: DiscoveredArtifact[];
+  public treeFiles: Map<string, string[]>;
+  public treeArtifacts: Map<
+    string,
+    Array<{ filepath?: string; filename?: string; [k: string]: any }>
+  >;
+  public deletedFilesList: string[];
+  public deletedArtifacts: Array<{
+    filepath?: string;
+    filename?: string;
+    [k: string]: any;
+  }>;
+  public activeTrackedFiles: string[];
+  public logGrepResults: Map<string, string[]>;
   public config: Map<string, string>;
   public workingTreeChanged: boolean;
   public stagedFiles: string[];
@@ -72,13 +91,45 @@ export class MockVcsAdapter implements IVcsAdapter {
     this.insideWorkTree = options.insideWorkTree ?? true;
     this.currentBranch = options.currentBranch ?? "main";
     this.branches = new Set(options.branches ?? ["main"]);
+    this.treeFiles = new Map();
+    if (options.treeFiles) {
+      const entries =
+        options.treeFiles instanceof Map
+          ? options.treeFiles.entries()
+          : Object.entries(options.treeFiles);
+      for (const [branch, files] of entries) {
+        this.treeFiles.set(branch, [...files]);
+      }
+    }
     this.treeArtifacts = new Map();
     if (options.treeArtifacts) {
       for (const [branch, artifacts] of Object.entries(options.treeArtifacts)) {
         this.treeArtifacts.set(branch, [...artifacts]);
+        const existing = this.treeFiles.get(branch) ?? [];
+        const paths = artifacts.map((a) => a.filepath ?? a.filename ?? "");
+        this.treeFiles.set(branch, [...existing, ...paths]);
       }
     }
     this.deletedArtifacts = [...(options.deletedArtifacts ?? [])];
+    this.deletedFilesList = [...(options.deletedFilesList ?? [])];
+    if (options.deletedArtifacts) {
+      const paths = options.deletedArtifacts.map(
+        (a) => a.filepath ?? a.filename ?? "",
+      );
+      this.deletedFilesList.push(...paths);
+    }
+    this.activeTrackedFiles = [...(options.activeTrackedFiles ?? [])];
+    this.logGrepResults = new Map();
+    if (options.logGrepResults) {
+      const entries =
+        options.logGrepResults instanceof Map
+          ? options.logGrepResults.entries()
+          : Object.entries(options.logGrepResults);
+      for (const [k, v] of entries) {
+        this.logGrepResults.set(k, [...v]);
+      }
+    }
+
     this.config = new Map(Object.entries(options.config ?? {}));
     this.workingTreeChanged = options.workingTreeChanged ?? false;
     this.stagedFiles = [...(options.stagedFiles ?? [])];
@@ -131,11 +182,9 @@ export class MockVcsAdapter implements IVcsAdapter {
   }
 
   async checkout(branchName: string, _cwd?: string): Promise<void> {
-    if (!this.branches.has(branchName)) {
-      throw new Error(`Git checkout failed: branch "${branchName}" not found`);
-    }
-    this.currentBranch = branchName;
     this.history.checkouts.push(branchName);
+    this.currentBranch = branchName;
+    this.branches.add(branchName);
   }
 
   async checkoutNewBranch(
@@ -143,12 +192,9 @@ export class MockVcsAdapter implements IVcsAdapter {
     baseBranch: string,
     _cwd?: string,
   ): Promise<void> {
+    this.history.checkoutNewBranches.push({ branch: branchName, base: baseBranch });
     this.branches.add(branchName);
     this.currentBranch = branchName;
-    this.history.checkoutNewBranches.push({
-      branch: branchName,
-      base: baseBranch,
-    });
   }
 
   async deleteBranch(
@@ -156,8 +202,8 @@ export class MockVcsAdapter implements IVcsAdapter {
     _cwd?: string,
     force?: boolean,
   ): Promise<void> {
-    this.branches.delete(branchName);
     this.history.deletedBranches.push({ branch: branchName, force });
+    this.branches.delete(branchName);
   }
 
   async getStatusPorcelain(_cwd?: string): Promise<string> {
@@ -175,9 +221,6 @@ export class MockVcsAdapter implements IVcsAdapter {
   async stageAll(_cwd?: string): Promise<void> {
     this.history.stagedAllCount++;
     this.workingTreeChanged = false;
-    if (!this.stagedFiles.includes("staged-all")) {
-      this.stagedFiles.push("staged-all");
-    }
   }
 
   async stageFiles(
@@ -185,10 +228,7 @@ export class MockVcsAdapter implements IVcsAdapter {
     _cwd?: string,
     options?: StageFilesOptions,
   ): Promise<void> {
-    this.history.stagedFileCalls.push({
-      files: [...files],
-      updateOnly: options?.updateOnly,
-    });
+    this.history.stagedFileCalls.push({ files: [...files], updateOnly: options?.updateOnly });
     for (const f of files) {
       if (!this.stagedFiles.includes(f)) {
         this.stagedFiles.push(f);
@@ -202,17 +242,14 @@ export class MockVcsAdapter implements IVcsAdapter {
     files?: string[],
   ): Promise<string> {
     const hash = `hash${this.commitCounter++}`;
-    this.history.commits.push({
-      message,
-      files: files ? [...files] : undefined,
-      hash,
-    });
+    this.history.commits.push({ message, files, hash });
     this.shortHash = hash;
     this.stagedFiles = [];
+    this.workingTreeChanged = false;
     return hash;
   }
 
-  async getShortHash(_ref: string = "HEAD", _cwd?: string): Promise<string> {
+  async getShortHash(_ref?: string, _cwd?: string): Promise<string> {
     return this.shortHash;
   }
 
@@ -242,60 +279,30 @@ export class MockVcsAdapter implements IVcsAdapter {
     return hash;
   }
 
-  async inspectTreeArtifacts(
-    ref: string,
-    _cwd?: string,
-    subtype?: IndexableSubtype,
-  ): Promise<DiscoveredArtifact[]> {
-    const artifacts = this.treeArtifacts.get(ref) ?? [];
-    if (!subtype) {
-      return [...artifacts];
-    }
-    const targetSubtype = subtype.toUpperCase();
-    return artifacts.filter((a) => a.subtype === targetSubtype);
+  async listTreeFiles(ref: string, _cwd?: string): Promise<string[]> {
+    const fromFiles = this.treeFiles.get(ref) ?? [];
+    const fromArts = (this.treeArtifacts.get(ref) ?? []).map(
+      (a) => a.filepath ?? a.filename ?? "",
+    );
+    return Array.from(new Set([...fromFiles, ...fromArts])).filter(Boolean);
   }
 
-  async inspectDeletedArtifacts(
-    _cwd?: string,
-    subtype?: IndexableSubtype,
-  ): Promise<DiscoveredArtifact[]> {
-    if (!subtype) {
-      return [...this.deletedArtifacts];
-    }
-    const targetSubtype = subtype.toUpperCase();
-    return this.deletedArtifacts.filter((a) => a.subtype === targetSubtype);
+  async listDeletedFiles(_pattern?: string, _cwd?: string): Promise<string[]> {
+    const fromArts = this.deletedArtifacts.map(
+      (a) => a.filepath ?? a.filename ?? "",
+    );
+    return Array.from(new Set([...this.deletedFilesList, ...fromArts])).filter(Boolean);
   }
 
-  async inspectMultiBranchActiveArtifacts(
-    cwd?: string,
-    subtype?: IndexableSubtype,
-    options: MultiBranchOptions = {},
-  ): Promise<DiscoveredArtifact[]> {
-    const branches = options.branches ?? (await this.listBranches(cwd));
-    const exclude = new Set<string>();
-    if (options.excludeCurrent && this.currentBranch) {
-      exclude.add(this.currentBranch);
-    }
-    if (options.excludeBranch) {
-      exclude.add(options.excludeBranch);
-    }
+  async listActiveTrackedFiles(
+    _pattern?: string,
+    _cwd?: string,
+  ): Promise<string[]> {
+    return [...this.activeTrackedFiles];
+  }
 
-    const targetBranches = branches.filter((b) => !exclude.has(b));
-    const results: DiscoveredArtifact[] = [];
-    const seen = new Set<string>();
-
-    for (const b of targetBranches) {
-      const branchArtifacts = await this.inspectTreeArtifacts(b, cwd, subtype);
-      for (const art of branchArtifacts) {
-        const key = `${art.subtype}:${art.id.toLowerCase()}:${art.filepath}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          results.push(art);
-        }
-      }
-    }
-
-    return results;
+  async listLogGrep(pattern: string, _cwd?: string): Promise<string[]> {
+    return [...(this.logGrepResults.get(pattern) ?? [])];
   }
 
   async grep(
@@ -303,14 +310,10 @@ export class MockVcsAdapter implements IVcsAdapter {
     _cwd?: string,
     _options?: GitGrepOptions,
   ): Promise<GitGrepMatch[] | null> {
-    if (this.grepResults && this.grepResults.has(query)) {
-      return [...this.grepResults.get(query)!];
+    if (!this.grepResults) {
+      return [];
     }
-    return null;
-  }
-
-  async getConfig(key: string, _cwd?: string): Promise<string | null> {
-    return this.config.get(key) ?? null;
+    return this.grepResults.get(query) ?? [];
   }
 
   async readFileAtRef(
@@ -320,13 +323,7 @@ export class MockVcsAdapter implements IVcsAdapter {
   ): Promise<string | null> {
     this.history.readFileAtRefCalls.push({ ref, path, cwd });
     const key = `${ref}:${path}`;
-    if (this.fileContentsAtRef.has(key)) {
-      return this.fileContentsAtRef.get(key)!;
-    }
-    if (this.fileContentsAtRef.has(path)) {
-      return this.fileContentsAtRef.get(path)!;
-    }
-    return null;
+    return this.fileContentsAtRef.get(key) ?? null;
   }
 
   async readDeletedFile(
@@ -334,25 +331,30 @@ export class MockVcsAdapter implements IVcsAdapter {
     cwd?: string,
   ): Promise<string | null> {
     this.history.readDeletedFileCalls.push({ path, cwd });
-    if (this.deletedFiles.has(path)) {
-      return this.deletedFiles.get(path)!;
-    }
-    return null;
+    return this.deletedFiles.get(path) ?? null;
+  }
+
+  async getConfig(
+    key: string,
+    _cwd?: string,
+  ): Promise<string | null> {
+    return this.config.get(key) ?? null;
   }
 
   async run(args: string[], cwd?: string): Promise<string | null> {
     this.history.rawRuns.push({ args: [...args], cwd });
-    if (args[0] === "rev-parse" && args[1] === "--is-inside-work-tree") {
-      return this.insideWorkTree ? "true" : "false";
+    if (args[0] === "branch" && args[1] === "--list") {
+      return Array.from(this.branches).join("\n");
     }
-    if (args[0] === "branch" && args[1] === "--show-current") {
+    if (args[0] === "rev-parse" && args[1] === "--abbrev-ref") {
       return this.currentBranch;
     }
-    return null;
+    return "";
   }
 
   async runCommand(args: string[], cwd?: string): Promise<string> {
     this.history.rawCommands.push({ args: [...args], cwd });
-    return "ok";
+    const result = await this.run(args, cwd);
+    return result ?? "";
   }
 }

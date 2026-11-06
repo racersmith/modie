@@ -12,7 +12,8 @@ import {
 import { parseArtifactFilename } from "../common/filename.ts";
 import { queryTaskQueue } from "../task/query.ts";
 import { listActiveArtifacts } from "./artifact-list.ts";
-import { parseCanonicalTag, resolveArtifactByTag } from "./artifact-query.ts";
+import { parseCanonicalTag } from "../common/index.ts";
+import { resolveArtifactByTag } from "./artifact-query.ts";
 import type {
   AncestralRuleChainNode,
   ResolveScopeOptions,

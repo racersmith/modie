@@ -5,5 +5,6 @@
 
 export * from "./types.ts";
 export * from "./active-scanner.ts";
+export * from "./artifact-history.ts";
 export * from "./git-inspector.ts";
 export * from "./watermark.ts";

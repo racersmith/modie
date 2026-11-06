@@ -5,13 +5,7 @@
  */
 
 import { execFile } from "node:child_process";
-import { basename } from "node:path";
 import { promisify } from "node:util";
-import { parseArtifactFilename } from "../common/filename.ts";
-import type {
-  DiscoveredArtifact,
-  IndexableSubtype,
-} from "../resolver/types.ts";
 import type {
   GitGrepMatch,
   GitGrepOptions,
@@ -219,55 +213,24 @@ export class GitCliAdapter implements IVcsAdapter {
     return this.getShortHash("HEAD", cwd);
   }
 
-  async inspectTreeArtifacts(
+  async listTreeFiles(
     ref: string,
     cwd: string = process.cwd(),
-    subtype?: IndexableSubtype,
-  ): Promise<DiscoveredArtifact[]> {
+  ): Promise<string[]> {
     const output = await this.run(["ls-tree", "-r", "--name-only", ref], cwd);
     if (!output) {
       return [];
     }
-
-    const lines = output
+    return output
       .split("\n")
       .map((l) => l.trim())
       .filter(Boolean);
-
-    const discovered: DiscoveredArtifact[] = [];
-    const targetSubtype = subtype
-      ? (subtype.toUpperCase() as IndexableSubtype)
-      : undefined;
-
-    for (const line of lines) {
-      const filename = basename(line);
-      const parsed = parseArtifactFilename(filename);
-      if (parsed) {
-        if (!targetSubtype || parsed.subtype === targetSubtype) {
-          discovered.push({
-            id: parsed.id,
-            subtype: parsed.subtype,
-            tag: parsed.tag,
-            slug: parsed.slug,
-            filename: parsed.filename,
-            filepath: line,
-            isArchived: parsed.isArchived,
-            status: "active",
-          });
-        }
-      }
-    }
-
-    return discovered;
   }
 
-  async inspectDeletedArtifacts(
+  async listDeletedFiles(
+    pattern: string = "*.*-*.md",
     cwd: string = process.cwd(),
-    subtype?: IndexableSubtype,
-  ): Promise<DiscoveredArtifact[]> {
-    const pattern = subtype ? `*.${subtype.toUpperCase()}-*.md` : "*.*-*.md";
-
-    // Multi-ref search
+  ): Promise<string[]> {
     let output = await this.run(
       [
         "log",
@@ -281,7 +244,6 @@ export class GitCliAdapter implements IVcsAdapter {
       cwd,
     );
 
-    // Fall back to HEAD log if --all fails (shallow clone or branch without reflog)
     if (output === null) {
       output = await this.run(
         ["log", "--diff-filter=D", "--format=", "--name-only", "--", pattern],
@@ -293,131 +255,43 @@ export class GitCliAdapter implements IVcsAdapter {
       return [];
     }
 
-    const lines = output
+    return output
       .split("\n")
       .map((l) => l.trim())
       .filter(Boolean);
-
-    // Collect currently active tracked artifact IDs in Git to distinguish renames from deletions
-    const activeGitOutput = await this.run(["ls-files", "--", pattern], cwd);
-    const activeGitIds = new Set<string>();
-    if (activeGitOutput) {
-      for (const activeLine of activeGitOutput.split("\n")) {
-        const p = parseArtifactFilename(activeLine.trim());
-        if (p) {
-          activeGitIds.add(p.id.toLowerCase());
-        }
-      }
-    }
-
-    const discovered: DiscoveredArtifact[] = [];
-    const seenPaths = new Set<string>();
-    const targetSubtype = subtype
-      ? (subtype.toUpperCase() as IndexableSubtype)
-      : undefined;
-
-    for (const line of lines) {
-      if (seenPaths.has(line)) continue;
-      seenPaths.add(line);
-
-      const parsed = parseArtifactFilename(line);
-      if (parsed) {
-        if (!targetSubtype || parsed.subtype === targetSubtype) {
-          if (activeGitIds.has(parsed.id.toLowerCase())) {
-            continue;
-          }
-
-          discovered.push({
-            id: parsed.id,
-            subtype: parsed.subtype,
-            tag: parsed.tag,
-            slug: parsed.slug,
-            filename: parsed.filename,
-            filepath: line,
-            isArchived: parsed.isArchived,
-            status: "deleted",
-          });
-        }
-      }
-    }
-
-    // Ensure any task explicitly completed via commit ceremony is permanently recorded as deleted (RULE-21)
-    if (!targetSubtype || targetSubtype === "TASK") {
-      const completedLog = await this.run(
-        ["log", "--all", "--grep=delete completed TASK-", "--format=%s"],
-        cwd,
-      );
-      if (completedLog) {
-        for (const msg of completedLog.split("\n")) {
-          const match = msg.match(/delete completed TASK-([A-Za-z0-9_-]+)/i);
-          if (match && match[1]) {
-            const compId = match[1];
-            if (
-              !discovered.some(
-                (d) => d.id.toLowerCase() === compId.toLowerCase(),
-              )
-            ) {
-              discovered.push({
-                id: compId,
-                subtype: "TASK",
-                tag: `TASK-${compId}`,
-                slug: "",
-                filename: "",
-                filepath: "",
-                isArchived: false,
-                status: "deleted",
-              });
-            }
-          }
-        }
-      }
-    }
-
-    return discovered;
   }
 
-  async inspectMultiBranchActiveArtifacts(
+  async listActiveTrackedFiles(
+    pattern: string = "*.*-*.md",
     cwd: string = process.cwd(),
-    subtype?: IndexableSubtype,
-    options: MultiBranchOptions = {},
-  ): Promise<DiscoveredArtifact[]> {
-    let branches = options.branches;
-    if (!branches) {
-      branches = await this.listBranches(cwd);
+  ): Promise<string[]> {
+    const output = await this.run(["ls-files", "--", pattern], cwd);
+    if (!output) {
+      return [];
     }
-
-    const exclude = new Set<string>();
-    if (options.excludeCurrent) {
-      const currentBranch = await this.detectCurrentBranch(cwd);
-      if (currentBranch) {
-        exclude.add(currentBranch);
-      }
-    }
-    if (options.excludeBranch) {
-      exclude.add(options.excludeBranch);
-    }
-
-    const targetBranches = branches.filter((b) => !exclude.has(b));
-    const discovered: DiscoveredArtifact[] = [];
-    const seenKeys = new Set<string>();
-
-    for (const branch of targetBranches) {
-      const branchArtifacts = await this.inspectTreeArtifacts(
-        branch,
-        cwd,
-        subtype,
-      );
-      for (const art of branchArtifacts) {
-        const key = `${art.subtype}:${art.id.toLowerCase()}:${art.filepath}`;
-        if (!seenKeys.has(key)) {
-          seenKeys.add(key);
-          discovered.push(art);
-        }
-      }
-    }
-
-    return discovered;
+    return output
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
   }
+
+  async listLogGrep(
+    pattern: string,
+    cwd: string = process.cwd(),
+  ): Promise<string[]> {
+    const output = await this.run(
+      ["log", "--all", `--grep=${pattern}`, "--format=%s"],
+      cwd,
+    );
+    if (!output) {
+      return [];
+    }
+    return output
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+  }
+
 
   async getConfig(
     key: string,

@@ -6,4 +6,4 @@ export * from "./types.ts";
 export * from "./template.ts";
 export * from "./summary.ts";
 export * from "./creation.ts";
-export * from "./archive.ts";
+export * from "./definition.ts";

@@ -7,7 +7,7 @@
 import { describe, expect, it } from "bun:test";
 import { findArtifactReferences } from "../query/references.ts";
 import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
-import { archiveAdr } from "./archive.ts";
+import { archiveAdr } from "../archival/index.ts";
 import { createAdr } from "./creation.ts";
 
 describe("Core ADR Creation - Supersession & Bidirectional Frontmatter (RULE-4, RULE-14, RULE-31, RULE-34)", () => {

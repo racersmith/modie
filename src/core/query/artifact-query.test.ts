@@ -8,9 +8,9 @@ import {
   makeTestTag,
   type FixtureWorkspace,
 } from "../testing/index.ts";
+import { parseCanonicalTag } from "../common/index.ts";
 import {
   getArtifactDetails,
-  parseCanonicalTag,
   resolveArtifactByTag,
 } from "./index.ts";
 

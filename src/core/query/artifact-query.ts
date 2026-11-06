@@ -15,16 +15,15 @@ import {
   toPosixRelative,
 } from "../common/index.ts";
 import type { IndexableSubtype } from "../common/types.ts";
-import {
-  buildArtifactParseContext,
-  getArtifactDefinition,
-} from "../pipeline/create.ts";
+import { parseCanonicalTag } from "../common/index.ts";
+import { buildArtifactParseContext } from "../markdown/index.ts";
+import { getArtifactDefinition } from "../registry.ts";
 import { scanActiveArtifacts } from "../resolver/active-scanner.ts";
+import { listGitBranches } from "../resolver/git-inspector.ts";
 import {
   inspectGitDeletedArtifacts,
   inspectMultiBranchActiveArtifacts,
-  listGitBranches,
-} from "../resolver/git-inspector.ts";
+} from "../resolver/artifact-history.ts";
 import type { TaskAcceptanceCriteriaItem } from "../task/types.ts";
 import type {
   ArtifactDetails,
@@ -38,39 +37,6 @@ export type {
   ResolvedArtifact,
 } from "./types.ts";
 
-/**
- * Parses a raw tag string into its canonical subtype and ID components.
- * Examples: "RULE-29" -> { subtype: "RULE", id: "29", tag: "RULE-29" }
- *           "adr-6" -> { subtype: "ADR", id: "6", tag: "ADR-6" }
- *           "task-12" -> { subtype: "TASK", id: "12", tag: "TASK-12" }
- */
-export function parseCanonicalTag(
-  raw: string,
-): { subtype: IndexableSubtype; id: string; tag: string } | null {
-  const trimmed = raw.trim();
-  const match = trimmed.match(
-    /^(RULE|ADR|TASK)-([A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*)$/i,
-  );
-  if (!match || !match[1] || !match[2]) {
-    return null;
-  }
-  const subtype = match[1].toUpperCase() as IndexableSubtype;
-  const id = match[2];
-  const tag = `${subtype}-${id}`;
-  return { subtype, id, tag };
-}
-
-/**
- * Resolves the governing codebase directory scope relative to cwd (RULE-8, RULE-12).
- * Returns the directory containing the artifact's .modie container relative to workspace root.
- */
-function computeArtifactScope(
-  filepath: string,
-  _subtype: IndexableSubtype,
-  cwd: string,
-): string {
-  return resolveGoverningScope(filepath, cwd).relativeScope;
-}
 
 interface ArtifactLookupContext {
   cwd: string;
@@ -287,7 +253,7 @@ async function toResolvedArtifact(
   hit: ArtifactHit,
   ctx: ArtifactLookupContext,
 ): Promise<ResolvedArtifact> {
-  const scope = computeArtifactScope(hit.filepath, hit.subtype, ctx.cwd);
+  const scope = resolveGoverningScope(hit.filepath, ctx.cwd).relativeScope;
   const relativePath =
     hit.relativePath ?? toPosixRelative(ctx.cwd, hit.filepath);
   let summary: string | undefined;

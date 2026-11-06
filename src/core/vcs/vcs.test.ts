@@ -13,6 +13,7 @@ import { GitCliAdapter } from "./git-cli-adapter.ts";
 import { MockVcsAdapter } from "./mock-adapter.ts";
 import { completeTask } from "../task/completion.ts";
 import { startTaskBranch, mergeTaskBranch } from "../task/branching.ts";
+import { inspectGitTreeArtifacts } from "../resolver/artifact-history.ts";
 import { resolveWatermark } from "../resolver/watermark.ts";
 
 describe("GitCliAdapter - Real Subprocess Fixture Tests", () => {
@@ -108,7 +109,11 @@ describe("GitCliAdapter - Real Subprocess Fixture Tests", () => {
     await adapter.stageAll(workspace.cwd);
     await adapter.commit("feat: add rule 10", workspace.cwd);
 
-    const treeArts = await adapter.inspectTreeArtifacts("main", workspace.cwd);
+    const treeFiles = await adapter.listTreeFiles("main", workspace.cwd);
+    expect(treeFiles.length).toBe(1);
+    expect(treeFiles[0]).toContain(rule10Tag);
+
+    const treeArts = await inspectGitTreeArtifacts("main", workspace.cwd, "RULE", adapter);
     expect(treeArts.length).toBe(1);
     expect(treeArts[0]?.id).toBe("10");
     expect(treeArts[0]?.subtype).toBe("RULE");
@@ -163,10 +168,11 @@ describe("MockVcsAdapter - In-Memory Unit Tests", () => {
       { files: ["path/to/file.md"], updateOnly: true },
     ]);
 
-    const hash1 = await mock.commit("feat(TASK-1): sample");
+    const task1Tag = makeTestTag("TASK", 1);
+    const hash1 = await mock.commit(`feat(${task1Tag}): sample`);
     expect(hash1).toBe("hash1");
     expect(mock.history.commits.length).toBe(1);
-    expect(mock.history.commits[0]?.message).toBe("feat(TASK-1): sample");
+    expect(mock.history.commits[0]?.message).toBe(`feat(${task1Tag}): sample`);
 
     const mergeHash = await mock.merge(
       "task/1-sample",

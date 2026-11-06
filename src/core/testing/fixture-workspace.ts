@@ -14,7 +14,7 @@ import { formatArtifactFilename } from "../common/filename.ts";
 import { resolveArtifactDirectories } from "../common/directories.ts";
 import type { IndexableSubtype } from "../common/types.ts";
 import { renderAdrMarkdown } from "../adr/template.ts";
-import { parseMarkdownSections } from "../query/markdown-parser.ts";
+import { parseMarkdownSections } from "../markdown/index.ts";
 import { renderRuleMarkdown } from "../rule/template.ts";
 import { renderTaskMarkdown } from "../task/template.ts";
 

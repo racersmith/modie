@@ -7,24 +7,20 @@
 
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
-import { adrDefinition } from "../adr/definition.ts";
 import {
   formatArtifactFilename,
   generateSlug,
   parseArtifactFilename,
+  parseCanonicalTag,
   registerArtifactSubtype,
   resolveArtifactDirectories,
   slugToTitle,
 } from "../common/index.ts";
 import type { IndexableSubtype } from "../common/types.ts";
-import {
-  parseCanonicalTag,
-  resolveArtifactByTag,
-} from "../query/artifact-query.ts";
-import { parseMarkdownDocument } from "../query/markdown-parser.ts";
+import { buildArtifactParseContext } from "../markdown/index.ts";
+import { resolveArtifactByTag } from "../query/artifact-query.ts";
 import { resolveNextArtifactId } from "../resolver/watermark.ts";
-import { ruleDefinition } from "../rule/definition.ts";
-import { taskDefinition } from "../task/definition.ts";
+import { defaultDefinitionRegistry } from "./registry.ts";
 import { updateSupersededArtifactFrontmatter } from "./supersession.ts";
 import type {
   ArtifactDefinition,
@@ -187,94 +183,8 @@ export async function createArtifact<
   };
 }
 
-/**
- * Central declarative registry of artifact definitions across all primitive subtypes.
- */
-export const ARTIFACT_DEFINITIONS: Record<
-  string,
-  ArtifactDefinition<any, any>
-> = {
-  RULE: ruleDefinition,
-  ADR: adrDefinition,
-  TASK: taskDefinition,
-};
+export { buildArtifactParseContext } from "../markdown/index.ts";
 
-/**
- * Resolves the canonical ArtifactDefinition for an indexable subtype ("RULE", "ADR", "TASK").
- */
-export function getArtifactDefinition<
-  TOptions = any,
-  TArtifact = any,
->(
-  subtype: IndexableSubtype | string,
-): ArtifactDefinition<TOptions, TArtifact> | undefined {
-  return ARTIFACT_DEFINITIONS[subtype.toUpperCase()] as
-    | ArtifactDefinition<TOptions, TArtifact>
-    | undefined;
-}
-
-/**
- * Builds a standardized ArtifactParseContext from raw markdown content and optional path/metadata.
- */
-export function buildArtifactParseContext(
-  rawContent: string,
-  filePathOrMetadata?:
-    | string
-    | {
-        id?: string;
-        slug?: string;
-        title?: string;
-        filepath?: string;
-        filename?: string;
-      },
-): ArtifactParseContext {
-  const doc = parseMarkdownDocument(rawContent);
-  let id = "";
-  let slug = "";
-  let title = "";
-  let filepath: string | undefined;
-  let filename: string | undefined;
-
-  if (typeof filePathOrMetadata === "string") {
-    filepath = filePathOrMetadata;
-    filename = filePathOrMetadata;
-    const parsed = parseArtifactFilename(filePathOrMetadata);
-    if (parsed) {
-      id = parsed.id;
-      slug = parsed.slug;
-    }
-  } else if (filePathOrMetadata) {
-    filepath = filePathOrMetadata.filepath;
-    filename = filePathOrMetadata.filename ?? filePathOrMetadata.filepath;
-    if (filePathOrMetadata.id !== undefined) id = filePathOrMetadata.id;
-    if (filePathOrMetadata.slug !== undefined) slug = filePathOrMetadata.slug;
-    if (filePathOrMetadata.title !== undefined) title = filePathOrMetadata.title;
-    if ((!id || !slug) && filename) {
-      const parsed = parseArtifactFilename(filename);
-      if (parsed) {
-        if (!id) id = parsed.id;
-        if (!slug) slug = parsed.slug;
-      }
-    }
-  }
-
-  if (!title && slug) {
-    title = slugToTitle(slug);
-  }
-
-  return {
-    id,
-    slug,
-    title,
-    filepath,
-    filename,
-    rawContent,
-    frontmatter: doc.frontmatter,
-    body: doc.body,
-    frontmatterFields: doc.frontmatterFields,
-    sections: doc.sections,
-  };
-}
 
 /**
  * Parses raw markdown content into a strongly-typed artifact object using the
@@ -298,7 +208,7 @@ export function parseArtifact<TArtifact = unknown>(
 ): TArtifact {
   const definition =
     typeof definitionOrSubtype === "string"
-      ? (getArtifactDefinition(definitionOrSubtype) as
+      ? (defaultDefinitionRegistry.get(definitionOrSubtype) as
           | ArtifactDefinition<any, TArtifact>
           | undefined)
       : definitionOrSubtype;

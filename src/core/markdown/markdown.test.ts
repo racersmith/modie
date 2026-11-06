@@ -1,21 +1,20 @@
 /**
- * Unit tests for Markdown frontmatter and level-1 section parsing helpers.
- * @verifies RULE-1, RULE-25, RULE-26, RULE-35
+ * Unit tests for foundational Markdown parsing and frontmatter handling layer.
+ * @verifies ADR-4, RULE-1, RULE-25, RULE-26, RULE-35
  */
 
 import { describe, expect, it } from "bun:test";
 import { makeTestTag } from "../testing/index.ts";
 import {
-  extractAdrSummary,
+  buildArtifactParseContext,
   parseFrontmatterFields,
   parseFrontmatterLineMap,
   parseMarkdownDocument,
   parseMarkdownSections,
   splitMarkdownFrontmatter,
-} from "./markdown-parser.ts";
+} from "./index.ts";
 
-describe("Markdown Parser - splitMarkdownFrontmatter (RULE-1, RULE-25)", () => {
-  // @verifies RULE-1, RULE-25
+describe("Markdown Foundational Layer - splitMarkdownFrontmatter (RULE-1, RULE-25)", () => {
   it("[RULE-1][RULE-25] should split valid YAML frontmatter and markdown body", () => {
     const adr1Tag = makeTestTag("ADR", 1);
     const content = `---
@@ -33,7 +32,6 @@ Body text here.
     expect(body).toBe("# Context\n\nBody text here.");
   });
 
-  // @verifies RULE-1, RULE-25
   it("[RULE-1][RULE-25] should return empty frontmatter when document has no opening delimiter", () => {
     const content = `# Context\n\nSome content\n---\nMore content after horizontal rule.`;
     const { frontmatter, body } = splitMarkdownFrontmatter(content);
@@ -41,7 +39,6 @@ Body text here.
     expect(body).toBe(content);
   });
 
-  // @verifies RULE-1, RULE-25
   it("[RULE-1][RULE-25] should return empty frontmatter when opening delimiter is unclosed", () => {
     const adr1Tag = makeTestTag("ADR", 1);
     const content = `---\nlinks:\n  - ${adr1Tag}\n# Context\nUnclosed frontmatter`;
@@ -50,7 +47,6 @@ Body text here.
     expect(body).toBe(content);
   });
 
-  // @verifies RULE-1, RULE-25
   it("[RULE-1][RULE-25] should not prematurely split on mid-line --- inside frontmatter comments or values", () => {
     const adr1Tag = makeTestTag("ADR", 1);
     const content = `---
@@ -74,7 +70,6 @@ End of body.`;
     );
   });
 
-  // @verifies RULE-1, RULE-25
   it("[RULE-1][RULE-25] should handle CRLF line endings cleanly", () => {
     const rule1Tag = makeTestTag("RULE", 1);
     const content = `---\r\nlinks:\r\n  - ${rule1Tag}\r\n---\r\n\r\nRule assertion text.\r\n`;
@@ -84,8 +79,7 @@ End of body.`;
   });
 });
 
-describe("Markdown Parser - parseFrontmatterFields (RULE-1, RULE-25, RULE-35)", () => {
-  // @verifies RULE-1, RULE-25, RULE-35
+describe("Markdown Foundational Layer - parseFrontmatterFields (RULE-1, RULE-25, RULE-35)", () => {
   it("[RULE-1][RULE-25][RULE-35] should parse block list links and depends_on fields", () => {
     const adr1Tag = makeTestTag("ADR", 1);
     const rule2Tag = makeTestTag("RULE", 2);
@@ -106,7 +100,6 @@ links:
     expect(parsed.depends_on).toEqual([task3Tag]);
   });
 
-  // @verifies RULE-1, RULE-25, RULE-35
   it("[RULE-1][RULE-25][RULE-35] should parse inline bracketed arrays and omit empty depends_on", () => {
     const adr4Tag = makeTestTag("ADR", 4);
     const rule9Tag = makeTestTag("RULE", 9);
@@ -118,7 +111,6 @@ links:
     expect(parsed.depends_on).toBeUndefined();
   });
 
-  // @verifies RULE-1, RULE-25, RULE-35
   it("[RULE-1][RULE-25][RULE-35] should ignore unrelated YAML keys between or after target lists", () => {
     const adr1Tag = makeTestTag("ADR", 1);
     const adr2Tag = makeTestTag("ADR", 2);
@@ -138,7 +130,6 @@ superseded_by: []
     expect(parsed.depends_on).toBeUndefined();
   });
 
-  // @verifies ADR-4, RULE-1, RULE-25, RULE-35
   it("[ADR-4][RULE-1][RULE-25][RULE-35] should parse supersedes and superseded_by in block, inline array, and scalar formats and map line numbers", () => {
     const adr1Tag = makeTestTag("ADR", 1);
     const adr2Tag = makeTestTag("ADR", 2);
@@ -172,7 +163,6 @@ Unified context section.
     expect(lineMap.linkLines.get(6)).toBe("superseded_by");
   });
 
-  // @verifies ADR-8, RULE-25, RULE-26
   it("[ADR-8][RULE-25][RULE-26] should parse inline, quoted, and folded block summary fields from frontmatter", () => {
     const adr1Tag = makeTestTag("ADR", 1);
 
@@ -196,65 +186,7 @@ Unified context section.
   });
 });
 
-describe("Markdown Parser - extractAdrSummary (ADR-4, ADR-8, RULE-26)", () => {
-  // @verifies ADR-4, ADR-8, RULE-26
-  it("[ADR-4][ADR-8][RULE-26] should prefer explicit frontmatter summary and fallback to Decision or Context when omitted", () => {
-    const withExplicit = `---
-summary: Explicit frontmatter summary.
-links: []
----
-
-# Context
-
-Context paragraph.
-
-# Decision
-
-Decision paragraph.
-`;
-    expect(extractAdrSummary(withExplicit, "test-adr")).toBe(
-      "Explicit frontmatter summary.",
-    );
-
-    const withDecision = `---
-links: []
----
-
-# Context
-
-Context paragraph.
-
-# Decision
-
-We adopt the Signpost Model with Progressive On-Demand Disclosure.
-
-Additional details in second paragraph.
-`;
-    expect(extractAdrSummary(withDecision, "test-adr")).toBe(
-      "We adopt the Signpost Model with Progressive On-Demand Disclosure.",
-    );
-
-    const withContextOnly = `---
-links: []
----
-
-# Context
-
-Fallback context description when Decision is absent.
-`;
-    expect(extractAdrSummary(withContextOnly, "test-adr")).toBe(
-      "Fallback context description when Decision is absent.",
-    );
-
-    const emptyDoc = `---\nlinks: []\n---\n`;
-    expect(extractAdrSummary(emptyDoc, "fallback-slug-title")).toBe(
-      "fallback slug title",
-    );
-  });
-});
-
-describe("Markdown Parser - parseMarkdownSections (RULE-1, RULE-25, RULE-26)", () => {
-  // @verifies RULE-1, RULE-25, RULE-26
+describe("Markdown Foundational Layer - parseMarkdownSections (RULE-1, RULE-25, RULE-26)", () => {
   it("[RULE-1][RULE-25][RULE-26] should extract level-1 sections while preserving level-2 subheadings inside sections", () => {
     const body = `# Context
 
@@ -290,7 +222,6 @@ Details under subheading 2.
     expect(sections["Decision"]).toContain("## 2. Verification");
   });
 
-  // @verifies RULE-1, RULE-25, RULE-26
   it("[RULE-1][RULE-25][RULE-26] should ignore # comment lines inside fenced code blocks", () => {
     const body = `# Decision
 
@@ -326,5 +257,35 @@ Final decision paragraph.
     );
     expect(sections["Decision"]).toContain("Final decision paragraph.");
     expect(sections["Consequences"]).toBe("- Fast zero-read verification.");
+  });
+
+  it("[ADR-4][RULE-25] should compile unified document and ArtifactParseContext", () => {
+    const rule1Tag = makeTestTag("RULE", 1);
+    const adr10Tag = makeTestTag("ADR", 10);
+    const raw = `---
+links:
+  - ${rule1Tag}
+---
+# Title
+Custom Title
+
+# Context
+Context line.
+`;
+
+    const doc = parseMarkdownDocument(raw);
+    expect(doc.frontmatterFields.links).toEqual([rule1Tag]);
+    expect(doc.sections["Title"]).toBe("Custom Title");
+
+    const ctx = buildArtifactParseContext(raw, {
+      filename: `custom-slug.${adr10Tag}.md`,
+      filepath: `src/.modie/adrs/custom-slug.${adr10Tag}.md`,
+    });
+
+    expect(ctx.id).toBe("10");
+    expect(ctx.slug).toBe("custom-slug");
+    expect(ctx.title).toBe("Custom Title");
+    expect(ctx.frontmatterFields.links).toEqual([rule1Tag]);
+    expect(ctx.sections["Context"]).toBe("Context line.");
   });
 });
