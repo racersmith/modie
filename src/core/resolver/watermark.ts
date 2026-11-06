@@ -3,7 +3,6 @@
  * Complies with RULE-1, RULE-33, ADR-1, ADR-2, ADR-6, and ADR-9.
  */
 
-import { registerArtifactSubtype } from "../common/filename.ts";
 import { scanActiveArtifactIds } from "./active-scanner.ts";
 import {
   detectGitBranch,
@@ -13,7 +12,8 @@ import {
   inspectGitDeletedArtifactIds,
   inspectMultiBranchActiveArtifactIds,
 } from "./artifact-history.ts";
-import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
+import { resolveWorkspaceContext } from "../context/resolver.ts";
+import type { WorkspaceContext } from "../context/types.ts";
 import type {
   AllocationStrategy,
   IndexableSubtype,
@@ -150,32 +150,25 @@ export function allocateTaskStrategy(
 }
 
 async function gatherKnownArtifactIds(
-  cwd: string,
+  context: WorkspaceContext,
   subtype: IndexableSubtype,
-  options: WatermarkResolutionOptions,
-  vcs: IVcsAdapter,
 ) {
-  const activeIds =
-    options.activeIds !== undefined
-      ? options.activeIds
-      : await scanActiveArtifactIds(cwd, subtype);
-
-  const otherBranchActiveIds =
-    options.otherBranchActiveIds !== undefined
-      ? options.otherBranchActiveIds
-      : options.activeIds !== undefined
-        ? []
-        : await inspectMultiBranchActiveArtifactIds(
-            cwd,
-            subtype,
-            { excludeCurrent: true },
-            vcs,
-          );
-
-  const deletedIds =
-    options.deletedIds !== undefined
-      ? options.deletedIds
-      : await inspectGitDeletedArtifactIds(cwd, subtype, vcs);
+  const activeIds = await scanActiveArtifactIds(
+    context,
+    subtype,
+    context.registry,
+  );
+  const otherBranchActiveIds = await inspectMultiBranchActiveArtifactIds(
+    context,
+    subtype,
+    { excludeCurrent: true },
+    context.vcs,
+  );
+  const deletedIds = await inspectGitDeletedArtifactIds(
+    context,
+    subtype,
+    context.vcs,
+  );
 
   const allKnownIds = Array.from(
     new Set([...activeIds, ...otherBranchActiveIds, ...deletedIds]),
@@ -192,9 +185,6 @@ async function resolveTaskPrefix(
   if (options.prefix) {
     return options.prefix;
   }
-  if (options.gitConfigPrefix !== undefined) {
-    return options.gitConfigPrefix || undefined;
-  }
   const gitPrefix = await getGitConfigPrefix(cwd, vcs);
   return gitPrefix || undefined;
 }
@@ -209,14 +199,14 @@ async function resolveTaskPrefix(
 export async function resolveWatermark(
   options: WatermarkResolutionOptions = {},
 ): Promise<WatermarkDetails> {
-  const cwd = options.cwd ?? process.cwd();
-  const vcs = options.vcs ?? defaultVcsAdapter;
+  const context = resolveWorkspaceContext(options);
+  const cwd = context.root;
+  const vcs = context.vcs;
   const subtype: IndexableSubtype =
     (options.subtype?.toUpperCase() as IndexableSubtype) ?? "TASK";
-  registerArtifactSubtype(subtype);
 
   const { activeIds, otherBranchActiveIds, deletedIds, allKnownIds } =
-    await gatherKnownArtifactIds(cwd, subtype, options, vcs);
+    await gatherKnownArtifactIds(context, subtype);
 
   const branch =
     options.branch !== undefined

@@ -6,12 +6,30 @@
 
 import { adrDefinition } from "./adr/definition.ts";
 import type { ArtifactSubtype } from "./common/types.ts";
-import { defaultDefinitionRegistry } from "./pipeline/registry.ts";
+import {
+  DefaultDefinitionRegistry,
+  defaultDefinitionRegistry,
+  type DefinitionRegistry,
+} from "./pipeline/registry.ts";
 import type { ArtifactDefinition } from "./pipeline/types.ts";
+import { setDefaultRegistryFactory } from "./context/resolver.ts";
 import { ruleDefinition } from "./rule/definition.ts";
 import { taskDefinition } from "./task/definition.ts";
 
-// Register default built-in subtypes
+/**
+ * Creates a fresh, isolated DefinitionRegistry containing the default built-in subtypes (RULE, ADR, TASK).
+ */
+export function createDefaultDefinitionRegistry(): DefinitionRegistry {
+  const registry = new DefaultDefinitionRegistry();
+  registry.register(ruleDefinition);
+  registry.register(adrDefinition);
+  registry.register(taskDefinition);
+  return registry;
+}
+
+setDefaultRegistryFactory(createDefaultDefinitionRegistry);
+
+// Register default built-in subtypes on the legacy shared instance
 defaultDefinitionRegistry.register(ruleDefinition);
 defaultDefinitionRegistry.register(adrDefinition);
 defaultDefinitionRegistry.register(taskDefinition);

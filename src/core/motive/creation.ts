@@ -7,6 +7,7 @@
 import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolveMotivePaths } from "./paths.ts";
+import { resolveWorkspaceContext } from "../context.ts";
 import { renderMotiveMarkdown } from "./template.ts";
 import type {
   CreateMotiveOptions,
@@ -24,7 +25,8 @@ import type {
 export async function createMotive(
   options: CreateMotiveOptions = {},
 ): Promise<CreateMotiveResult> {
-  const cwd = options.cwd ?? process.cwd();
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
   const scopeInput = options.scopeDir ?? options.scope;
   const paths = resolveMotivePaths(scopeInput, cwd);
 

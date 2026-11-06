@@ -6,10 +6,10 @@
 
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
-import {
-  parseArtifactFilename,
-  registerArtifactSubtype,
-} from "../common/filename.ts";
+import { parseArtifactFilename } from "../common/filename.ts";
+import { resolveWorkspaceContext } from "../context/resolver.ts";
+import type { WorkspaceContext } from "../context/types.ts";
+import type { DefinitionRegistry } from "../pipeline/registry.ts";
 import type {
   DiscoveredArtifact,
   DiscoveredTask,
@@ -43,12 +43,13 @@ const IGNORED_DIRECTORIES = new Set([
  * Can be filtered to a specific subtype (RULE, ADR, or TASK).
  */
 export async function scanActiveArtifacts(
-  rootDir: string = process.cwd(),
+  rootDirOrContext?: string | WorkspaceContext,
   subtype?: IndexableSubtype,
+  registry?: DefinitionRegistry,
 ): Promise<DiscoveredArtifact[]> {
-  if (subtype) {
-    registerArtifactSubtype(subtype);
-  }
+  const ctx = resolveWorkspaceContext(rootDirOrContext);
+  const rootDir = ctx.root;
+  const reg = registry ?? ctx.registry;
   const discovered: DiscoveredArtifact[] = [];
   const targetSubtype = subtype
     ? (subtype.toUpperCase() as IndexableSubtype)
@@ -68,7 +69,7 @@ export async function scanActiveArtifacts(
           await walk(join(dir, entry.name));
         }
       } else if (entry.isFile()) {
-        const parsed = parseArtifactFilename(entry.name);
+        const parsed = parseArtifactFilename(entry.name, reg);
         if (parsed) {
           if (!targetSubtype || parsed.subtype === targetSubtype) {
             discovered.push({
@@ -95,10 +96,11 @@ export async function scanActiveArtifacts(
  * Returns a deduplicated list of active artifact IDs found on disk for a given subtype.
  */
 export async function scanActiveArtifactIds(
-  rootDir: string = process.cwd(),
+  rootDirOrContext?: string | WorkspaceContext,
   subtype?: IndexableSubtype,
+  registry?: DefinitionRegistry,
 ): Promise<string[]> {
-  const artifacts = await scanActiveArtifacts(rootDir, subtype);
+  const artifacts = await scanActiveArtifacts(rootDirOrContext, subtype, registry);
   return Array.from(new Set(artifacts.map((a) => a.id)));
 }
 
@@ -107,9 +109,9 @@ export async function scanActiveArtifactIds(
  * Backward compatibility wrapper around scanActiveArtifacts.
  */
 export async function scanActiveTasks(
-  rootDir: string = process.cwd(),
+  rootDirOrContext?: string | WorkspaceContext,
 ): Promise<DiscoveredTask[]> {
-  const artifacts = await scanActiveArtifacts(rootDir, "TASK");
+  const artifacts = await scanActiveArtifacts(rootDirOrContext, "TASK");
   return artifacts
     .filter((a) => !a.isArchived)
     .map((a) => ({
@@ -126,7 +128,7 @@ export async function scanActiveTasks(
  * Backward compatibility wrapper around scanActiveArtifactIds.
  */
 export async function scanActiveTaskIds(
-  rootDir: string = process.cwd(),
+  rootDirOrContext?: string | WorkspaceContext,
 ): Promise<string[]> {
-  return scanActiveArtifactIds(rootDir, "TASK");
+  return scanActiveArtifactIds(rootDirOrContext, "TASK");
 }

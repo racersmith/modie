@@ -5,6 +5,7 @@
 
 // Composition root and registries
 export * from "./registry.ts";
+export * from "./context.ts";
 
 // Foundational primitives and markdown layer
 export * from "./common/index.ts";

@@ -4,6 +4,8 @@
 
 import type { CreateArtifactResult } from "../pipeline/types.ts";
 
+export type TaskReadiness = "READY" | "BLOCKED" | "COMPLETED";
+
 export interface TaskFrontmatter {
   summary?: string;
   depends_on?: string[];
@@ -82,12 +84,15 @@ export interface TaskBranchTopology {
 }
 
 import type { IVcsAdapter } from "../vcs/types.ts";
+import type { WorkspaceContext } from "../context/types.ts";
 
 export interface StartTaskBranchOptions {
   base?: string;
   force?: boolean;
   cwd?: string;
   vcs?: IVcsAdapter;
+  workspace?: WorkspaceContext;
+  context?: WorkspaceContext;
 }
 
 export interface StartTaskBranchResult {
@@ -106,6 +111,8 @@ export interface MergeTaskBranchOptions {
   force?: boolean;
   cwd?: string;
   vcs?: IVcsAdapter;
+  workspace?: WorkspaceContext;
+  context?: WorkspaceContext;
 }
 
 export interface MergeTaskBranchResult {
@@ -166,6 +173,16 @@ export interface CreateTaskOptions {
    * Workspace root directory. Defaults to process.cwd().
    */
   cwd?: string;
+
+  /**
+   * Explicit workspace context container.
+   */
+  workspace?: WorkspaceContext;
+
+  /**
+   * Optional VCS adapter.
+   */
+  vcs?: IVcsAdapter;
 
   /**
    * Explicit branch name override (passed to watermark resolver).

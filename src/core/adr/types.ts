@@ -4,6 +4,7 @@
  */
 
 import type { CreateArtifactResult } from "../pipeline/types.ts";
+import type { WorkspaceContext } from "../context/types.ts";
 
 export interface AdrFrontmatter {
   summary?: string;
@@ -195,6 +196,11 @@ export interface CreateAdrOptions {
    * Workspace root directory. Defaults to process.cwd().
    */
   cwd?: string;
+
+  /**
+   * Explicit workspace context container.
+   */
+  workspace?: WorkspaceContext;
 }
 
 export type CreateAdrResult = CreateArtifactResult<AdrArtifact>;

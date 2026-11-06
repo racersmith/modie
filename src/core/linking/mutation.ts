@@ -10,6 +10,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { YAML } from "bun";
 import { parseCanonicalTag } from "../common/index.ts";
+import { resolveWorkspaceContext } from "../context.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
 import {
   parseFrontmatterFields,
@@ -134,7 +135,8 @@ export async function applyLinkMutation(
 export async function linkArtifact(
   options: MutateArtifactLinkOptions,
 ): Promise<LinkMutationResult> {
-  const cwd = resolve(options.cwd ?? process.cwd());
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
 
   const validated = await validateArtifactLink(options.source, options.target, {
     cwd,
@@ -157,7 +159,8 @@ export async function linkArtifact(
 export async function unlinkArtifact(
   options: MutateArtifactLinkOptions,
 ): Promise<LinkMutationResult> {
-  const cwd = resolve(options.cwd ?? process.cwd());
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
 
   const source = await resolveArtifactByTag(options.source, { cwd });
 

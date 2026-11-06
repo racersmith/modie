@@ -5,6 +5,7 @@
 
 import { existsSync } from "node:fs";
 import { isAbsolute, join, normalize, relative, resolve } from "node:path";
+import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
 import {
   buildAncestralScopes,
   resolveGoverningScope,
@@ -29,9 +30,10 @@ import type {
  */
 export function computeAncestralScopes(
   targetScope: string,
-  cwd: string = process.cwd(),
+  cwdOrContext?: string | WorkspaceContext,
 ): string[] {
-  const normCwd = normalize(resolve(cwd));
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const normCwd = ctx.root;
   const scopes = buildAncestralScopes(targetScope);
 
   return scopes.filter(
@@ -53,7 +55,8 @@ export async function resolveScope(
   targetOrIdentifier: string,
   options: ResolveScopeOptions = {},
 ): Promise<ScopeResolutionResult> {
-  const cwd = resolve(options.cwd ?? process.cwd());
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
   const trimmed = targetOrIdentifier?.trim();
 
   if (!trimmed) {

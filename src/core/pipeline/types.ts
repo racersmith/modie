@@ -31,6 +31,12 @@ export interface BaseCreateArtifactOptions {
   cwd?: string;
 
   /**
+   * Explicit workspace context container.
+   */
+  workspace?: any;
+  context?: any;
+
+  /**
    * Optional target artifact tag(s) superseded by this artifact.
    */
   supersedes?: string | string[];

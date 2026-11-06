@@ -7,7 +7,8 @@ import { basename } from "node:path";
 import { parseArtifactFilename } from "../common/filename.ts";
 import { asArtifactSubtype } from "../common/tag.ts";
 import type { ArtifactSubtype } from "../common/types.ts";
-import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
+import { resolveWorkspaceContext } from "../context/resolver.ts";
+import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter, MultiBranchOptions } from "../vcs/types.ts";
 import type { DiscoveredArtifact, IndexableSubtype } from "./types.ts";
 
@@ -16,17 +17,20 @@ import type { DiscoveredArtifact, IndexableSubtype } from "./types.ts";
  */
 export async function inspectGitTreeArtifacts(
   ref: string,
-  cwd: string = process.cwd(),
+  cwdOrContext?: string | WorkspaceContext,
   subtype?: ArtifactSubtype | IndexableSubtype,
-  vcs: IVcsAdapter = defaultVcsAdapter,
+  vcs?: IVcsAdapter,
 ): Promise<DiscoveredArtifact[]> {
-  const lines = await vcs.listTreeFiles(ref, cwd);
+  const ctx = resolveWorkspaceContext(cwdOrContext, vcs);
+  const cwd = ctx.root;
+  const effectiveVcs = ctx.vcs;
+  const lines = await effectiveVcs.listTreeFiles(ref, cwd);
   const discovered: DiscoveredArtifact[] = [];
   const targetSubtype = subtype ? asArtifactSubtype(subtype) : undefined;
 
   for (const line of lines) {
     const filename = basename(line);
-    const parsed = parseArtifactFilename(filename);
+    const parsed = parseArtifactFilename(filename, ctx.registry);
     if (parsed) {
       if (!targetSubtype || parsed.subtype === targetSubtype) {
         discovered.push({
@@ -51,18 +55,21 @@ export async function inspectGitTreeArtifacts(
  * `git log --all --diff-filter=D --format= --name-only -- *.<SUBTYPE>-*.md`
  */
 export async function inspectGitDeletedArtifacts(
-  cwd: string = process.cwd(),
+  cwdOrContext?: string | WorkspaceContext,
   subtype?: ArtifactSubtype | IndexableSubtype,
-  vcs: IVcsAdapter = defaultVcsAdapter,
+  vcs?: IVcsAdapter,
 ): Promise<DiscoveredArtifact[]> {
+  const ctx = resolveWorkspaceContext(cwdOrContext, vcs);
+  const cwd = ctx.root;
+  const effectiveVcs = ctx.vcs;
   const pattern = subtype ? `*.${subtype.toString().toUpperCase()}-*.md` : "*.*-*.md";
 
-  const lines = await vcs.listDeletedFiles(pattern, cwd);
-  const activeGitLines = await vcs.listActiveTrackedFiles(pattern, cwd);
+  const lines = await effectiveVcs.listDeletedFiles(pattern, cwd);
+  const activeGitLines = await effectiveVcs.listActiveTrackedFiles(pattern, cwd);
   const activeGitIds = new Set<string>();
 
   for (const activeLine of activeGitLines) {
-    const p = parseArtifactFilename(activeLine.trim());
+    const p = parseArtifactFilename(activeLine.trim(), ctx.registry);
     if (p) {
       activeGitIds.add(p.id.toLowerCase());
     }
@@ -76,7 +83,7 @@ export async function inspectGitDeletedArtifacts(
     if (seenPaths.has(line)) continue;
     seenPaths.add(line);
 
-    const parsed = parseArtifactFilename(line);
+    const parsed = parseArtifactFilename(line, ctx.registry);
     if (parsed) {
       if (!targetSubtype || parsed.subtype === targetSubtype) {
         if (activeGitIds.has(parsed.id.toLowerCase())) {
@@ -99,7 +106,7 @@ export async function inspectGitDeletedArtifacts(
 
   // Ensure any task explicitly completed via commit ceremony is permanently recorded as deleted (RULE-21)
   if (!targetSubtype || targetSubtype === "TASK") {
-    const completedLogLines = await vcs.listLogGrep("delete completed TASK-", cwd);
+    const completedLogLines = await effectiveVcs.listLogGrep("delete completed TASK-", cwd);
     for (const msg of completedLogLines) {
       const match = msg.match(/delete completed TASK-([A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*)/i);
       if (match && match[1]) {
@@ -130,11 +137,12 @@ export async function inspectGitDeletedArtifacts(
  * Returns a deduplicated list of artifact IDs that were deleted in git history for a given subtype.
  */
 export async function inspectGitDeletedArtifactIds(
-  cwd: string = process.cwd(),
+  cwdOrContext?: string | WorkspaceContext,
   subtype?: ArtifactSubtype | IndexableSubtype,
-  vcs: IVcsAdapter = defaultVcsAdapter,
+  vcs?: IVcsAdapter,
 ): Promise<string[]> {
-  const artifacts = await inspectGitDeletedArtifacts(cwd, subtype, vcs);
+  const ctx = resolveWorkspaceContext(cwdOrContext, vcs);
+  const artifacts = await inspectGitDeletedArtifacts(ctx, subtype);
   return Array.from(new Set(artifacts.map((a) => a.id)));
 }
 
@@ -142,13 +150,16 @@ export async function inspectGitDeletedArtifactIds(
  * Inspects active indexable artifacts across all reachable git branches.
  */
 export async function inspectMultiBranchActiveArtifacts(
-  cwd: string = process.cwd(),
+  cwdOrContext?: string | WorkspaceContext,
   subtype?: ArtifactSubtype | IndexableSubtype,
   options: MultiBranchOptions = {},
-  vcs: IVcsAdapter = defaultVcsAdapter,
+  vcs?: IVcsAdapter,
 ): Promise<DiscoveredArtifact[]> {
-  const branches = options.branches ?? (await vcs.listBranches(cwd));
-  const currentBranch = options.excludeCurrent ? await vcs.detectCurrentBranch(cwd) : null;
+  const ctx = resolveWorkspaceContext(cwdOrContext, vcs);
+  const cwd = ctx.root;
+  const effectiveVcs = ctx.vcs;
+  const branches = options.branches ?? (await effectiveVcs.listBranches(cwd));
+  const currentBranch = options.excludeCurrent ? await effectiveVcs.detectCurrentBranch(cwd) : null;
   const exclude = new Set<string>();
   if (options.excludeCurrent && currentBranch) {
     exclude.add(currentBranch);
@@ -162,7 +173,7 @@ export async function inspectMultiBranchActiveArtifacts(
   const seen = new Set<string>();
 
   for (const b of targetBranches) {
-    const branchArtifacts = await inspectGitTreeArtifacts(b, cwd, subtype, vcs);
+    const branchArtifacts = await inspectGitTreeArtifacts(b, ctx, subtype);
     for (const art of branchArtifacts) {
       const key = `${art.subtype}:${art.id.toLowerCase()}:${art.filepath}`;
       if (!seen.has(key)) {
@@ -179,16 +190,16 @@ export async function inspectMultiBranchActiveArtifacts(
  * Returns a deduplicated list of active artifact IDs across other git branches.
  */
 export async function inspectMultiBranchActiveArtifactIds(
-  cwd: string = process.cwd(),
+  cwdOrContext?: string | WorkspaceContext,
   subtype?: ArtifactSubtype | IndexableSubtype,
   options: MultiBranchOptions = {},
-  vcs: IVcsAdapter = defaultVcsAdapter,
+  vcs?: IVcsAdapter,
 ): Promise<string[]> {
+  const ctx = resolveWorkspaceContext(cwdOrContext, vcs);
   const artifacts = await inspectMultiBranchActiveArtifacts(
-    cwd,
+    ctx,
     subtype,
     options,
-    vcs,
   );
   return Array.from(new Set(artifacts.map((a) => a.id)));
 }

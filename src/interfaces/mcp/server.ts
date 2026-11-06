@@ -9,7 +9,12 @@ import {
   McpServer,
   type McpServerOptions,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { MODIE_VERSION } from "../../core/index.ts";
+import {
+  MODIE_VERSION,
+  createWorkspaceContextSync,
+  type IVcsAdapter,
+  type WorkspaceContext,
+} from "../../core/index.ts";
 import { formatMcpToolError } from "./errors.ts";
 import {
   handleArchiveArtifact,
@@ -52,6 +57,16 @@ export interface ModieMcpServerOptions {
   cwd?: string;
 
   /**
+   * Optional custom VCS adapter.
+   */
+  vcs?: IVcsAdapter;
+
+  /**
+   * Explicit workspace context container.
+   */
+  workspace?: WorkspaceContext;
+
+  /**
    * Optional command registry override (retained for backward compatibility, ignored).
    */
   commands?: any[];
@@ -76,6 +91,9 @@ export function createModieMcpServer(
 ): McpServer {
   const envCwd = process.env.MODIE_CWD?.trim();
   const cwd = options.cwd || (envCwd ? envCwd : process.cwd());
+  const workspace =
+    options.workspace ??
+    createWorkspaceContextSync({ root: cwd, vcs: options.vcs });
   const stderr =
     options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
 
@@ -112,7 +130,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        const text = await handleLsBetter(args, cwd);
+        const text = await handleLsBetter(args, workspace);
         return {
           content: [{ type: "text" as const, text }],
         };
@@ -137,7 +155,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        const text = await handleReadArtifact(args, cwd);
+        const text = await handleReadArtifact(args, workspace);
         return {
           content: [{ type: "text" as const, text }],
         };
@@ -162,7 +180,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        const text = await handleTaskContext(args, cwd);
+        const text = await handleTaskContext(args, workspace);
         return {
           content: [{ type: "text" as const, text }],
         };
@@ -191,7 +209,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        const text = await handleStartTask(args, cwd);
+        const text = await handleStartTask(args, workspace);
         return {
           content: [{ type: "text" as const, text }],
         };
@@ -217,7 +235,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        const result = await handleCheckCriteria(args, cwd);
+        const result = await handleCheckCriteria(args, workspace);
         return {
           content: [
             {
@@ -249,7 +267,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        const result = await handleCompleteTask(args, cwd);
+        const result = await handleCompleteTask(args, workspace);
         return {
           content: [
             {
@@ -285,7 +303,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        const result = await handleCreateRule(args, cwd);
+        const result = await handleCreateRule(args, workspace);
         return {
           content: [
             {
@@ -317,7 +335,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        const result = await handleCreateAdr(args, cwd);
+        const result = await handleCreateAdr(args, workspace);
         return {
           content: [
             {
@@ -349,7 +367,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        const result = await handleCreateTask(args, cwd);
+        const result = await handleCreateTask(args, workspace);
         return {
           content: [
             {
@@ -385,7 +403,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        const result = await handleLinkArtifacts(args, cwd);
+        const result = await handleLinkArtifacts(args, workspace);
         return {
           content: [
             {
@@ -417,7 +435,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        const result = await handleArchiveArtifact(args, cwd);
+        const result = await handleArchiveArtifact(args, workspace);
         return {
           content: [
             {
@@ -436,7 +454,7 @@ export function createModieMcpServer(
   // ==========================================================================
   // Ambient Resources (RULE-25, RULE-26)
   // ==========================================================================
-  registerAllResources(server, { cwd, instructions });
+  registerAllResources(server, { cwd, workspace, instructions });
 
   return server;
 }

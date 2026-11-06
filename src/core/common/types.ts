@@ -72,3 +72,65 @@ export interface DiscoveredArtifact {
   isArchived: boolean;
   status: "active" | "deleted";
 }
+
+export interface ResolvedArtifact {
+  /**
+   * Canonical uppercase tag, e.g. "RULE-1", "ADR-6", "TASK-12".
+   */
+  tag: string;
+
+  /**
+   * Indexable subtype of the artifact.
+   */
+  subtype: IndexableSubtype;
+
+  /**
+   * Monotonic or namespaced artifact identifier.
+   */
+  id: string;
+
+  /**
+   * Kebab-case slug.
+   */
+  slug: string;
+
+  /**
+   * Canonical filename on disk.
+   */
+  filename: string;
+
+  /**
+   * Absolute path to the artifact file on disk.
+   */
+  filepath: string;
+
+  /**
+   * Relative path from workspace root (cwd).
+   */
+  relativePath: string;
+
+  /**
+   * Normalized scope directory relative to cwd (e.g. "." or "src/interfaces/cli").
+   */
+  scope: string;
+
+  /**
+   * Whether the artifact is archived.
+   */
+  isArchived: boolean;
+
+  /**
+   * Status lifecycle indicator: active, archived, or deleted in Git history.
+   */
+  status?: "active" | "archived" | "deleted";
+
+  /**
+   * Whether the artifact was resolved from Git history or another branch (--history).
+   */
+  isHistorical?: boolean;
+
+  /**
+   * Concise summary of the artifact.
+   */
+  summary?: string;
+}

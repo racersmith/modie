@@ -3,11 +3,19 @@
  * Enforces RULE-2, RULE-8, RULE-10, RULE-12, ADR-2, ADR-4, and ADR-10.
  */
 
+import type { WorkspaceContext } from "../context/types.ts";
+
 export interface ResolveMotiveOptions {
   /**
    * Workspace root directory (defaults to `process.cwd()`).
    */
   cwd?: string;
+
+  /**
+   * Explicit workspace context container.
+   */
+  workspace?: WorkspaceContext;
+  context?: WorkspaceContext;
 }
 
 /**
@@ -103,6 +111,11 @@ export interface CreateMotiveOptions {
    * Workspace root directory (defaults to `process.cwd()`).
    */
   cwd?: string;
+
+  /**
+   * Explicit workspace context container.
+   */
+  workspace?: WorkspaceContext;
 }
 
 /**

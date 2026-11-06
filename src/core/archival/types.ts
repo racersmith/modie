@@ -4,6 +4,7 @@
  */
 
 import type { IndexableSubtype } from "../common/types.ts";
+import type { WorkspaceContext } from "../context/types.ts";
 
 export interface ArchiveArtifactOptions {
   /**
@@ -25,6 +26,12 @@ export interface ArchiveArtifactOptions {
    * Workspace root directory (defaults to process.cwd()).
    */
   cwd?: string;
+
+  /**
+   * Explicit workspace context container.
+   */
+  workspace?: WorkspaceContext;
+  context?: WorkspaceContext;
 }
 
 export interface ArchiveArtifactResult {

@@ -16,6 +16,7 @@ import {
 import { parseArtifactFilename } from "../common/filename.ts";
 import { parseCanonicalTag, slugToTitle, toPosixRelative } from "../common/index.ts";
 import { discoverGistsForScope } from "../gist/reader.ts";
+import { resolveWorkspaceContext } from "../context.ts";
 import type {
   DirectoryGist,
   FileGist,
@@ -405,7 +406,8 @@ export async function compileContext(
   targetInput: string = ".",
   options: CompileContextOptions = {},
 ): Promise<CompiledContextResult> {
-  const normCwd = normalize(resolve(options.cwd ?? process.cwd()));
+  const ctx = resolveWorkspaceContext(options);
+  const normCwd = ctx.root;
   const target = await resolveContextTarget(targetInput, normCwd);
   const ancestralScopes = buildAncestralScopes(target.scope);
 

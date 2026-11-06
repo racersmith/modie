@@ -8,6 +8,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { formatArtifactFilename } from "../common/filename.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
 import { findArtifactReferences } from "../query/references.ts";
+import { resolveWorkspaceContext } from "../context.ts";
 import type { ArchiveArtifactOptions, ArchiveArtifactResult } from "./types.ts";
 
 /**
@@ -22,7 +23,8 @@ import type { ArchiveArtifactOptions, ArchiveArtifactResult } from "./types.ts";
 export async function archiveArtifact(
   options: ArchiveArtifactOptions,
 ): Promise<ArchiveArtifactResult> {
-  const cwd = options.cwd ? resolve(options.cwd) : process.cwd();
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
 
   if (!options.tag || options.tag.trim().length === 0) {
     throw new Error("Target artifact identifier must be a non-empty string.");

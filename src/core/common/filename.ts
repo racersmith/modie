@@ -12,6 +12,7 @@ import {
   parseCanonicalTag,
   registerArtifactSubtype,
   resetRegisteredArtifactSubtypes,
+  type SubtypeLookup,
 } from "./tag.ts";
 import type {
   ArtifactSubtype,
@@ -41,6 +42,7 @@ export const ARTIFACT_FILENAME_REGEX =
  */
 export function formatArtifactFilename(
   options: FormatArtifactFilenameOptions,
+  registry?: SubtypeLookup,
 ): string {
   const { slug, subtype, id, isArchived = false } = options;
   const strId = String(id).trim();
@@ -52,7 +54,7 @@ export function formatArtifactFilename(
   }
 
   const upperSubtype = asArtifactSubtype(subtype);
-  if (!isRegisteredArtifactSubtype(upperSubtype) && !/^[A-Z0-9]+$/.test(upperSubtype)) {
+  if (!isRegisteredArtifactSubtype(upperSubtype, registry) && !/^[A-Z0-9]+$/.test(upperSubtype)) {
     throw new Error(
       `Invalid artifact subtype "${subtype}". Expected uppercase alphanumeric token.`,
     );
@@ -76,6 +78,7 @@ export function formatArtifactFilename(
  */
 export function parseArtifactFilename(
   pathOrFilename: string,
+  registry?: SubtypeLookup,
 ): ParsedArtifactFilename | null {
   const filename = pathOrFilename.split("/").pop() ?? pathOrFilename;
 
@@ -97,7 +100,7 @@ export function parseArtifactFilename(
     return null;
   }
 
-  const tagInfo = parseCanonicalTag(match[2]);
+  const tagInfo = parseCanonicalTag(match[2], registry);
   if (!tagInfo) {
     return null;
   }
@@ -119,8 +122,9 @@ export function parseArtifactFilename(
 export function isArtifactFilename(
   pathOrFilename: string,
   subtype?: IndexableSubtype,
+  registry?: SubtypeLookup,
 ): boolean {
-  const parsed = parseArtifactFilename(pathOrFilename);
+  const parsed = parseArtifactFilename(pathOrFilename, registry);
   if (!parsed) return false;
   if (subtype && parsed.subtype !== subtype.toUpperCase()) return false;
   return true;

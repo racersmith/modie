@@ -5,6 +5,7 @@
 
 import type { z } from "zod";
 import type { CliIoOptions } from "../types.ts";
+import type { WorkspaceContext } from "../../../core/context.ts";
 
 export interface CliFlagDefinition {
   /**
@@ -131,6 +132,11 @@ export interface CliExecutionContext<
    * Working directory for command execution.
    */
   cwd: string;
+
+  /**
+   * Explicit workspace context container.
+   */
+  workspace: WorkspaceContext;
 
   /**
    * Original I/O options passed from caller.

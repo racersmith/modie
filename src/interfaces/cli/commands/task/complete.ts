@@ -7,7 +7,6 @@
 import { z } from "zod";
 import {
   completeTask,
-  defaultVcsAdapter,
   detectGitBranch,
   parseTaskIdFromBranch,
   type CompleteTaskResult,
@@ -86,14 +85,14 @@ export const taskCompleteCommand: CliCommandDefinition<
     },
   },
   execute: async (input, context) => {
-    const isGitRepo = await defaultVcsAdapter.isInsideWorkTree(context.cwd);
+    const isGitRepo = await context.workspace.vcs.isInsideWorkTree(context.cwd);
     const commit =
       input.commit !== undefined ? input.commit : isGitRepo;
     const deleteArtifact = !input.keepFile;
 
     const idToComplete = input.id?.trim();
     if (!idToComplete) {
-      const branch = await detectGitBranch(context.cwd);
+      const branch = await detectGitBranch(context.workspace);
       const inferredId = parseTaskIdFromBranch(branch);
       if (!inferredId) {
         const branchDisplay = branch ? ` "${branch}"` : "";
@@ -108,6 +107,7 @@ export const taskCompleteCommand: CliCommandDefinition<
       deleteArtifact,
       commit,
       cwd: context.cwd,
+      context: context.workspace,
     });
   },
   render: (result, context) => {

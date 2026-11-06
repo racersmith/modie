@@ -13,6 +13,8 @@ import {
   getTaskStatus,
   parseTaskIdFromBranch,
   queryTaskQueue,
+  resolveWorkspaceContext,
+  type WorkspaceContext,
 } from "../../core/index.ts";
 import { loadMcpInstructions } from "./instructions.ts";
 import {
@@ -23,6 +25,8 @@ import {
 
 export interface RegisterResourcesOptions {
   cwd?: string;
+  context?: WorkspaceContext;
+  workspace?: WorkspaceContext;
   instructions?: string;
 }
 
@@ -37,7 +41,10 @@ export function registerAllResources(
   server: McpServer,
   options: RegisterResourcesOptions = {},
 ) {
-  const cwd = options.cwd ?? process.cwd();
+  const ctx = resolveWorkspaceContext(
+    options.workspace ?? options.context ?? options.cwd,
+  );
+  const cwd = ctx.root;
   const instructions = options.instructions;
 
   // 1. Dynamic Active Task Brief (modie://task)
@@ -51,13 +58,13 @@ export function registerAllResources(
       mimeType: "text/markdown",
     },
     async (uri) => {
-      const branch = await detectGitBranch(cwd);
+      const branch = await detectGitBranch(ctx);
       const taskId = branch ? parseTaskIdFromBranch(branch) : null;
 
       let text: string;
       if (taskId) {
         try {
-          const status = await getTaskStatus(taskId, { cwd });
+          const status = await getTaskStatus(taskId, { cwd, context: ctx });
           text = await renderTaskMissionBrief(status, branch, cwd);
         } catch {
           text = `# Mission Brief: Unknown Task (${taskId})\n\nUnable to load status for task \`${taskId}\` on branch \`${branch}\`.`;
@@ -89,7 +96,11 @@ export function registerAllResources(
       mimeType: "text/markdown",
     },
     async (uri) => {
-      const allTasks = await queryTaskQueue({ cwd, readyOnly: false });
+      const allTasks = await queryTaskQueue({
+        cwd,
+        context: ctx,
+        readyOnly: false,
+      });
       const readyTasks = allTasks.filter((t) => t.readiness === "READY");
       const text = renderReadyTasks(readyTasks, allTasks);
       return {
@@ -115,7 +126,11 @@ export function registerAllResources(
       mimeType: "text/markdown",
     },
     async (uri) => {
-      const allTasks = await queryTaskQueue({ cwd, readyOnly: false });
+      const allTasks = await queryTaskQueue({
+        cwd,
+        context: ctx,
+        readyOnly: false,
+      });
       const text = renderTasksBacklog(allTasks);
       return {
         contents: [

@@ -4,19 +4,20 @@
  * Delegates to IVcsAdapter to decouple process execution from domain logic.
  */
 
-import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
+import { resolveWorkspaceContext } from "../context/resolver.ts";
+import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
-
 
 /**
  * Safely executes a git command, returning stdout trimmed or null on error.
  */
 export async function runGit(
   args: string[],
-  cwd: string = process.cwd(),
-  vcs: IVcsAdapter = defaultVcsAdapter,
+  cwdOrContext?: string | WorkspaceContext,
+  vcs?: IVcsAdapter,
 ): Promise<string | null> {
-  return vcs.run(args, cwd);
+  const ctx = resolveWorkspaceContext(cwdOrContext, vcs);
+  return ctx.vcs.run(args, ctx.root);
 }
 
 /**
@@ -25,10 +26,11 @@ export async function runGit(
  */
 export async function runGitCommand(
   args: string[],
-  cwd: string = process.cwd(),
-  vcs: IVcsAdapter = defaultVcsAdapter,
+  cwdOrContext?: string | WorkspaceContext,
+  vcs?: IVcsAdapter,
 ): Promise<string> {
-  return vcs.runCommand(args, cwd);
+  const ctx = resolveWorkspaceContext(cwdOrContext, vcs);
+  return ctx.vcs.runCommand(args, ctx.root);
 }
 
 /**
@@ -36,28 +38,31 @@ export async function runGitCommand(
  * Returns null if not in a git repo or in detached HEAD without branch metadata.
  */
 export async function detectGitBranch(
-  cwd: string = process.cwd(),
-  vcs: IVcsAdapter = defaultVcsAdapter,
+  cwdOrContext?: string | WorkspaceContext,
+  vcs?: IVcsAdapter,
 ): Promise<string | null> {
-  return vcs.detectCurrentBranch(cwd);
+  const ctx = resolveWorkspaceContext(cwdOrContext, vcs);
+  return ctx.vcs.detectCurrentBranch(ctx.root);
 }
 
 /**
  * Retrieves the optional git config `modie.prefix` if set.
  */
 export async function getGitConfigPrefix(
-  cwd: string = process.cwd(),
-  vcs: IVcsAdapter = defaultVcsAdapter,
+  cwdOrContext?: string | WorkspaceContext,
+  vcs?: IVcsAdapter,
 ): Promise<string | null> {
-  return vcs.getConfig("modie.prefix", cwd);
+  const ctx = resolveWorkspaceContext(cwdOrContext, vcs);
+  return ctx.vcs.getConfig("modie.prefix", ctx.root);
 }
 
 /**
  * Lists all local branch names in the git repository.
  */
 export async function listGitBranches(
-  cwd: string = process.cwd(),
-  vcs: IVcsAdapter = defaultVcsAdapter,
+  cwdOrContext?: string | WorkspaceContext,
+  vcs?: IVcsAdapter,
 ): Promise<string[]> {
-  return vcs.listBranches(cwd);
+  const ctx = resolveWorkspaceContext(cwdOrContext, vcs);
+  return ctx.vcs.listBranches(ctx.root);
 }

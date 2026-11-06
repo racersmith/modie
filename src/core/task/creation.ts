@@ -5,6 +5,7 @@
  */
 
 import { resolveArtifactDirectories } from "../common/index.ts";
+import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
 import { createArtifact } from "../pipeline/create.ts";
 import { taskDefinition, validateTaskScope } from "./definition.ts";
 import type { CreateTaskOptions, CreateTaskResult } from "./types.ts";
@@ -17,9 +18,10 @@ export { validateTaskScope } from "./definition.ts";
  */
 export function resolveTaskDirectories(
   scopeDirInput: string | undefined,
-  cwd: string = process.cwd(),
+  cwdOrContext?: string | WorkspaceContext,
 ): { normalizedScopeDir: string; targetDir: string } {
-  return resolveArtifactDirectories("TASK", scopeDirInput, cwd);
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  return resolveArtifactDirectories("TASK", scopeDirInput, ctx.root);
 }
 
 /**

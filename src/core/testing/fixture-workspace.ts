@@ -17,6 +17,10 @@ import { renderAdrMarkdown } from "../adr/template.ts";
 import { parseMarkdownSections } from "../markdown/index.ts";
 import { renderRuleMarkdown } from "../rule/template.ts";
 import { renderTaskMarkdown } from "../task/template.ts";
+import {
+  createWorkspaceContextSync,
+  type WorkspaceContext,
+} from "../context.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -172,6 +176,7 @@ export interface CreatedFixtureArtifact {
 
 export interface FixtureWorkspace {
   cwd: string;
+  context: WorkspaceContext;
   makeTag(subtype: string, id: number | string): string;
   resolve(...paths: string[]): string;
   mkdir(relativePath: string): Promise<string>;
@@ -209,11 +214,13 @@ export async function createFixtureWorkspace(
   prefix = "modie-core-test-",
 ): Promise<FixtureWorkspace> {
   const cwd = await mkdtemp(join(tmpdir(), prefix));
+  const context = createWorkspaceContextSync({ root: cwd });
 
   let testIdCounter = 1;
 
   const workspace: FixtureWorkspace = {
     cwd,
+    context,
 
     makeTag(subtype: string, id: number | string): string {
       return makeTestTag(subtype, id);
