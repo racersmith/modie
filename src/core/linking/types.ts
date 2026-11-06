@@ -14,6 +14,36 @@ export type FrontmatterListField =
   | "supersedes"
   | "superseded_by";
 
+/**
+ * Permitted ancestry directionality and graph topology constraint for a link target.
+ * - "ancestor": Target artifact must reside in source's directory or an ancestor directory.
+ * - "descendant": Target artifact must reside in source's directory or a descendant subtree.
+ * - "same-or-ancestor": Alias for ancestor-or-self directory constraint.
+ * - "acyclic": Target is exempt from directory ancestry but must maintain a DAG without circular cycles.
+ * - "any": Unrestricted spatial scope.
+ */
+export type LinkAncestryScope =
+  | "ancestor"
+  | "descendant"
+  | "same-or-ancestor"
+  | "acyclic"
+  | "any";
+
+/**
+ * Declarative link policy for a single artifact subtype, mapping frontmatter relationship
+ * fields ("links", "depends_on") to allowed target subtypes and ancestry/topology constraints.
+ */
+export type SubtypeLinkPolicy = {
+  [relationship in ArtifactLinkRelationship]?: {
+    [targetSubtype: string]: LinkAncestryScope;
+  };
+};
+
+/**
+ * Declarative system-wide link policy table keyed by uppercase artifact subtype ("RULE", "ADR", "TASK").
+ */
+export type LinkPolicyTable = Record<string, SubtypeLinkPolicy>;
+
 export interface ValidateLinkOptions {
   /**
    * Workspace root directory (defaults to process.cwd()).
@@ -25,6 +55,11 @@ export interface ValidateLinkOptions {
    * When omitted, automatically inferred from source and target subtypes per ADR-5.
    */
   relationship?: ArtifactLinkRelationship;
+
+  /**
+   * Optional link policy override for the source artifact.
+   */
+  policy?: SubtypeLinkPolicy;
 }
 
 export interface ValidatedLinkContext {

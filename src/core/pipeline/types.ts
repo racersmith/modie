@@ -4,6 +4,7 @@
  */
 
 import type { IndexableSubtype } from "../common/types.ts";
+import type { SubtypeLinkPolicy } from "../linking/types.ts";
 import type { ParsedFrontmatterFields } from "../query/markdown-parser.ts";
 import type { WatermarkDetails } from "../resolver/types.ts";
 
@@ -92,6 +93,12 @@ export interface ArtifactDefinition<TOptions = any, TArtifact = any> {
    * Defaults to `${subtype.toLowerCase()}s`.
    */
   containerName?: string;
+
+  /**
+   * Optional declarative link and dependency governance policy matrix.
+   * Defines permitted relationships, target subtypes, and ancestry constraints per ADR-5.
+   */
+  linkPolicy?: SubtypeLinkPolicy;
 
   /**
    * Optional validation hook executed before ID allocation (e.g. link/scope validation).

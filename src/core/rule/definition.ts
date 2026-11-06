@@ -3,6 +3,7 @@
  * Complies with ADR-1, ADR-2, RULE-1, RULE-3, RULE-8, RULE-11, RULE-13, and RULE-16.
  */
 
+import { LINK_POLICY } from "../linking/policy.ts";
 import { validateLinkTarget } from "../linking/validator.ts";
 import type { ArtifactDefinition } from "../pipeline/types.ts";
 import {
@@ -38,6 +39,7 @@ export const ruleDefinition: ArtifactDefinition<
 > = {
   subtype: "RULE",
   containerName: "rules",
+  linkPolicy: LINK_POLICY.RULE,
   validate: async ({ normalizedScopeDir, options, cwd }) => {
     const links = options.links ?? [];
     await validateRuleAncestry(normalizedScopeDir, links, cwd);
