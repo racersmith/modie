@@ -3,11 +3,11 @@ import {
   parseArtifactFilename,
   slugToTitle,
 } from "../common/index.ts";
-import type { ArtifactParseContext } from "../pipeline/types.ts";
 import {
   parseMarkdownDocument,
   parseMarkdownSections,
-} from "../query/markdown-parser.ts";
+  type ArtifactParseContext,
+} from "../markdown/index.ts";
 import { parseAcceptanceCriteria } from "./checklist.ts";
 import { extractTaskSummary } from "./summary.ts";
 import type {

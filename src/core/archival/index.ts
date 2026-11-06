@@ -4,6 +4,4 @@
  */
 
 export * from "./types.ts";
-export { archiveArtifact } from "./archive.ts";
-export { archiveAdr, type ArchiveAdrOptions } from "../adr/archive.ts";
-export { archiveRule, type ArchiveRuleOptions } from "../rule/archive.ts";
+export * from "./archive.ts";

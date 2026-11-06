@@ -12,12 +12,13 @@ import {
   resolveArtifactDirectories,
   resolveGoverningScope,
 } from "../common/directories.ts";
+import { parseCanonicalTag } from "../common/tag.ts";
 import type { IndexableSubtype } from "../common/types.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
 import {
   parseFrontmatterFields,
   splitMarkdownFrontmatter,
-} from "../query/markdown-parser.ts";
+} from "../markdown/index.ts";
 import type { ResolvedArtifact } from "../query/types.ts";
 import { scanActiveTasks } from "../resolver/active-scanner.ts";
 import { resolveSubtypeLinkPolicy } from "./policy.ts";
@@ -132,29 +133,30 @@ function isAncestorOrSelfDir(
   return !rel.startsWith("..") && !isAbsolute(rel);
 }
 
-export const ADR_LINK_TAG_REGEX = /^ADR-[A-Za-z0-9_-]+$/i;
-export const GOVERNANCE_LINK_TAG_REGEX = /^(?:ADR|RULE)-[A-Za-z0-9_-]+$/i;
-export const TASK_DEPENDENCY_TAG_REGEX = /^TASK-[A-Za-z0-9_.-]+$/i;
+export const ADR_LINK_TAG_REGEX = /^ADR-[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*$/i;
+export const GOVERNANCE_LINK_TAG_REGEX = /^(?:ADR|RULE)-[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*$/i;
+export const TASK_DEPENDENCY_TAG_REGEX = /^TASK-[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*$/i;
 
 /**
  * Returns true if `tag` matches canonical ADR tag syntax (ADR-5, RULE-13).
  */
 export function isValidAdrLinkTag(tag: string): boolean {
-  return ADR_LINK_TAG_REGEX.test(tag.trim());
+  return parseCanonicalTag(tag)?.subtype === "ADR";
 }
 
 /**
  * Returns true if `tag` matches canonical ADR or RULE governance tag syntax (ADR-5, RULE-14, RULE-15).
  */
 export function isValidGovernanceLinkTag(tag: string): boolean {
-  return GOVERNANCE_LINK_TAG_REGEX.test(tag.trim());
+  const subtype = parseCanonicalTag(tag)?.subtype;
+  return subtype === "ADR" || subtype === "RULE";
 }
 
 /**
  * Returns true if `tag` matches canonical TASK dependency tag syntax (RULE-18).
  */
 export function isValidTaskDependencyTag(tag: string): boolean {
-  return TASK_DEPENDENCY_TAG_REGEX.test(tag.trim());
+  return parseCanonicalTag(tag)?.subtype === "TASK";
 }
 
 export interface ValidateLinkTargetOptions {

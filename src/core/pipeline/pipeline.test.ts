@@ -9,16 +9,18 @@ import {
   type FixtureWorkspace,
 } from "../testing/index.ts";
 import {
-  ARTIFACT_DEFINITIONS,
-  adrDefinition,
   createArtifact,
-  getArtifactDefinition,
   parseArtifact,
-  ruleDefinition,
-  taskDefinition,
   type ArtifactDefinition,
   type BaseCreateArtifactOptions,
 } from "./index.ts";
+import {
+  ARTIFACT_DEFINITIONS,
+  adrDefinition,
+  getArtifactDefinition,
+  ruleDefinition,
+  taskDefinition,
+} from "../registry.ts";
 import {
   createAdr,
   createRule,

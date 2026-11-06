@@ -9,14 +9,12 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { YAML } from "bun";
-import {
-  parseCanonicalTag,
-  resolveArtifactByTag,
-} from "../query/artifact-query.ts";
+import { parseCanonicalTag } from "../common/index.ts";
+import { resolveArtifactByTag } from "../query/artifact-query.ts";
 import {
   parseFrontmatterFields,
   splitMarkdownFrontmatter,
-} from "../query/markdown-parser.ts";
+} from "../markdown/index.ts";
 import type { ResolvedArtifact } from "../query/types.ts";
 import type {
   ArtifactLinkRelationship,

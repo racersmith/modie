@@ -6,8 +6,10 @@
 import { parseArtifactFilename } from "../common/filename.ts";
 import { slugToTitle } from "../common/index.ts";
 import { isValidAdrLinkTag } from "../linking/validator.ts";
-import type { ArtifactParseContext } from "../pipeline/types.ts";
-import { parseMarkdownDocument } from "../query/markdown-parser.ts";
+import {
+  parseMarkdownDocument,
+  type ArtifactParseContext,
+} from "../markdown/index.ts";
 import type { RuleArtifact, RuleRenderOptions } from "./types.ts";
 
 /**

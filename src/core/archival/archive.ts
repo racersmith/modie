@@ -94,3 +94,37 @@ export async function archiveArtifact(
     blockingReasons,
   };
 }
+
+export type ArchiveAdrOptions = Omit<ArchiveArtifactOptions, "subtype">;
+export type ArchiveRuleOptions = Omit<ArchiveArtifactOptions, "subtype">;
+
+/**
+ * Archives an ADR artifact after verifying zero active incoming references (RULE-31).
+ */
+export async function archiveAdr(
+  tagOrOptions: string | ArchiveAdrOptions,
+  options: Omit<ArchiveAdrOptions, "tag"> = {},
+): Promise<ArchiveArtifactResult> {
+  const finalOptions: ArchiveArtifactOptions =
+    typeof tagOrOptions === "string"
+      ? { ...options, tag: tagOrOptions, subtype: "ADR" }
+      : { ...tagOrOptions, subtype: "ADR" };
+
+  return archiveArtifact(finalOptions);
+}
+
+/**
+ * Archives a RULE artifact after verifying zero active incoming references (RULE-31).
+ */
+export async function archiveRule(
+  tagOrOptions: string | ArchiveRuleOptions,
+  options: Omit<ArchiveRuleOptions, "tag"> = {},
+): Promise<ArchiveArtifactResult> {
+  const finalOptions: ArchiveArtifactOptions =
+    typeof tagOrOptions === "string"
+      ? { ...options, tag: tagOrOptions, subtype: "RULE" }
+      : { ...tagOrOptions, subtype: "RULE" };
+
+  return archiveArtifact(finalOptions);
+}
+

@@ -16,10 +16,12 @@ import {
 import { scanActiveTasks } from "../resolver/active-scanner.ts";
 import {
   detectGitBranch,
-  inspectGitDeletedArtifacts,
-  inspectMultiBranchActiveArtifacts,
   listGitBranches,
 } from "../resolver/git-inspector.ts";
+import {
+  inspectGitDeletedArtifacts,
+  inspectMultiBranchActiveArtifacts,
+} from "../resolver/artifact-history.ts";
 import type {
   DiscoveredArtifact,
   DiscoveredTask,

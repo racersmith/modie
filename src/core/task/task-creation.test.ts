@@ -9,9 +9,9 @@ import {
   type FixtureWorkspace,
 } from "../testing/index.ts";
 import { findDeepestCommonAncestor } from "../common/index.ts";
-import * as TaskPrimitive from "./index.ts";
 import {
   createTask,
+  parseTaskMarkdown,
   queryTaskQueue,
   resolveTaskDirectories,
   validateTaskScope,
@@ -172,8 +172,8 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     expect(fileContents).toContain("- [ ] Verify valid frontmatter parsing");
     expect(fileContents).toContain("- [ ] User Review");
 
-    // Roundtrip verification using TaskPrimitive parser
-    const parsed = TaskPrimitive.parseTaskMarkdown(
+    // Roundtrip verification using parseTaskMarkdown
+    const parsed = parseTaskMarkdown(
       fileContents,
       result.filepath,
     );

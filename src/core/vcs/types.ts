@@ -3,11 +3,6 @@
  * Complies with RULE-25, RULE-28, and ADR-6.
  */
 
-import type {
-  DiscoveredArtifact,
-  IndexableSubtype,
-} from "../resolver/types.ts";
-
 export interface MultiBranchOptions {
   excludeCurrent?: boolean;
   excludeBranch?: string;
@@ -86,21 +81,11 @@ export interface IVcsAdapter {
     cwd?: string,
   ): Promise<string>;
 
-  // Artifact Tree & History Inspection
-  inspectTreeArtifacts(
-    ref: string,
-    cwd?: string,
-    subtype?: IndexableSubtype,
-  ): Promise<DiscoveredArtifact[]>;
-  inspectDeletedArtifacts(
-    cwd?: string,
-    subtype?: IndexableSubtype,
-  ): Promise<DiscoveredArtifact[]>;
-  inspectMultiBranchActiveArtifacts(
-    cwd?: string,
-    subtype?: IndexableSubtype,
-    options?: MultiBranchOptions,
-  ): Promise<DiscoveredArtifact[]>;
+  // Pure Tree & Commit History Inspections
+  listTreeFiles(ref: string, cwd?: string): Promise<string[]>;
+  listDeletedFiles(pattern?: string, cwd?: string): Promise<string[]>;
+  listActiveTrackedFiles(pattern?: string, cwd?: string): Promise<string[]>;
+  listLogGrep(pattern: string, cwd?: string): Promise<string[]>;
 
   // Search & Index Query
   grep(

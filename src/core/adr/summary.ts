@@ -8,7 +8,7 @@ import {
   parseFrontmatterFields,
   parseMarkdownSections,
   splitMarkdownFrontmatter,
-} from "../query/markdown-parser.ts";
+} from "../markdown/index.ts";
 
 /**
  * Extracts a concise summary from an ADR markdown document.

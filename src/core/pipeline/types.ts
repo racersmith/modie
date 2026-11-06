@@ -3,10 +3,15 @@
  * Complies with ADR-1, ADR-2, ADR-4, RULE-1, RULE-8, and RULE-25.
  */
 
-import type { IndexableSubtype } from "../common/types.ts";
+import type { ArtifactSubtype, IndexableSubtype } from "../common/types.ts";
 import type { SubtypeLinkPolicy } from "../linking/types.ts";
-import type { ParsedFrontmatterFields } from "../query/markdown-parser.ts";
+import type {
+  ArtifactParseContext,
+  ParsedFrontmatterFields,
+} from "../markdown/index.ts";
 import type { WatermarkDetails } from "../resolver/types.ts";
+
+export type { ArtifactParseContext, ParsedFrontmatterFields };
 
 export interface BaseCreateArtifactOptions {
   /**
@@ -31,7 +36,10 @@ export interface BaseCreateArtifactOptions {
   supersedes?: string | string[];
 }
 
-export interface ArtifactValidationContext<TOptions = unknown> {
+/**
+ * Unified context for pre-write artifact planning operations (validation and ID allocation).
+ */
+export interface ArtifactPlanContext<TOptions = unknown> {
   title: string;
   slug: string;
   normalizedScopeDir: string;
@@ -40,14 +48,10 @@ export interface ArtifactValidationContext<TOptions = unknown> {
   cwd: string;
 }
 
-export interface ArtifactAllocationContext<TOptions = unknown> {
-  title: string;
-  slug: string;
-  normalizedScopeDir: string;
-  targetDir: string;
-  options: TOptions;
-  cwd: string;
-}
+export type ArtifactValidationContext<TOptions = unknown> =
+  ArtifactPlanContext<TOptions>;
+export type ArtifactAllocationContext<TOptions = unknown> =
+  ArtifactPlanContext<TOptions>;
 
 export interface ArtifactRenderContext<TOptions = unknown> {
   id: string;
@@ -65,19 +69,6 @@ export interface ArtifactRenderResult<TArtifact = unknown> {
   artifact: TArtifact;
 }
 
-export interface ArtifactParseContext {
-  id: string;
-  slug: string;
-  title: string;
-  filepath?: string;
-  filename?: string;
-  rawContent: string;
-  frontmatter: string;
-  body: string;
-  frontmatterFields: ParsedFrontmatterFields;
-  sections: Record<string, string>;
-}
-
 /**
  * Declarative definition of an artifact subtype, defining its lifecycle behaviors,
  * directory conventions, link validation rules, template generator, and markdown parser.
@@ -86,7 +77,7 @@ export interface ArtifactDefinition<TOptions = any, TArtifact = any> {
   /**
    * The uppercase subtype identifier (e.g. "RULE", "ADR", "TASK").
    */
-  subtype: IndexableSubtype | string;
+  subtype: ArtifactSubtype | IndexableSubtype | string;
 
   /**
    * Optional plural container directory name (e.g. "rules", "adrs", "tasks").
@@ -104,14 +95,14 @@ export interface ArtifactDefinition<TOptions = any, TArtifact = any> {
    * Optional validation hook executed before ID allocation (e.g. link/scope validation).
    */
   validate?: (
-    context: ArtifactValidationContext<TOptions>,
+    context: ArtifactPlanContext<TOptions>,
   ) => void | Promise<void>;
 
   /**
    * Optional ID allocator. Defaults to monotonic watermark resolution.
    */
   allocateId?: (
-    context: ArtifactAllocationContext<TOptions>,
+    context: ArtifactPlanContext<TOptions>,
   ) => Promise<{ id: string; watermark?: WatermarkDetails }>;
 
   /**
