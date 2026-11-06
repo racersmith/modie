@@ -47,4 +47,4 @@ Per the maintainability review (§3.1, §4.3, §4.4, §5), two major validation 
 - [x] Decompose `mergeTaskBranch` into linear lifecycle stages, reducing cyclomatic complexity from 36 to <= 10.
 - [x] Deduplicate link/unlink mutation result shaping in `src/core/linking/mutation.ts` via a shared `applyLinkMutation` helper.
 - [x] Verify link validation, task branch merge behavior, and error recovery against all link and task lifecycle test suites.
-- [ ] User Review
+- [x] User Review

@@ -79,3 +79,4 @@ export class ArtifactCollisionError extends Error {
     this.collisions = details?.collisions ?? [];
   }
 }
+
