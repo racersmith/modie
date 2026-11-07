@@ -5,11 +5,7 @@
 
 import type { IndexableSubtype, ResolvedArtifact } from "../common/types.ts";
 import type { WorkspaceContext } from "../context/types.ts";
-import type {
-  DirectoryGist,
-  FileGist,
-  GistSignpost,
-} from "../gist/types.ts";
+import type { DirectoryGist, FileGist, GistSignpost } from "../gist/types.ts";
 import type { TaskReadiness } from "../task/types.ts";
 import type {
   ParsedPlannedGovernance,
@@ -90,7 +86,7 @@ export interface ResolveArtifactOptions {
   /**
    * Explicit workspace context container.
    */
-  context?: WorkspaceContext;
+  workspace?: WorkspaceContext;
 
   /**
    * Explicit subtype filter.
@@ -181,7 +177,7 @@ export interface ListArtifactsOptions {
   /**
    * Explicit workspace context container.
    */
-  context?: WorkspaceContext;
+  workspace?: WorkspaceContext;
 
   /**
    * Optional target directory or file scope for ancestral scope traversal (RULE-9).
@@ -354,7 +350,7 @@ export interface FindArtifactReferencesOptions {
   /**
    * Explicit workspace context container.
    */
-  context?: WorkspaceContext;
+  workspace?: WorkspaceContext;
 
   /**
    * Custom directory ignore list.
@@ -463,7 +459,7 @@ export interface ResolveScopeOptions {
   /**
    * Explicit workspace context container.
    */
-  context?: WorkspaceContext;
+  workspace?: WorkspaceContext;
 }
 
 export interface CompileContextOptions {
@@ -475,7 +471,7 @@ export interface CompileContextOptions {
   /**
    * Explicit workspace context container.
    */
-  context?: WorkspaceContext;
+  workspace?: WorkspaceContext;
 }
 
 export interface CompiledContextMotive {

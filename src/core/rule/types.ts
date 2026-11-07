@@ -116,6 +116,11 @@ export interface CreateRuleOptions {
   /**
    * Context / description alias for assertion.
    */
+  contextSection?: string;
+
+  /**
+   * @deprecated Use `contextSection` instead. Backward-compatible alias.
+   */
   context?: string;
 
   /**

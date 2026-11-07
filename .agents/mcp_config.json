@@ -2,10 +2,7 @@
   "mcpServers": {
     "mcp-checkup": {
       "command": "bunx",
-      "args": [
-        "-y",
-        "mcp-checkup"
-      ],
+      "args": ["-y", "mcp-checkup"],
       "type": "stdio"
     }
   }

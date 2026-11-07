@@ -69,4 +69,3 @@ export function extractAdrSummary(
 
   return "Architecture Decision Record";
 }
-

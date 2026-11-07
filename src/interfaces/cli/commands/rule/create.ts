@@ -101,7 +101,8 @@ export const ruleCreateCommand: CliCommandDefinition<
     const ruleOptions: CreateRuleOptions = {
       title: input.title,
       scopeDir: input.scope,
-      context: input.context,
+      assertion: input.context,
+      contextSection: input.context,
       links: input.links.length > 0 ? input.links : undefined,
       supersedes: input.supersedes.length > 0 ? input.supersedes : undefined,
       cwd: context.cwd,
@@ -143,4 +144,3 @@ export const ruleCreateCommand: CliCommandDefinition<
     );
   },
 });
-

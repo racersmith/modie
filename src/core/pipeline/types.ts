@@ -4,6 +4,7 @@
  */
 
 import type { ArtifactSubtype, IndexableSubtype } from "../common/types.ts";
+import type { WorkspaceContext } from "../context/types.ts";
 import type { SubtypeLinkPolicy } from "../linking/types.ts";
 import type {
   ArtifactParseContext,
@@ -33,8 +34,7 @@ export interface BaseCreateArtifactOptions {
   /**
    * Explicit workspace context container.
    */
-  workspace?: any;
-  context?: any;
+  workspace?: WorkspaceContext;
 
   /**
    * Optional target artifact tag(s) superseded by this artifact.
@@ -100,9 +100,7 @@ export interface ArtifactDefinition<TOptions = any, TArtifact = any> {
   /**
    * Optional validation hook executed before ID allocation (e.g. link/scope validation).
    */
-  validate?: (
-    context: ArtifactPlanContext<TOptions>,
-  ) => void | Promise<void>;
+  validate?: (context: ArtifactPlanContext<TOptions>) => void | Promise<void>;
 
   /**
    * Optional ID allocator. Defaults to monotonic watermark resolution.

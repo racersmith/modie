@@ -129,4 +129,3 @@ export async function archiveRule(
 
   return archiveArtifact(finalOptions);
 }
-

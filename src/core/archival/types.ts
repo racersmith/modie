@@ -31,7 +31,6 @@ export interface ArchiveArtifactOptions {
    * Explicit workspace context container.
    */
   workspace?: WorkspaceContext;
-  context?: WorkspaceContext;
 }
 
 export interface ArchiveArtifactResult {

@@ -9,10 +9,7 @@ import {
   type FixtureWorkspace,
 } from "../testing/index.ts";
 import { parseCanonicalTag } from "../common/index.ts";
-import {
-  getArtifactDetails,
-  resolveArtifactByTag,
-} from "./index.ts";
+import { getArtifactDetails, resolveArtifactByTag } from "./index.ts";
 
 describe("Artifact Query Service - Canonical Tag Parsing (RULE-1, RULE-29, RULE-35)", () => {
   // @verifies RULE-1, RULE-29, RULE-35

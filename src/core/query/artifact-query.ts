@@ -37,7 +37,6 @@ export type {
   ResolvedArtifact,
 } from "./types.ts";
 
-
 interface ArtifactLookupContext {
   cwd: string;
   options: ResolveArtifactOptions;
@@ -360,10 +359,10 @@ export async function getArtifactDetails(
   const summary =
     resolved.subtype === "ADR"
       ? (parsedSubtypeArtifact?.summary ??
-          extractAdrSummary(rawContent, resolved.slug))
+        extractAdrSummary(rawContent, resolved.slug))
       : resolved.subtype === "TASK"
         ? (parsedSubtypeArtifact?.summary ??
-            extractTaskSummary(rawContent, resolved.slug))
+          extractTaskSummary(rawContent, resolved.slug))
         : fmSummary;
   const contextSection = parsedSubtypeArtifact?.context ?? sections["Context"];
   const acceptanceCriteria: TaskAcceptanceCriteriaItem[] | undefined =

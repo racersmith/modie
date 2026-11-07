@@ -113,7 +113,12 @@ describe("GitCliAdapter - Real Subprocess Fixture Tests", () => {
     expect(treeFiles.length).toBe(1);
     expect(treeFiles[0]).toContain(rule10Tag);
 
-    const treeArts = await inspectGitTreeArtifacts("main", workspace.cwd, "RULE", adapter);
+    const treeArts = await inspectGitTreeArtifacts(
+      "main",
+      workspace.cwd,
+      "RULE",
+      adapter,
+    );
     expect(treeArts.length).toBe(1);
     expect(treeArts[0]?.id).toBe("10");
     expect(treeArts[0]?.subtype).toBe("RULE");
@@ -257,7 +262,7 @@ describe("Hermetic Core Domain Injections with MockVcsAdapter", () => {
       insideWorkTree: true,
       currentBranch: "dev",
       branches: ["dev", "main"],
-      deletedArtifacts: [],
+      deletedFilesList: [],
     });
 
     // 1. Start task branch
@@ -275,16 +280,7 @@ describe("Hermetic Core Domain Injections with MockVcsAdapter", () => {
 
     // 2. Complete task (delete file in mock)
     await workspace.remove(task);
-    mockVcs.deletedArtifacts.push({
-      id: "201",
-      subtype: "TASK",
-      tag: task201Tag,
-      slug: task.slug,
-      filename: task.filename,
-      filepath: task.filename,
-      isArchived: false,
-      status: "deleted",
-    });
+    mockVcs.deletedFilesList.push(task.filename);
 
     // 3. Merge task branch
     const mergeResult = await mergeTaskBranch(task.tag, {
@@ -309,18 +305,7 @@ describe("Hermetic Core Domain Injections with MockVcsAdapter", () => {
       insideWorkTree: true,
       currentBranch: "task/250-parent-feature",
       branches: ["dev", "task/250-parent-feature"],
-      deletedArtifacts: [
-        {
-          id: "250-1",
-          subtype: "TASK",
-          tag: task250_1Tag,
-          slug: "first-subtask",
-          filename: `first-subtask.${task250_1Tag}.md`,
-          filepath: `first-subtask.${task250_1Tag}.md`,
-          isArchived: false,
-          status: "deleted",
-        },
-      ],
+      deletedFilesList: [`first-subtask.${task250_1Tag}.md`],
     });
 
     // Subtask watermark should detect existing 250-1 in mock deleted history and allocate 250-2
@@ -336,16 +321,7 @@ describe("Hermetic Core Domain Injections with MockVcsAdapter", () => {
     expect(wmTask.nextId).toBe("250-2");
 
     // Rule watermark should detect highest integer in mock deleted history
-    mockVcs.deletedArtifacts.push({
-      id: "77",
-      subtype: "RULE",
-      tag: rule77Tag,
-      slug: "sample-rule",
-      filename: `sample-rule.${rule77Tag}.md`,
-      filepath: `sample-rule.${rule77Tag}.md`,
-      isArchived: false,
-      status: "deleted",
-    });
+    mockVcs.deletedFilesList.push(`sample-rule.${rule77Tag}.md`);
 
     const wmRule = await resolveWatermark({
       subtype: "RULE",

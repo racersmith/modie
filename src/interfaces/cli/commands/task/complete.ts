@@ -86,8 +86,7 @@ export const taskCompleteCommand: CliCommandDefinition<
   },
   execute: async (input, context) => {
     const isGitRepo = await context.workspace.vcs.isInsideWorkTree(context.cwd);
-    const commit =
-      input.commit !== undefined ? input.commit : isGitRepo;
+    const commit = input.commit !== undefined ? input.commit : isGitRepo;
     const deleteArtifact = !input.keepFile;
 
     const idToComplete = input.id?.trim();
@@ -107,7 +106,7 @@ export const taskCompleteCommand: CliCommandDefinition<
       deleteArtifact,
       commit,
       cwd: context.cwd,
-      context: context.workspace,
+      workspace: context.workspace,
     });
   },
   render: (result, context) => {
@@ -146,4 +145,3 @@ export const taskCompleteCommand: CliCommandDefinition<
     );
   },
 });
-

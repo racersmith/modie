@@ -13,8 +13,7 @@ export const McpErrorCode = {
   EXECUTION_FAILED: "EXECUTION_FAILED",
 } as const;
 
-export type McpErrorCodeType =
-  (typeof McpErrorCode)[keyof typeof McpErrorCode];
+export type McpErrorCodeType = (typeof McpErrorCode)[keyof typeof McpErrorCode];
 
 export interface McpRecoverySuggestion {
   /**
@@ -219,8 +218,7 @@ export class McpToolError extends Error {
         tool: options.tool ?? "task_context",
         parameters: options.suggestedParameters,
         validAlternatives: options.validAlternatives,
-        suggestion:
-          "Inspect the tool's inputSchema and pass valid parameters.",
+        suggestion: "Inspect the tool's inputSchema and pass valid parameters.",
       },
     });
   }

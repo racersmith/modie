@@ -30,4 +30,3 @@ export function toPosixRelative(from: string, to: string): string {
 export function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-

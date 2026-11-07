@@ -36,4 +36,3 @@ export function loadMcpInstructions(customPath?: string): string {
     `[modie-mcp] Agent instructions file at "${targetPath}" is empty.`,
   );
 }
-

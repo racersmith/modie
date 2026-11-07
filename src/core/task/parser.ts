@@ -139,6 +139,7 @@ export function parseTaskFromContext(
     ...(summary ? { summary } : {}),
     depends_on: context.frontmatterFields.depends_on ?? [],
     links: context.frontmatterFields.links,
+    contextSection,
     context: contextSection,
     plannedGovernance,
     acceptanceCriteria,

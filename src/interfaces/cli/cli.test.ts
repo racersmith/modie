@@ -192,16 +192,28 @@ describe("CLI Harness - Global Commands & Stream Separation (RULE-25, RULE-27, R
 
     // Execute via runCli with custom registry
     const stderrLines: string[] = [];
-    const exit1 = await runCli(["frobnicate"], { stderr: (msg) => stderrLines.push(msg) }, customCommands);
+    const exit1 = await runCli(
+      ["frobnicate"],
+      { stderr: (msg) => stderrLines.push(msg) },
+      customCommands,
+    );
     expect(exit1).toBe(0);
     expect(executedDirect).toBe(true);
 
-    const exit2 = await runCli(["gizmo", "tw"], { stderr: (msg) => stderrLines.push(msg) }, customCommands);
+    const exit2 = await runCli(
+      ["gizmo", "tw"],
+      { stderr: (msg) => stderrLines.push(msg) },
+      customCommands,
+    );
     expect(exit2).toBe(0);
     expect(executedSub).toBe(true);
 
     const helpOutput: string[] = [];
-    const exitHelp = await runCli(["--help"], { stderr: (msg) => helpOutput.push(msg) }, customCommands);
+    const exitHelp = await runCli(
+      ["--help"],
+      { stderr: (msg) => helpOutput.push(msg) },
+      customCommands,
+    );
     expect(exitHelp).toBe(0);
     const joinedHelp = helpOutput.join("\n");
     expect(joinedHelp).toContain("frob [options]");

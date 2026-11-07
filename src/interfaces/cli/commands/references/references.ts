@@ -202,4 +202,3 @@ export const referencesCommandDefinition: CliCommandDefinition<
     context.stdout(JSON.stringify(result, null, 2));
   },
 });
-

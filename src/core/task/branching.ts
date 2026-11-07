@@ -18,7 +18,6 @@ import {
 import type { DiscoveredArtifact, IndexableSubtype } from "../common/types.ts";
 import {
   formatTaskBranch,
-  formatTaskBranchName,
   normalizeTaskId,
   parseArtifactFilename,
   parseSubtaskId,
@@ -71,7 +70,11 @@ export async function detectArtifactCollisions(
   }
 
   // Find common ancestor commit between target and source branches
-  const mergeBase = await effectiveVcs.mergeBase(targetBranch, sourceBranch, cwd);
+  const mergeBase = await effectiveVcs.mergeBase(
+    targetBranch,
+    sourceBranch,
+    cwd,
+  );
 
   const baseArtifacts = mergeBase
     ? await inspectGitTreeArtifacts(mergeBase, cwd, undefined, vcs)
@@ -252,18 +255,14 @@ async function findParentTaskBranch(
 
   // 2. Check active task file on disk with exact ID match
   const activeTasks = await scanActiveTasks(cwd);
-  const parentTask = activeTasks.find(
-    (t) => taskKey(t.id) === normParentKey,
-  );
+  const parentTask = activeTasks.find((t) => taskKey(t.id) === normParentKey);
   if (parentTask) {
     return formatTaskBranch(normParent, parentTask.slug);
   }
 
   // 3. Check deleted artifacts in Git
   const deleted = await inspectGitDeletedArtifacts(cwd, "TASK", vcs);
-  const matchDeleted = deleted.find(
-    (d) => taskKey(d.id) === normParentKey,
-  );
+  const matchDeleted = deleted.find((d) => taskKey(d.id) === normParentKey);
   if (matchDeleted && matchDeleted.slug) {
     return formatTaskBranch(normParent, matchDeleted.slug);
   }
@@ -277,7 +276,12 @@ async function findParentTaskBranch(
  */
 export async function computeTaskBranchTopology(
   taskIdentifier: string,
-  options: { base?: string; cwd?: string; vcs?: IVcsAdapter; context?: WorkspaceContext } = {},
+  options: {
+    base?: string;
+    cwd?: string;
+    vcs?: IVcsAdapter;
+    workspace?: WorkspaceContext;
+  } = {},
 ): Promise<TaskBranchTopology> {
   const ctx = resolveWorkspaceContext(options);
   const cwd = ctx.root;
@@ -288,7 +292,7 @@ export async function computeTaskBranchTopology(
 
   const subtaskInfo = parseSubtaskId(meta.id);
   const isSubtask = subtaskInfo !== null;
-  const branchName = formatTaskBranchName(meta.id, meta.slug);
+  const branchName = formatTaskBranch(meta.id, meta.slug);
 
   let parentBranchName: string | undefined;
   let expectedBaseBranch: string;
@@ -300,7 +304,9 @@ export async function computeTaskBranchTopology(
       vcs,
     );
     expectedBaseBranch =
-      options.base ?? parentBranchName ?? formatTaskBranch(subtaskInfo.parentId);
+      options.base ??
+      parentBranchName ??
+      formatTaskBranch(subtaskInfo.parentId);
   } else {
     expectedBaseBranch = options.base ?? config.trunk;
   }
@@ -339,7 +345,7 @@ export async function startTaskBranch(
   const vcs = ctx.vcs;
   const topology = await computeTaskBranchTopology(taskIdentifier, {
     ...options,
-    context: ctx,
+    workspace: ctx,
     cwd,
     vcs,
   });
@@ -482,7 +488,12 @@ export async function assertTaskCompleted(
   taskIdentifier: string | undefined,
   taskId: string,
   sourceBranch: string,
-  options: { cwd?: string; vcs?: IVcsAdapter; force?: boolean; context?: WorkspaceContext } = {},
+  options: {
+    cwd?: string;
+    vcs?: IVcsAdapter;
+    force?: boolean;
+    workspace?: WorkspaceContext;
+  } = {},
 ): Promise<void> {
   if (options.force) {
     return;
@@ -541,9 +552,7 @@ function resolveSubtaskTarget(
   force?: boolean,
 ): string {
   const targetBranch =
-    targetOverride ??
-    topology.parentBranchName ??
-    topology.expectedBaseBranch;
+    targetOverride ?? topology.parentBranchName ?? topology.expectedBaseBranch;
 
   // RULE-28: Subtasks must never be merged directly into trunk
   if (targetBranch === topology.trunkBranch && !force) {
@@ -741,7 +750,7 @@ export async function mergeTaskBranch(
   const targetId = await resolveTaskIdentifier(taskIdentifier, vcs, cwd);
   const topology = await computeTaskBranchTopology(targetId, {
     ...options,
-    context: ctx,
+    workspace: ctx,
     cwd,
     vcs,
   });

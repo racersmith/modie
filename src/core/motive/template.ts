@@ -65,7 +65,9 @@ export function validateMotiveContent(content: string): void {
       prohibited.add(token);
       continue;
     }
-    if (/^(?:MOTIVE|GIST)-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*(?:\.\d+)?$/i.test(token)) {
+    if (
+      /^(?:MOTIVE|GIST)-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*(?:\.\d+)?$/i.test(token)
+    ) {
       prohibited.add(token);
       continue;
     }

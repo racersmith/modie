@@ -28,11 +28,21 @@ describe("Artifact History Inspection (ADR-6, ADR-9, RULE-21, RULE-33, RULE-35)"
       },
     });
 
-    const arts = await inspectGitTreeArtifacts("main", process.cwd(), undefined, mockVcs);
+    const arts = await inspectGitTreeArtifacts(
+      "main",
+      process.cwd(),
+      undefined,
+      mockVcs,
+    );
     expect(arts.length).toBe(2);
     expect(arts.map((a) => a.tag)).toEqual([rule1Tag, adr4Tag]);
 
-    const rulesOnly = await inspectGitTreeArtifacts("main", process.cwd(), "RULE", mockVcs);
+    const rulesOnly = await inspectGitTreeArtifacts(
+      "main",
+      process.cwd(),
+      "RULE",
+      mockVcs,
+    );
     expect(rulesOnly.length).toBe(1);
     expect(rulesOnly[0]?.tag).toBe(rule1Tag);
   });
@@ -42,9 +52,7 @@ describe("Artifact History Inspection (ADR-6, ADR-9, RULE-21, RULE-33, RULE-35)"
     const task42Tag = makeTestTag("TASK", 42);
     const taskGrepQuery = `delete completed ${makeTestTag("TASK", "")}`;
     const mockVcs = new MockVcsAdapter({
-      deletedFilesList: [
-        `src/.modie/rules/deprecated-rule.${rule99Tag}.md`,
-      ],
+      deletedFilesList: [`src/.modie/rules/deprecated-rule.${rule99Tag}.md`],
       activeTrackedFiles: [],
       logGrepResults: {
         [taskGrepQuery]: [
@@ -53,11 +61,19 @@ describe("Artifact History Inspection (ADR-6, ADR-9, RULE-21, RULE-33, RULE-35)"
       },
     });
 
-    const deleted = await inspectGitDeletedArtifacts(process.cwd(), undefined, mockVcs);
+    const deleted = await inspectGitDeletedArtifacts(
+      process.cwd(),
+      undefined,
+      mockVcs,
+    );
     expect(deleted.some((d) => d.tag === rule99Tag)).toBe(true);
     expect(deleted.some((d) => d.tag === task42Tag)).toBe(true);
 
-    const deletedIds = await inspectGitDeletedArtifactIds(process.cwd(), "RULE", mockVcs);
+    const deletedIds = await inspectGitDeletedArtifactIds(
+      process.cwd(),
+      "RULE",
+      mockVcs,
+    );
     expect(deletedIds).toEqual(["99"]);
   });
 

@@ -54,7 +54,9 @@ describe("Core MOTIVE Pathing, Creation, Validation & Discovery (RULE-2, RULE-8,
 
   // @verifies ADR-2, ADR-4, ADR-10, RULE-8, RULE-34
   it("[ADR-2][ADR-4][ADR-10][RULE-8][RULE-34] should create MOTIVE.md with explicit content and scaffold default template when content is omitted", async () => {
-    await using workspace = await createFixtureWorkspace("modie-motive-create-");
+    await using workspace = await createFixtureWorkspace(
+      "modie-motive-create-",
+    );
 
     // 1. Explicit content at workspace root
     const rootRes = await createMotive({
@@ -104,7 +106,9 @@ describe("Core MOTIVE Pathing, Creation, Validation & Discovery (RULE-2, RULE-8,
         scopeDir: "src/core",
         content: "Accidental replacement.",
       }),
-    ).rejects.toThrow(/MOTIVE\.md already exists at "src\/core\/\.modie\/MOTIVE\.md"/);
+    ).rejects.toThrow(
+      /MOTIVE\.md already exists at "src\/core\/\.modie\/MOTIVE\.md"/,
+    );
 
     // Original content must remain intact
     expect(await workspace.readFile("src/core/.modie/MOTIVE.md")).toBe(
@@ -128,7 +132,9 @@ describe("Core MOTIVE Pathing, Creation, Validation & Discovery (RULE-2, RULE-8,
 
   // @verifies RULE-10, RULE-34, RULE-35
   it("[RULE-10][RULE-34][RULE-35] should reject motive content containing artifact tags or cross-document references", async () => {
-    await using workspace = await createFixtureWorkspace("modie-motive-rule10-");
+    await using workspace = await createFixtureWorkspace(
+      "modie-motive-rule10-",
+    );
 
     const sampleRuleTag = makeTestTag("RULE", 10);
     const sampleAdrTag = makeTestTag("ADR", 4);
@@ -153,7 +159,9 @@ describe("Core MOTIVE Pathing, Creation, Validation & Discovery (RULE-2, RULE-8,
     ).toThrow(/prohibited in MOTIVE\.md per RULE-10/);
 
     expect(() =>
-      validateMotiveContent("Refer to [Architecture](./design.md) for details."),
+      validateMotiveContent(
+        "Refer to [Architecture](./design.md) for details.",
+      ),
     ).toThrow(/prohibited in MOTIVE\.md per RULE-10/);
 
     expect(() =>
@@ -219,5 +227,36 @@ describe("Core MOTIVE Pathing, Creation, Validation & Discovery (RULE-2, RULE-8,
       "Root workspace purpose.",
     ]);
   });
-});
 
+  // @verifies ADR-2, ADR-4, ADR-10, RULE-8, RULE-25, RULE-34
+  it("[ADR-2][ADR-4][ADR-10][RULE-8][RULE-25][RULE-34] should accept contextSection as alias for content", async () => {
+    await using workspace = await createFixtureWorkspace(
+      "modie-motive-disambiguation-",
+    );
+
+    // 1. Create motive with contextSection
+    const res1 = await createMotive({
+      scopeDir: "src/core",
+      contextSection: "Core motive content provided via contextSection.",
+      cwd: workspace.cwd,
+    });
+    expect(res1.content).toBe(
+      "Core motive content provided via contextSection.",
+    );
+    const content1 = await workspace.readFile(res1.filepath);
+    expect(content1).toContain(
+      "Core motive content provided via contextSection.",
+    );
+
+    // 2. content takes precedence over contextSection
+    const res2 = await createMotive({
+      scopeDir: "src/common",
+      content: "Primary content text.",
+      contextSection: "Ignored contextSection.",
+      cwd: workspace.cwd,
+    });
+    expect(res2.content).toBe("Primary content text.");
+    const content2 = await workspace.readFile(res2.filepath);
+    expect(content2).toContain("Primary content text.");
+  });
+});

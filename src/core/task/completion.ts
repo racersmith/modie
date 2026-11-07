@@ -44,7 +44,6 @@ export interface ResolveTaskOptions {
    * Explicit workspace context container.
    */
   workspace?: WorkspaceContext;
-  context?: WorkspaceContext;
 }
 
 export interface CheckTaskItemOptions {
@@ -62,7 +61,6 @@ export interface CheckTaskItemOptions {
    * Explicit workspace context container.
    */
   workspace?: WorkspaceContext;
-  context?: WorkspaceContext;
 
   /**
    * Target checked state. Defaults to true (checked / complete).
@@ -115,7 +113,6 @@ export interface CompleteTaskOptions {
    * Explicit workspace context container.
    */
   workspace?: WorkspaceContext;
-  context?: WorkspaceContext;
 }
 
 export interface CompleteTaskResult {
@@ -210,16 +207,12 @@ export async function resolveTaskFile(
 
   // 2. Scan active tasks on disk
   const activeTasks = await scanActiveTasks(cwd);
-  const normalizedInput = normalizeTaskId(trimmed);
+  const normalizedInput = normalizeTaskId(trimmed).toLowerCase();
 
   // Exact ID match (case-insensitive)
-  const matchById = activeTasks.find((t) => {
-    return (
-      t.id.toLowerCase() === normalizedInput.toLowerCase() ||
-      `task-${t.id}`.toLowerCase() === trimmed.toLowerCase() ||
-      t.id.toLowerCase() === trimmed.toLowerCase()
-    );
-  });
+  const matchById = activeTasks.find(
+    (t) => normalizeTaskId(t.id).toLowerCase() === normalizedInput,
+  );
 
   if (matchById) {
     return matchById.filepath;
@@ -396,7 +389,9 @@ export async function assertPlannedGovernanceSatisfied(
       if (rule.tag) {
         const normTag = rule.tag.trim().toUpperCase();
         exists = activeRules.some(
-          (r) => r.tag.toUpperCase() === normTag || (r.id && normTag.endsWith(`-${r.id}`)),
+          (r) =>
+            r.tag.toUpperCase() === normTag ||
+            (r.id && normTag.endsWith(`-${r.id}`)),
         );
       } else if (rule.slug) {
         exists = activeRules.some(
@@ -431,7 +426,9 @@ export async function assertPlannedGovernanceSatisfied(
       if (adr.tag) {
         const normTag = adr.tag.trim().toUpperCase();
         exists = activeAdrs.some(
-          (a) => a.tag.toUpperCase() === normTag || (a.id && normTag.endsWith(`-${a.id}`)),
+          (a) =>
+            a.tag.toUpperCase() === normTag ||
+            (a.id && normTag.endsWith(`-${a.id}`)),
         );
       } else if (adr.slug) {
         exists = activeAdrs.some(

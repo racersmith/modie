@@ -58,7 +58,8 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
       summary: "Decision to use 11 singular MCP tools.",
       context: "Context for decision.",
       decision: "We adopt 11 singular purpose tools.",
-      consequences: "Greatly reduced preamble tokens and zero polymorphic confusion.",
+      consequences:
+        "Greatly reduced preamble tokens and zero polymorphic confusion.",
       links: [ruleTag],
     });
 
@@ -152,7 +153,9 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
     expect(checkTool.annotations?.destructiveHint).toBe(false);
     expect(checkTool.outputSchema).toBeDefined();
 
-    const completeTool = response.tools.find((t) => t.name === "complete_task")!;
+    const completeTool = response.tools.find(
+      (t) => t.name === "complete_task",
+    )!;
     expect(completeTool.annotations?.readOnlyHint).toBe(false);
     expect(completeTool.annotations?.idempotentHint).toBe(false);
     expect(completeTool.annotations?.destructiveHint).toBe(true);
@@ -170,7 +173,9 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
     const linkTool = response.tools.find((t) => t.name === "link_artifacts")!;
     expect(linkTool.outputSchema).toBeDefined();
 
-    const archiveTool = response.tools.find((t) => t.name === "archive_artifact")!;
+    const archiveTool = response.tools.find(
+      (t) => t.name === "archive_artifact",
+    )!;
     expect(archiveTool.annotations?.destructiveHint).toBe(true);
     expect(archiveTool.outputSchema).toBeDefined();
   });
@@ -211,7 +216,9 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
       // Trailing slash on directories
       expect(text).toContain("src/\t");
       // File with gist summary
-      expect(text).toContain("sample.ts\tSample TypeScript module utility functions.");
+      expect(text).toContain(
+        "sample.ts\tSample TypeScript module utility functions.",
+      );
     });
 
     // @verifies RULE-26, RULE-36
@@ -367,7 +374,8 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
         name: "create_rule",
         arguments: {
           title: "New Governance Policy",
-          invariant: "All interfaces must be decoupled from internal storage representations.",
+          invariant:
+            "All interfaces must be decoupled from internal storage representations.",
           links: [adrTag],
         },
       });
@@ -385,9 +393,11 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
         name: "create_adr",
         arguments: {
           title: "Adoption of Modular Micro-Interfaces",
-          decision: "We decompose polymorphic mega-tools into singular purpose tools.",
+          decision:
+            "We decompose polymorphic mega-tools into singular purpose tools.",
           context: "Mega tools caused cognitive overhead for LLMs.",
-          consequences: "Simpler schemas and predictable agent tool invocation.",
+          consequences:
+            "Simpler schemas and predictable agent tool invocation.",
         },
       });
 
@@ -429,7 +439,9 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
       expect(markdown).toContain("User Review");
 
       // Verify task summary appears in ambient ready tasks queue resource
-      const readyRes = await client.readResource({ uri: "modie://tasks/ready" });
+      const readyRes = await client.readResource({
+        uri: "modie://tasks/ready",
+      });
       const readyMarkdown = (readyRes.contents[0] as any).text;
       expect(readyMarkdown).toContain(summaryText);
     });

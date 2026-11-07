@@ -829,7 +829,12 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     expect(idempotentRes.changed).toBe(false);
 
     // Apply unlink mutation
-    const unlinkRes = await applyLinkMutation(source, target, "links", "unlink");
+    const unlinkRes = await applyLinkMutation(
+      source,
+      target,
+      "links",
+      "unlink",
+    );
     expect(unlinkRes.action).toBe("unlink");
     expect(unlinkRes.changed).toBe(true);
     expect(unlinkRes.links).not.toContain(rootAdrTag);

@@ -347,4 +347,3 @@ describe("GIST Reader & Shallow Signpost Discovery Services (RULE-9, RULE-20, AD
     );
   });
 });
-

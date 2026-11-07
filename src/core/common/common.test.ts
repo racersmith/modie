@@ -217,11 +217,7 @@ describe("Common Primitives - Subtype Directory Resolution (RULE-8, RULE-34, ADR
     const cwd = workspace.cwd;
 
     // RULE resolution
-    const ruleRes = resolveArtifactDirectories(
-      "RULE",
-      "src/interfaces",
-      cwd,
-    );
+    const ruleRes = resolveArtifactDirectories("RULE", "src/interfaces", cwd);
     expect(ruleRes.normalizedScopeDir).toBe(
       workspace.resolve("src/interfaces"),
     );
@@ -270,11 +266,7 @@ describe("Common Primitives - Subtype Directory Resolution (RULE-8, RULE-34, ADR
     expect(taskModieRes.targetDir).toBe(workspace.resolve("src/.modie/tasks"));
 
     // .modie root container input
-    const rootModieRes = resolveArtifactDirectories(
-      "RULE",
-      "src/.modie",
-      cwd,
-    );
+    const rootModieRes = resolveArtifactDirectories("RULE", "src/.modie", cwd);
     expect(rootModieRes.normalizedScopeDir).toBe(workspace.resolve("src"));
     expect(rootModieRes.targetDir).toBe(workspace.resolve("src/.modie/rules"));
   });
@@ -341,10 +333,7 @@ describe("Common Primitives - Centralized Governing Scope Resolution (RULE-8, RU
     );
 
     // .modie container directory
-    const modieDirScope = resolveGoverningScope(
-      "src/.modie/rules",
-      cwd,
-    );
+    const modieDirScope = resolveGoverningScope("src/.modie/rules", cwd);
     expect(modieDirScope.relativeScope).toBe("src");
     expect(modieDirScope.scopeDir).toBe(workspace.resolve("src"));
 
@@ -393,7 +382,9 @@ describe("Common Primitives - Path Normalization & Regex Escaping", () => {
   });
 
   it("should escape regex special characters accurately", () => {
-    expect(escapeRegex("TASK-12.3[beta]+foo")).toBe("TASK-12\\.3\\[beta\\]\\+foo");
+    expect(escapeRegex("TASK-12.3[beta]+foo")).toBe(
+      "TASK-12\\.3\\[beta\\]\\+foo",
+    );
     expect(escapeRegex("simple")).toBe("simple");
     expect(escapeRegex("^$*+?.()|{}[]\\")).toBe(
       "\\^\\$\\*\\+\\?\\.\\(\\)\\|\\{\\}\\[\\]\\\\",
@@ -434,31 +425,26 @@ describe("Common Primitives - Task Branch Grammar & Hierarchy (RULE-28, ADR-9)",
     ).toEqual({
       taskId: "2",
       slug: "task-id-allocation-and-rule-alignment",
-      parentId: "2",
     });
 
     expect(parseTaskBranch("task/2-1-subtask-test")).toEqual({
       taskId: "2-1",
       slug: "subtask-test",
-      parentId: "2-1",
     });
 
     expect(parseTaskBranch("task/J101-prefixed-task")).toEqual({
       taskId: "J101",
       slug: "prefixed-task",
-      parentId: "J101",
     });
 
     expect(parseTaskBranch("task/TASK-30-resolve-current-task")).toEqual({
       taskId: "30",
       slug: "resolve-current-task",
-      parentId: "30",
     });
 
     expect(parseTaskBranch("task/42")).toEqual({
       taskId: "42",
       slug: undefined,
-      parentId: "42",
     });
 
     expect(parseTaskBranch("dev")).toBeNull();
@@ -541,7 +527,9 @@ describe("Common Primitives - Scope Directory Resolution & Ancestral Walking", (
   });
 
   it("should walk ancestor directories from startDir to stopDir in leaf-to-root order", async () => {
-    await using workspace = await createFixtureWorkspace("modie-ancestor-walk-");
+    await using workspace = await createFixtureWorkspace(
+      "modie-ancestor-walk-",
+    );
 
     const visited: string[] = [];
     const collected = await walkAncestorsForFile(
@@ -570,4 +558,3 @@ describe("Common Primitives - Scope Directory Resolution & Ancestral Walking", (
     ]);
   });
 });
-

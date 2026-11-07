@@ -53,4 +53,3 @@ export function resolveSubtypeLinkPolicy(
   }
   return LINK_POLICY[subtype.toUpperCase()];
 }
-

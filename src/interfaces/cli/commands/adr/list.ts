@@ -103,4 +103,3 @@ export const adrListCommand: CliCommandDefinition<
     context.stderr(renderAdrListTable(adrs));
   },
 });
-

@@ -94,6 +94,7 @@ export function renderTaskMarkdown(options: TaskRenderOptions): string {
   const {
     title,
     summary,
+    contextSection,
     context,
     depends_on = [],
     links = [],
@@ -102,6 +103,7 @@ export function renderTaskMarkdown(options: TaskRenderOptions): string {
     skipValidation,
     allowEmptyCriteria,
   } = options;
+  const effectiveContext = contextSection ?? context;
 
   // Validate frontmatter boundaries
   if (!skipValidation) {
@@ -139,7 +141,7 @@ export function renderTaskMarkdown(options: TaskRenderOptions): string {
   frontmatterLines.push("---");
 
   const contextContent =
-    context?.trim() ||
+    effectiveContext?.trim() ||
     (title ? `Implement ${title}.` : "Execution plan description.");
   const plannedGovContent = renderPlannedGovernance(plannedGovernance);
 

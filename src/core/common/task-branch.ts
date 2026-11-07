@@ -49,10 +49,6 @@ export function parseSubtaskId(
 export interface ParsedTaskBranch {
   taskId: string;
   slug?: string;
-  /**
-   * Alias for taskId for backwards compatibility with watermark callers.
-   */
-  parentId: string;
 }
 
 /**
@@ -77,7 +73,6 @@ export function parseTaskBranch(
   return {
     taskId,
     slug,
-    parentId: taskId,
   };
 }
 
@@ -102,13 +97,6 @@ export function formatTaskBranch(taskId: string, slug?: string): string {
 }
 
 /**
- * Backward compatibility alias for formatTaskBranch.
- */
-export function formatTaskBranchName(taskId: string, slug: string): string {
-  return formatTaskBranch(taskId, slug);
-}
-
-/**
  * Generates git branch search glob for a task or all tasks per RULE-28.
  */
 export function taskBranchGlob(taskId?: string): string {
@@ -118,4 +106,3 @@ export function taskBranchGlob(taskId?: string): string {
   const normId = normalizeTaskId(taskId);
   return `task/${normId}-*`;
 }
-

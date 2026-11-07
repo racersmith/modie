@@ -15,8 +15,8 @@ Rename the domain markdown section options to `contextSection?: string` (retaini
 
 # Acceptance Criteria
 
-- [ ] Rename document context fields to contextSection across ADR, Task, Rule, and Motive creation options while maintaining backward compatibility aliases
-- [ ] Standardize BaseCreateArtifactOptions to accept workspace parameter without ambiguous union types on context
-- [ ] Eliminate runtime string-or-object context sniffing in resolveWorkspaceContext
-- [ ] Verify all tests pass with bun test:parallel && bun check && bun check:circular
-- [ ] User Review
+- [x] Rename document context fields to contextSection across ADR, Task, Rule, and Motive creation options while maintaining backward compatibility aliases
+- [x] Standardize BaseCreateArtifactOptions to accept workspace parameter without ambiguous union types on context
+- [x] Eliminate runtime string-or-object context sniffing in resolveWorkspaceContext
+- [x] Verify all tests pass with bun test:parallel && bun check && bun check:circular
+- [x] User Review

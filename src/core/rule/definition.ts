@@ -6,10 +6,7 @@
 import { LINK_POLICY } from "../linking/policy.ts";
 import { validateLinkTarget } from "../linking/validator.ts";
 import type { ArtifactDefinition } from "../pipeline/types.ts";
-import {
-  parseRuleFromContext,
-  renderRuleMarkdown,
-} from "./template.ts";
+import { parseRuleFromContext, renderRuleMarkdown } from "./template.ts";
 import type { CreateRuleOptions, RuleArtifact } from "./types.ts";
 
 /**
@@ -54,6 +51,7 @@ export const ruleDefinition: ArtifactDefinition<
 
     const assertionText =
       options.assertion?.trim() ||
+      options.contextSection?.trim() ||
       options.context?.trim() ||
       `A discrete invariant assertion regarding ${title}.`;
 

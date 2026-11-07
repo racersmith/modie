@@ -47,4 +47,3 @@ export function slugToTitle(slug?: string | null): string {
   if (!slug) return "";
   return slug.replace(/-/g, " ").trim();
 }
-

@@ -35,7 +35,7 @@ export async function updateSupersededAdrFrontmatter(
   const ctx = resolveWorkspaceContext(cwdOrContext);
   return updateSupersededArtifactFrontmatter(targetTag, newAdrTag, {
     cwd: ctx.root,
-    context: ctx,
+    workspace: ctx,
     expectedSubtype: "ADR",
   });
 }

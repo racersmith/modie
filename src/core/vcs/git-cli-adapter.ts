@@ -292,7 +292,6 @@ export class GitCliAdapter implements IVcsAdapter {
       .filter(Boolean);
   }
 
-
   async getConfig(
     key: string,
     cwd: string = process.cwd(),
@@ -355,16 +354,7 @@ export class GitCliAdapter implements IVcsAdapter {
     cwd: string = process.cwd(),
   ): Promise<string | null> {
     const delCommit = await this.run(
-      [
-        "log",
-        "-n",
-        "1",
-        "--all",
-        "--diff-filter=D",
-        "--format=%H",
-        "--",
-        path,
-      ],
+      ["log", "-n", "1", "--all", "--diff-filter=D", "--format=%H", "--", path],
       cwd,
     );
     if (!delCommit || !delCommit.trim()) {

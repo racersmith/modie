@@ -4,7 +4,11 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { captureCli, createTestWorkspace, makeTestTag } from "../../test-utils.ts";
+import {
+  captureCli,
+  createTestWorkspace,
+  makeTestTag,
+} from "../../test-utils.ts";
 
 describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-20, RULE-25, RULE-26, RULE-27, RULE-34, ADR-8)", () => {
   // @verifies RULE-27
@@ -83,11 +87,7 @@ describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-20, RULE-25, 
       expect(humanRes.stderr).toContain("src/core/gist");
 
       // 2. --raw mode: emits synthesized Markdown document to stdout, stderr is empty (RULE-27)
-      const rawRes = await workspace.captureCli([
-        "context",
-        taskTag,
-        "--raw",
-      ]);
+      const rawRes = await workspace.captureCli(["context", taskTag, "--raw"]);
       expect(rawRes.exitCode).toBe(0);
       expect(rawRes.stderr).toBe("");
       expect(rawRes.stdout).toContain(`# Architectural Context: ${taskTag}`);
@@ -95,7 +95,9 @@ describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-20, RULE-25, 
       expect(rawRes.stdout).toContain("Synthesize context for core scope.");
       expect(rawRes.stdout).toContain("## Upward Motives");
       expect(rawRes.stdout).toContain("## Governing Rules");
-      expect(rawRes.stdout).toContain("## Architectural Decisions (ADR Summaries)");
+      expect(rawRes.stdout).toContain(
+        "## Architectural Decisions (ADR Summaries)",
+      );
       expect(rawRes.stdout).toContain("## Local GISTs (`src/core`)");
       expect(rawRes.stdout).toContain("## Child Signposts");
 
@@ -128,4 +130,3 @@ describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-20, RULE-25, 
     }
   });
 });
-

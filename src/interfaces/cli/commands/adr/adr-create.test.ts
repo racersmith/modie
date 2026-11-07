@@ -314,9 +314,7 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
 
   // @verifies ADR-4, ADR-8, RULE-25, RULE-26, RULE-27, RULE-34
   it("[ADR-4][ADR-8][RULE-25][RULE-26][RULE-27][RULE-34] should support --summary flag and write summary to YAML frontmatter and JSON output", async () => {
-    await using workspace = await createTestWorkspace(
-      "modie-cli-adr-summary-",
-    );
+    await using workspace = await createTestWorkspace("modie-cli-adr-summary-");
     const expectedTag = makeTestTag("ADR", 1);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "adr",

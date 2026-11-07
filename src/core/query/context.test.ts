@@ -327,7 +327,10 @@ describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE
     expect(t1.scope).toBe("src/core");
 
     // 2. Explicit task filename
-    const t2 = await resolveContextTarget("test-task.TASK-10.md", workspace.cwd);
+    const t2 = await resolveContextTarget(
+      "test-task.TASK-10.md",
+      workspace.cwd,
+    );
     expect(t2.type).toBe("task");
     expect(t2.task?.id).toBe("10");
 
@@ -358,7 +361,9 @@ describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE
   });
 
   it("should support pure ancestral scope traversal and scoped .modie filtering", async () => {
-    await using workspace = await createFixtureWorkspace("modie-ancestral-opts-");
+    await using workspace = await createFixtureWorkspace(
+      "modie-ancestral-opts-",
+    );
 
     await workspace.createMotive({
       scopeDir: "src/core/nested",
@@ -375,4 +380,3 @@ describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE
     expect(filtered).toContain("src/core/nested");
   });
 });
-

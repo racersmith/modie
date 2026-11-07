@@ -21,11 +21,7 @@ import {
   ruleDefinition,
   taskDefinition,
 } from "../registry.ts";
-import {
-  createAdr,
-  createRule,
-  createTask,
-} from "../index.ts";
+import { createAdr, createRule, createTask } from "../index.ts";
 import { getArtifactDetails } from "../query/artifact-query.ts";
 
 describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-35, ADR-1, ADR-4)", () => {
@@ -237,12 +233,17 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
     // 2. Create RULE linking to ADR-1
     const ruleRes = await createArtifact(ruleDefinition, {
       title: "Single Parser Invariant",
-      assertion: "All frontmatter and section parsing must use the core parser.",
+      assertion:
+        "All frontmatter and section parsing must use the core parser.",
       links: [adr1Tag],
       cwd: workspace.cwd,
     });
 
-    const parsedRule = parseArtifact("RULE", ruleRes.markdown, ruleRes.filepath);
+    const parsedRule = parseArtifact(
+      "RULE",
+      ruleRes.markdown,
+      ruleRes.filepath,
+    );
     expect(parsedRule).toEqual({
       id: "1",
       slug: "single-parser-invariant",
@@ -312,7 +313,9 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
     expect(adr1.id).toBe("1");
     expect(adr1.tag).toBe("ADR-1");
     expect(adr1.filename).toBe("predecessor-architecture-decision.ADR-1.md");
-    expect(adr1.relativePath).toContain(".modie/adrs/predecessor-architecture-decision.ADR-1.md");
+    expect(adr1.relativePath).toContain(
+      ".modie/adrs/predecessor-architecture-decision.ADR-1.md",
+    );
     expect(adr1.artifact.title).toBe("Predecessor Architecture Decision");
 
     // 2. Create superseding ADR
@@ -330,7 +333,8 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
     // 3. Create RULE
     const rule1 = await createRule({
       title: "Standardized Creation Rule",
-      assertion: "All domain creation services return unified CreateArtifactResult payloads.",
+      assertion:
+        "All domain creation services return unified CreateArtifactResult payloads.",
       links: [adr1.tag],
       cwd: workspace.cwd,
     });
@@ -344,7 +348,8 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
     // 4. Create TASK
     const task1 = await createTask({
       title: "Verify Creation Payload Pipeline",
-      context: "Verifies domain creation results conforming to CreateArtifactResult.",
+      context:
+        "Verifies domain creation results conforming to CreateArtifactResult.",
       links: [adr1.tag, rule1.tag],
       acceptanceCriteria: ["Ensure unified result structure"],
       branch: "dev",

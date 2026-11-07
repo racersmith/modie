@@ -48,7 +48,8 @@ export function validateTaskScope(
       const relToAncestor = relative(normalizedScopeDir, commonAncestor);
       if (relToAncestor.length > 0 && !relToAncestor.startsWith("..")) {
         throw new Error(
-          `Least scope placement violation: target paths share a deeper common ancestor "${commonAncestor}", but task was scoped at higher ancestor "${normalizedScopeDir}".`,        );
+          `Least scope placement violation: target paths share a deeper common ancestor "${commonAncestor}", but task was scoped at higher ancestor "${normalizedScopeDir}".`,
+        );
       }
     }
   }
@@ -132,12 +133,15 @@ export const taskDefinition: ArtifactDefinition<
 
     const summary = options.summary?.trim() || undefined;
 
+    const contextText = options.contextSection ?? options.context ?? "";
+
     const renderOptions: TaskRenderOptions = {
       id,
       slug,
       title,
       summary,
-      context: options.context ?? "",
+      contextSection: contextText,
+      context: contextText,
       depends_on: options.depends_on ?? [],
       links: options.links ?? [],
       plannedGovernance: options.plannedGovernance,
@@ -153,7 +157,8 @@ export const taskDefinition: ArtifactDefinition<
       summary,
       depends_on: options.depends_on ?? [],
       links: options.links ?? [],
-      context: options.context ?? "",
+      contextSection: contextText,
+      context: contextText,
       plannedGovernance: options.plannedGovernance
         ? {
             rules: (options.plannedGovernance.rules ?? []).map((r) =>

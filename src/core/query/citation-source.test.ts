@@ -82,16 +82,10 @@ describe("CitationSource Abstraction (RULE-25, RULE-34, RULE-35)", () => {
     const targetFile = "target.md";
 
     await workspace.writeFile(targetFile, `# Target\nThis is ${targetTag}.\n`);
-    await workspace.writeFile(
-      "committed.ts",
-      `// Committed ${targetTag}\n`,
-    );
+    await workspace.writeFile("committed.ts", `// Committed ${targetTag}\n`);
     await workspace.gitCommit("feat: commit file");
 
-    await workspace.writeFile(
-      "untracked.ts",
-      `// Untracked ${targetTag}\n`,
-    );
+    await workspace.writeFile("untracked.ts", `// Untracked ${targetTag}\n`);
 
     const source = new GitGrepSource();
     const isAvail = await source.isAvailable(workspace.cwd);
@@ -124,4 +118,3 @@ describe("CitationSource Abstraction (RULE-25, RULE-34, RULE-35)", () => {
     ).rejects.toThrow("Directory is not a git repository");
   });
 });
-

@@ -8,9 +8,7 @@ import type { ArtifactCollision } from "./types.ts";
 export interface TaskIncompleteErrorDetails {
   taskId: string;
   reason?:
-    | "incomplete_criteria"
-    | "artifact_not_completed"
-    | "no_completion_record";
+    "incomplete_criteria" | "artifact_not_completed" | "no_completion_record";
   incompleteCriteriaCount?: number;
 }
 
@@ -21,9 +19,7 @@ export interface TaskIncompleteErrorDetails {
 export class TaskIncompleteError extends Error {
   readonly taskId: string;
   readonly reason?:
-    | "incomplete_criteria"
-    | "artifact_not_completed"
-    | "no_completion_record";
+    "incomplete_criteria" | "artifact_not_completed" | "no_completion_record";
   readonly incompleteCriteriaCount?: number;
 
   constructor(message: string, details?: TaskIncompleteErrorDetails) {
@@ -79,4 +75,3 @@ export class ArtifactCollisionError extends Error {
     this.collisions = details?.collisions ?? [];
   }
 }
-

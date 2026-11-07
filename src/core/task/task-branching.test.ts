@@ -23,10 +23,7 @@ import {
   startTaskBranch,
 } from "./branching.ts";
 import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
-import {
-  formatTaskBranchName,
-  parseSubtaskId,
-} from "../common/index.ts";
+import { formatTaskBranch, parseSubtaskId } from "../common/index.ts";
 
 describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
   let workspace: FixtureWorkspace;
@@ -55,10 +52,10 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
   });
 
   it("should format canonical task branch names", () => {
-    expect(formatTaskBranchName("11", "branching-automation")).toBe(
+    expect(formatTaskBranch("11", "branching-automation")).toBe(
       "task/11-branching-automation",
     );
-    expect(formatTaskBranchName("TASK-2-1", "create-template")).toBe(
+    expect(formatTaskBranch("TASK-2-1", "create-template")).toBe(
       "task/2-1-create-template",
     );
   });
@@ -562,12 +559,10 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
       await workspace.remove(taskUnfinished);
       thrownError = null;
       try {
-        await assertTaskCompleted(
-          undefined,
-          "202",
-          "task/202-unfinished",
-          { cwd: workspace.cwd, vcs: defaultVcsAdapter },
-        );
+        await assertTaskCompleted(undefined, "202", "task/202-unfinished", {
+          cwd: workspace.cwd,
+          vcs: defaultVcsAdapter,
+        });
       } catch (err) {
         thrownError = err;
       }
@@ -579,12 +574,11 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
 
       // 4. Force bypasses checks
       await expect(
-        assertTaskCompleted(
-          taskIncomplete.tag,
-          "201",
-          "task/201-incomplete",
-          { cwd: workspace.cwd, vcs: defaultVcsAdapter, force: true },
-        ),
+        assertTaskCompleted(taskIncomplete.tag, "201", "task/201-incomplete", {
+          cwd: workspace.cwd,
+          vcs: defaultVcsAdapter,
+          force: true,
+        }),
       ).resolves.toBeUndefined();
     });
 
@@ -639,7 +633,9 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
       // Root cannot merge into protected branch
       expect(() =>
         resolveMergeTarget(rootTopology, { target: "main" }),
-      ).toThrow(/Cannot merge root task branch .* directly into protected branch/);
+      ).toThrow(
+        /Cannot merge root task branch .* directly into protected branch/,
+      );
     });
 
     it("assertNoActiveSubtasks should throw typed ActiveSubtaskPendingError when child branches exist", async () => {
@@ -700,7 +696,9 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
       await workspace.createRule({ id: 88, slug: "a", body: "On dev" });
       await workspace.gitCommit(`feat: ${ruleTag} on dev`);
 
-      await Bun.$`git checkout -b task/conflict HEAD~1`.cwd(workspace.cwd).quiet();
+      await Bun.$`git checkout -b task/conflict HEAD~1`
+        .cwd(workspace.cwd)
+        .quiet();
       await workspace.createRule({ id: 88, slug: "b", body: "On branch" });
       await workspace.gitCommit(`feat: conflicting ${ruleTag}`);
 

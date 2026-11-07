@@ -68,4 +68,3 @@ export async function collectAncestralMotives(
         leafPaths.scope.startsWith(`${m.scope}/`),
   );
 }
-

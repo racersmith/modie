@@ -321,4 +321,3 @@ export async function walkAncestorsForFile<T>(
 
   return results;
 }
-

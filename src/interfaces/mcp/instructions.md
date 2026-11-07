@@ -26,9 +26,10 @@ Modie is a decentralized architectural governance and task lifecycle engine. As 
 ## 3. Contract-Based Acceptance Criteria
 
 When planning and authoring tasks:
+
 - **Define Deliverables by Contract, Not Path**: Formulate acceptance criteria in terms of component roles, behavioral contracts, and testable outcomes.
-  - ❌ *Fragile*: `- [ ] Implement error helper in src/interfaces/mcp/errors.ts`
-  - ✅ *Resilient*: `- [ ] Implement structured error handler constructing model-recoverable error envelopes in MCP interface`
+  - ❌ _Fragile_: `- [ ] Implement error helper in src/interfaces/mcp/errors.ts`
+  - ✅ _Resilient_: `- [ ] Implement structured error handler constructing model-recoverable error envelopes in MCP interface`
 - Concrete filesystem paths in criteria rot when code is refactored; behavioral contracts remain durable.
 - Always include a `User Review` criterion as the final verification checkpoint before task completion.
 
@@ -44,6 +45,7 @@ When planning and authoring tasks:
 ## 5. Spatial Graph Link Invariants
 
 Modie enforces a strict hierarchical directed acyclic graph (DAG):
+
 - **Rules (`RULE`)**: May only be justified by ADRs residing in the rule's directory or an ancestor directory up to the workspace root.
 - **Decisions (`ADR`)**: May link to rules residing in the ADR's directory or descendant subtrees, or ancestor ADRs.
 - **Tasks (`TASK`)**: May link to rules and ADRs residing in the task's directory or an ancestor directory.
@@ -56,21 +58,25 @@ Modie enforces a strict hierarchical directed acyclic graph (DAG):
 Modie exposes 11 singular-purpose tools designed for high signal-to-noise and progressive disclosure:
 
 ### Spatial & Artifact Exploration
+
 1. **`ls_better`**: Augmented directory listing returning clean plaintext tab-separated listings (`<file|dir/>\t<gist>\n`). Directories end with `/`. Provides instant file/directory GIST summaries without reading individual files.
 2. **`read_artifact`**: Tag-aware document reader (RULE, ADR, TASK). Returns unescaped Markdown with tag, title, and scope directory header (`# <TAG>: <Title>`, `**Scope**: <dir>/`), and an agent-readable `## Appendix: Relationships & Governance` resolving linked rules to their invariants and titles.
 3. **`task_context`**: High-signal Mission Brief in Markdown: active branch, scope directory, elevated blast radius constraint, numbered acceptance criteria checklist, and governing rule invariants.
 
 ### Task Lifecycle State Machine
+
 4. **`start_task`**: Checks out or creates the hierarchical task branch (`task/<id>-<slug>`), verifies dependencies, and returns the full active Mission Brief in Markdown.
 5. **`check_criteria`**: Atomically marks 1-based acceptance criteria complete or incomplete (`items: [1, 2]`). Returns updated checklist progress and remaining items.
 6. **`complete_task`**: Executes the atomic two-phase commit completion ceremony, verifies all criteria are checked, merges to trunk, and deletes the task branch.
 
 ### Dedicated Artifact Authoring
+
 7. **`create_rule`**: Authors an architectural governance rule (RULE) with a strongly typed invariant assertion claim and optional justifying ADR links.
 8. **`create_adr`**: Authors an Architectural Decision Record (ADR) with strongly typed context, decision, consequences, and links.
 9. **`create_task`**: Authors a scoped task specification (TASK) with contract-based acceptance criteria (must end with `User Review`), prerequisite dependencies, and governing links.
 
 ### Graph Mutation
+
 10. **`link_artifacts`**: Establishes directional frontmatter relationships (`links`, `depends_on`) between artifacts after validating spatial ancestry and DAG constraints.
 11. **`archive_artifact`**: Archives an obsolete RULE or ADR artifact, safely marking it archived and auditing inbound references.
 
@@ -79,6 +85,7 @@ Modie exposes 11 singular-purpose tools designed for high signal-to-noise and pr
 ## 7. Ambient MCP Resources
 
 For zero-roundtrip context hydration:
+
 - `modie://task`: Dynamic, unescaped Markdown Mission Brief for the active task branch.
 - `modie://tasks/ready`: Real-time Markdown triage queue of unblocked ready tasks with summary teasers and downstream leverage (`Blocks`).
 - `modie://tasks/all`: Condensed Markdown backlog of all workspace tasks for planning and scheduling, grouped by readiness with blockers and downstream leverage (`Blocks`).

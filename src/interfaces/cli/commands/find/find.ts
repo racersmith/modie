@@ -62,10 +62,7 @@ export const findCommand: CliCommandDefinition<
     });
   },
   render: (result, context, input) => {
-    const outputPath = input?.absolute
-      ? result.filepath
-      : result.relativePath;
+    const outputPath = input?.absolute ? result.filepath : result.relativePath;
     context.stdout(outputPath);
   },
 });
-

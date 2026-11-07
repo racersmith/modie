@@ -4,8 +4,20 @@
  */
 
 import type { ModieConfig } from "../config/types.ts";
-import type { DefinitionRegistry } from "../pipeline/registry.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
+
+/**
+ * Structural definition registry interface decoupled from concrete subtype definitions.
+ */
+export interface DefinitionRegistry {
+  register(definition: any): void;
+  registerSubtype(subtype: string): void;
+  get<TOptions = any, TArtifact = any>(subtype: any): any;
+  has(subtype: any): boolean;
+  isRegistered(subtype: any): boolean;
+  getAll(): any[];
+  clear(): void;
+}
 
 /**
  * Explicit, immutable workspace context container for Modie domain pipelines.
@@ -25,4 +37,3 @@ export interface CreateWorkspaceContextOptions {
   config?: ModieConfig;
   registry?: DefinitionRegistry;
 }
-

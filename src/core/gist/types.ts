@@ -259,4 +259,3 @@ export interface GistDiscoveryResult extends LocalGistsResult {
    */
   signposts: GistSignpost[];
 }
-

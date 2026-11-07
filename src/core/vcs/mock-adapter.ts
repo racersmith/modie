@@ -19,16 +19,6 @@ export interface MockVcsOptions {
   deletedFilesList?: string[];
   activeTrackedFiles?: string[];
   logGrepResults?: Record<string, string[]> | Map<string, string[]>;
-  // Backwards compatibility for existing test setup objects:
-  treeArtifacts?: Record<
-    string,
-    Array<{ filepath?: string; filename?: string; [k: string]: any }>
-  >;
-  deletedArtifacts?: Array<{
-    filepath?: string;
-    filename?: string;
-    [k: string]: any;
-  }>;
   config?: Record<string, string>;
   workingTreeChanged?: boolean;
   stagedFiles?: string[];
@@ -44,16 +34,7 @@ export class MockVcsAdapter implements IVcsAdapter {
   public currentBranch: string | null;
   public branches: Set<string>;
   public treeFiles: Map<string, string[]>;
-  public treeArtifacts: Map<
-    string,
-    Array<{ filepath?: string; filename?: string; [k: string]: any }>
-  >;
   public deletedFilesList: string[];
-  public deletedArtifacts: Array<{
-    filepath?: string;
-    filename?: string;
-    [k: string]: any;
-  }>;
   public activeTrackedFiles: string[];
   public logGrepResults: Map<string, string[]>;
   public config: Map<string, string>;
@@ -101,23 +82,7 @@ export class MockVcsAdapter implements IVcsAdapter {
         this.treeFiles.set(branch, [...files]);
       }
     }
-    this.treeArtifacts = new Map();
-    if (options.treeArtifacts) {
-      for (const [branch, artifacts] of Object.entries(options.treeArtifacts)) {
-        this.treeArtifacts.set(branch, [...artifacts]);
-        const existing = this.treeFiles.get(branch) ?? [];
-        const paths = artifacts.map((a) => a.filepath ?? a.filename ?? "");
-        this.treeFiles.set(branch, [...existing, ...paths]);
-      }
-    }
-    this.deletedArtifacts = [...(options.deletedArtifacts ?? [])];
     this.deletedFilesList = [...(options.deletedFilesList ?? [])];
-    if (options.deletedArtifacts) {
-      const paths = options.deletedArtifacts.map(
-        (a) => a.filepath ?? a.filename ?? "",
-      );
-      this.deletedFilesList.push(...paths);
-    }
     this.activeTrackedFiles = [...(options.activeTrackedFiles ?? [])];
     this.logGrepResults = new Map();
     if (options.logGrepResults) {
@@ -192,7 +157,10 @@ export class MockVcsAdapter implements IVcsAdapter {
     baseBranch: string,
     _cwd?: string,
   ): Promise<void> {
-    this.history.checkoutNewBranches.push({ branch: branchName, base: baseBranch });
+    this.history.checkoutNewBranches.push({
+      branch: branchName,
+      base: baseBranch,
+    });
     this.branches.add(branchName);
     this.currentBranch = branchName;
   }
@@ -228,7 +196,10 @@ export class MockVcsAdapter implements IVcsAdapter {
     _cwd?: string,
     options?: StageFilesOptions,
   ): Promise<void> {
-    this.history.stagedFileCalls.push({ files: [...files], updateOnly: options?.updateOnly });
+    this.history.stagedFileCalls.push({
+      files: [...files],
+      updateOnly: options?.updateOnly,
+    });
     for (const f of files) {
       if (!this.stagedFiles.includes(f)) {
         this.stagedFiles.push(f);
@@ -280,18 +251,11 @@ export class MockVcsAdapter implements IVcsAdapter {
   }
 
   async listTreeFiles(ref: string, _cwd?: string): Promise<string[]> {
-    const fromFiles = this.treeFiles.get(ref) ?? [];
-    const fromArts = (this.treeArtifacts.get(ref) ?? []).map(
-      (a) => a.filepath ?? a.filename ?? "",
-    );
-    return Array.from(new Set([...fromFiles, ...fromArts])).filter(Boolean);
+    return [...(this.treeFiles.get(ref) ?? [])];
   }
 
   async listDeletedFiles(_pattern?: string, _cwd?: string): Promise<string[]> {
-    const fromArts = this.deletedArtifacts.map(
-      (a) => a.filepath ?? a.filename ?? "",
-    );
-    return Array.from(new Set([...this.deletedFilesList, ...fromArts])).filter(Boolean);
+    return [...this.deletedFilesList];
   }
 
   async listActiveTrackedFiles(
@@ -326,18 +290,12 @@ export class MockVcsAdapter implements IVcsAdapter {
     return this.fileContentsAtRef.get(key) ?? null;
   }
 
-  async readDeletedFile(
-    path: string,
-    cwd?: string,
-  ): Promise<string | null> {
+  async readDeletedFile(path: string, cwd?: string): Promise<string | null> {
     this.history.readDeletedFileCalls.push({ path, cwd });
     return this.deletedFiles.get(path) ?? null;
   }
 
-  async getConfig(
-    key: string,
-    _cwd?: string,
-  ): Promise<string | null> {
+  async getConfig(key: string, _cwd?: string): Promise<string | null> {
     return this.config.get(key) ?? null;
   }
 

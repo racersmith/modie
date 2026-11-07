@@ -23,14 +23,8 @@ export const contextSchema = z.object({
     .describe(
       "Target directory/file path, task tag, or artifact identifier (default: '.')",
     ),
-  scope: z
-    .string()
-    .optional()
-    .describe("Alias for target scope directory"),
-  task: z
-    .string()
-    .optional()
-    .describe("Alias for target task identifier"),
+  scope: z.string().optional().describe("Alias for target scope directory"),
+  task: z.string().optional().describe("Alias for target task identifier"),
   raw: z
     .boolean()
     .optional()
@@ -57,16 +51,16 @@ export function renderCompiledContext(
   context.stderr(`Type:                ${result.type}`);
   context.stderr(`Target Path:         ${result.targetPath}`);
   context.stderr(`Governing Scope:     ${result.scope}`);
-  context.stderr(
-    `Ancestral Scopes:    ${result.ancestralScopes.join(" -> ")}`,
-  );
+  context.stderr(`Ancestral Scopes:    ${result.ancestralScopes.join(" -> ")}`);
 
   if (result.task) {
     const t = result.task;
     context.stderr(`\nTask Specification:`);
     context.stderr(`  Task:         ${t.tag} (${t.title})`);
     context.stderr(`  Readiness:    ${t.readiness} (${t.criteriaProgress})`);
-    context.stderr(`  Blast Radius: ${t.blastRadius.scope} (${t.blastRadius.constraint})`);
+    context.stderr(
+      `  Blast Radius: ${t.blastRadius.scope} (${t.blastRadius.constraint})`,
+    );
     if (t.depends_on.length > 0) {
       context.stderr(`  Depends On:   ${t.depends_on.join(", ")}`);
     }
@@ -192,4 +186,3 @@ export const contextCommand: CliCommandDefinition<
   },
   render: renderCompiledContext,
 });
-

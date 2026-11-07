@@ -55,4 +55,3 @@ export const mcpCommand: CliCommandDefinition<
     return new Promise<void>(() => {});
   },
 });
-

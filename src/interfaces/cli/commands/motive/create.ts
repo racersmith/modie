@@ -20,10 +20,7 @@ export const motiveCreateSchema = z.object({
     .describe(
       "Motive prose expressing scope-level purpose and trajectory (no artifact tags or cross-document references per RULE-10). When omitted, scaffolds a default MOTIVE.md template.",
     ),
-  context: z
-    .string()
-    .optional()
-    .describe("Alias for content"),
+  context: z.string().optional().describe("Alias for content"),
   scope: z
     .string()
     .optional()
@@ -32,7 +29,9 @@ export const motiveCreateSchema = z.object({
     .boolean()
     .optional()
     .default(false)
-    .describe("Explicitly allow overwriting an existing MOTIVE.md in the target scope"),
+    .describe(
+      "Explicitly allow overwriting an existing MOTIVE.md in the target scope",
+    ),
 });
 
 export type MotiveCreateInput = z.infer<typeof motiveCreateSchema>;
@@ -89,8 +88,7 @@ export const motiveCreateCommand: CliCommandDefinition<
     },
     overwrite: {
       short: "f",
-      description:
-        "Overwrite an existing MOTIVE.md in the target scope",
+      description: "Overwrite an existing MOTIVE.md in the target scope",
       aliases: ["force"],
     },
   },
@@ -98,6 +96,7 @@ export const motiveCreateCommand: CliCommandDefinition<
     const motiveOptions: CreateMotiveOptions = {
       scopeDir: input.scope,
       content: input.content ?? input.context,
+      contextSection: input.content ?? input.context,
       overwrite: input.overwrite,
       cwd: context.cwd,
     };
@@ -137,5 +136,3 @@ export const motiveCreateCommand: CliCommandDefinition<
     );
   },
 });
-
-

@@ -77,7 +77,9 @@ export const taskCreateSchema = z.object({
   review: z
     .boolean()
     .default(true)
-    .describe("Automatically include a 'User Review' acceptance criterion (default: true)"),
+    .describe(
+      "Automatically include a 'User Review' acceptance criterion (default: true)",
+    ),
 });
 
 export type TaskCreateInput = z.infer<typeof taskCreateSchema>;
@@ -109,8 +111,7 @@ export const taskCreateCommand: CliCommandDefinition<
   name: "create",
   summaryUsage: "<title>",
   usage: "modie task create <title> [options]",
-  description:
-    "Create a new TASK artifact with automatic watermark resolution",
+  description: "Create a new TASK artifact with automatic watermark resolution",
   agentGuidance:
     "Call this tool to generate a new TASK artifact with automatic sequence watermark resolution, link validation, and least-scope directory placement.",
   helpUsage: "modie task create --help",
@@ -215,7 +216,7 @@ export const taskCreateCommand: CliCommandDefinition<
     const taskOptions: CreateTaskOptions = {
       title: input.title,
       scopeDir: input.scope,
-      context: input.context,
+      contextSection: input.context,
       depends_on: input.depends_on.length > 0 ? input.depends_on : undefined,
       links: input.links.length > 0 ? input.links : undefined,
       acceptanceCriteria:
@@ -261,4 +262,3 @@ export const taskCreateCommand: CliCommandDefinition<
     context.stderr(`✓ Created task TASK-${result.id} (${result.relativePath})`);
   },
 });
-

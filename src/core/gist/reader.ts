@@ -217,7 +217,10 @@ export async function discoverChildSignposts(
 
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
-    if (entry.name.startsWith(".") || IGNORED_CHILD_DIRECTORIES.has(entry.name)) {
+    if (
+      entry.name.startsWith(".") ||
+      IGNORED_CHILD_DIRECTORIES.has(entry.name)
+    ) {
       continue;
     }
 
@@ -269,4 +272,3 @@ export async function discoverGistsForScope(
     signposts,
   };
 }
-
