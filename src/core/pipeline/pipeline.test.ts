@@ -361,4 +361,54 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
     expect(task1.watermark).toBeDefined();
     expect(task1.artifact.links).toEqual([adr1.tag, rule1.tag]);
   });
+
+  // @verifies ADR-5, RULE-13, RULE-14, RULE-15, RULE-18, RULE-34
+  it("[ADR-5][RULE-13][RULE-14][RULE-15][RULE-18][RULE-34] should validate links dynamically in createArtifact driven by definition.linkPolicy without definition.validate", async () => {
+    const customDefinition: ArtifactDefinition = {
+      subtype: "RULE",
+      linkPolicy: {
+        links: {
+          ADR: "ancestor",
+        },
+      },
+      render: ({ id, slug, title, options }) => ({
+        markdown: `# ${title}`,
+        artifact: { id, slug, title, links: (options as any).links },
+      }),
+    };
+
+    // 1. Should reject invalid link target (RULE linking to RULE violates policy)
+    await expect(
+      createArtifact(customDefinition, {
+        title: "Test Policy Enforcement",
+        links: ["RULE-99"],
+        cwd: workspace.cwd,
+      }),
+    ).rejects.toThrow("Invalid rule link target");
+
+    // 2. Should reject invalid dependency for non-TASK
+    await expect(
+      createArtifact(customDefinition, {
+        title: "Test Dependency Enforcement",
+        depends_on: ["TASK-1"],
+        cwd: workspace.cwd,
+      }),
+    ).rejects.toThrow("depends_on");
+
+    // 3. Create real ADR so valid link can resolve
+    const adr = await createAdr({
+      title: "Real Ancestor ADR",
+      context: "Context for link validation",
+      cwd: workspace.cwd,
+    });
+
+    // 4. Should succeed when link satisfies linkPolicy
+    const result = await createArtifact(customDefinition, {
+      title: "Valid Linked Artifact",
+      links: [adr.tag],
+      cwd: workspace.cwd,
+    });
+    expect(result.tag).toBe(makeTestTag("RULE", 1));
+    expect(result.artifact.links).toEqual([adr.tag]);
+  });
 });

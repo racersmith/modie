@@ -5,7 +5,7 @@
 
 import { parseArtifactFilename } from "../common/filename.ts";
 import { slugToTitle } from "../common/index.ts";
-import { isValidAdrLinkTag } from "../linking/validator.ts";
+import { isValidAdrLinkTag } from "../linking/syntax.ts";
 import {
   parseMarkdownDocument,
   type ArtifactParseContext,

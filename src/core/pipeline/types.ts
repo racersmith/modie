@@ -40,6 +40,16 @@ export interface BaseCreateArtifactOptions {
    * Optional target artifact tag(s) superseded by this artifact.
    */
   supersedes?: string | string[];
+
+  /**
+   * Optional frontmatter links.
+   */
+  links?: string[];
+
+  /**
+   * Optional task dependencies.
+   */
+  depends_on?: string[];
 }
 
 /**

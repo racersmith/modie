@@ -5,7 +5,7 @@
 
 import { parseArtifactFilename } from "../common/filename.ts";
 import { slugToTitle } from "../common/index.ts";
-import { isValidGovernanceLinkTag } from "../linking/validator.ts";
+import { isValidGovernanceLinkTag } from "../linking/syntax.ts";
 import {
   parseMarkdownDocument,
   type ArtifactParseContext,

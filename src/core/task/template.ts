@@ -6,7 +6,7 @@
 import {
   isValidGovernanceLinkTag,
   isValidTaskDependencyTag,
-} from "../linking/validator.ts";
+} from "../linking/syntax.ts";
 import { renderAcceptanceCriteria } from "./checklist.ts";
 import type {
   PlannedGovernanceDeclaration,

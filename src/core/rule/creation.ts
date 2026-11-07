@@ -7,12 +7,33 @@
 
 import { resolveArtifactDirectories } from "../common/index.ts";
 import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
+import { validateLinkTarget } from "../linking/validator.ts";
 import { createArtifact } from "../pipeline/create.ts";
-import { ruleDefinition, validateRuleAncestry } from "./definition.ts";
+import { ruleDefinition } from "./definition.ts";
 import type { CreateRuleOptions, CreateRuleResult } from "./types.ts";
 
 export type { CreateRuleOptions, CreateRuleResult } from "./types.ts";
-export { validateRuleAncestry } from "./definition.ts";
+
+/**
+ * Validates frontmatter links per RULE-13 and ancestor justification per RULE-16.
+ *
+ * A RULE artifact referencing an ADR must target an ADR residing in the rule's
+ * directory or an ancestor directory up to the repository root (RULE-16).
+ *
+ * @throws Error if any link is non-ADR (RULE-13) or targets a descendant/sibling ADR (RULE-16).
+ */
+export async function validateRuleAncestry(
+  normalizedScopeDir: string,
+  links: string[] = [],
+  cwd: string = process.cwd(),
+): Promise<void> {
+  for (const link of links) {
+    await validateLinkTarget("RULE", normalizedScopeDir, "links", link, {
+      cwd,
+      sourceTag: "RULE",
+    });
+  }
+}
 
 /**
  * Normalizes scope directory and target directory for a RULE per RULE-8.

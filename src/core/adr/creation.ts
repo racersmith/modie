@@ -7,11 +7,11 @@
 
 import { resolveArtifactDirectories } from "../common/index.ts";
 import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
+import { validateLinkTarget } from "../linking/validator.ts";
 import { createArtifact } from "../pipeline/create.ts";
 import { updateSupersededArtifactFrontmatter } from "../pipeline/supersession.ts";
 import {
   adrDefinition,
-  validateAdrScope,
   type AdrDefinition,
 } from "./definition.ts";
 import type { CreateAdrOptions, CreateAdrResult } from "./types.ts";
@@ -19,9 +19,32 @@ import type { CreateAdrOptions, CreateAdrResult } from "./types.ts";
 export type { CreateAdrOptions, CreateAdrResult } from "./types.ts";
 export {
   adrDefinition,
-  validateAdrScope,
   type AdrDefinition,
 } from "./definition.ts";
+
+/**
+ * Validates frontmatter links per RULE-14, descendant rule scope per RULE-17,
+ * and ancestor ADR scope per RULE-19.
+ *
+ * - An ADR's frontmatter links must exclusively reference ADR or RULE artifacts (RULE-14).
+ * - An ADR artifact referencing a RULE must target a RULE residing in the ADR's
+ *   directory or within its descendant subtree (RULE-17).
+ * - An ADR artifact referencing an ADR must target an ancestor or self ADR (RULE-19).
+ *
+ * @throws Error if any link is not ADR/RULE (RULE-14) or violates spatial scope (RULE-17, RULE-19).
+ */
+export async function validateAdrScope(
+  normalizedScopeDir: string,
+  links: string[] = [],
+  cwd: string = process.cwd(),
+): Promise<void> {
+  for (const link of links) {
+    await validateLinkTarget("ADR", normalizedScopeDir, "links", link, {
+      cwd,
+      sourceTag: "ADR",
+    });
+  }
+}
 
 /**
  * Updates a superseded ADR artifact file on disk to append superseded_by frontmatter link.
