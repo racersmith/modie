@@ -80,7 +80,6 @@ export function resolveWorkspaceContext(
   contextOrOptions?:
     | WorkspaceContext
     | (CreateWorkspaceContextOptions & {
-        context?: WorkspaceContext | string;
         workspace?: WorkspaceContext;
       })
     | string,
@@ -98,17 +97,8 @@ export function resolveWorkspaceContext(
   if (isWorkspaceContext(contextOrOptions)) {
     return contextOrOptions;
   }
-  if (
-    "workspace" in contextOrOptions &&
-    isWorkspaceContext(contextOrOptions.workspace)
-  ) {
+  if ("workspace" in contextOrOptions && contextOrOptions.workspace) {
     return contextOrOptions.workspace;
-  }
-  if (
-    "context" in contextOrOptions &&
-    isWorkspaceContext(contextOrOptions.context)
-  ) {
-    return contextOrOptions.context;
   }
   return createWorkspaceContextSync({
     root: contextOrOptions.root ?? contextOrOptions.cwd,
@@ -117,4 +107,3 @@ export function resolveWorkspaceContext(
     registry: contextOrOptions.registry,
   });
 }
-

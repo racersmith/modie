@@ -15,7 +15,6 @@ export interface ResolveMotiveOptions {
    * Explicit workspace context container.
    */
   workspace?: WorkspaceContext;
-  context?: WorkspaceContext;
 }
 
 /**
@@ -93,9 +92,9 @@ export interface CreateMotiveOptions {
   content?: string;
 
   /**
-   * Alias for `content`.
+   * Initial motive prose content. Alias for `content`.
    */
-  context?: string;
+  contextSection?: string;
 
   /**
    * Explicitly allow overwriting an existing `MOTIVE.md` in the target scope.
@@ -168,4 +167,3 @@ export interface CreateMotiveResult {
   overwritten: boolean;
   scaffolded: boolean;
 }
-

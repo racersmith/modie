@@ -13,7 +13,6 @@ import { MODIE_VERSION } from "../../core/common/version.ts";
 
 export { MODIE_VERSION };
 
-
 export interface CommandNamespace {
   name: string;
   commands: Record<string, CommandHandler>;
@@ -125,7 +124,8 @@ export function printNamespaceHelp(
  * Prints global Modie CLI usage dynamically from declared command registry to stderr.
  */
 export function printGlobalHelp(
-  stderr: (msg: string) => void = (msg: string) => process.stderr.write(msg + "\n"),
+  stderr: (msg: string) => void = (msg: string) =>
+    process.stderr.write(msg + "\n"),
   commands: CliCommandDefinition[] = allCliCommands,
 ): void {
   const rows: Array<{ invocation: string; description: string }> = [];

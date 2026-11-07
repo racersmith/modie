@@ -39,7 +39,7 @@ export async function createMotive(
     );
   }
 
-  const rawContent = options.content ?? options.context;
+  const rawContent = options.content ?? options.contextSection;
   const { content, markdown, scaffolded } = renderMotiveMarkdown({
     content: rawContent,
     scope: paths.scope,
@@ -70,4 +70,3 @@ export async function createMotive(
     scaffolded,
   };
 }
-

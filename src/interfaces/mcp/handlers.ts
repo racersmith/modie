@@ -104,7 +104,10 @@ export async function handleLsBetter(
       if (branch) {
         const fromBranch = parseTaskIdFromBranch(branch);
         if (fromBranch) {
-          const status = await getTaskStatus(fromBranch, { cwd, context: ctx });
+          const status = await getTaskStatus(fromBranch, {
+            cwd,
+            workspace: ctx,
+          });
           targetPath = status.relativePath
             ? dirname(status.relativePath).replace(/\/\.modie\/tasks$/, "") ||
               "."
@@ -184,7 +187,10 @@ export async function handleReadArtifact(
   const tag = args.tag.trim();
   let details: ArtifactDetails;
   try {
-    details = await getArtifactDetails(tag, { cwd, context: ctx });
+    details = await getArtifactDetails(tag, {
+      cwd,
+      workspace: ctx,
+    });
   } catch (err: any) {
     throw McpToolError.artifactNotFound({
       message: err?.message ?? `Artifact "${tag}" was not found.`,
@@ -194,7 +200,10 @@ export async function handleReadArtifact(
 
   let references: ArtifactReferencesResult | null = null;
   try {
-    references = await findArtifactReferences(details.tag, { cwd, context: ctx });
+    references = await findArtifactReferences(details.tag, {
+      cwd,
+      workspace: ctx,
+    });
   } catch {
     // Graceful fallback if reference discovery fails
   }
@@ -215,7 +224,10 @@ export async function handleTaskContext(
   const taskId = await resolveActiveTaskId(args.task_id, ctx);
   let status: TaskStatusDetails;
   try {
-    status = await getTaskStatus(taskId, { cwd, context: ctx });
+    status = await getTaskStatus(taskId, {
+      cwd,
+      workspace: ctx,
+    });
   } catch (err: any) {
     throw McpToolError.artifactNotFound({
       message: err?.message ?? `Task "${taskId}" was not found.`,
@@ -243,7 +255,10 @@ export async function handleStartTask(
   const cwd = ctx.root;
   const taskId = await resolveActiveTaskId(args.task_id, ctx);
   try {
-    await startTaskBranch(taskId, { cwd, context: ctx });
+    await startTaskBranch(taskId, {
+      cwd,
+      workspace: ctx,
+    });
   } catch (err: any) {
     throw McpToolError.invalidParameter({
       message: `Failed to start task "${taskId}": ${err?.message}`,
@@ -254,7 +269,10 @@ export async function handleStartTask(
 
   let status: TaskStatusDetails;
   try {
-    status = await getTaskStatus(taskId, { cwd, context: ctx });
+    status = await getTaskStatus(taskId, {
+      cwd,
+      workspace: ctx,
+    });
   } catch (err: any) {
     throw McpToolError.artifactNotFound({
       message: err?.message ?? `Task "${taskId}" was not found.`,
@@ -283,7 +301,7 @@ export async function handleCheckCriteria(
       await checkTaskItem(taskId, itemIndex, {
         completed: !args.uncheck,
         cwd,
-        context: ctx,
+        workspace: ctx,
       });
     } catch (err: any) {
       throw McpToolError.invalidParameter({
@@ -294,7 +312,10 @@ export async function handleCheckCriteria(
     }
   }
 
-  const status = await getTaskStatus(taskId, { cwd, context: ctx });
+  const status = await getTaskStatus(taskId, {
+    cwd,
+    workspace: ctx,
+  });
   const acceptanceCriteria = (status.acceptanceCriteria ?? []).map((c, i) => ({
     item: i + 1,
     text: c.text,
@@ -364,7 +385,10 @@ export async function handleCreateRule(
       if (branch) {
         const fromBranch = parseTaskIdFromBranch(branch);
         if (fromBranch) {
-          const status = await getTaskStatus(fromBranch, { cwd, context: ctx });
+          const status = await getTaskStatus(fromBranch, {
+            cwd,
+            workspace: ctx,
+          });
           resolvedScopeDir = status.relativePath
             ? dirname(status.relativePath).replace(/\/\.modie\/tasks$/, "") ||
               "."
@@ -412,7 +436,10 @@ export async function handleCreateAdr(
       if (branch) {
         const fromBranch = parseTaskIdFromBranch(branch);
         if (fromBranch) {
-          const status = await getTaskStatus(fromBranch, { cwd, context: ctx });
+          const status = await getTaskStatus(fromBranch, {
+            cwd,
+            workspace: ctx,
+          });
           resolvedScopeDir = status.relativePath
             ? dirname(status.relativePath).replace(/\/\.modie\/tasks$/, "") ||
               "."
@@ -426,7 +453,7 @@ export async function handleCreateAdr(
   const res = await createAdr({
     title: args.title,
     decision: args.decision,
-    context: args.context,
+    contextSection: args.context,
     consequences: args.consequences,
     summary: args.title,
     links: args.links,
@@ -464,7 +491,7 @@ export async function handleCreateTask(
   const res = await createTask({
     title: args.title,
     summary: args.summary,
-    context: args.context,
+    contextSection: args.context,
     acceptanceCriteria: criteria,
     depends_on: args.depends_on,
     links: args.links,
@@ -510,7 +537,7 @@ export async function handleLinkArtifacts(
       source: sourceTag,
       target,
       cwd,
-      context: ctx,
+      workspace: ctx,
     });
     relationship = result.relationship;
     if (result.changed) {

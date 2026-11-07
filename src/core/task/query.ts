@@ -14,18 +14,12 @@ import {
   taskKey,
 } from "../common/index.ts";
 import { scanActiveTasks } from "../resolver/active-scanner.ts";
-import {
-  detectGitBranch,
-  listGitBranches,
-} from "../resolver/git-inspector.ts";
+import { detectGitBranch, listGitBranches } from "../resolver/git-inspector.ts";
 import {
   inspectGitDeletedArtifacts,
   inspectMultiBranchActiveArtifacts,
 } from "../resolver/artifact-history.ts";
-import type {
-  DiscoveredArtifact,
-  DiscoveredTask,
-} from "../resolver/types.ts";
+import type { DiscoveredArtifact, DiscoveredTask } from "../resolver/types.ts";
 import { resolveWorkspaceContext } from "../context/resolver.ts";
 import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
@@ -79,7 +73,7 @@ export interface TaskQueueQueryOptions {
   /**
    * Explicit workspace context container.
    */
-  context?: WorkspaceContext;
+  workspace?: WorkspaceContext;
 
   /**
    * Filter to only include unblocked tasks ready for execution (readiness === "READY").
@@ -126,7 +120,7 @@ export interface TaskStatusQueryOptions {
   /**
    * Explicit workspace context container.
    */
-  context?: WorkspaceContext;
+  workspace?: WorkspaceContext;
 
   /**
    * Whether to query completed task history and branches in Git when the task
@@ -296,7 +290,6 @@ function buildActiveTaskMap(rawTasks: RawTaskRecord[]): Map<string, string> {
     const normId = taskKey(item.discovered.id);
     const canonicalId = `TASK-${item.discovered.id}`;
     activeTaskMap.set(normId, canonicalId);
-    activeTaskMap.set(canonicalId.toLowerCase(), canonicalId);
   }
   return activeTaskMap;
 }
@@ -307,9 +300,7 @@ function resolveTaskBlockers(
 ): string[] {
   const blockedBy: string[] = [];
   for (const dep of dependsOn) {
-    const normDep = taskKey(dep);
-    const blockingCanonical =
-      activeTaskMap.get(normDep) ?? activeTaskMap.get(`task-${normDep}`);
+    const blockingCanonical = activeTaskMap.get(taskKey(dep));
     if (blockingCanonical && !blockedBy.includes(blockingCanonical)) {
       blockedBy.push(blockingCanonical);
     }
@@ -568,7 +559,11 @@ async function readHistoricalTaskMarkdown(
  * Queries completed tasks in Git deletion history and tasks on other Git branches per ADR-6.
  */
 export async function queryTaskHistory(
-  options: { cwd?: string; vcs?: IVcsAdapter; context?: WorkspaceContext } = {},
+  options: {
+    cwd?: string;
+    vcs?: IVcsAdapter;
+    workspace?: WorkspaceContext;
+  } = {},
 ): Promise<TaskQueueItem[]> {
   const ctx = resolveWorkspaceContext(options);
   const cwd = ctx.root;
@@ -593,9 +588,7 @@ export async function queryTaskHistory(
     detectGitBranch(cwd, vcs),
   ]);
 
-  const activeDiskIds = new Set(
-    activeOnDisk.map((t) => taskKey(t.id)),
-  );
+  const activeDiskIds = new Set(activeOnDisk.map((t) => taskKey(t.id)));
 
   const currentTaskId = currentBranch
     ? parseTaskIdFromBranch(currentBranch)
@@ -664,7 +657,7 @@ export async function resolveCurrentTask(
     branch?: string;
     history?: boolean;
     vcs?: IVcsAdapter;
-    context?: WorkspaceContext;
+    workspace?: WorkspaceContext;
   } = {},
 ): Promise<TaskStatusDetails | null> {
   const ctx = resolveWorkspaceContext(options);
@@ -684,7 +677,7 @@ export async function resolveCurrentTask(
       cwd,
       history: options.history,
       vcs: ctx.vcs,
-      context: ctx,
+      workspace: ctx,
     });
   } catch {
     return null;
@@ -710,10 +703,13 @@ export async function getTaskStatus(
     const filepath = await resolveTaskFile(taskIdentifier, {
       cwd,
       vcs: ctx.vcs,
-      context: ctx,
+      workspace: ctx,
     });
 
-    const queue = await queryTaskQueue({ cwd, context: ctx });
+    const queue = await queryTaskQueue({
+      cwd,
+      workspace: ctx,
+    });
     const item = queue.find((t) => t.filepath === filepath);
 
     if (!item) {

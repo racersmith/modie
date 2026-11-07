@@ -55,4 +55,3 @@ export function resolveMotivePath(
 ): string {
   return resolveMotivePaths(targetDirInput, cwdOrOptions).filepath;
 }
-

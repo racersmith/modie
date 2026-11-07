@@ -6,4 +6,3 @@
 export * from "./frontmatter.ts";
 export * from "./sections.ts";
 export * from "./parser.ts";
-

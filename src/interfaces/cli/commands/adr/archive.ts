@@ -58,4 +58,3 @@ export const adrArchiveCommand: CliCommandDefinition<
   render: archiveCommand.render,
   renderJson: archiveCommand.renderJson,
 });
-

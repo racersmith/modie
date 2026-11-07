@@ -188,10 +188,7 @@ export function classifyCitation(
   const ext = extname(fileName).toLowerCase();
 
   const gov =
-    cache.get(fullPath) ??
-    cache.get(relPath) ??
-    cache.get(fileName) ??
-    null;
+    cache.get(fullPath) ?? cache.get(relPath) ?? cache.get(fileName) ?? null;
 
   if (gov) {
     const snippet = match.snippet.trim();
@@ -255,4 +252,3 @@ export function classifyCitation(
     snippet: match.snippet.trim(),
   };
 }
-

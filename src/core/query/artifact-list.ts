@@ -52,7 +52,10 @@ export async function listActiveArtifacts(
 
   if (trimmedScope) {
     const rawTarget = resolve(cwd, trimmedScope);
-    const { scopeDir: normalizedScopeDir } = resolveGoverningScope(rawTarget, cwd);
+    const { scopeDir: normalizedScopeDir } = resolveGoverningScope(
+      rawTarget,
+      cwd,
+    );
 
     const relFromRoot = toPosixRelative(cwd, normalizedScopeDir);
     if (relFromRoot.startsWith("..") || isAbsolute(relFromRoot)) {

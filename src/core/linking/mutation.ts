@@ -7,7 +7,6 @@
  */
 
 import { readFile, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
 import { YAML } from "bun";
 import { parseCanonicalTag } from "../common/index.ts";
 import { resolveWorkspaceContext } from "../context.ts";

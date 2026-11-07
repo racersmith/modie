@@ -6,7 +6,11 @@
 import { describe, expect, it } from "bun:test";
 import { formatArtifactFilename } from "../common/filename.ts";
 import { makeTestTag } from "../testing/index.ts";
-import { parseAdrMarkdown, renderAdrMarkdown, validateAdrLinks } from "./template.ts";
+import {
+  parseAdrMarkdown,
+  renderAdrMarkdown,
+  validateAdrLinks,
+} from "./template.ts";
 
 describe("ADR Primitive - Frontmatter Links Validation (RULE-14, RULE-35)", () => {
   // @verifies RULE-14, RULE-35

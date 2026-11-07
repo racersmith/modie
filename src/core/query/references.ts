@@ -81,8 +81,7 @@ export function buildLinksTo(
     parsedTargetFm = parseFrontmatterFields(targetFrontmatter);
   }
 
-  const supersedesItems =
-    details.supersedes ?? parsedTargetFm.supersedes ?? [];
+  const supersedesItems = details.supersedes ?? parsedTargetFm.supersedes ?? [];
   supersedes.push(...supersedesItems);
 
   const supersededByItems =
@@ -166,7 +165,10 @@ export async function findArtifactReferences(
     : DEFAULT_IGNORED_DIRECTORIES;
 
   // 1. Resolve target artifact details & outbound declared links
-  const details = await getArtifactDetails(tagOrIdentifier, { cwd, context: ctx });
+  const details = await getArtifactDetails(tagOrIdentifier, {
+    cwd,
+    workspace: ctx,
+  });
   const targetTag = details.tag.toUpperCase();
   const targetFilepath = resolve(cwd, details.filepath);
   const linksTo = buildLinksTo(details);

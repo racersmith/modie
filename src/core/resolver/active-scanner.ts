@@ -100,7 +100,11 @@ export async function scanActiveArtifactIds(
   subtype?: IndexableSubtype,
   registry?: DefinitionRegistry,
 ): Promise<string[]> {
-  const artifacts = await scanActiveArtifacts(rootDirOrContext, subtype, registry);
+  const artifacts = await scanActiveArtifacts(
+    rootDirOrContext,
+    subtype,
+    registry,
+  );
   return Array.from(new Set(artifacts.map((a) => a.id)));
 }
 
@@ -121,14 +125,4 @@ export async function scanActiveTasks(
       filepath: a.filepath,
       status: "active",
     }));
-}
-
-/**
- * Returns a deduplicated list of active task IDs found on disk.
- * Backward compatibility wrapper around scanActiveArtifactIds.
- */
-export async function scanActiveTaskIds(
-  rootDirOrContext?: string | WorkspaceContext,
-): Promise<string[]> {
-  return scanActiveArtifactIds(rootDirOrContext, "TASK");
 }

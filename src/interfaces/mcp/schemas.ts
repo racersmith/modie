@@ -159,10 +159,7 @@ export type CreateRuleInput = z.infer<typeof createRuleSchema>;
  */
 export const createAdrSchema = z.object({
   title: z.string().min(3).describe("Decision title"),
-  decision: z
-    .string()
-    .min(10)
-    .describe("Adopted architectural decision"),
+  decision: z.string().min(10).describe("Adopted architectural decision"),
   context: z
     .string()
     .optional()
@@ -175,10 +172,7 @@ export const createAdrSchema = z.object({
     .array(z.string())
     .optional()
     .describe("Linked descendant rules or ancestor ADRs"),
-  scope_dir: z
-    .string()
-    .optional()
-    .describe("Architectural directory scope"),
+  scope_dir: z.string().optional().describe("Architectural directory scope"),
   supersedes: z
     .string()
     .optional()
@@ -201,22 +195,10 @@ export const createTaskSchema = z.object({
     .describe(
       "List of contract-based acceptance criteria (must end with User Review)",
     ),
-  context: z
-    .string()
-    .optional()
-    .describe("Task mission and technical context"),
-  depends_on: z
-    .array(z.string())
-    .optional()
-    .describe("Prerequisite task tags"),
-  links: z
-    .array(z.string())
-    .optional()
-    .describe("Governing RULE and ADR tags"),
-  scope_dir: z
-    .string()
-    .optional()
-    .describe("Blast radius root directory"),
+  context: z.string().optional().describe("Task mission and technical context"),
+  depends_on: z.array(z.string()).optional().describe("Prerequisite task tags"),
+  links: z.array(z.string()).optional().describe("Governing RULE and ADR tags"),
+  scope_dir: z.string().optional().describe("Blast radius root directory"),
 });
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 
@@ -240,10 +222,7 @@ export type CreateArtifactOutput = z.infer<typeof createArtifactOutputSchema>;
  * Input schema for link_artifacts tool.
  */
 export const linkArtifactsSchema = z.object({
-  targets: z
-    .array(z.string())
-    .min(1)
-    .describe("Target artifact tags to link"),
+  targets: z.array(z.string()).min(1).describe("Target artifact tags to link"),
   source: z
     .string()
     .optional()

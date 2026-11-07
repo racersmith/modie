@@ -61,4 +61,3 @@ Fallback context description when Decision is absent.
     );
   });
 });
-

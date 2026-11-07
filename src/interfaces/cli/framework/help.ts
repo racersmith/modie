@@ -125,7 +125,10 @@ export function formatCommandTable(
   minPad = 29,
   indent = "  ",
 ): string[] {
-  const padWidth = Math.max(minPad, ...rows.map((r) => r.invocation.length + 2));
+  const padWidth = Math.max(
+    minPad,
+    ...rows.map((r) => r.invocation.length + 2),
+  );
   return rows.map(
     (r) => `${indent}${r.invocation.padEnd(padWidth)}${r.description}`,
   );

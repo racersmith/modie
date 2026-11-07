@@ -69,4 +69,3 @@ export function extractTaskSummary(
 
   return "Task Execution Plan";
 }
-

@@ -125,7 +125,7 @@ export async function createArtifact<
   } else {
     id = await resolveNextArtifactId(definition.subtype as IndexableSubtype, {
       cwd,
-      context: ctx,
+      workspace: ctx,
     });
   }
 
@@ -187,16 +187,13 @@ export async function createArtifact<
 
 export { buildArtifactParseContext } from "../markdown/index.ts";
 
-
 /**
  * Parses raw markdown content into a strongly-typed artifact object using the
  * subtype's bidirectional ArtifactDefinition.parse contract.
  */
 export function parseArtifact<TArtifact = unknown>(
   definitionOrSubtype:
-    | ArtifactDefinition<any, TArtifact>
-    | IndexableSubtype
-    | string,
+    ArtifactDefinition<any, TArtifact> | IndexableSubtype | string,
   rawContent: string,
   filePathOrMetadata?:
     | string
@@ -211,8 +208,7 @@ export function parseArtifact<TArtifact = unknown>(
   const definition =
     typeof definitionOrSubtype === "string"
       ? (defaultDefinitionRegistry.get(definitionOrSubtype) as
-          | ArtifactDefinition<any, TArtifact>
-          | undefined)
+          ArtifactDefinition<any, TArtifact> | undefined)
       : definitionOrSubtype;
 
   if (!definition || !definition.parse) {

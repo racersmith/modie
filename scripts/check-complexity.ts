@@ -83,7 +83,8 @@ export const COMPLEXITY_CATEGORIES: readonly ComplexityCategory[] = [
     min: 1,
     max: 10,
     rating: "Simple (Low Risk)",
-    description: "Code is simply written and easy to maintain; ideal range for most functions.",
+    description:
+      "Code is simply written and easy to maintain; ideal range for most functions.",
     action: "Healthy — maintain current structure.",
     badge: "LOW",
   },
@@ -93,7 +94,8 @@ export const COMPLEXITY_CATEGORIES: readonly ComplexityCategory[] = [
     min: 11,
     max: 20,
     rating: "Moderate Risk",
-    description: "Code may need refactoring for better readability; moderately complex.",
+    description:
+      "Code may need refactoring for better readability; moderately complex.",
     action: "Monitor — refactor for readability during feature changes.",
     badge: "MODERATE",
   },
@@ -103,8 +105,10 @@ export const COMPLEXITY_CATEGORIES: readonly ComplexityCategory[] = [
     min: 21,
     max: 49,
     rating: "High Risk",
-    description: "Difficult to maintain, unnecessarily complicated, and susceptible to errors.",
-    action: "Action Required — decompose into smaller, focused helper functions.",
+    description:
+      "Difficult to maintain, unnecessarily complicated, and susceptible to errors.",
+    action:
+      "Action Required — decompose into smaller, focused helper functions.",
     badge: "HIGH",
   },
   {
@@ -113,8 +117,10 @@ export const COMPLEXITY_CATEGORIES: readonly ComplexityCategory[] = [
     min: 50,
     max: Infinity,
     rating: "Extreme Risk (Untestable)",
-    description: "Considered untestable due to extreme complexity; modifications are hazardous.",
-    action: "Critical Refactor — untestable; decouple control flow immediately.",
+    description:
+      "Considered untestable due to extreme complexity; modifications are hazardous.",
+    action:
+      "Critical Refactor — untestable; decouple control flow immediately.",
     badge: "CRITICAL",
   },
 ] as const;
@@ -172,9 +178,11 @@ const c = {
   dim: (s: string | number) => (useColor ? `\x1b[2m${s}\x1b[0m` : String(s)),
   red: (s: string | number) => (useColor ? `\x1b[31m${s}\x1b[0m` : String(s)),
   green: (s: string | number) => (useColor ? `\x1b[32m${s}\x1b[0m` : String(s)),
-  yellow: (s: string | number) => (useColor ? `\x1b[33m${s}\x1b[0m` : String(s)),
+  yellow: (s: string | number) =>
+    useColor ? `\x1b[33m${s}\x1b[0m` : String(s),
   blue: (s: string | number) => (useColor ? `\x1b[34m${s}\x1b[0m` : String(s)),
-  magenta: (s: string | number) => (useColor ? `\x1b[35m${s}\x1b[0m` : String(s)),
+  magenta: (s: string | number) =>
+    useColor ? `\x1b[35m${s}\x1b[0m` : String(s),
   cyan: (s: string | number) => (useColor ? `\x1b[36m${s}\x1b[0m` : String(s)),
 };
 
@@ -191,14 +199,24 @@ function parseCliArgs(args: string[]): CliOptions {
     help: false,
   };
 
-  const validTiers: ComplexityTier[] = ["simple", "moderate", "high", "extreme"];
+  const validTiers: ComplexityTier[] = [
+    "simple",
+    "moderate",
+    "high",
+    "extreme",
+  ];
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
 
     if (arg === "-h" || arg === "--help") {
       options.help = true;
-    } else if (arg === "cc" || arg === "deps" || arg === "cycles" || arg === "all") {
+    } else if (
+      arg === "cc" ||
+      arg === "deps" ||
+      arg === "cycles" ||
+      arg === "all"
+    ) {
       options.mode = arg;
     } else if (arg === "--ci") {
       options.ci = true;
@@ -475,7 +493,10 @@ const simpleFns = fns.filter((f) => f.tier === "simple");
 
 const actionableCount = extremeFns.length + highFns.length;
 const actionablePercent = ((actionableCount / fns.length) * 100).toFixed(1);
-const healthyPercent = (((simpleFns.length + moderateFns.length) / fns.length) * 100).toFixed(1);
+const healthyPercent = (
+  ((simpleFns.length + moderateFns.length) / fns.length) *
+  100
+).toFixed(1);
 
 // JSON Machine-Readable Mode
 if (options.json) {
@@ -515,7 +536,10 @@ if (options.json) {
       moderate: options.allModerate ? moderateFns : moderateFns.slice(0, 10),
       simpleCount: simpleFns.length,
     },
-    longest: fns.slice().sort((a, b) => b.len - a.len).slice(0, 10),
+    longest: fns
+      .slice()
+      .sort((a, b) => b.len - a.len)
+      .slice(0, 10),
   };
 
   console.log(JSON.stringify(jsonReport, null, 2));
@@ -533,7 +557,11 @@ if (options.mode === "cc" || options.mode === "all") {
     printTierSection(
       "Extreme Risk (CC 50+)",
       "🔴",
-      c.bold(c.red("Critical Priority — Considered untestable; decouple control flow immediately")),
+      c.bold(
+        c.red(
+          "Critical Priority — Considered untestable; decouple control flow immediately",
+        ),
+      ),
       extremeFns,
     );
   }
@@ -542,7 +570,9 @@ if (options.mode === "cc" || options.mode === "all") {
     printTierSection(
       "High Risk (CC 21–49)",
       "🟠",
-      c.yellow("High Priority — Difficult to maintain; prioritize decomposing into helper functions"),
+      c.yellow(
+        "High Priority — Difficult to maintain; prioritize decomposing into helper functions",
+      ),
       highFns,
     );
   }
@@ -551,7 +581,9 @@ if (options.mode === "cc" || options.mode === "all") {
     printTierSection(
       "Moderate Risk (CC 11–20)",
       "🟡",
-      c.cyan("Moderate Priority — Review for readability when modifying these files"),
+      c.cyan(
+        "Moderate Priority — Review for readability when modifying these files",
+      ),
       moderateFns,
     );
   } else if (!filter || filter === "actionable") {
@@ -560,7 +592,9 @@ if (options.mode === "cc" || options.mode === "all") {
     printTierSection(
       `Moderate Risk (CC 11–20) — Preview (Top ${previewCount} of ${moderateFns.length})`,
       "🟡",
-      c.dim(`Run with --category=moderate or --all-moderate to see all ${moderateFns.length} functions`),
+      c.dim(
+        `Run with --category=moderate or --all-moderate to see all ${moderateFns.length} functions`,
+      ),
       moderateFns.slice(0, previewCount),
     );
   }
@@ -573,7 +607,11 @@ if (options.mode === "cc" || options.mode === "all") {
       simpleFns.slice(0, 20),
     );
     if (simpleFns.length > 20) {
-      console.log(c.dim(`  ... and ${simpleFns.length - 20} more functions within ideal range.`));
+      console.log(
+        c.dim(
+          `  ... and ${simpleFns.length - 20} more functions within ideal range.`,
+        ),
+      );
     }
   }
 
@@ -582,7 +620,11 @@ if (options.mode === "cc" || options.mode === "all") {
 }
 
 // Module Coupling & Dependency Cycles
-if (options.mode === "deps" || options.mode === "cycles" || options.mode === "all") {
+if (
+  options.mode === "deps" ||
+  options.mode === "cycles" ||
+  options.mode === "all"
+) {
   analyzeCouplingAndCycles(options.mode);
 }
 
@@ -599,7 +641,9 @@ evaluateExitGates(options, fns, extremeFns, highFns);
 function printComplexityDistribution(): void {
   console.log(`\n${c.bold("=== Cyclomatic Complexity Distribution ===")}`);
   console.log(
-    c.dim(`Analyzed ${fns.length} functions across ${files.length} non-test files in \`src/\`.\n`),
+    c.dim(
+      `Analyzed ${fns.length} functions across ${files.length} non-test files in \`src/\`.\n`,
+    ),
   );
 
   console.log(
@@ -634,7 +678,9 @@ function printComplexityDistribution(): void {
       range: "50+",
       count: extremeFns.length,
       pct: ((extremeFns.length / fns.length) * 100).toFixed(1),
-      status: c.bold(c.red("🔴 Critical (untestable; urgent refactoring needed)")),
+      status: c.bold(
+        c.red("🔴 Critical (untestable; urgent refactoring needed)"),
+      ),
     },
   ];
 
@@ -643,7 +689,9 @@ function printComplexityDistribution(): void {
     const rangeCol = r.range.padStart(6);
     const countCol = String(r.count).padStart(8);
     const pctCol = `${r.pct}%`.padStart(9);
-    console.log(`${nameCol}  ${rangeCol}  ${countCol}  ${pctCol}   ${r.status}`);
+    console.log(
+      `${nameCol}  ${rangeCol}  ${countCol}  ${pctCol}   ${r.status}`,
+    );
   }
 
   console.log(c.dim("─".repeat(82)));
@@ -680,7 +728,9 @@ function printTierSection(
     const loc = `${f.displayPath}:${f.line}`;
     const smells = formatSmellTags(f);
 
-    console.log(`  ${c.bold(ccStr)}  ${lenStr}  ${paramsStr}  ${loc} ${c.bold(f.name)}${smells}`);
+    console.log(
+      `  ${c.bold(ccStr)}  ${lenStr}  ${paramsStr}  ${loc} ${c.bold(f.name)}${smells}`,
+    );
   }
 }
 
@@ -688,7 +738,10 @@ function printTierSection(
  * Prints the longest functions across the codebase.
  */
 function printLongestFunctions(): void {
-  const longest = fns.slice().sort((a, b) => b.len - a.len).slice(0, 10);
+  const longest = fns
+    .slice()
+    .sort((a, b) => b.len - a.len)
+    .slice(0, 10);
 
   console.log(`\n${c.bold("=== 📏 Longest Functions (Top 10) ===")}`);
   console.log(c.dim("  Lines    CC  Params  Location & Symbol"));
@@ -699,7 +752,9 @@ function printLongestFunctions(): void {
     const ccStr = String(f.cc).padStart(5);
     const paramsStr = String(f.params).padStart(7);
     const loc = `${f.displayPath}:${f.line}`;
-    console.log(`  ${c.bold(lenStr)}  ${ccStr}  ${paramsStr}  ${loc} ${f.name}`);
+    console.log(
+      `  ${c.bold(lenStr)}  ${ccStr}  ${paramsStr}  ${loc} ${f.name}`,
+    );
   }
 }
 
@@ -728,7 +783,9 @@ function printActionableGuidance(): void {
       );
     }
     console.log(
-      c.dim("     Decompose high-branching functions before adding new features or governance rules."),
+      c.dim(
+        "     Decompose high-branching functions before adding new features or governance rules.",
+      ),
     );
   }
 
@@ -772,7 +829,10 @@ function evaluateExitGates(
     process.exit(1);
   }
 
-  if (opts.failOn === "high" && (extremeList.length > 0 || highList.length > 0)) {
+  if (
+    opts.failOn === "high" &&
+    (extremeList.length > 0 || highList.length > 0)
+  ) {
     const total = extremeList.length + highList.length;
     console.error(
       `\n${c.bold(c.red("✖ CI FAILURE:"))} ${total} function(s) in High or Extreme Risk tier (CC >= 21):`,

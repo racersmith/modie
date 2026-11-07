@@ -62,10 +62,15 @@ export async function inspectGitDeletedArtifacts(
   const ctx = resolveWorkspaceContext(cwdOrContext, vcs);
   const cwd = ctx.root;
   const effectiveVcs = ctx.vcs;
-  const pattern = subtype ? `*.${subtype.toString().toUpperCase()}-*.md` : "*.*-*.md";
+  const pattern = subtype
+    ? `*.${subtype.toString().toUpperCase()}-*.md`
+    : "*.*-*.md";
 
   const lines = await effectiveVcs.listDeletedFiles(pattern, cwd);
-  const activeGitLines = await effectiveVcs.listActiveTrackedFiles(pattern, cwd);
+  const activeGitLines = await effectiveVcs.listActiveTrackedFiles(
+    pattern,
+    cwd,
+  );
   const activeGitIds = new Set<string>();
 
   for (const activeLine of activeGitLines) {
@@ -106,14 +111,21 @@ export async function inspectGitDeletedArtifacts(
 
   // Ensure any task explicitly completed via commit ceremony is permanently recorded as deleted (RULE-21)
   if (!targetSubtype || targetSubtype === "TASK") {
-    const completedLogLines = await effectiveVcs.listLogGrep("delete completed TASK-", cwd);
+    const completedLogLines = await effectiveVcs.listLogGrep(
+      "delete completed TASK-",
+      cwd,
+    );
     for (const msg of completedLogLines) {
-      const match = msg.match(/delete completed TASK-([A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*)/i);
+      const match = msg.match(
+        /delete completed TASK-([A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*)/i,
+      );
       if (match && match[1]) {
         const id = match[1];
         if (!activeGitIds.has(id.toLowerCase())) {
           const tag = `TASK-${id}`;
-          if (!discovered.some((d) => d.id.toLowerCase() === id.toLowerCase())) {
+          if (
+            !discovered.some((d) => d.id.toLowerCase() === id.toLowerCase())
+          ) {
             discovered.push({
               id,
               subtype: "TASK" as ArtifactSubtype,
@@ -159,7 +171,9 @@ export async function inspectMultiBranchActiveArtifacts(
   const cwd = ctx.root;
   const effectiveVcs = ctx.vcs;
   const branches = options.branches ?? (await effectiveVcs.listBranches(cwd));
-  const currentBranch = options.excludeCurrent ? await effectiveVcs.detectCurrentBranch(cwd) : null;
+  const currentBranch = options.excludeCurrent
+    ? await effectiveVcs.detectCurrentBranch(cwd)
+    : null;
   const exclude = new Set<string>();
   if (options.excludeCurrent && currentBranch) {
     exclude.add(currentBranch);
@@ -203,4 +217,3 @@ export async function inspectMultiBranchActiveArtifactIds(
   );
   return Array.from(new Set(artifacts.map((a) => a.id)));
 }
-

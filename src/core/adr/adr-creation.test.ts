@@ -246,4 +246,59 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
 
     await workspace.cleanup();
   });
+
+  // @verifies ADR-4, RULE-25, RULE-34
+  it("[ADR-4][RULE-25][RULE-34] should accept contextSection and support backward-compatible context alias", async () => {
+    const workspace = await createFixtureWorkspace(
+      "adr-context-disambiguation-",
+    );
+
+    // 1. Create with contextSection
+    const result1 = await createAdr({
+      title: "Context Section Disambiguation",
+      contextSection: "Domain context rendered via contextSection property.",
+      cwd: workspace.cwd,
+    });
+    expect(result1.artifact.context).toBe(
+      "Domain context rendered via contextSection property.",
+    );
+    expect(result1.artifact.contextSection).toBe(
+      "Domain context rendered via contextSection property.",
+    );
+    const content1 = await workspace.readFile(result1.filepath);
+    expect(content1).toContain(
+      "Domain context rendered via contextSection property.",
+    );
+
+    // 2. Create with backward-compatible context alias
+    const result2 = await createAdr({
+      title: "Legacy Context Alias",
+      context: "Domain context rendered via backward-compatible context alias.",
+      cwd: workspace.cwd,
+    });
+    expect(result2.artifact.context).toBe(
+      "Domain context rendered via backward-compatible context alias.",
+    );
+    expect(result2.artifact.contextSection).toBe(
+      "Domain context rendered via backward-compatible context alias.",
+    );
+    const content2 = await workspace.readFile(result2.filepath);
+    expect(content2).toContain(
+      "Domain context rendered via backward-compatible context alias.",
+    );
+
+    // 3. contextSection takes precedence when both provided
+    const result3 = await createAdr({
+      title: "Precedence Resolution",
+      contextSection: "Primary context section text.",
+      context: "Ignored fallback context text.",
+      cwd: workspace.cwd,
+    });
+    expect(result3.artifact.context).toBe("Primary context section text.");
+    expect(result3.artifact.contextSection).toBe(
+      "Primary context section text.",
+    );
+
+    await workspace.cleanup();
+  });
 });

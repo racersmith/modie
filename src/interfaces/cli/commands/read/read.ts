@@ -166,4 +166,3 @@ export const readCommand: CliCommandDefinition<
   render: renderArtifactDetails,
   renderJson: renderArtifactDetailsJson,
 });
-

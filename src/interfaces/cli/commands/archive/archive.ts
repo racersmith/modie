@@ -22,9 +22,7 @@ export const archiveSchema = z.object({
   force: z
     .boolean()
     .default(false)
-    .describe(
-      "Force archival bypassing active incoming reference checks",
-    ),
+    .describe("Force archival bypassing active incoming reference checks"),
 });
 
 export type ArchiveInput = z.infer<typeof archiveSchema>;
@@ -83,4 +81,3 @@ export const archiveCommand: CliCommandDefinition<
     );
   },
 });
-

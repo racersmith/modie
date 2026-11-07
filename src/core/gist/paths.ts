@@ -19,11 +19,7 @@ import {
   resolveScopeDirectory,
   toPosixRelative,
 } from "../common/index.ts";
-import type {
-  FileGistPaths,
-  GistPaths,
-  ResolveGistOptions,
-} from "./types.ts";
+import type { FileGistPaths, GistPaths, ResolveGistOptions } from "./types.ts";
 
 export const GISTS_CONTAINER_DIR = "gists";
 export const DIRECTORY_GIST_FILENAME = "GIST.md";
@@ -202,4 +198,3 @@ export function resolveFileGistPath(
     relativeGistFilepath: toPosixRelative(normCwd, gistFilepath),
   };
 }
-

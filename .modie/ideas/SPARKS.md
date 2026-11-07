@@ -22,4 +22,4 @@
 
 - What if task acceptance criteria had content-addressed short hashes (e.g. `[a42d]`) rendered dynamically in `task_context` and accepted by `check_criteria(["a42d"])` to prevent index drift if criteria items are inserted or reordered mid-flight?
 
-- Break the single monolithic modie mcp into smaller, domain specific mcp servers. This as part of the antigravity plugin system would be easy to package for us.  ie. task, research, document.
+- Break the single monolithic modie mcp into smaller, domain specific mcp servers. This as part of the antigravity plugin system would be easy to package for us. ie. task, research, document.

@@ -52,6 +52,11 @@ export interface AdrArtifact {
   /**
    * Context / problem statement (ADR-4).
    */
+  contextSection?: string;
+
+  /**
+   * @deprecated Use `contextSection` instead. Backward-compatible alias.
+   */
   context?: string;
 
   /**
@@ -119,6 +124,11 @@ export interface AdrRenderOptions {
   /**
    * Context / problem statement (ADR-4).
    */
+  contextSection?: string;
+
+  /**
+   * @deprecated Use `contextSection` instead. Backward-compatible alias.
+   */
   context?: string;
 
   /**
@@ -162,6 +172,11 @@ export interface CreateAdrOptions {
 
   /**
    * Context / problem statement (ADR-4).
+   */
+  contextSection?: string;
+
+  /**
+   * @deprecated Use `contextSection` instead. Backward-compatible alias.
    */
   context?: string;
 

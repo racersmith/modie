@@ -82,7 +82,8 @@ export function buildArtifactParseContext(
     filename = filePathOrMetadata.filename ?? filePathOrMetadata.filepath;
     if (filePathOrMetadata.id !== undefined) id = filePathOrMetadata.id;
     if (filePathOrMetadata.slug !== undefined) slug = filePathOrMetadata.slug;
-    if (filePathOrMetadata.title !== undefined) title = filePathOrMetadata.title;
+    if (filePathOrMetadata.title !== undefined)
+      title = filePathOrMetadata.title;
     if ((!id || !slug) && filename) {
       const parsed = parseArtifactFilename(filename);
       if (parsed) {

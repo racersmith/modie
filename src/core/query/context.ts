@@ -14,21 +14,18 @@ import {
   resolveScopeDirectory,
 } from "../common/directories.ts";
 import { parseArtifactFilename } from "../common/filename.ts";
-import { parseCanonicalTag, slugToTitle, toPosixRelative } from "../common/index.ts";
+import {
+  parseCanonicalTag,
+  slugToTitle,
+  toPosixRelative,
+} from "../common/index.ts";
 import { discoverGistsForScope } from "../gist/reader.ts";
 import { resolveWorkspaceContext } from "../context.ts";
-import type {
-  DirectoryGist,
-  FileGist,
-  GistSignpost,
-} from "../gist/types.ts";
+import type { DirectoryGist, FileGist, GistSignpost } from "../gist/types.ts";
 import { collectAncestralMotives } from "../motive/reader.ts";
 import { getTaskStatus, type TaskStatusDetails } from "../task/query.ts";
 import { compareArtifactIds, listAdrs, listRules } from "./artifact-list.ts";
-import {
-  getArtifactDetails,
-  resolveArtifactByTag,
-} from "./artifact-query.ts";
+import { getArtifactDetails, resolveArtifactByTag } from "./artifact-query.ts";
 import { splitMarkdownFrontmatter } from "../markdown/index.ts";
 import type {
   CompileContextOptions,

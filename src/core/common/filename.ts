@@ -10,8 +10,6 @@ import {
   isRegisteredArtifactSubtype,
   isValidArtifactId,
   parseCanonicalTag,
-  registerArtifactSubtype,
-  resetRegisteredArtifactSubtypes,
   type SubtypeLookup,
 } from "./tag.ts";
 import type {
@@ -22,11 +20,7 @@ import type {
   ParsedArtifactFilename,
 } from "./types.ts";
 
-export {
-  isValidArtifactId,
-  registerArtifactSubtype,
-  resetRegisteredArtifactSubtypes,
-};
+export { isValidArtifactId };
 
 /**
  * Regex matching any indexable artifact filename:
@@ -54,7 +48,10 @@ export function formatArtifactFilename(
   }
 
   const upperSubtype = asArtifactSubtype(subtype);
-  if (!isRegisteredArtifactSubtype(upperSubtype, registry) && !/^[A-Z0-9]+$/.test(upperSubtype)) {
+  if (
+    !isRegisteredArtifactSubtype(upperSubtype, registry) &&
+    !/^[A-Z0-9]+$/.test(upperSubtype)
+  ) {
     throw new Error(
       `Invalid artifact subtype "${subtype}". Expected uppercase alphanumeric token.`,
     );

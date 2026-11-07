@@ -67,11 +67,6 @@ export interface ModieMcpServerOptions {
   workspace?: WorkspaceContext;
 
   /**
-   * Optional command registry override (retained for backward compatibility, ignored).
-   */
-  commands?: any[];
-
-  /**
    * Underlying MCP server options.
    */
   serverOptions?: McpServerOptions;

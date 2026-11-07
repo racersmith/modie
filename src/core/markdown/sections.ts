@@ -55,4 +55,3 @@ export function parseMarkdownSections(body: string): Record<string, string> {
 
   return sections;
 }
-

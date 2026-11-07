@@ -4,10 +4,7 @@
  */
 
 import { scanActiveArtifactIds } from "./active-scanner.ts";
-import {
-  detectGitBranch,
-  getGitConfigPrefix,
-} from "./git-inspector.ts";
+import { detectGitBranch, getGitConfigPrefix } from "./git-inspector.ts";
 import {
   inspectGitDeletedArtifactIds,
   inspectMultiBranchActiveArtifactIds,
@@ -134,7 +131,7 @@ export function allocateTaskStrategy(
   options: {
     forceTrunk?: boolean;
     prefix?: string;
-    taskBranchInfo?: { parentId: string } | null;
+    taskBranchInfo?: { taskId: string } | null;
   },
 ): AllocationStrategyResult {
   if (!options.forceTrunk && options.prefix) {
@@ -143,7 +140,7 @@ export function allocateTaskStrategy(
   if (!options.forceTrunk && options.taskBranchInfo) {
     return subtaskAllocationStrategy.allocate(
       knownIds,
-      options.taskBranchInfo.parentId,
+      options.taskBranchInfo.taskId,
     );
   }
   return trunkAllocationStrategy.allocate(knownIds);
@@ -266,14 +263,4 @@ export async function resolveNextArtifactId(
 ): Promise<string> {
   const details = await resolveWatermark({ ...options, subtype });
   return details.nextId;
-}
-
-/**
- * Resolves the next unique task ID string according to the branch-aware watermark model.
- * Convenience wrapper returning strictly `nextId`.
- */
-export async function resolveNextTaskId(
-  options: WatermarkResolutionOptions = {},
-): Promise<string> {
-  return resolveNextArtifactId("TASK", options);
 }

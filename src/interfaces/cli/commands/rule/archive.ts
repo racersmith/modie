@@ -58,4 +58,3 @@ export const ruleArchiveCommand: CliCommandDefinition<
   render: archiveCommand.render,
   renderJson: archiveCommand.renderJson,
 });
-

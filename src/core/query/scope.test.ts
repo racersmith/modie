@@ -89,11 +89,7 @@ describe("Core Scope Resolution Service (RULE-6, RULE-8, RULE-9, RULE-12, RULE-2
     expect(ifaceScope.enclosingModieDir).toBe("src/interfaces/.modie");
 
     // Ancestral scopes: root -> src -> src/interfaces
-    expect(ifaceScope.ancestralScopes).toEqual([
-      ".",
-      "src",
-      "src/interfaces",
-    ]);
+    expect(ifaceScope.ancestralScopes).toEqual([".", "src", "src/interfaces"]);
 
     // Ancestral rule chain includes rules from root, src, and src/interfaces (RULE-9)
     expect(ifaceScope.rules.length).toBe(3);
@@ -104,7 +100,9 @@ describe("Core Scope Resolution Service (RULE-6, RULE-8, RULE-9, RULE-12, RULE-2
 
     // Ancestral rule chains grouping
     expect(ifaceScope.ancestralRuleChains.length).toBe(3);
-    const rootChain = ifaceScope.ancestralRuleChains.find((c) => c.scope === ".");
+    const rootChain = ifaceScope.ancestralRuleChains.find(
+      (c) => c.scope === ".",
+    );
     expect(rootChain?.rules.length).toBe(1);
     expect(rootChain?.rules[0]?.title).toBe("root architecture invariant");
   });
@@ -128,9 +126,7 @@ describe("Core Scope Resolution Service (RULE-6, RULE-8, RULE-9, RULE-12, RULE-2
       "src/interfaces/cli/commands/read/read.ts",
     );
     expect(deepScope.scope).toBe("src/interfaces/cli");
-    expect(deepScope.scopeDir).toBe(
-      workspace.resolve("src/interfaces/cli"),
-    );
+    expect(deepScope.scopeDir).toBe(workspace.resolve("src/interfaces/cli"));
     expect(deepScope.enclosingModieDir).toBe("src/interfaces/cli/.modie");
 
     // Ancestral scopes: . -> src -> src/interfaces -> src/interfaces/cli
@@ -162,11 +158,7 @@ describe("Core Scope Resolution Service (RULE-6, RULE-8, RULE-9, RULE-12, RULE-2
     expect(ruleScope.scope).toBe("src/interfaces");
     expect(ruleScope.enclosingModieDir).toBe("src/interfaces/.modie");
     expect(ruleScope.targetPath).toContain(".modie/rules/");
-    expect(ruleScope.ancestralScopes).toEqual([
-      ".",
-      "src",
-      "src/interfaces",
-    ]);
+    expect(ruleScope.ancestralScopes).toEqual([".", "src", "src/interfaces"]);
 
     // 2. By slug
     const slugScope = await resolveScope("cli-stream-separation-rule", { cwd });
@@ -186,9 +178,9 @@ describe("Core Scope Resolution Service (RULE-6, RULE-8, RULE-9, RULE-12, RULE-2
   it("should reject paths outside the workspace root", async () => {
     const cwd = workspace.cwd;
 
-    await expect(
-      resolveScope("../outside-repo", { cwd }),
-    ).rejects.toThrow(/path must reside within the workspace root/);
+    await expect(resolveScope("../outside-repo", { cwd })).rejects.toThrow(
+      /path must reside within the workspace root/,
+    );
   });
 
   it("should reject empty target identifier", async () => {

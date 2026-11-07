@@ -18,9 +18,9 @@ import {
   inspectMultiBranchActiveArtifacts,
   nextSequence,
   prefixedAllocationStrategy,
-  resolveNextTaskId,
+  resolveNextArtifactId,
   resolveWatermark,
-  scanActiveTaskIds,
+  scanActiveArtifactIds,
   scanActiveTasks,
   subtaskAllocationStrategy,
   trunkAllocationStrategy,
@@ -40,7 +40,9 @@ async function withWatermarkFixture(
   const vcs = new MockVcsAdapter({
     insideWorkTree: true,
     currentBranch: options.branch ?? "dev",
-    branches: Object.keys(options.treeFiles ?? {}).concat([options.branch ?? "dev"]),
+    branches: Object.keys(options.treeFiles ?? {}).concat([
+      options.branch ?? "dev",
+    ]),
     deletedFilesList: options.deletedFiles ?? [],
     treeFiles: options.treeFiles ?? {},
     config: options.config,
@@ -89,7 +91,7 @@ describe("Watermark Resolver - Active Task Scanner (RULE-1, ADR-6, RULE-34, RULE
     const tasks = await scanActiveTasks(workspace.cwd);
     expect(tasks.length).toBe(2);
 
-    const taskIds = await scanActiveTaskIds(workspace.cwd);
+    const taskIds = await scanActiveArtifactIds(workspace.cwd, "TASK");
     expect(taskIds.sort()).toEqual(["1", "4"]);
 
     await workspace.cleanup();
@@ -98,7 +100,7 @@ describe("Watermark Resolver - Active Task Scanner (RULE-1, ADR-6, RULE-34, RULE
   // @verifies ADR-6, RULE-34
   it("[ADR-6][RULE-34] should return empty array when no active tasks exist on disk", async () => {
     const workspace = await createFixtureWorkspace("empty-scan-");
-    const taskIds = await scanActiveTaskIds(workspace.cwd);
+    const taskIds = await scanActiveArtifactIds(workspace.cwd, "TASK");
     expect(taskIds).toEqual([]);
     await workspace.cleanup();
   });
@@ -110,25 +112,21 @@ describe("Watermark Resolver - Git History & Branch Detection (ADR-6, ADR-9, RUL
     expect(
       parseTaskBranch("task/2-task-id-allocation-and-rule-alignment"),
     ).toEqual({
-      parentId: "2",
       taskId: "2",
       slug: "task-id-allocation-and-rule-alignment",
     });
 
     expect(parseTaskBranch("task/4-task-id-watermark-resolver")).toEqual({
-      parentId: "4",
       taskId: "4",
       slug: "task-id-watermark-resolver",
     });
 
     expect(parseTaskBranch("task/2-1-subtask-test")).toEqual({
-      parentId: "2-1",
       taskId: "2-1",
       slug: "subtask-test",
     });
 
     expect(parseTaskBranch("task/42")).toEqual({
-      parentId: "42",
       taskId: "42",
       slug: undefined,
     });
@@ -151,8 +149,14 @@ describe("Watermark Resolver - Git History & Branch Detection (ADR-6, ADR-9, RUL
     await workspace.remove(task3);
     await workspace.gitCommit("chore: remove completed tasks");
 
-    const deletedTasks = await inspectGitDeletedArtifacts(workspace.cwd, "TASK");
-    const deletedIds = await inspectGitDeletedArtifactIds(workspace.cwd, "TASK");
+    const deletedTasks = await inspectGitDeletedArtifacts(
+      workspace.cwd,
+      "TASK",
+    );
+    const deletedIds = await inspectGitDeletedArtifactIds(
+      workspace.cwd,
+      "TASK",
+    );
 
     expect(deletedIds).toContain("2");
     expect(deletedIds).toContain("3");
@@ -222,7 +226,7 @@ describe("Watermark Resolver - Trunk Monotonic Integer Progression (ADR-6, ADR-9
         ],
       },
       async (cwd, vcs) => {
-        const nextId = await resolveNextTaskId({ cwd, vcs });
+        const nextId = await resolveNextArtifactId("TASK", { cwd, vcs });
         expect(nextId).toBe("6");
       },
     );
@@ -244,7 +248,7 @@ describe("Watermark Resolver - Trunk Monotonic Integer Progression (ADR-6, ADR-9
         ],
       },
       async (cwd, vcs) => {
-        const nextId = await resolveNextTaskId({ cwd, vcs });
+        const nextId = await resolveNextArtifactId("TASK", { cwd, vcs });
         expect(nextId).toBe("9");
       },
     );
@@ -328,7 +332,7 @@ describe("Watermark Resolver - Branch-Aware Sub-Task Namespacing (ADR-9, RULE-21
         ],
       },
       async (cwd, vcs) => {
-        const idForParent2 = await resolveNextTaskId({ cwd, vcs });
+        const idForParent2 = await resolveNextArtifactId("TASK", { cwd, vcs });
         expect(idForParent2).toBe("2-2");
       },
     );
@@ -343,7 +347,7 @@ describe("Watermark Resolver - Branch-Aware Sub-Task Namespacing (ADR-9, RULE-21
         ],
       },
       async (cwd, vcs) => {
-        const idForParent3 = await resolveNextTaskId({ cwd, vcs });
+        const idForParent3 = await resolveNextArtifactId("TASK", { cwd, vcs });
         expect(idForParent3).toBe("3-3");
       },
     );
@@ -759,7 +763,7 @@ describe("Sequence Calculator & Strategy Handlers (RULE-1, ADR-6, ADR-9, RULE-35
     expect(prefixRes.nextId).toBe("J2");
 
     const subtaskRes = allocateTaskStrategy(["5-1"], {
-      taskBranchInfo: { parentId: "5" },
+      taskBranchInfo: { taskId: "5" },
     });
     expect(subtaskRes.strategy).toBe("subtask");
     expect(subtaskRes.nextId).toBe("5-2");
@@ -767,7 +771,7 @@ describe("Sequence Calculator & Strategy Handlers (RULE-1, ADR-6, ADR-9, RULE-35
     const forcedTrunkRes = allocateTaskStrategy(["5-1", "10"], {
       forceTrunk: true,
       prefix: "J",
-      taskBranchInfo: { parentId: "5" },
+      taskBranchInfo: { taskId: "5" },
     });
     expect(forcedTrunkRes.strategy).toBe("trunk");
     expect(forcedTrunkRes.nextId).toBe("11");

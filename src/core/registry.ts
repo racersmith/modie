@@ -79,4 +79,3 @@ export const ARTIFACT_DEFINITIONS: Record<
     },
   },
 );
-

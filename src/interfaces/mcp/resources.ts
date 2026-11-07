@@ -25,7 +25,6 @@ import {
 
 export interface RegisterResourcesOptions {
   cwd?: string;
-  context?: WorkspaceContext;
   workspace?: WorkspaceContext;
   instructions?: string;
 }
@@ -41,9 +40,7 @@ export function registerAllResources(
   server: McpServer,
   options: RegisterResourcesOptions = {},
 ) {
-  const ctx = resolveWorkspaceContext(
-    options.workspace ?? options.context ?? options.cwd,
-  );
+  const ctx = resolveWorkspaceContext(options.workspace ?? options.cwd);
   const cwd = ctx.root;
   const instructions = options.instructions;
 
@@ -64,7 +61,10 @@ export function registerAllResources(
       let text: string;
       if (taskId) {
         try {
-          const status = await getTaskStatus(taskId, { cwd, context: ctx });
+          const status = await getTaskStatus(taskId, {
+            cwd,
+            workspace: ctx,
+          });
           text = await renderTaskMissionBrief(status, branch, cwd);
         } catch {
           text = `# Mission Brief: Unknown Task (${taskId})\n\nUnable to load status for task \`${taskId}\` on branch \`${branch}\`.`;
@@ -98,7 +98,7 @@ export function registerAllResources(
     async (uri) => {
       const allTasks = await queryTaskQueue({
         cwd,
-        context: ctx,
+        workspace: ctx,
         readyOnly: false,
       });
       const readyTasks = allTasks.filter((t) => t.readiness === "READY");
@@ -128,7 +128,7 @@ export function registerAllResources(
     async (uri) => {
       const allTasks = await queryTaskQueue({
         cwd,
-        context: ctx,
+        workspace: ctx,
         readyOnly: false,
       });
       const text = renderTasksBacklog(allTasks);

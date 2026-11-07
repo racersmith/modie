@@ -420,10 +420,7 @@ describe("Declarative CLI Subcommand Framework (ADR-4, RULE-25, RULE-27)", () =>
     const inferredSchema = z.object({
       targetId: z.string().describe("Target artifact identifier"),
       scope: z.string().optional().describe("Target directory scope"),
-      labels: z
-        .array(z.string())
-        .default([])
-        .describe("Classification labels"),
+      labels: z.array(z.string()).default([]).describe("Classification labels"),
       dryRun: z
         .boolean()
         .default(false)
@@ -586,9 +583,13 @@ describe("Declarative CLI Subcommand Framework (ADR-4, RULE-25, RULE-27)", () =>
     });
 
     let stdout1 = "";
-    const exit1 = await executeCliCommand(cmd, ["antigravity", "--limit", "5"], {
-      stdout: (m) => (stdout1 += m + "\n"),
-    });
+    const exit1 = await executeCliCommand(
+      cmd,
+      ["antigravity", "--limit", "5"],
+      {
+        stdout: (m) => (stdout1 += m + "\n"),
+      },
+    );
     expect(exit1).toBe(0);
     expect(renderedInput).toEqual({ query: "antigravity", limit: 5 });
     expect(stdout1).toContain("Found 1 hits (limit: 5)");

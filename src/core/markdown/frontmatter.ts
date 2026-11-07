@@ -61,7 +61,10 @@ function safeYamlParse(str: string): Record<string, unknown> {
 
 function toList(val: unknown): string[] {
   if (Array.isArray(val)) {
-    return val.map(String).map((s) => s.trim()).filter(Boolean);
+    return val
+      .map(String)
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
   return typeof val === "string" && val.trim() ? [val.trim()] : [];
 }
@@ -151,4 +154,3 @@ export function parseFrontmatterLineMap(
 
   return { linkLines, frontmatterEndLine };
 }
-

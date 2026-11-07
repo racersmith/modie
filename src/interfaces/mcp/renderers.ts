@@ -411,7 +411,9 @@ export async function renderTaskMissionBrief(
     try {
       scope = resolveGoverningScope(taskDetails.filepath, cwd).relativeScope;
     } catch {
-      scope = dirname(taskDetails.relativePath).replace(/\/\.modie\/tasks$/, "") || ".";
+      scope =
+        dirname(taskDetails.relativePath).replace(/\/\.modie\/tasks$/, "") ||
+        ".";
     }
   }
 
@@ -421,9 +423,7 @@ export async function renderTaskMissionBrief(
     `task/${taskDetails.id}-${taskDetails.slug}`;
 
   const criteriaTotal =
-    taskDetails.criteriaTotal ??
-    taskDetails.acceptanceCriteria?.length ??
-    0;
+    taskDetails.criteriaTotal ?? taskDetails.acceptanceCriteria?.length ?? 0;
   const criteriaCompleted =
     taskDetails.criteriaCompleted ??
     taskDetails.acceptanceCriteria?.filter((c) => c.completed).length ??
@@ -578,7 +578,7 @@ export function buildBlocksMap(tasks: TaskQueueItem[]): Map<string, string[]> {
     for (const dep of task.depends_on) {
       const canonicalDep = knownTags.has(dep)
         ? dep
-        : idToTag.get(dep) ?? (dep.startsWith("TASK-") ? dep : `TASK-${dep}`);
+        : (idToTag.get(dep) ?? (dep.startsWith("TASK-") ? dep : `TASK-${dep}`));
       if (!blocksMap.has(canonicalDep)) {
         blocksMap.set(canonicalDep, []);
       }
@@ -708,4 +708,3 @@ export function renderTasksBacklog(tasks: TaskQueueItem[]): string {
 
   return parts.join("\n").trimEnd() + "\n";
 }
-

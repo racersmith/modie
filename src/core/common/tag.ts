@@ -5,9 +5,7 @@
 import type { ArtifactSubtype, ArtifactTag } from "./types.ts";
 
 export type SubtypeLookup =
-  | { has(subtype: string): boolean }
-  | Set<string>
-  | ReadonlySet<string>;
+  { has(subtype: string): boolean } | Set<string> | ReadonlySet<string>;
 
 /**
  * Valid ID pattern: unpadded integer (1, 42) or branch/author-namespaced (2-1, J101, A102).
@@ -19,14 +17,6 @@ export const DEFAULT_INDEXABLE_SUBTYPES: ReadonlySet<string> = new Set<string>([
   "ADR",
   "TASK",
 ]);
-
-/**
- * Registers an artifact subtype.
- * @deprecated Subtype registration is now instance-scoped to WorkspaceContext.registry.
- */
-export function registerArtifactSubtype(_subtype: string): void {
-  // No-op: module-level state eliminated in favor of instance-scoped WorkspaceContext.registry
-}
 
 /**
  * Checks whether an artifact subtype is currently recognized as an indexable subtype.
@@ -41,14 +31,6 @@ export function isRegisteredArtifactSubtype(
     return registry.has(upper) || DEFAULT_INDEXABLE_SUBTYPES.has(upper);
   }
   return DEFAULT_INDEXABLE_SUBTYPES.has(upper);
-}
-
-/**
- * Resets registered subtypes back to the default core set (RULE, ADR, TASK).
- * @deprecated Subtype registration is now instance-scoped to WorkspaceContext.registry.
- */
-export function resetRegisteredArtifactSubtypes(): void {
-  // No-op: module-level state eliminated in favor of instance-scoped WorkspaceContext.registry
 }
 
 /**
@@ -121,6 +103,9 @@ export function parseCanonicalTag(
 /**
  * Checks whether a given raw string conforms to canonical tag grammar.
  */
-export function isValidArtifactTag(raw: string, registry?: SubtypeLookup): boolean {
+export function isValidArtifactTag(
+  raw: string,
+  registry?: SubtypeLookup,
+): boolean {
   return parseCanonicalTag(raw, registry) !== null;
 }

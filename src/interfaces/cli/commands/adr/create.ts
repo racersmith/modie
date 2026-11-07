@@ -133,7 +133,7 @@ export const adrCreateCommand: CliCommandDefinition<
       title: input.title,
       scopeDir: input.scope,
       summary: input.summary,
-      context: input.context,
+      contextSection: input.context,
       alternatives: input.alternatives,
       decision: input.decision,
       links: input.links.length > 0 ? input.links : undefined,
@@ -180,4 +180,3 @@ export const adrCreateCommand: CliCommandDefinition<
     );
   },
 });
-

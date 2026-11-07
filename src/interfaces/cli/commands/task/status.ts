@@ -157,4 +157,3 @@ export const taskStatusCommand: CliCommandDefinition<
     context.stdout(JSON.stringify(status, null, 2));
   },
 });
-

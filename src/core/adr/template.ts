@@ -36,12 +36,14 @@ export function renderAdrMarkdown(options: AdrRenderOptions): string {
     title,
     summary,
     links = [],
+    contextSection,
     context,
     alternatives,
     decision,
     consequences,
     skipValidation,
   } = options;
+  const effectiveContext = contextSection ?? context;
 
   // Validate frontmatter boundaries per RULE-14
   if (!skipValidation) {
@@ -81,7 +83,7 @@ export function renderAdrMarkdown(options: AdrRenderOptions): string {
   frontmatterLines.push("---");
 
   const contextContent =
-    context?.trim() ||
+    effectiveContext?.trim() ||
     (title
       ? `Architecture decision context and motivation for ${title.trim()}.`
       : "Architecture decision context and problem statement.");
@@ -143,7 +145,10 @@ export function parseAdrFromContext(
       ? { superseded_by: context.frontmatterFields.superseded_by }
       : {}),
     ...(context.sections["Context"] !== undefined
-      ? { context: context.sections["Context"] }
+      ? {
+          contextSection: context.sections["Context"],
+          context: context.sections["Context"],
+        }
       : {}),
     ...(context.sections["Alternatives Considered"] !== undefined
       ? { alternatives: context.sections["Alternatives Considered"] }

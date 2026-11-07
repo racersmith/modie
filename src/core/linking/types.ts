@@ -6,13 +6,12 @@
  */
 
 import type { ResolvedArtifact } from "../common/types.ts";
+import type { WorkspaceContext } from "../context/types.ts";
 
 export type ArtifactLinkRelationship = "links" | "depends_on";
 
 export type FrontmatterListField =
-  | ArtifactLinkRelationship
-  | "supersedes"
-  | "superseded_by";
+  ArtifactLinkRelationship | "supersedes" | "superseded_by";
 
 /**
  * Permitted ancestry directionality and graph topology constraint for a link target.
@@ -23,11 +22,7 @@ export type FrontmatterListField =
  * - "any": Unrestricted spatial scope.
  */
 export type LinkAncestryScope =
-  | "ancestor"
-  | "descendant"
-  | "same-or-ancestor"
-  | "acyclic"
-  | "any";
+  "ancestor" | "descendant" | "same-or-ancestor" | "acyclic" | "any";
 
 /**
  * Declarative link policy for a single artifact subtype, mapping frontmatter relationship
@@ -53,8 +48,7 @@ export interface ValidateLinkOptions {
   /**
    * Explicit workspace context container.
    */
-  workspace?: any;
-  context?: any;
+  workspace?: WorkspaceContext;
 
   /**
    * Optional explicit relationship override ("links" or "depends_on").

@@ -103,4 +103,3 @@ export const ruleListCommand: CliCommandDefinition<
     context.stderr(renderRuleListTable(rules));
   },
 });
-

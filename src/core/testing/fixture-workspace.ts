@@ -45,6 +45,7 @@ export interface CreateTaskOptions {
   slug?: string;
   title?: string;
   summary?: string;
+  contextSection?: string;
   context?: string;
   criteria?: TaskCriterionItem[];
   depends_on?: string[];
@@ -61,6 +62,9 @@ export interface CreateRuleOptions {
   id?: number | string;
   slug?: string;
   title?: string;
+  assertion?: string;
+  contextSection?: string;
+  context?: string;
   body?: string;
   links?: string[];
   supersedes?: string | string[];
@@ -75,6 +79,7 @@ export interface CreateAdrOptions {
   slug?: string;
   title?: string;
   summary?: string;
+  contextSection?: string;
   context?: string;
   alternatives?: string;
   decision?: string;
@@ -147,6 +152,7 @@ export interface CreateFixtureArtifactOptions {
   depends_on?: string[];
   supersedes?: string | string[];
   superseded_by?: string | string[];
+  contextSection?: string;
   context?: string;
   alternatives?: string;
   decision?: string;
@@ -281,10 +287,11 @@ export async function createFixtureWorkspace(
           : undefined;
 
         if (upperSubtype === "RULE") {
+          const rawCtx = options.contextSection ?? options.context;
           const assertionText =
             options.body ??
-            (options.context
-              ? `# Context\n\n${options.context}`
+            (rawCtx
+              ? `# Context\n\n${rawCtx}`
               : options.title
                 ? `# Invariant\n\nRule body for ${options.title}.`
                 : "Fixture RULE invariant body.");
@@ -312,9 +319,9 @@ export async function createFixtureWorkspace(
               ? options.body
               : undefined);
           const consequences =
-            options.consequences ??
-            parsedBodySections["Consequences"];
+            options.consequences ?? parsedBodySections["Consequences"];
           const contextText =
+            options.contextSection ??
             options.context ??
             parsedBodySections["Context"] ??
             (options.title ? `Context for ${options.title}` : undefined);
@@ -340,6 +347,7 @@ export async function createFixtureWorkspace(
             title: options.title,
             summary: options.summary,
             context:
+              options.contextSection ??
               options.context ??
               options.body ??
               (options.title
@@ -382,7 +390,7 @@ export async function createFixtureWorkspace(
             ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
             : undefined),
         summary: options.summary,
-        context: options.context,
+        context: options.contextSection ?? options.context,
         acceptanceCriteria: options.criteria,
         plannedGovernance: options.plannedGovernance,
         depends_on: options.depends_on,
@@ -404,7 +412,11 @@ export async function createFixtureWorkspace(
           (options.title
             ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
             : undefined),
-        body: options.body,
+        body:
+          options.body ??
+          options.assertion ??
+          options.contextSection ??
+          options.context,
         links: options.links,
         supersedes: options.supersedes,
         superseded_by: options.superseded_by,
@@ -427,7 +439,7 @@ export async function createFixtureWorkspace(
             ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
             : undefined),
         summary: options.summary,
-        context: options.context,
+        context: options.contextSection ?? options.context,
         alternatives: options.alternatives,
         decision: options.decision,
         consequences: options.consequences,

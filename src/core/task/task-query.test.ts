@@ -557,7 +557,9 @@ describe("Typed VCS Methods for Historical Queries (ADR-6, RULE-21, RULE-25)", (
     expect(atRef).toBe("# Task 10 content");
     expect(mockVcs.history.readFileAtRefCalls.length).toBe(1);
 
-    const deleted = await mockVcs.readDeletedFile("src/.modie/tasks/old.TASK-9.md");
+    const deleted = await mockVcs.readDeletedFile(
+      "src/.modie/tasks/old.TASK-9.md",
+    );
     expect(deleted).toBe("# Task 9 content");
     expect(mockVcs.history.readDeletedFileCalls.length).toBe(1);
 

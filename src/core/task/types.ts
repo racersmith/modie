@@ -26,10 +26,12 @@ export interface PlannedGovernanceItem {
 
 export interface PlannedGovernanceDeclaration {
   rules?: Array<
-    string | (Omit<PlannedGovernanceItem, "completed"> & { completed?: boolean })
+    | string
+    | (Omit<PlannedGovernanceItem, "completed"> & { completed?: boolean })
   >;
   adrs?: Array<
-    string | (Omit<PlannedGovernanceItem, "completed"> & { completed?: boolean })
+    | string
+    | (Omit<PlannedGovernanceItem, "completed"> & { completed?: boolean })
   >;
 }
 
@@ -45,6 +47,7 @@ export interface TaskArtifact {
   summary?: string;
   depends_on: string[];
   links: string[];
+  contextSection?: string;
   context?: string;
   plannedGovernance?: ParsedPlannedGovernance;
   acceptanceCriteria: TaskAcceptanceCriteriaItem[];
@@ -59,11 +62,10 @@ export interface TaskRenderOptions {
   summary?: string;
   depends_on?: string[];
   links?: string[];
+  contextSection?: string;
   context?: string;
   plannedGovernance?: PlannedGovernanceDeclaration;
-  acceptanceCriteria?: Array<
-    string | { text: string; completed?: boolean }
-  >;
+  acceptanceCriteria?: Array<string | { text: string; completed?: boolean }>;
   skipValidation?: boolean;
   allowEmptyCriteria?: boolean;
 }
@@ -92,7 +94,6 @@ export interface StartTaskBranchOptions {
   cwd?: string;
   vcs?: IVcsAdapter;
   workspace?: WorkspaceContext;
-  context?: WorkspaceContext;
 }
 
 export interface StartTaskBranchResult {
@@ -112,7 +113,6 @@ export interface MergeTaskBranchOptions {
   cwd?: string;
   vcs?: IVcsAdapter;
   workspace?: WorkspaceContext;
-  context?: WorkspaceContext;
 }
 
 export interface MergeTaskBranchResult {
@@ -145,6 +145,11 @@ export interface CreateTaskOptions {
 
   /**
    * Context / user story / background explanation for the task.
+   */
+  contextSection?: string;
+
+  /**
+   * @deprecated Use `contextSection` instead. Backward-compatible alias.
    */
   context?: string;
 

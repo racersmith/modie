@@ -6,10 +6,7 @@
 import { LINK_POLICY } from "../linking/policy.ts";
 import { validateLinkTarget } from "../linking/validator.ts";
 import type { ArtifactDefinition } from "../pipeline/types.ts";
-import {
-  parseAdrFromContext,
-  renderAdrMarkdown,
-} from "./template.ts";
+import { parseAdrFromContext, renderAdrMarkdown } from "./template.ts";
 import type { AdrArtifact, CreateAdrOptions } from "./types.ts";
 
 /**
@@ -38,56 +35,59 @@ export async function validateAdrScope(
 
 export type AdrDefinition = ArtifactDefinition<CreateAdrOptions, AdrArtifact>;
 
-export const adrDefinition: AdrDefinition =
-  {
-    subtype: "ADR",
-    containerName: "adrs",
-    linkPolicy: LINK_POLICY.ADR,
-    validate: async ({ normalizedScopeDir, options, cwd }) => {
-      const links = options.links ?? [];
-      await validateAdrScope(normalizedScopeDir, links, cwd);
-    },
-    render: ({ id, slug, title, options, filepath }) => {
-      const links = options.links ?? [];
-      const summary = options.summary?.trim() || undefined;
-      const supersedesRaw = options.supersedes
-        ? Array.isArray(options.supersedes)
-          ? options.supersedes
-          : [options.supersedes]
-        : [];
-      const supersedes = supersedesRaw
-        .map((s) => s.trim().toUpperCase())
-        .filter(Boolean);
+export const adrDefinition: AdrDefinition = {
+  subtype: "ADR",
+  containerName: "adrs",
+  linkPolicy: LINK_POLICY.ADR,
+  validate: async ({ normalizedScopeDir, options, cwd }) => {
+    const links = options.links ?? [];
+    await validateAdrScope(normalizedScopeDir, links, cwd);
+  },
+  render: ({ id, slug, title, options, filepath }) => {
+    const links = options.links ?? [];
+    const summary = options.summary?.trim() || undefined;
+    const supersedesRaw = options.supersedes
+      ? Array.isArray(options.supersedes)
+        ? options.supersedes
+        : [options.supersedes]
+      : [];
+    const supersedes = supersedesRaw
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean);
 
-      const markdown = renderAdrMarkdown({
-        id,
-        slug,
-        title,
-        summary,
-        links,
-        supersedes: supersedes.length > 0 ? supersedes : undefined,
-        context: options.context?.trim(),
-        alternatives: options.alternatives?.trim(),
-        decision: options.decision?.trim(),
-        consequences: options.consequences?.trim(),
-      });
+    const contextContent = (options.contextSection ?? options.context)?.trim();
 
-      const artifact: AdrArtifact = {
-        id,
-        slug,
-        title,
-        summary,
-        links,
-        supersedes: supersedes.length > 0 ? supersedes : undefined,
-        context: options.context?.trim(),
-        alternatives: options.alternatives?.trim(),
-        decision: options.decision?.trim(),
-        consequences: options.consequences?.trim(),
-        filePath: filepath,
-        rawContent: markdown,
-      };
+    const markdown = renderAdrMarkdown({
+      id,
+      slug,
+      title,
+      summary,
+      links,
+      supersedes: supersedes.length > 0 ? supersedes : undefined,
+      contextSection: contextContent,
+      context: contextContent,
+      alternatives: options.alternatives?.trim(),
+      decision: options.decision?.trim(),
+      consequences: options.consequences?.trim(),
+    });
 
-      return { markdown, artifact };
-    },
-    parse: (context) => parseAdrFromContext(context),
-  };
+    const artifact: AdrArtifact = {
+      id,
+      slug,
+      title,
+      summary,
+      links,
+      supersedes: supersedes.length > 0 ? supersedes : undefined,
+      contextSection: contextContent,
+      context: contextContent,
+      alternatives: options.alternatives?.trim(),
+      decision: options.decision?.trim(),
+      consequences: options.consequences?.trim(),
+      filePath: filepath,
+      rawContent: markdown,
+    };
+
+    return { markdown, artifact };
+  },
+  parse: (context) => parseAdrFromContext(context),
+};

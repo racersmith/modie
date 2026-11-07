@@ -5,9 +5,10 @@
  */
 
 import type { ArtifactSubtype } from "../common/types.ts";
+import type { DefinitionRegistry as IDefinitionRegistry } from "../context/types.ts";
 import type { ArtifactDefinition } from "./types.ts";
 
-export interface DefinitionRegistry {
+export interface DefinitionRegistry extends IDefinitionRegistry {
   register(definition: ArtifactDefinition<any, any>): void;
   registerSubtype(subtype: string): void;
   get<TOptions = any, TArtifact = any>(
@@ -20,8 +21,15 @@ export interface DefinitionRegistry {
 }
 
 export class DefaultDefinitionRegistry implements DefinitionRegistry {
-  private readonly definitions = new Map<string, ArtifactDefinition<any, any>>();
-  private readonly registeredSubtypes = new Set<string>(["RULE", "ADR", "TASK"]);
+  private readonly definitions = new Map<
+    string,
+    ArtifactDefinition<any, any>
+  >();
+  private readonly registeredSubtypes = new Set<string>([
+    "RULE",
+    "ADR",
+    "TASK",
+  ]);
 
   register(definition: ArtifactDefinition<any, any>): void {
     const key = definition.subtype.toString().trim().toUpperCase();
@@ -41,8 +49,7 @@ export class DefaultDefinitionRegistry implements DefinitionRegistry {
   ): ArtifactDefinition<TOptions, TArtifact> | undefined {
     const key = subtype.toString().trim().toUpperCase();
     return this.definitions.get(key) as
-      | ArtifactDefinition<TOptions, TArtifact>
-      | undefined;
+      ArtifactDefinition<TOptions, TArtifact> | undefined;
   }
 
   has(subtype: ArtifactSubtype | string): boolean {
@@ -70,4 +77,3 @@ export function createDefinitionRegistry(): DefinitionRegistry {
 
 export const defaultDefinitionRegistry: DefinitionRegistry =
   new DefaultDefinitionRegistry();
-

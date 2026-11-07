@@ -100,10 +100,7 @@ export interface IVcsAdapter {
     path: string,
     cwd?: string,
   ): Promise<string | null>;
-  readDeletedFile(
-    path: string,
-    cwd?: string,
-  ): Promise<string | null>;
+  readDeletedFile(path: string, cwd?: string): Promise<string | null>;
 
   // Configuration & Raw Execution (Escape Hatch)
   getConfig(key: string, cwd?: string): Promise<string | null>;

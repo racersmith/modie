@@ -151,4 +151,3 @@ export const taskListCommand: CliCommandDefinition<
     context.stderr(renderTaskQueueTable(tasks));
   },
 });
-

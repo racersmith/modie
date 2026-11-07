@@ -4,6 +4,7 @@
  */
 
 import type { DiscoveredArtifact, IndexableSubtype } from "../common/types.ts";
+import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
 
 export type { DiscoveredArtifact, IndexableSubtype };
@@ -55,8 +56,7 @@ export interface WatermarkResolutionOptions {
   /**
    * Explicit workspace context container.
    */
-  workspace?: any;
-  context?: any;
+  workspace?: WorkspaceContext;
 }
 
 export interface WatermarkDetails {

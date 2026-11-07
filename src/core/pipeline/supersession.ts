@@ -20,7 +20,7 @@ export interface UpdateSupersededFrontmatterOptions {
   /**
    * Explicit workspace context container.
    */
-  context?: WorkspaceContext;
+  workspace?: WorkspaceContext;
 
   /**
    * Expected artifact subtype constraint (e.g. "ADR", "RULE").
@@ -49,7 +49,7 @@ export async function updateSupersededArtifactFrontmatter(
 
   const target = await resolveArtifactByTag(targetTag, {
     cwd,
-    context: ctx,
+    workspace: ctx,
     subtype: options.expectedSubtype as IndexableSubtype,
     includeArchived: true,
   });

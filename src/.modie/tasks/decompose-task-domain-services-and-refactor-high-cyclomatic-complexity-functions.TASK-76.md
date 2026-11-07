@@ -14,6 +14,7 @@ links:
 Analysis via `check:complexity` indicates 10 functions across `src/` exceeding CC > 20, and several large modules in `src/core/task/` handling multiple mixed responsibilities (`branching.ts` at 838L, `query.ts` at 767L, `completion.ts` at 580L).
 
 Extract focused single-responsibility modules:
+
 - `src/core/task/ordering.ts`: natural ID sorting and comparison algorithms.
 - `src/core/task/branch-guard.ts`: tree collision detection and branch validation.
 - `src/core/task/readiness.ts`: task readiness calculation and status state machine.

@@ -4,7 +4,11 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { captureCli, createTestWorkspace, makeTestTag } from "../../test-utils.ts";
+import {
+  captureCli,
+  createTestWorkspace,
+  makeTestTag,
+} from "../../test-utils.ts";
 
 describe("CLI Command: modie motive create (RULE-8, RULE-10, RULE-25, RULE-27, RULE-34, ADR-10)", () => {
   // @verifies RULE-27
@@ -130,4 +134,3 @@ describe("CLI Command: modie motive create (RULE-8, RULE-10, RULE-25, RULE-27, R
     }
   });
 });
-

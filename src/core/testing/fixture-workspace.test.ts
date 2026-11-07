@@ -136,9 +136,11 @@ describe("FixtureWorkspace - Architectural scopeDir Resolution (RULE-8, RULE-12,
       id: 1,
       title: "Canonical Template Delegation",
       summary: "Delegate fixture helpers to canonical subtype renderers.",
-      context: "Parallel markdown builders in test fixtures drift from schemas.",
+      context:
+        "Parallel markdown builders in test fixtures drift from schemas.",
       alternatives: "Maintain duplicate builders in fixture-workspace.ts.",
-      decision: "Call renderRuleMarkdown, renderAdrMarkdown, and renderTaskMarkdown.",
+      decision:
+        "Call renderRuleMarkdown, renderAdrMarkdown, and renderTaskMarkdown.",
     });
 
     const rule = await workspace.createRule({
@@ -200,4 +202,3 @@ describe("FixtureWorkspace - Architectural scopeDir Resolution (RULE-8, RULE-12,
     ]);
   });
 });
-

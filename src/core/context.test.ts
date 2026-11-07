@@ -90,7 +90,9 @@ describe("Workspace Context Container (RULE-25, RULE-34, ADR-1, ADR-2, ADR-9)", 
     expect(isWorkspaceContext("some-string")).toBe(false);
     expect(isWorkspaceContext({})).toBe(false);
     expect(isWorkspaceContext({ root: tempDir })).toBe(false);
-    expect(isWorkspaceContext({ root: tempDir, vcs: {}, registry: {} })).toBe(true);
+    expect(isWorkspaceContext({ root: tempDir, vcs: {}, registry: {} })).toBe(
+      true,
+    );
   });
 
   it("should resolve WorkspaceContext cleanly from existing context, container, or path", () => {
@@ -103,17 +105,15 @@ describe("Workspace Context Container (RULE-25, RULE-34, ADR-1, ADR-2, ADR-9)", 
     // 2. Options container with workspace property
     expect(resolveWorkspaceContext({ workspace: ctx })).toBe(ctx);
 
-    // 3. Options container with context property
-    expect(resolveWorkspaceContext({ context: ctx })).toBe(ctx);
-
-    // 4. String path resolves to fresh context rooted at that directory
+    // 3. String path resolves to fresh context rooted at that directory
     const pathCtx = resolveWorkspaceContext(tempDir, mockVcs);
     expect(pathCtx.root).toBe(tempDir);
     expect(pathCtx.vcs).toBe(mockVcs);
 
-    // 5. Plain options with domain context string should NOT treat string as WorkspaceContext
+    // 4. Plain options with domain context / contextSection string should NOT collide or be sniffed
     const domainOptions = {
       cwd: tempDir,
+      contextSection: "Architecture background description text",
       context: "Architecture background description text",
       vcs: mockVcs,
     };
@@ -121,5 +121,14 @@ describe("Workspace Context Container (RULE-25, RULE-34, ADR-1, ADR-2, ADR-9)", 
     expect(resolvedDomainCtx.root).toBe(tempDir);
     expect(isWorkspaceContext(resolvedDomainCtx)).toBe(true);
     expect(resolvedDomainCtx.registry).toBeDefined();
+
+    // 5. Options with explicit workspace and domain strings should return workspace directly without sniffing
+    const mixedOptions = {
+      workspace: ctx,
+      contextSection: "Some domain markdown context",
+      context: "Legacy domain context",
+      cwd: tempDir,
+    };
+    expect(resolveWorkspaceContext(mixedOptions)).toBe(ctx);
   });
 });

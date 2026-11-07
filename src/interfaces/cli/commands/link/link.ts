@@ -118,4 +118,3 @@ export const linkCommand: CliCommandDefinition<
     }
   },
 });
-

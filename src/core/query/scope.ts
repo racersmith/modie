@@ -126,8 +126,7 @@ export async function resolveScope(
     const allTasks = await queryTaskQueue({ cwd });
     const tasks: ScopeTaskItem[] = allTasks
       .filter(
-        (t) =>
-          resolveGoverningScope(t.filepath, cwd).relativeScope === scope,
+        (t) => resolveGoverningScope(t.filepath, cwd).relativeScope === scope,
       )
       .map((t) => ({
         id: t.id,
@@ -199,8 +198,7 @@ export async function resolveScope(
   const allTasks = await queryTaskQueue({ cwd });
   const tasks: ScopeTaskItem[] = allTasks
     .filter(
-      (t) =>
-        resolveGoverningScope(t.filepath, cwd).relativeScope === scope,
+      (t) => resolveGoverningScope(t.filepath, cwd).relativeScope === scope,
     )
     .map((t) => ({
       id: t.id,
@@ -227,4 +225,3 @@ export async function resolveScope(
     tasks,
   };
 }
-

@@ -138,8 +138,10 @@ function isAncestorOrSelfDir(
 }
 
 export const ADR_LINK_TAG_REGEX = /^ADR-[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*$/i;
-export const GOVERNANCE_LINK_TAG_REGEX = /^(?:ADR|RULE)-[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*$/i;
-export const TASK_DEPENDENCY_TAG_REGEX = /^TASK-[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*$/i;
+export const GOVERNANCE_LINK_TAG_REGEX =
+  /^(?:ADR|RULE)-[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*$/i;
+export const TASK_DEPENDENCY_TAG_REGEX =
+  /^TASK-[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*$/i;
 
 /**
  * Returns true if `tag` matches canonical ADR tag syntax (ADR-5, RULE-13).
@@ -165,6 +167,7 @@ export function isValidTaskDependencyTag(tag: string): boolean {
 
 export interface ValidateLinkTargetOptions {
   cwd?: string;
+  workspace?: WorkspaceContext;
   /**
    * Canonical tag of the source artifact (e.g. "RULE-1", "TASK-5").
    * Optional because during artifact creation, the new artifact has not yet
@@ -199,10 +202,7 @@ function resolveRelationship(
   trimmedTargetTag: string,
   fieldOrRelationship?: string,
 ): ArtifactLinkRelationship {
-  if (
-    fieldOrRelationship === "links" ||
-    fieldOrRelationship === "depends_on"
-  ) {
+  if (fieldOrRelationship === "links" || fieldOrRelationship === "depends_on") {
     return fieldOrRelationship;
   }
   return normSourceSubtype === "TASK" && trimmedTargetTag.startsWith("TASK-")
