@@ -137,33 +137,22 @@ function isAncestorOrSelfDir(
   return !rel.startsWith("..") && !isAbsolute(rel);
 }
 
-export const ADR_LINK_TAG_REGEX = /^ADR-[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*$/i;
-export const GOVERNANCE_LINK_TAG_REGEX =
-  /^(?:ADR|RULE)-[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*$/i;
-export const TASK_DEPENDENCY_TAG_REGEX =
-  /^TASK-[A-Za-z0-9]+(?:[-.][A-Za-z0-9]+)*$/i;
-
-/**
- * Returns true if `tag` matches canonical ADR tag syntax (ADR-5, RULE-13).
- */
-export function isValidAdrLinkTag(tag: string): boolean {
-  return parseCanonicalTag(tag)?.subtype === "ADR";
-}
-
-/**
- * Returns true if `tag` matches canonical ADR or RULE governance tag syntax (ADR-5, RULE-14, RULE-15).
- */
-export function isValidGovernanceLinkTag(tag: string): boolean {
-  const subtype = parseCanonicalTag(tag)?.subtype;
-  return subtype === "ADR" || subtype === "RULE";
-}
-
-/**
- * Returns true if `tag` matches canonical TASK dependency tag syntax (RULE-18).
- */
-export function isValidTaskDependencyTag(tag: string): boolean {
-  return parseCanonicalTag(tag)?.subtype === "TASK";
-}
+import {
+  ADR_LINK_TAG_REGEX,
+  GOVERNANCE_LINK_TAG_REGEX,
+  TASK_DEPENDENCY_TAG_REGEX,
+  isValidAdrLinkTag,
+  isValidGovernanceLinkTag,
+  isValidTaskDependencyTag,
+} from "./syntax.ts";
+export {
+  ADR_LINK_TAG_REGEX,
+  GOVERNANCE_LINK_TAG_REGEX,
+  TASK_DEPENDENCY_TAG_REGEX,
+  isValidAdrLinkTag,
+  isValidGovernanceLinkTag,
+  isValidTaskDependencyTag,
+} from "./syntax.ts";
 
 export interface ValidateLinkTargetOptions {
   cwd?: string;

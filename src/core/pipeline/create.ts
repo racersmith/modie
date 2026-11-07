@@ -20,6 +20,9 @@ import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
 import { buildArtifactParseContext } from "../markdown/index.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
 import { resolveNextArtifactId } from "../resolver/watermark.ts";
+import { resolveSubtypeLinkPolicy } from "../linking/policy.ts";
+import type { ArtifactLinkRelationship } from "../linking/types.ts";
+import { validateLinkTarget } from "../linking/validator.ts";
 import { defaultDefinitionRegistry } from "./registry.ts";
 import { updateSupersededArtifactFrontmatter } from "./supersession.ts";
 import type {
@@ -28,6 +31,50 @@ import type {
   BaseCreateArtifactOptions,
   CreateArtifactResult,
 } from "./types.ts";
+
+/**
+ * Validates frontmatter links and task dependencies dynamically driven by declarative
+ * definition.linkPolicy (ADR-5, RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, RULE-17, RULE-18, RULE-19).
+ */
+async function validateArtifactLinks<
+  TOptions extends BaseCreateArtifactOptions,
+  TArtifact,
+>(
+  definition: ArtifactDefinition<TOptions, TArtifact>,
+  options: TOptions,
+  normalizedScopeDir: string,
+  ctx: WorkspaceContext,
+  cwd: string,
+): Promise<void> {
+  const policy = resolveSubtypeLinkPolicy(
+    definition.subtype as string,
+    definition.linkPolicy,
+  );
+  if (!policy) {
+    return;
+  }
+
+  const relationships: ArtifactLinkRelationship[] = ["links", "depends_on"];
+  for (const rel of relationships) {
+    const targets = options[rel];
+    if (targets && targets.length > 0) {
+      for (const target of targets) {
+        await validateLinkTarget(
+          definition.subtype,
+          normalizedScopeDir,
+          rel,
+          target,
+          {
+            cwd,
+            workspace: ctx,
+            sourceTag: (definition.subtype as string).toUpperCase(),
+            policy,
+          },
+        );
+      }
+    }
+  }
+}
 
 /**
  * Creates an artifact of any declared subtype through the standardized pipeline.
@@ -64,7 +111,16 @@ export async function createArtifact<
     cwd,
   );
 
-  // 3. Subtype-specific validation hook (e.g. link targets, ancestry, blast radius)
+  // 3. Declarative link and dependency validation per definition.linkPolicy (ADR-5)
+  await validateArtifactLinks(
+    definition,
+    options,
+    normalizedScopeDir,
+    ctx,
+    cwd,
+  );
+
+  // 4. Subtype-specific validation hook (e.g. blast radius)
   if (definition.validate) {
     await definition.validate({
       title: options.title.trim(),
