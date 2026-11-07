@@ -26,5 +26,5 @@ Decompose complex control flow in `parsePlannedGovernanceSection`, `formatCompil
 - [ ] Extract ordering.ts, branch-guard.ts, and readiness.ts from large src/core/task/ modules
 - [ ] Decompose top high-risk branching functions in src/core/ and src/interfaces/ to CC <= 15
 - [ ] Verify bun check:complexity reports zero functions in High Risk tier (CC > 20)
-- [ ] Verify all tests pass with bun test:parallel && bun check && bun check:circular
+- [ ] `bun verify` passes all tests.
 - [ ] User Review

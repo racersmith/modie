@@ -29,5 +29,5 @@ To maintain architectural integrity permanently and prevent regressions as the c
 - [ ] Author formal Modie governance rule `Architecture Layering and Complexity Guard` specifying zero circular dependencies and maximum function cyclomatic complexity CC <= 15.
 - [ ] Add an automated architecture test asserting zero circular dependencies and that no function exceeds cyclomatic complexity threshold (CC <= 15) per `Architecture Layering and Complexity Guard`.
 - [ ] Establish CI workflow and scripts enforcing complexity, circularity, and test gates on every build and pull request.
-- [ ] Verify complete test suite passes with zero false positive citations or regressions.
+- [ ] `bun verify` passes all tests.
 - [ ] User Review

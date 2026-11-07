@@ -19,6 +19,5 @@ Extract pure syntax predicates (`isValidAdrLinkTag`, `isValidGovernanceLinkTag`,
 - [ ] Extract tag and link syntax predicates into src/core/linking/syntax.ts
 - [ ] Remove direct imports of validator.ts from rule/definition.ts, adr/definition.ts, and task/definition.ts
 - [ ] Delegate link validation in createArtifact dynamically via declarative definition.linkPolicy
-- [ ] Verify zero circular dependencies via bun check:circular
-- [ ] Verify all tests pass with bun test:parallel && bun check
+- [ ] `bun verify` passes all tests.
 - [ ] User Review
