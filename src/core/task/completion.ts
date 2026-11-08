@@ -10,7 +10,6 @@ import {
   parseTaskIdFromBranch,
 } from "../common/index.ts";
 import {
-  scanActiveArtifacts,
   scanActiveTasks,
 } from "../resolver/active-scanner.ts";
 import {
@@ -272,6 +271,63 @@ export async function getTask(
  * @param itemIndex 1-based index of the acceptance criteria item (e.g. 1 for first item).
  * @param options Options including desired completed state (default: true).
  */
+interface CriteriaToggleResult {
+  targetLineIndex: number;
+  targetItemText: string;
+  totalFound: number;
+}
+
+function updateCriteriaLine(
+  lines: string[],
+  itemIndex: number,
+  targetCompleted: boolean,
+): CriteriaToggleResult {
+  let currentItemIndex = 0;
+  let targetLineIndex = -1;
+  let targetItemText = "";
+  let inCriteriaSection = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+
+    if (/^#\s+Acceptance Criteria\b/i.test(line)) {
+      inCriteriaSection = true;
+      continue;
+    }
+
+    if (inCriteriaSection && /^#\s+/.test(line)) {
+      break;
+    }
+
+    if (!inCriteriaSection) continue;
+
+    const match = line.match(/^(\s*-\s*\[)([ xX])(\]\s*)(.+)$/);
+    if (
+      !match ||
+      match[1] === undefined ||
+      match[3] === undefined ||
+      match[4] === undefined
+    ) {
+      continue;
+    }
+
+    currentItemIndex++;
+    if (currentItemIndex === itemIndex) {
+      targetLineIndex = i;
+      targetItemText = match[4].trim();
+      const newBox = targetCompleted ? "x" : " ";
+      lines[i] = `${match[1]}${newBox}${match[3]}${match[4]}`;
+      break;
+    }
+  }
+
+  return {
+    targetLineIndex,
+    targetItemText,
+    totalFound: currentItemIndex,
+  };
+}
+
 export async function checkTaskItem(
   taskIdentifier: string | undefined,
   itemIndex: number,
@@ -292,49 +348,18 @@ export async function checkTaskItem(
   const targetCompleted = options.completed ?? true;
 
   const lines = content.split("\n");
-  let currentItemIndex = 0;
-  let targetLineIndex = -1;
-  let targetItemText = "";
-  let inCriteriaSection = false;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]!;
-
-    if (/^#\s+Acceptance Criteria\b/i.test(line)) {
-      inCriteriaSection = true;
-      continue;
-    }
-
-    if (inCriteriaSection && /^#\s+/.test(line)) {
-      break;
-    }
-
-    if (inCriteriaSection) {
-      const match = line.match(/^(\s*-\s*\[)([ xX])(\]\s*)(.+)$/);
-      if (
-        match &&
-        match[1] !== undefined &&
-        match[3] !== undefined &&
-        match[4] !== undefined
-      ) {
-        currentItemIndex++;
-        if (currentItemIndex === itemIndex) {
-          targetLineIndex = i;
-          targetItemText = match[4].trim();
-          const newBox = targetCompleted ? "x" : " ";
-          lines[i] = `${match[1]}${newBox}${match[3]}${match[4]}`;
-          break;
-        }
-      }
-    }
-  }
+  const { targetLineIndex, targetItemText, totalFound } = updateCriteriaLine(
+    lines,
+    itemIndex,
+    targetCompleted,
+  );
 
   if (targetLineIndex === -1) {
     const filename = basename(filepath);
     const parsed = parseArtifactFilename(filename);
     const taskIdDisplay = parsed?.id ? `TASK-${parsed.id}` : filename;
     throw new Error(
-      `Invalid item index ${itemIndex}. Task ${taskIdDisplay} has ${currentItemIndex} acceptance criteria item(s).`,
+      `Invalid item index ${itemIndex}. Task ${taskIdDisplay} has ${totalFound} acceptance criteria item(s).`,
     );
   }
 
@@ -360,93 +385,6 @@ export async function checkTaskItem(
     completedCount,
     allCompleted,
   };
-}
-
-/**
- * Asserts that all planned governance declarations (rules and ADRs) in a task
- * are marked completed and actually exist as active or archived artifacts on disk.
- */
-export async function assertPlannedGovernanceSatisfied(
-  task: TaskArtifact,
-  cwd: string = process.cwd(),
-): Promise<void> {
-  if (!task.plannedGovernance) return;
-
-  const { rules = [], adrs = [] } = task.plannedGovernance;
-
-  // 1. Verify Planned Rules
-  if (rules.length > 0) {
-    const activeRules = await scanActiveArtifacts(cwd, "RULE");
-    for (const rule of rules) {
-      if (!rule.completed) {
-        throw new Error(
-          `Cannot complete task ${task.id || "unnamed"}: Planned rule "${rule.text}" is not marked completed. All planned governance items must be generated and satisfied before completing the task (or pass --force).`,
-        );
-      }
-
-      // Verify rule artifact exists on disk
-      let exists = false;
-      if (rule.tag) {
-        const normTag = rule.tag.trim().toUpperCase();
-        exists = activeRules.some(
-          (r) =>
-            r.tag.toUpperCase() === normTag ||
-            (r.id && normTag.endsWith(`-${r.id}`)),
-        );
-      } else if (rule.slug) {
-        exists = activeRules.some(
-          (r) =>
-            r.slug === rule.slug ||
-            r.slug.includes(rule.slug!) ||
-            rule.slug!.includes(r.slug),
-        );
-      }
-
-      if (!exists) {
-        const tagHint = rule.tag ? ` (${rule.tag})` : "";
-        throw new Error(
-          `Cannot complete task ${task.id || "unnamed"}: Planned rule "${rule.text}"${tagHint} was not found on disk. Ensure the rule has been authored via 'modie rule create' before completing the task (or pass --force).`,
-        );
-      }
-    }
-  }
-
-  // 2. Verify Planned ADRs
-  if (adrs.length > 0) {
-    const activeAdrs = await scanActiveArtifacts(cwd, "ADR");
-    for (const adr of adrs) {
-      if (!adr.completed) {
-        throw new Error(
-          `Cannot complete task ${task.id || "unnamed"}: Planned ADR "${adr.text}" is not marked completed. All planned governance items must be generated and satisfied before completing the task (or pass --force).`,
-        );
-      }
-
-      // Verify ADR artifact exists on disk
-      let exists = false;
-      if (adr.tag) {
-        const normTag = adr.tag.trim().toUpperCase();
-        exists = activeAdrs.some(
-          (a) =>
-            a.tag.toUpperCase() === normTag ||
-            (a.id && normTag.endsWith(`-${a.id}`)),
-        );
-      } else if (adr.slug) {
-        exists = activeAdrs.some(
-          (a) =>
-            a.slug === adr.slug ||
-            a.slug.includes(adr.slug!) ||
-            adr.slug!.includes(a.slug),
-        );
-      }
-
-      if (!exists) {
-        const tagHint = adr.tag ? ` (${adr.tag})` : "";
-        throw new Error(
-          `Cannot complete task ${task.id || "unnamed"}: Planned ADR "${adr.text}"${tagHint} was not found on disk. Ensure the ADR has been authored via 'modie adr create' before completing the task (or pass --force).`,
-        );
-      }
-    }
-  }
 }
 
 /**
@@ -490,7 +428,6 @@ export async function completeTask(
 
   if (!force) {
     await assertNotZombieTask(parsed.id, cwd, vcs);
-    await assertPlannedGovernanceSatisfied(parsed, cwd);
   }
 
   let commits: { phase1?: string; phase2?: string } | undefined;

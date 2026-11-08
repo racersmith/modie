@@ -306,7 +306,7 @@ export function toMcpErrorPayload(
 
   // 4. Check for missing artifact / task not found (RULE-29, RULE-34)
   if (
-    /was not found across active or archived|was not found among active tasks|planned (?:rule|adr) .* was not found|was not found on disk|artifact .* was not found|task .* was not found/i.test(
+    /was not found across active or archived|was not found among active tasks|was not found on disk|artifact .* was not found|task .* was not found/i.test(
       rawMessage,
     )
   ) {

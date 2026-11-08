@@ -52,20 +52,6 @@ export const taskCreateSchema = z.object({
     .string()
     .optional()
     .describe("Git branch override for ID allocation"),
-  plan_rules: z
-    .array(z.string())
-    .optional()
-    .default([])
-    .describe(
-      "Planned RULE artifacts to author before completing this task (repeat flag or use comma-separated list)",
-    ),
-  plan_adrs: z
-    .array(z.string())
-    .optional()
-    .default([])
-    .describe(
-      "Planned ADR artifacts to author before completing this task (repeat flag or use comma-separated list)",
-    ),
   forceTrunk: z
     .boolean()
     .default(false)
@@ -94,7 +80,6 @@ export interface TaskCreateResultPayload {
   depends_on: string[];
   links: string[];
   acceptanceCriteria: any[];
-  plannedGovernance: any;
   watermark: any;
 }
 
@@ -176,33 +161,6 @@ export const taskCreateCommand: CliCommandDefinition<
       description: "Alias for --criteria",
       splitCommas: true,
     },
-    "plan-rule": {
-      property: "plan_rules",
-      aliases: ["planned-rule"],
-      splitCommas: false,
-      placeholder: "<rule-title>",
-      description:
-        "Planned RULE artifact to author before completing this task",
-    },
-    "plan-rules": {
-      property: "plan_rules",
-      splitCommas: true,
-      placeholder: "<rule-titles>",
-      description: "Planned RULE artifacts (comma-separated list)",
-    },
-    "plan-adr": {
-      property: "plan_adrs",
-      aliases: ["planned-adr"],
-      splitCommas: false,
-      placeholder: "<adr-title>",
-      description: "Planned ADR artifact to author before completing this task",
-    },
-    "plan-adrs": {
-      property: "plan_adrs",
-      splitCommas: true,
-      placeholder: "<adr-titles>",
-      description: "Planned ADR artifacts (comma-separated list)",
-    },
     prefix: {
       short: "p",
       placeholder: "<tag>",
@@ -221,14 +179,6 @@ export const taskCreateCommand: CliCommandDefinition<
       links: input.links.length > 0 ? input.links : undefined,
       acceptanceCriteria:
         input.criteria.length > 0 ? input.criteria : undefined,
-      plannedGovernance:
-        (input.plan_rules && input.plan_rules.length > 0) ||
-        (input.plan_adrs && input.plan_adrs.length > 0)
-          ? {
-              rules: input.plan_rules,
-              adrs: input.plan_adrs,
-            }
-          : undefined,
       prefix: input.prefix,
       branch: input.branch,
       forceTrunk: Boolean(input.forceTrunk),
@@ -249,7 +199,6 @@ export const taskCreateCommand: CliCommandDefinition<
       depends_on: result.artifact.depends_on,
       links: result.artifact.links,
       acceptanceCriteria: result.artifact.acceptanceCriteria,
-      plannedGovernance: result.artifact.plannedGovernance,
       watermark: result.watermark,
     };
   },

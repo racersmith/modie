@@ -34,6 +34,118 @@ export const contextSchema = z.object({
 
 export type ContextInput = z.infer<typeof contextSchema>;
 
+function renderTaskSpecStderr(
+  context: CliExecutionContext,
+  t: NonNullable<CompiledContextResult["task"]>,
+): void {
+  context.stderr(`\nTask Specification:`);
+  context.stderr(`  Task:         ${t.tag} (${t.title})`);
+  context.stderr(`  Readiness:    ${t.readiness} (${t.criteriaProgress})`);
+  context.stderr(
+    `  Blast Radius: ${t.blastRadius.scope} (${t.blastRadius.constraint})`,
+  );
+  if (t.depends_on.length > 0) {
+    context.stderr(`  Depends On:   ${t.depends_on.join(", ")}`);
+  }
+  if (t.blockedBy.length > 0) {
+    context.stderr(`  Blocked By:   ${t.blockedBy.join(", ")}`);
+  }
+  if (t.links.length > 0) {
+    context.stderr(`  Links:        ${t.links.join(", ")}`);
+  }
+  if (t.context) {
+    context.stderr(`  Context:      ${t.context}`);
+  }
+  if (t.acceptanceCriteria.length > 0) {
+    context.stderr(`  Acceptance Criteria:`);
+    t.acceptanceCriteria.forEach((c, idx) => {
+      const box = c.completed ? "[x]" : "[ ]";
+      context.stderr(`    ${idx + 1}. ${box} ${c.text}`);
+    });
+  }
+}
+
+function renderMotivesStderr(
+  context: CliExecutionContext,
+  motives: CompiledContextResult["motives"],
+): void {
+  context.stderr(`\nUpward Motives (${motives.length}):`);
+  if (motives.length === 0) {
+    context.stderr(`  (none)`);
+    return;
+  }
+  for (const m of motives) {
+    context.stderr(`  [${m.scope}] (${m.relativePath}):`);
+    for (const line of m.content.split("\n")) {
+      context.stderr(`    ${line}`);
+    }
+  }
+}
+
+function renderRulesStderr(
+  context: CliExecutionContext,
+  rules: CompiledContextResult["rules"],
+): void {
+  context.stderr(`\nGoverning Rules (${rules.length}):`);
+  if (rules.length === 0) {
+    context.stderr(`  (none)`);
+    return;
+  }
+  for (const r of rules) {
+    context.stderr(`  - ${r.tag} [${r.scope}] (${r.title}): ${r.body}`);
+  }
+}
+
+function renderAdrsStderr(
+  context: CliExecutionContext,
+  adrs: CompiledContextResult["adrs"],
+): void {
+  context.stderr(`\nArchitectural Decisions (${adrs.length}):`);
+  if (adrs.length === 0) {
+    context.stderr(`  (none)`);
+    return;
+  }
+  for (const a of adrs) {
+    context.stderr(`  - ${a.tag} [${a.scope}] (${a.title}): ${a.summary}`);
+  }
+}
+
+function renderGistsStderr(
+  context: CliExecutionContext,
+  scope: string,
+  gists: CompiledContextResult["gists"],
+): void {
+  const hasLocalGists =
+    Boolean(gists.directoryGist) || gists.fileGists.length > 0;
+  context.stderr(`\nLocal GISTs [${scope}]:`);
+  if (!hasLocalGists) {
+    context.stderr(`  (none)`);
+    return;
+  }
+  if (gists.directoryGist) {
+    context.stderr(
+      `  Directory (${gists.directoryGist.relativePath}): ${gists.directoryGist.content}`,
+    );
+  }
+  for (const fg of gists.fileGists) {
+    context.stderr(`  File ${fg.sourceFilename}: ${fg.content}`);
+  }
+}
+
+function renderSignpostsStderr(
+  context: CliExecutionContext,
+  signposts: CompiledContextResult["signposts"],
+): void {
+  context.stderr(`\nChild Signposts (${signposts.length}):`);
+  if (signposts.length === 0) {
+    context.stderr(`  (none)`);
+    return;
+  }
+  for (const sp of signposts) {
+    context.stderr(`  - [${sp.scope}] (${sp.relativePath}): ${sp.content}`);
+  }
+}
+
 /**
  * Human-readable context overview renderer to stderr (or raw markdown to stdout when `--raw` is passed) per RULE-27.
  */
@@ -54,88 +166,13 @@ export function renderCompiledContext(
   context.stderr(`Ancestral Scopes:    ${result.ancestralScopes.join(" -> ")}`);
 
   if (result.task) {
-    const t = result.task;
-    context.stderr(`\nTask Specification:`);
-    context.stderr(`  Task:         ${t.tag} (${t.title})`);
-    context.stderr(`  Readiness:    ${t.readiness} (${t.criteriaProgress})`);
-    context.stderr(
-      `  Blast Radius: ${t.blastRadius.scope} (${t.blastRadius.constraint})`,
-    );
-    if (t.depends_on.length > 0) {
-      context.stderr(`  Depends On:   ${t.depends_on.join(", ")}`);
-    }
-    if (t.blockedBy.length > 0) {
-      context.stderr(`  Blocked By:   ${t.blockedBy.join(", ")}`);
-    }
-    if (t.links.length > 0) {
-      context.stderr(`  Links:        ${t.links.join(", ")}`);
-    }
-    if (t.context) {
-      context.stderr(`  Context:      ${t.context}`);
-    }
-    if (t.acceptanceCriteria.length > 0) {
-      context.stderr(`  Acceptance Criteria:`);
-      t.acceptanceCriteria.forEach((c, idx) => {
-        const box = c.completed ? "[x]" : "[ ]";
-        context.stderr(`    ${idx + 1}. ${box} ${c.text}`);
-      });
-    }
+    renderTaskSpecStderr(context, result.task);
   }
-
-  context.stderr(`\nUpward Motives (${result.motives.length}):`);
-  if (result.motives.length === 0) {
-    context.stderr(`  (none)`);
-  } else {
-    for (const m of result.motives) {
-      context.stderr(`  [${m.scope}] (${m.relativePath}):`);
-      for (const line of m.content.split("\n")) {
-        context.stderr(`    ${line}`);
-      }
-    }
-  }
-
-  context.stderr(`\nGoverning Rules (${result.rules.length}):`);
-  if (result.rules.length === 0) {
-    context.stderr(`  (none)`);
-  } else {
-    for (const r of result.rules) {
-      context.stderr(`  - ${r.tag} [${r.scope}] (${r.title}): ${r.body}`);
-    }
-  }
-
-  context.stderr(`\nArchitectural Decisions (${result.adrs.length}):`);
-  if (result.adrs.length === 0) {
-    context.stderr(`  (none)`);
-  } else {
-    for (const a of result.adrs) {
-      context.stderr(`  - ${a.tag} [${a.scope}] (${a.title}): ${a.summary}`);
-    }
-  }
-
-  const hasLocalGists =
-    Boolean(result.gists.directoryGist) || result.gists.fileGists.length > 0;
-  context.stderr(`\nLocal GISTs [${result.scope}]:`);
-  if (!hasLocalGists) {
-    context.stderr(`  (none)`);
-  } else {
-    if (result.gists.directoryGist) {
-      context.stderr(
-        `  Directory (${result.gists.directoryGist.relativePath}): ${result.gists.directoryGist.content}`,
-      );
-    }
-    for (const fg of result.gists.fileGists) {
-      context.stderr(`  File ${fg.sourceFilename}: ${fg.content}`);
-    }
-  }
-
-  context.stderr(`\nChild Signposts (${result.signposts.length}):`);
-  if (result.signposts.length === 0) {
-    context.stderr(`  (none)`);
-  } else {
-    for (const sp of result.signposts) {
-      context.stderr(`  - [${sp.scope}] (${sp.relativePath}): ${sp.content}`);
-    }
-  }
+  renderMotivesStderr(context, result.motives);
+  renderRulesStderr(context, result.rules);
+  renderAdrsStderr(context, result.adrs);
+  renderGistsStderr(context, result.scope, result.gists);
+  renderSignpostsStderr(context, result.signposts);
 }
 
 /**

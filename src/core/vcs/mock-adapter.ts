@@ -29,6 +29,27 @@ export interface MockVcsOptions {
   deletedFiles?: Record<string, string> | Map<string, string>;
 }
 
+function initStringMap<V>(
+  input?: Map<string, V> | Record<string, V>,
+): Map<string, V> {
+  if (!input) return new Map();
+  if (input instanceof Map) return new Map(input);
+  return new Map(Object.entries(input));
+}
+
+function initArrayMap<V>(
+  input?: Map<string, V[]> | Record<string, V[]>,
+): Map<string, V[]> {
+  const map = new Map<string, V[]>();
+  if (!input) return map;
+  const entries =
+    input instanceof Map ? input.entries() : Object.entries(input);
+  for (const [key, val] of entries) {
+    map.set(key, [...val]);
+  }
+  return map;
+}
+
 export class MockVcsAdapter implements IVcsAdapter {
   public insideWorkTree: boolean;
   public currentBranch: string | null;
@@ -72,48 +93,18 @@ export class MockVcsAdapter implements IVcsAdapter {
     this.insideWorkTree = options.insideWorkTree ?? true;
     this.currentBranch = options.currentBranch ?? "main";
     this.branches = new Set(options.branches ?? ["main"]);
-    this.treeFiles = new Map();
-    if (options.treeFiles) {
-      const entries =
-        options.treeFiles instanceof Map
-          ? options.treeFiles.entries()
-          : Object.entries(options.treeFiles);
-      for (const [branch, files] of entries) {
-        this.treeFiles.set(branch, [...files]);
-      }
-    }
+    this.treeFiles = initArrayMap(options.treeFiles);
     this.deletedFilesList = [...(options.deletedFilesList ?? [])];
     this.activeTrackedFiles = [...(options.activeTrackedFiles ?? [])];
-    this.logGrepResults = new Map();
-    if (options.logGrepResults) {
-      const entries =
-        options.logGrepResults instanceof Map
-          ? options.logGrepResults.entries()
-          : Object.entries(options.logGrepResults);
-      for (const [k, v] of entries) {
-        this.logGrepResults.set(k, [...v]);
-      }
-    }
-
-    this.config = new Map(Object.entries(options.config ?? {}));
-    this.workingTreeChanged = options.workingTreeChanged ?? false;
+    this.logGrepResults = initArrayMap(options.logGrepResults);
+    this.config = initStringMap(options.config);
+    this.workingTreeChanged = Boolean(options.workingTreeChanged);
     this.stagedFiles = [...(options.stagedFiles ?? [])];
     this.shortHash = options.shortHash ?? "mock001";
     this.mergeBaseResult = options.mergeBaseResult ?? "base001";
-    if (options.grepResults) {
-      this.grepResults =
-        options.grepResults instanceof Map
-          ? new Map(options.grepResults)
-          : new Map(Object.entries(options.grepResults));
-    }
-    this.fileContentsAtRef =
-      options.fileContentsAtRef instanceof Map
-        ? new Map(options.fileContentsAtRef)
-        : new Map(Object.entries(options.fileContentsAtRef ?? {}));
-    this.deletedFiles =
-      options.deletedFiles instanceof Map
-        ? new Map(options.deletedFiles)
-        : new Map(Object.entries(options.deletedFiles ?? {}));
+    this.grepResults = initStringMap(options.grepResults);
+    this.fileContentsAtRef = initStringMap(options.fileContentsAtRef);
+    this.deletedFiles = initStringMap(options.deletedFiles);
 
     this.history = {
       checkouts: [],

@@ -433,6 +433,127 @@ export async function compileContext(
   };
 }
 
+function formatTaskSpecMarkdown(
+  t: NonNullable<CompiledContextResult["task"]>,
+): string[] {
+  const lines: string[] = [
+    "",
+    `## Task Specification (${t.tag}: ${t.title})`,
+    "",
+    `- **Readiness**: ${t.readiness} (${t.criteriaProgress})`,
+    `- **Blast Radius**: \`${t.blastRadius.scope}\` — ${t.blastRadius.constraint}`,
+  ];
+  if (t.depends_on.length > 0) {
+    lines.push(`- **Depends On**: ${t.depends_on.join(", ")}`);
+  }
+  if (t.blockedBy.length > 0) {
+    lines.push(`- **Blocked By**: ${t.blockedBy.join(", ")}`);
+  }
+  if (t.links.length > 0) {
+    lines.push(`- **Links**: ${t.links.join(", ")}`);
+  }
+  if (t.context) {
+    lines.push("", "### Context", "", t.context);
+  }
+  if (t.acceptanceCriteria.length > 0) {
+    lines.push("", "### Acceptance Criteria", "");
+    for (const item of t.acceptanceCriteria) {
+      lines.push(`- [${item.completed ? "x" : " "}] ${item.text}`);
+    }
+  }
+  return lines;
+}
+
+function formatMotivesMarkdown(
+  motives: CompiledContextResult["motives"],
+): string[] {
+  const lines: string[] = ["", "## Upward Motives"];
+  if (motives.length === 0) {
+    lines.push("", "_No motives defined in ancestral chain._");
+    return lines;
+  }
+  for (const m of motives) {
+    lines.push(
+      "",
+      `### Scope \`${m.scope}\` (\`${m.relativePath}\`)`,
+      "",
+      m.content,
+    );
+  }
+  return lines;
+}
+
+function formatRulesMarkdown(
+  rules: CompiledContextResult["rules"],
+): string[] {
+  const lines: string[] = ["", "## Governing Rules"];
+  if (rules.length === 0) {
+    lines.push("", "_No active rules in ancestral chain._");
+    return lines;
+  }
+  lines.push("");
+  for (const r of rules) {
+    lines.push(`- **${r.tag}** (\`${r.scope}\` — ${r.title}): ${r.body}`);
+  }
+  return lines;
+}
+
+function formatAdrsMarkdown(
+  adrs: CompiledContextResult["adrs"],
+): string[] {
+  const lines: string[] = ["", "## Architectural Decisions (ADR Summaries)"];
+  if (adrs.length === 0) {
+    lines.push("", "_No active ADRs in ancestral chain._");
+    return lines;
+  }
+  lines.push("");
+  for (const a of adrs) {
+    lines.push(`- **${a.tag}** (\`${a.scope}\` — ${a.title}): ${a.summary}`);
+  }
+  return lines;
+}
+
+function formatGistsMarkdown(
+  scope: string,
+  gists: CompiledContextResult["gists"],
+): string[] {
+  const lines: string[] = ["", `## Local GISTs (\`${scope}\`)`];
+  if (!gists.directoryGist && gists.fileGists.length === 0) {
+    lines.push("", "_No local GIST summaries in this scope._");
+    return lines;
+  }
+  if (gists.directoryGist) {
+    lines.push(
+      "",
+      `### Directory Summary (\`${gists.directoryGist.relativePath}\`)`,
+      "",
+      gists.directoryGist.content,
+    );
+  }
+  if (gists.fileGists.length > 0) {
+    lines.push("", "### File Summaries", "");
+    for (const fg of gists.fileGists) {
+      lines.push(`- **\`${fg.sourceFilename}\`**: ${fg.content}`);
+    }
+  }
+  return lines;
+}
+
+function formatSignpostsMarkdown(
+  signposts: CompiledContextResult["signposts"],
+): string[] {
+  const lines: string[] = ["", "## Child Signposts"];
+  if (signposts.length === 0) {
+    lines.push("", "_No immediate child directory signposts._");
+    return lines;
+  }
+  lines.push("");
+  for (const sp of signposts) {
+    lines.push(`- **\`${sp.scope}\`** (\`${sp.relativePath}\`): ${sp.content}`);
+  }
+  return lines;
+}
+
 /**
  * Formats a `CompiledContextResult` into a deterministic Markdown document for `--raw` output.
  */
@@ -448,99 +569,13 @@ export function formatCompiledContextMarkdown(
   ];
 
   if (result.task) {
-    const t = result.task;
-    lines.push(
-      "",
-      `## Task Specification (${t.tag}: ${t.title})`,
-      "",
-      `- **Readiness**: ${t.readiness} (${t.criteriaProgress})`,
-      `- **Blast Radius**: \`${t.blastRadius.scope}\` — ${t.blastRadius.constraint}`,
-    );
-    if (t.depends_on.length > 0) {
-      lines.push(`- **Depends On**: ${t.depends_on.join(", ")}`);
-    }
-    if (t.blockedBy.length > 0) {
-      lines.push(`- **Blocked By**: ${t.blockedBy.join(", ")}`);
-    }
-    if (t.links.length > 0) {
-      lines.push(`- **Links**: ${t.links.join(", ")}`);
-    }
-    if (t.context) {
-      lines.push("", "### Context", "", t.context);
-    }
-    if (t.acceptanceCriteria.length > 0) {
-      lines.push("", "### Acceptance Criteria", "");
-      for (const item of t.acceptanceCriteria) {
-        lines.push(`- [${item.completed ? "x" : " "}] ${item.text}`);
-      }
-    }
+    lines.push(...formatTaskSpecMarkdown(result.task));
   }
-
-  lines.push("", "## Upward Motives");
-  if (result.motives.length === 0) {
-    lines.push("", "_No motives defined in ancestral chain._");
-  } else {
-    for (const m of result.motives) {
-      lines.push(
-        "",
-        `### Scope \`${m.scope}\` (\`${m.relativePath}\`)`,
-        "",
-        m.content,
-      );
-    }
-  }
-
-  lines.push("", "## Governing Rules");
-  if (result.rules.length === 0) {
-    lines.push("", "_No active rules in ancestral chain._");
-  } else {
-    lines.push("");
-    for (const r of result.rules) {
-      lines.push(`- **${r.tag}** (\`${r.scope}\` — ${r.title}): ${r.body}`);
-    }
-  }
-
-  lines.push("", "## Architectural Decisions (ADR Summaries)");
-  if (result.adrs.length === 0) {
-    lines.push("", "_No active ADRs in ancestral chain._");
-  } else {
-    lines.push("");
-    for (const a of result.adrs) {
-      lines.push(`- **${a.tag}** (\`${a.scope}\` — ${a.title}): ${a.summary}`);
-    }
-  }
-
-  lines.push("", `## Local GISTs (\`${result.scope}\`)`);
-  if (!result.gists.directoryGist && result.gists.fileGists.length === 0) {
-    lines.push("", "_No local GIST summaries in this scope._");
-  } else {
-    if (result.gists.directoryGist) {
-      lines.push(
-        "",
-        `### Directory Summary (\`${result.gists.directoryGist.relativePath}\`)`,
-        "",
-        result.gists.directoryGist.content,
-      );
-    }
-    if (result.gists.fileGists.length > 0) {
-      lines.push("", "### File Summaries", "");
-      for (const fg of result.gists.fileGists) {
-        lines.push(`- **\`${fg.sourceFilename}\`**: ${fg.content}`);
-      }
-    }
-  }
-
-  lines.push("", "## Child Signposts");
-  if (result.signposts.length === 0) {
-    lines.push("", "_No immediate child directory signposts._");
-  } else {
-    lines.push("");
-    for (const sp of result.signposts) {
-      lines.push(
-        `- **\`${sp.scope}\`** (\`${sp.relativePath}\`): ${sp.content}`,
-      );
-    }
-  }
+  lines.push(...formatMotivesMarkdown(result.motives));
+  lines.push(...formatRulesMarkdown(result.rules));
+  lines.push(...formatAdrsMarkdown(result.adrs));
+  lines.push(...formatGistsMarkdown(result.scope, result.gists));
+  lines.push(...formatSignpostsMarkdown(result.signposts));
 
   return `${lines.join("\n")}\n`;
 }

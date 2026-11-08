@@ -50,10 +50,6 @@ export interface CreateTaskOptions {
   criteria?: TaskCriterionItem[];
   depends_on?: string[];
   links?: string[];
-  plannedGovernance?: {
-    rules?: TaskCriterionItem[];
-    adrs?: TaskCriterionItem[];
-  };
   scopeDir?: string;
   rawContent?: string;
 }
@@ -159,10 +155,6 @@ export interface CreateFixtureArtifactOptions {
   consequences?: string;
   body?: string;
   acceptanceCriteria?: TaskCriterionItem[];
-  plannedGovernance?: {
-    rules?: TaskCriterionItem[];
-    adrs?: TaskCriterionItem[];
-  };
   isArchived?: boolean;
   rawContent?: string;
   scopeDir?: string;
@@ -211,6 +203,147 @@ export interface FixtureWorkspace {
   [Symbol.asyncDispose](): Promise<void>;
 }
 
+function resolveFixtureTargetDir(
+  options: CreateFixtureArtifactOptions,
+  subtype: IndexableSubtype,
+  cwd: string,
+): string {
+  if (options.subDir !== undefined) {
+    return join(cwd, options.subDir);
+  }
+  if (options.scopeDir !== undefined) {
+    return resolveArtifactDirectories(subtype, options.scopeDir, cwd).targetDir;
+  }
+  const defaultDir =
+    subtype === "RULE"
+      ? ".modie/rules"
+      : subtype === "ADR"
+        ? ".modie/adrs"
+        : ".modie/tasks";
+  return join(cwd, defaultDir);
+}
+
+function normalizeList(val?: string | string[]): string[] | undefined {
+  if (!val) return undefined;
+  return Array.isArray(val) ? val : [val];
+}
+
+function renderFixtureRuleContent(
+  options: CreateFixtureArtifactOptions,
+  id: string,
+  slug: string,
+  supersedes?: string[],
+  superseded_by?: string[],
+): string {
+  const rawCtx = options.contextSection ?? options.context;
+  const assertionText =
+    options.body ??
+    (rawCtx
+      ? `# Context\n\n${rawCtx}`
+      : options.title
+        ? `# Invariant\n\nRule body for ${options.title}.`
+        : "Fixture RULE invariant body.");
+
+  return renderRuleMarkdown({
+    id,
+    slug,
+    title: options.title,
+    links: options.links ?? [],
+    supersedes,
+    superseded_by,
+    assertion: assertionText,
+    skipValidation: true,
+  });
+}
+
+function renderFixtureAdrContent(
+  options: CreateFixtureArtifactOptions,
+  id: string,
+  slug: string,
+  supersedes?: string[],
+  superseded_by?: string[],
+): string {
+  const parsedBodySections = options.body
+    ? parseMarkdownSections(options.body)
+    : {};
+  const alternatives =
+    options.alternatives ?? parsedBodySections["Alternatives Considered"];
+  const decision =
+    options.decision ??
+    parsedBodySections["Decision"] ??
+    (!parsedBodySections["Alternatives Considered"] && options.body
+      ? options.body
+      : undefined);
+  const consequences =
+    options.consequences ?? parsedBodySections["Consequences"];
+  const contextText =
+    options.contextSection ??
+    options.context ??
+    parsedBodySections["Context"] ??
+    (options.title ? `Context for ${options.title}` : undefined);
+
+  return renderAdrMarkdown({
+    id,
+    slug,
+    title: options.title,
+    summary: options.summary,
+    links: options.links ?? [],
+    supersedes,
+    superseded_by,
+    context: contextText,
+    alternatives,
+    decision,
+    consequences,
+    skipValidation: true,
+  });
+}
+
+function renderFixtureTaskContent(
+  options: CreateFixtureArtifactOptions,
+  id: string,
+  slug: string,
+): string {
+  return renderTaskMarkdown({
+    id,
+    slug,
+    title: options.title,
+    summary: options.summary,
+    context:
+      options.contextSection ??
+      options.context ??
+      options.body ??
+      (options.title
+        ? `Context for ${options.title}`
+        : "Fixture TASK invariant body."),
+    depends_on: options.depends_on ?? [],
+    links: options.links ?? [],
+    acceptanceCriteria: options.acceptanceCriteria ?? [],
+    skipValidation: true,
+    allowEmptyCriteria: true,
+  });
+}
+
+function renderFixtureContent(
+  options: CreateFixtureArtifactOptions,
+  subtype: IndexableSubtype,
+  id: string,
+  slug: string,
+): string {
+  if (options.rawContent !== undefined) {
+    return options.rawContent;
+  }
+  const supersedes = normalizeList(options.supersedes);
+  const superseded_by = normalizeList(options.superseded_by);
+
+  if (subtype === "RULE") {
+    return renderFixtureRuleContent(options, id, slug, supersedes, superseded_by);
+  }
+  if (subtype === "ADR") {
+    return renderFixtureAdrContent(options, id, slug, supersedes, superseded_by);
+  }
+  return renderFixtureTaskContent(options, id, slug);
+}
+
 /**
  * Creates an isolated temporary directory for testing Modie core functions
  * without mutating or relying upon the host repository filesystem.
@@ -248,121 +381,11 @@ export async function createFixtureWorkspace(
         isArchived,
       });
 
-      let targetDir: string;
-      if (options.subDir !== undefined) {
-        targetDir = join(cwd, options.subDir);
-      } else if (options.scopeDir !== undefined) {
-        const resolved = resolveArtifactDirectories(
-          upperSubtype,
-          options.scopeDir,
-          cwd,
-        );
-        targetDir = resolved.targetDir;
-      } else {
-        targetDir = join(
-          cwd,
-          upperSubtype === "RULE"
-            ? ".modie/rules"
-            : upperSubtype === "ADR"
-              ? ".modie/adrs"
-              : ".modie/tasks",
-        );
-      }
-
+      const targetDir = resolveFixtureTargetDir(options, upperSubtype, cwd);
       await mkdir(targetDir, { recursive: true });
 
       const filepath = join(targetDir, filename);
-
-      let content = options.rawContent;
-      if (content === undefined) {
-        const supersedesList = options.supersedes
-          ? Array.isArray(options.supersedes)
-            ? options.supersedes
-            : [options.supersedes]
-          : undefined;
-        const supersededByList = options.superseded_by
-          ? Array.isArray(options.superseded_by)
-            ? options.superseded_by
-            : [options.superseded_by]
-          : undefined;
-
-        if (upperSubtype === "RULE") {
-          const rawCtx = options.contextSection ?? options.context;
-          const assertionText =
-            options.body ??
-            (rawCtx
-              ? `# Context\n\n${rawCtx}`
-              : options.title
-                ? `# Invariant\n\nRule body for ${options.title}.`
-                : "Fixture RULE invariant body.");
-          content = renderRuleMarkdown({
-            id,
-            slug,
-            title: options.title,
-            links: options.links ?? [],
-            supersedes: supersedesList,
-            superseded_by: supersededByList,
-            assertion: assertionText,
-            skipValidation: true,
-          });
-        } else if (upperSubtype === "ADR") {
-          const parsedBodySections = options.body
-            ? parseMarkdownSections(options.body)
-            : {};
-          const alternatives =
-            options.alternatives ??
-            parsedBodySections["Alternatives Considered"];
-          const decision =
-            options.decision ??
-            parsedBodySections["Decision"] ??
-            (!parsedBodySections["Alternatives Considered"] && options.body
-              ? options.body
-              : undefined);
-          const consequences =
-            options.consequences ?? parsedBodySections["Consequences"];
-          const contextText =
-            options.contextSection ??
-            options.context ??
-            parsedBodySections["Context"] ??
-            (options.title ? `Context for ${options.title}` : undefined);
-
-          content = renderAdrMarkdown({
-            id,
-            slug,
-            title: options.title,
-            summary: options.summary,
-            links: options.links ?? [],
-            supersedes: supersedesList,
-            superseded_by: supersededByList,
-            context: contextText,
-            alternatives,
-            decision,
-            consequences,
-            skipValidation: true,
-          });
-        } else {
-          content = renderTaskMarkdown({
-            id,
-            slug,
-            title: options.title,
-            summary: options.summary,
-            context:
-              options.contextSection ??
-              options.context ??
-              options.body ??
-              (options.title
-                ? `Context for ${options.title}`
-                : "Fixture TASK invariant body."),
-            depends_on: options.depends_on ?? [],
-            links: options.links ?? [],
-            plannedGovernance: options.plannedGovernance,
-            acceptanceCriteria: options.acceptanceCriteria ?? [],
-            skipValidation: true,
-            allowEmptyCriteria: true,
-          });
-        }
-      }
-
+      const content = renderFixtureContent(options, upperSubtype, id, slug);
       await writeFile(filepath, content, "utf8");
 
       return {
@@ -392,7 +415,6 @@ export async function createFixtureWorkspace(
         summary: options.summary,
         context: options.contextSection ?? options.context,
         acceptanceCriteria: options.criteria,
-        plannedGovernance: options.plannedGovernance,
         depends_on: options.depends_on,
         links: options.links,
         scopeDir: options.scopeDir,

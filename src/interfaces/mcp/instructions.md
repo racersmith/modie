@@ -35,10 +35,11 @@ When planning and authoring tasks:
 
 ---
 
-## 4. Front-Loaded Planned Governance
+## 4. Governance Precedes Execution
 
-- Declare candidate rules and architectural decisions upfront during task creation.
-- All declared planned governance artifacts must be authored and satisfied before the task completion ceremony will allow the task to be closed.
+- **Create Invariants Before Tasks**: Durable governance artifacts (`ADR`, `RULE`) should be authored *prior* to authoring the tasks that implement them.
+- **Deterministic Tag Lineage**: Pre-creating rules and decisions assigns concrete, monotonic tags (`ADR-X`, `RULE-Y`) upfront, allowing downstream tasks to explicitly declare `links: [ADR-X, RULE-Y]` without speculative placeholders or tag allocation collisions.
+- **Mid-Flight Discoveries**: If a new invariant is identified during task implementation, author the `RULE` immediately via `create_rule` to obtain a concrete tag before citing it in code or test suites.
 
 ---
 

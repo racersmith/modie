@@ -181,21 +181,12 @@ function getDefaultRouter(): CliRouter {
   return defaultRouter;
 }
 
-/**
- * Main CLI entrypoint router.
- */
-export async function runCli(
+function handleGlobalShortcuts(
   args: string[],
-  options: CliIoOptions = {},
-  commands?: CliCommandDefinition[],
-): Promise<number> {
-  const stdout =
-    options.stdout ?? ((msg: string) => process.stdout.write(msg + "\n"));
-  const stderr =
-    options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
-
-  const cmdList = commands ?? allCliCommands;
-
+  stdout: (msg: string) => void,
+  stderr: (msg: string) => void,
+  cmdList: CliCommandDefinition[],
+): number | null {
   if (
     args.length === 0 ||
     args[0] === "-h" ||
@@ -211,6 +202,60 @@ export async function runCli(
     return 0;
   }
 
+  return null;
+}
+
+async function handleNamespaceCommand(
+  command: string,
+  subArgs: string[],
+  ns: CommandNamespace,
+  options: CliIoOptions,
+  stderr: (msg: string) => void,
+): Promise<number> {
+  if (
+    subArgs.length === 0 ||
+    subArgs[0] === "-h" ||
+    subArgs[0] === "--help" ||
+    subArgs[0] === "help"
+  ) {
+    ns.help(stderr);
+    return 0;
+  }
+
+  const [rawSubcommand, ...cmdArgs] = subArgs;
+  const subcommand = ns.aliases[rawSubcommand!] ?? rawSubcommand!;
+  const handler = ns.commands[subcommand];
+
+  if (handler) {
+    return handler(cmdArgs, options);
+  }
+
+  const available = Object.keys(ns.commands).join(", ");
+  stderr(
+    `Error: Unknown ${command} subcommand "${rawSubcommand}". Available: ${available}`,
+  );
+  return 1;
+}
+
+/**
+ * Main CLI entrypoint router.
+ */
+export async function runCli(
+  args: string[],
+  options: CliIoOptions = {},
+  commands?: CliCommandDefinition[],
+): Promise<number> {
+  const stdout =
+    options.stdout ?? ((msg: string) => process.stdout.write(msg + "\n"));
+  const stderr =
+    options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
+
+  const cmdList = commands ?? allCliCommands;
+  const shortcutResult = handleGlobalShortcuts(args, stdout, stderr, cmdList);
+  if (shortcutResult !== null) {
+    return shortcutResult;
+  }
+
   const router = commands ? buildCliRouter(commands) : getDefaultRouter();
   const [command, ...subArgs] = args;
 
@@ -223,29 +268,7 @@ export async function runCli(
   // Namespaced command groups (task, rule, adr)
   const ns = router.namespaces[command!];
   if (ns) {
-    if (
-      subArgs.length === 0 ||
-      subArgs[0] === "-h" ||
-      subArgs[0] === "--help" ||
-      subArgs[0] === "help"
-    ) {
-      ns.help(stderr);
-      return 0;
-    }
-
-    const [rawSubcommand, ...cmdArgs] = subArgs;
-    const subcommand = ns.aliases[rawSubcommand!] ?? rawSubcommand!;
-    const handler = ns.commands[subcommand];
-
-    if (handler) {
-      return handler(cmdArgs, options);
-    }
-
-    const available = Object.keys(ns.commands).join(", ");
-    stderr(
-      `Error: Unknown ${command} subcommand "${rawSubcommand}". Available: ${available}`,
-    );
-    return 1;
+    return handleNamespaceCommand(command!, subArgs, ns, options, stderr);
   }
 
   stderr(

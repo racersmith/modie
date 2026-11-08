@@ -8,10 +8,7 @@ import {
   isValidTaskDependencyTag,
 } from "../linking/syntax.ts";
 import { renderAcceptanceCriteria } from "./checklist.ts";
-import type {
-  PlannedGovernanceDeclaration,
-  TaskRenderOptions,
-} from "./types.ts";
+import type { TaskRenderOptions } from "./types.ts";
 
 /**
  * Validates links per RULE-15: TASK links must only reference ADR and RULE artifacts.
@@ -40,55 +37,7 @@ export function validateTaskDependencies(dependsOn: string[] = []): void {
 }
 
 /**
- * Renders the optional Planned Governance markdown section.
- */
-export function renderPlannedGovernance(
-  planned?: PlannedGovernanceDeclaration,
-): string {
-  if (!planned) return "";
-  const lines: string[] = [];
-  const rules = planned.rules ?? [];
-  const adrs = planned.adrs ?? [];
-
-  if (rules.length === 0 && adrs.length === 0) {
-    return "";
-  }
-
-  lines.push("# Planned Governance", "");
-
-  if (adrs.length > 0) {
-    lines.push("## ADRs");
-    for (const item of adrs) {
-      if (typeof item === "string") {
-        lines.push(`- [ ] ${item.trim()}`);
-      } else {
-        const box = item.completed ? "[x]" : "[ ]";
-        const prefix = item.tag ? `${item.tag}: ` : "";
-        lines.push(`- ${box} ${prefix}${item.text.trim()}`);
-      }
-    }
-    lines.push("");
-  }
-
-  if (rules.length > 0) {
-    lines.push("## Rules");
-    for (const item of rules) {
-      if (typeof item === "string") {
-        lines.push(`- [ ] ${item.trim()}`);
-      } else {
-        const box = item.completed ? "[x]" : "[ ]";
-        const prefix = item.tag ? `${item.tag}: ` : "";
-        lines.push(`- ${box} ${prefix}${item.text.trim()}`);
-      }
-    }
-    lines.push("");
-  }
-
-  return lines.join("\n").trim();
-}
-
-/**
- * Renders a canonical TASK markdown document with YAML frontmatter, Context, Planned Governance, and Acceptance Criteria.
+ * Renders a canonical TASK markdown document with YAML frontmatter, Context, and Acceptance Criteria.
  */
 export function renderTaskMarkdown(options: TaskRenderOptions): string {
   const {
@@ -98,7 +47,6 @@ export function renderTaskMarkdown(options: TaskRenderOptions): string {
     context,
     depends_on = [],
     links = [],
-    plannedGovernance,
     acceptanceCriteria = [],
     skipValidation,
     allowEmptyCriteria,
@@ -143,7 +91,6 @@ export function renderTaskMarkdown(options: TaskRenderOptions): string {
   const contextContent =
     effectiveContext?.trim() ||
     (title ? `Implement ${title}.` : "Execution plan description.");
-  const plannedGovContent = renderPlannedGovernance(plannedGovernance);
 
   const sections: string[] = [
     frontmatterLines.join("\n"),
@@ -152,18 +99,11 @@ export function renderTaskMarkdown(options: TaskRenderOptions): string {
     "",
     contextContent,
     "",
-  ];
-
-  if (plannedGovContent) {
-    sections.push(plannedGovContent, "");
-  }
-
-  sections.push(
     renderAcceptanceCriteria(acceptanceCriteria, {
       allowEmpty: allowEmptyCriteria,
     }).trim(),
     "",
-  );
+  ];
 
   return sections.join("\n");
 }

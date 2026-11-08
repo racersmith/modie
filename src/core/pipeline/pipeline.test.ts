@@ -255,15 +255,11 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
       rawContent: ruleRes.markdown,
     });
 
-    // 3. Create TASK linking to ADR-1 and RULE-1 with planned governance
+    // 3. Create TASK linking to ADR-1 and RULE-1
     const taskRes = await createArtifact(taskDefinition, {
       title: "Consolidate Artifact Pipeline",
       context: "Unify definitions and CLI flags.",
       links: [adr1Tag, rule1Tag],
-      plannedGovernance: {
-        rules: ["Enforce bidirectional definition contract"],
-        adrs: ["Adopt schema-driven CLI flags"],
-      },
       acceptanceCriteria: ["Extend ArtifactDefinition", "Verify roundtrip"],
       review: false,
       cwd: workspace.cwd,
@@ -278,8 +274,6 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
     expect(parsedTask.slug).toBe("consolidate-artifact-pipeline");
     expect(parsedTask.links).toEqual([adr1Tag, rule1Tag]);
     expect(parsedTask.context).toBe("Unify definitions and CLI flags.");
-    expect(parsedTask.plannedGovernance?.rules).toHaveLength(1);
-    expect(parsedTask.plannedGovernance?.adrs).toHaveLength(1);
     expect(parsedTask.acceptanceCriteria).toEqual([
       { text: "Extend ArtifactDefinition", completed: false },
       { text: "Verify roundtrip", completed: false },
@@ -290,9 +284,6 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
       cwd: workspace.cwd,
     });
     expect(taskDetails.context).toBe("Unify definitions and CLI flags.");
-    expect(taskDetails.plannedGovernance?.rules[0]?.text).toBe(
-      "Enforce bidirectional definition contract",
-    );
     expect(taskDetails.acceptanceCriteria).toHaveLength(2);
     expect(getArtifactDefinition("RULE")).toBe(ruleDefinition);
     expect(getArtifactDefinition("ADR")).toBe(adrDefinition);

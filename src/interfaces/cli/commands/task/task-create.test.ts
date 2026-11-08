@@ -249,36 +249,6 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
     const parsed = JSON.parse(stdout.trim());
     expect(parsed.links).toEqual([adr.tag, rule.tag]);
   });
-
-  // @verifies RULE-25, RULE-27, RULE-34
-  it("[RULE-25][RULE-27][RULE-34] should support planned governance flags --plan-rule and --plan-adr", async () => {
-    const { exitCode, stdout } = await workspace.captureCli([
-      "task",
-      "create",
-      "Planned Governance CLI Task",
-      "--scope",
-      workspace.cwd,
-      "--branch",
-      "dev",
-      "--plan-rule",
-      "Multi-Branch Guard Rule",
-      "--plan-adr",
-      "Unified Storage Architecture",
-      "--json",
-    ]);
-
-    expect(exitCode).toBe(0);
-    const parsed = JSON.parse(stdout.trim());
-    expect(parsed.plannedGovernance).toBeDefined();
-    expect(parsed.plannedGovernance.rules).toHaveLength(1);
-    expect(parsed.plannedGovernance.rules[0].text).toBe(
-      "Multi-Branch Guard Rule",
-    );
-    expect(parsed.plannedGovernance.adrs).toHaveLength(1);
-    expect(parsed.plannedGovernance.adrs[0].text).toBe(
-      "Unified Storage Architecture",
-    );
-  });
 });
 
 describe("CLI Task Creation - Subprocess Execution (RULE-25, RULE-27, RULE-34)", () => {
