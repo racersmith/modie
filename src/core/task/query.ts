@@ -26,43 +26,22 @@ import type { IVcsAdapter } from "../vcs/types.ts";
 import { resolveTaskFile } from "./completion.ts";
 import { parseTaskMarkdown } from "./parser.ts";
 import type { TaskAcceptanceCriteriaItem, TaskReadiness } from "./types.ts";
+import {
+  type CriteriaProgress,
+  type TaskQueueItem,
+  type ToTaskQueueItemParams,
+  type RawTaskDataRecord,
+  calculateCriteriaProgress,
+  toTaskQueueItem,
+  buildActiveTaskMap,
+  resolveTaskBlockers,
+  buildTaskQueueItems,
+  filterTaskQueueItems,
+} from "./readiness.ts";
+import { compareTaskIds, sortTasksById, sortTaskIds } from "./ordering.ts";
 
-export type { TaskReadiness };
-
-export interface TaskQueueItem {
-  id: string;
-  fullTaskId: string;
-  slug: string;
-  title: string;
-  filepath: string;
-  relativePath: string;
-  depends_on: string[];
-  links: string[];
-  readiness: TaskReadiness;
-  blockedBy: string[];
-  criteriaTotal: number;
-  criteriaCompleted: number;
-  criteriaProgress: string;
-  acceptanceCriteria: TaskAcceptanceCriteriaItem[];
-  allCriteriaSatisfied: boolean;
-  summary?: string;
-  context?: string;
-
-  /**
-   * Whether this task corresponds to the active checked-out git branch.
-   */
-  isCurrent?: boolean;
-
-  /**
-   * Whether this task was resolved from Git history or another branch (--history).
-   */
-  isHistorical?: boolean;
-
-  /**
-   * Associated Git task branch if present.
-   */
-  branch?: string;
-}
+export * from "./readiness.ts";
+export * from "./ordering.ts";
 
 export interface TaskQueueQueryOptions {
   /**
@@ -138,31 +117,6 @@ export interface TaskStatusDetails extends TaskQueueItem {
   incompleteCriteria: string[];
 }
 
-export interface CriteriaProgress {
-  criteriaTotal: number;
-  criteriaCompleted: number;
-  criteriaProgress: string;
-  allCriteriaSatisfied: boolean;
-}
-
-export interface ToTaskQueueItemParams {
-  id: string;
-  slug: string;
-  filepath: string;
-  relativePath: string;
-  summary?: string;
-  context?: string;
-  depends_on?: string[];
-  links?: string[];
-  acceptanceCriteria?: TaskAcceptanceCriteriaItem[];
-  readiness: TaskReadiness;
-  blockedBy?: string[];
-  isCurrent?: boolean;
-  isHistorical?: boolean;
-  branch?: string;
-  isDeleted?: boolean;
-}
-
 export interface HistoricalTaskEntry {
   id: string;
   slug: string;
@@ -176,91 +130,7 @@ export type TaskBranchInfoMap = Map<
   { branch: string; id: string; slug: string }
 >;
 
-/**
- * Calculates criteria progress counts, ratio string, and satisfaction flag.
- */
-export function calculateCriteriaProgress(
-  criteria: TaskAcceptanceCriteriaItem[] = [],
-  options: { isDeleted?: boolean } = {},
-): CriteriaProgress {
-  const criteriaTotal = criteria.length;
-  const criteriaCompleted = criteria.filter((c) => c.completed).length;
-  const allCriteriaSatisfied = options.isDeleted
-    ? criteriaTotal === 0 || criteriaCompleted === criteriaTotal
-    : criteriaTotal > 0 && criteriaCompleted === criteriaTotal;
-
-  return {
-    criteriaTotal,
-    criteriaCompleted,
-    criteriaProgress: `${criteriaCompleted}/${criteriaTotal}`,
-    allCriteriaSatisfied,
-  };
-}
-
-/**
- * Constructs a normalized TaskQueueItem record from parsed attributes and criteria progress.
- */
-export function toTaskQueueItem(params: ToTaskQueueItemParams): TaskQueueItem {
-  const criteria = params.acceptanceCriteria ?? [];
-  const progress = calculateCriteriaProgress(criteria, {
-    isDeleted: params.isDeleted,
-  });
-
-  return {
-    id: params.id,
-    fullTaskId: `TASK-${params.id}`,
-    slug: params.slug,
-    title: slugToTitle(params.slug),
-    summary: params.summary,
-    filepath: params.filepath,
-    relativePath: params.relativePath,
-    depends_on: params.depends_on ?? [],
-    links: params.links ?? [],
-    readiness: params.readiness,
-    blockedBy: params.blockedBy ?? [],
-    criteriaTotal: progress.criteriaTotal,
-    criteriaCompleted: progress.criteriaCompleted,
-    criteriaProgress: progress.criteriaProgress,
-    acceptanceCriteria: criteria,
-    allCriteriaSatisfied: progress.allCriteriaSatisfied,
-    context: params.context,
-    isCurrent: params.isCurrent,
-    isHistorical: params.isHistorical,
-    branch: params.branch,
-  };
-}
-
-/**
- * Natural comparator for sorting task IDs (e.g. 1, 2, 9, 10, 11, 2-1, J101).
- */
-export function compareTaskIds(aId: string, bId: string): number {
-  const aNorm = normalizeTaskId(aId);
-  const bNorm = normalizeTaskId(bId);
-
-  // If both are simple integers: numeric sort
-  const aNum = Number(aNorm);
-  const bNum = Number(bNorm);
-  if (Number.isInteger(aNum) && Number.isInteger(bNum)) {
-    return aNum - bNum;
-  }
-
-  // If subtasks under parent (e.g. "2-1" vs "2-2")
-  const aSub = aNorm.match(/^(\d+)-(\d+)$/);
-  const bSub = bNorm.match(/^(\d+)-(\d+)$/);
-  if (aSub && bSub && aSub[1] && aSub[2] && bSub[1] && bSub[2]) {
-    const parentDiff = Number(aSub[1]) - Number(bSub[1]);
-    if (parentDiff !== 0) return parentDiff;
-    return Number(aSub[2]) - Number(bSub[2]);
-  }
-
-  return aNorm.localeCompare(bNorm, undefined, { numeric: true });
-}
-
-interface RawTaskRecord {
-  discovered: DiscoveredTask;
-  parsed: ReturnType<typeof parseTaskMarkdown>;
-  relativePath: string;
-}
+type RawTaskRecord = RawTaskDataRecord;
 
 async function loadRawTaskFiles(
   discovered: DiscoveredTask[],
@@ -284,55 +154,6 @@ async function loadRawTaskFiles(
   return rawTasks;
 }
 
-function buildActiveTaskMap(rawTasks: RawTaskRecord[]): Map<string, string> {
-  const activeTaskMap = new Map<string, string>();
-  for (const item of rawTasks) {
-    const normId = taskKey(item.discovered.id);
-    const canonicalId = `TASK-${item.discovered.id}`;
-    activeTaskMap.set(normId, canonicalId);
-  }
-  return activeTaskMap;
-}
-
-function resolveTaskBlockers(
-  dependsOn: string[],
-  activeTaskMap: Map<string, string>,
-): string[] {
-  const blockedBy: string[] = [];
-  for (const dep of dependsOn) {
-    const blockingCanonical = activeTaskMap.get(taskKey(dep));
-    if (blockingCanonical && !blockedBy.includes(blockingCanonical)) {
-      blockedBy.push(blockingCanonical);
-    }
-  }
-  return blockedBy;
-}
-
-function filterTaskQueueItems(
-  items: TaskQueueItem[],
-  options: TaskQueueQueryOptions,
-): TaskQueueItem[] {
-  const isReadyOnly = options.readyOnly || options.filter === "ready";
-  const isBlockedOnly = options.blockedOnly || options.filter === "blocked";
-
-  return items.filter((item) => {
-    if (isReadyOnly && item.readiness !== "READY") {
-      return false;
-    }
-    if (isBlockedOnly && item.readiness !== "BLOCKED") {
-      return false;
-    }
-    if (options.scope) {
-      const normScope = options.scope.replace(/^\.\//, "").replace(/\/$/, "");
-      const normRel = item.relativePath.replace(/^\.\//, "");
-      if (!normRel.startsWith(normScope)) {
-        return false;
-      }
-    }
-    return true;
-  });
-}
-
 async function resolveNormalizedCurrentTaskId(
   cwd: string,
   options: TaskQueueQueryOptions,
@@ -342,43 +163,6 @@ async function resolveNormalizedCurrentTaskId(
     options.currentTaskId ??
     (currentBranch ? parseTaskIdFromBranch(currentBranch) : null);
   return currentTaskId ? taskKey(currentTaskId) : null;
-}
-
-function buildTaskQueueItems(
-  rawTasks: RawTaskRecord[],
-  activeTaskMap: Map<string, string>,
-  normCurrentId: string | null,
-): TaskQueueItem[] {
-  const items: TaskQueueItem[] = [];
-
-  for (const { discovered: disc, parsed, relativePath } of rawTasks) {
-    const dependsOn = parsed.depends_on ?? [];
-    const blockedBy = resolveTaskBlockers(dependsOn, activeTaskMap);
-    const readiness: TaskReadiness =
-      blockedBy.length === 0 ? "READY" : "BLOCKED";
-    const isCurrent = Boolean(
-      normCurrentId && taskKey(disc.id) === normCurrentId,
-    );
-
-    items.push(
-      toTaskQueueItem({
-        id: disc.id,
-        slug: disc.slug,
-        filepath: disc.filepath,
-        relativePath,
-        summary: parsed.summary,
-        context: parsed.context,
-        depends_on: dependsOn,
-        links: parsed.links ?? [],
-        acceptanceCriteria: parsed.acceptanceCriteria,
-        readiness,
-        blockedBy,
-        isCurrent,
-      }),
-    );
-  }
-
-  return items;
 }
 
 /**

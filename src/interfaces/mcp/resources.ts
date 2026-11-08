@@ -151,7 +151,7 @@ export function registerAllResources(
     {
       title: "Agent Instructions & Governance Best Practices",
       description:
-        "Comprehensive guidelines on ephemeral task decoupling, contract-based criteria, planned governance, and task lifecycle",
+        "Comprehensive guidelines on ephemeral task decoupling, contract-based criteria, governance deliverables, and task lifecycle",
       mimeType: "text/markdown",
     },
     async (uri) => {

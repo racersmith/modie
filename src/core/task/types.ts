@@ -17,29 +17,6 @@ export interface TaskAcceptanceCriteriaItem {
   completed: boolean;
 }
 
-export interface PlannedGovernanceItem {
-  text: string;
-  completed: boolean;
-  tag?: string;
-  slug?: string;
-}
-
-export interface PlannedGovernanceDeclaration {
-  rules?: Array<
-    | string
-    | (Omit<PlannedGovernanceItem, "completed"> & { completed?: boolean })
-  >;
-  adrs?: Array<
-    | string
-    | (Omit<PlannedGovernanceItem, "completed"> & { completed?: boolean })
-  >;
-}
-
-export interface ParsedPlannedGovernance {
-  rules: PlannedGovernanceItem[];
-  adrs: PlannedGovernanceItem[];
-}
-
 export interface TaskArtifact {
   id: string;
   slug: string;
@@ -49,7 +26,6 @@ export interface TaskArtifact {
   links: string[];
   contextSection?: string;
   context?: string;
-  plannedGovernance?: ParsedPlannedGovernance;
   acceptanceCriteria: TaskAcceptanceCriteriaItem[];
   rawContent?: string;
   filePath?: string;
@@ -64,7 +40,6 @@ export interface TaskRenderOptions {
   links?: string[];
   contextSection?: string;
   context?: string;
-  plannedGovernance?: PlannedGovernanceDeclaration;
   acceptanceCriteria?: Array<string | { text: string; completed?: boolean }>;
   skipValidation?: boolean;
   allowEmptyCriteria?: boolean;
@@ -168,11 +143,6 @@ export interface CreateTaskOptions {
    * Can be strings or { text, completed } items.
    */
   acceptanceCriteria?: Array<string | { text: string; completed?: boolean }>;
-
-  /**
-   * Planned governance declarations (rules and ADRs to author during task execution).
-   */
-  plannedGovernance?: PlannedGovernanceDeclaration;
 
   /**
    * Workspace root directory. Defaults to process.cwd().

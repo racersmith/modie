@@ -390,32 +390,29 @@ export async function renderArtifactMarkdown(
   return parts.join("\n");
 }
 
-/**
- * Renders a task into a high-signal Markdown Mission Brief.
- * Elevated blast radius constraint (RULE-6), numbered checklist, and governing invariants.
- */
-export async function renderTaskMissionBrief(
+function resolveTaskScope(
+  filepath: string | undefined,
+  relativePath: string,
+  cwd: string,
+): string {
+  if (!filepath) return ".";
+  try {
+    return resolveGoverningScope(filepath, cwd).relativeScope;
+  } catch {
+    return dirname(relativePath).replace(/\/\.modie\/tasks$/, "") || ".";
+  }
+}
+
+function formatMissionBriefHeader(
   taskDetails: TaskStatusDetails | TaskQueueItem,
-  activeBranch?: string | null,
-  cwd: string = process.cwd(),
-): Promise<string> {
+  activeBranch: string | null | undefined,
+  scope: string,
+): string[] {
   const taskTag =
     taskDetails.fullTaskId ||
     (taskDetails.id.startsWith("TASK-")
       ? taskDetails.id
       : `TASK-${taskDetails.id}`);
-
-  // Resolve scope directory
-  let scope = ".";
-  if (taskDetails.filepath) {
-    try {
-      scope = resolveGoverningScope(taskDetails.filepath, cwd).relativeScope;
-    } catch {
-      scope =
-        dirname(taskDetails.relativePath).replace(/\/\.modie\/tasks$/, "") ||
-        ".";
-    }
-  }
 
   const branchName =
     activeBranch ??
@@ -435,7 +432,7 @@ export async function renderTaskMissionBrief(
       ? "All modifications, new files, and tests must reside strictly within the workspace root or its subdirectories."
       : `All modifications, new files, and tests must reside strictly within \`${scope}/\` or its subdirectories. Never edit files in sibling or ancestor directories.`;
 
-  const parts: string[] = [
+  return [
     `# Mission Brief: ${taskTag}`,
     "",
     `**Title**: ${taskDetails.title}  `,
@@ -445,17 +442,15 @@ export async function renderTaskMissionBrief(
     "> **BLAST RADIUS CONSTRAINT**  ",
     `> ${blastRadiusAlert}`,
   ];
+}
 
-  // Context section if present
-  if (taskDetails.context && taskDetails.context.trim().length > 0) {
-    parts.push("", "---", "", "## Context", "", taskDetails.context.trim());
-  }
-
-  // Acceptance Criteria Checklist (1-based numbered items)
-  parts.push("", "---", "", "## Acceptance Criteria", "");
-  const criteria: TaskAcceptanceCriteriaItem[] =
-    taskDetails.acceptanceCriteria && taskDetails.acceptanceCriteria.length > 0
-      ? taskDetails.acceptanceCriteria
+function formatMissionBriefCriteria(
+  criteriaList?: TaskAcceptanceCriteriaItem[],
+): string[] {
+  const parts: string[] = ["", "---", "", "## Acceptance Criteria", ""];
+  const criteria =
+    criteriaList && criteriaList.length > 0
+      ? criteriaList
       : [{ text: "Complete task requirements", completed: false }];
 
   for (let i = 0; i < criteria.length; i++) {
@@ -463,49 +458,90 @@ export async function renderTaskMissionBrief(
     const mark = item.completed ? "x" : " ";
     parts.push(`- [${mark}] ${i + 1}. ${item.text}`);
   }
+  return parts;
+}
 
-  // Governing Architectural Invariants
-  if (taskDetails.links && taskDetails.links.length > 0) {
-    const resolvedLinks = await Promise.all(
-      taskDetails.links.map((tag) => resolveArtifactSummary(tag, cwd)),
-    );
-    parts.push(
-      "",
-      "---",
-      "",
-      "## Governing Architectural Invariants",
-      "Modifications under this task must strictly adhere to the following rules:",
-    );
-    for (const rule of resolvedLinks) {
-      const slugPart = rule.slug ? ` (\`${rule.slug}\`)` : "";
-      parts.push(`- **${rule.tag}**${slugPart}: ${rule.invariantOrSummary}`);
-    }
+async function formatMissionBriefInvariants(
+  links: string[] | undefined,
+  cwd: string,
+): Promise<string[]> {
+  if (!links || links.length === 0) return [];
+  const resolvedLinks = await Promise.all(
+    links.map((tag) => resolveArtifactSummary(tag, cwd)),
+  );
+  const parts: string[] = [
+    "",
+    "---",
+    "",
+    "## Governing Architectural Invariants",
+    "Modifications under this task must strictly adhere to the following rules:",
+  ];
+  for (const rule of resolvedLinks) {
+    const slugPart = rule.slug ? ` (\`${rule.slug}\`)` : "";
+    parts.push(`- **${rule.tag}**${slugPart}: ${rule.invariantOrSummary}`);
   }
+  return parts;
+}
 
-  // Prerequisites & Dependencies
-  if (taskDetails.depends_on && taskDetails.depends_on.length > 0) {
-    const resolvedDeps = await Promise.all(
-      taskDetails.depends_on.map((tag) => resolveArtifactSummary(tag, cwd)),
-    );
-    parts.push("", "---", "", "## Prerequisites & Dependencies");
-    for (const dep of resolvedDeps) {
-      parts.push(`- **${dep.tag}**: ${dep.invariantOrSummary}`);
-    }
+async function formatMissionBriefDependencies(
+  dependsOn: string[] | undefined,
+  cwd: string,
+): Promise<string[]> {
+  if (!dependsOn || dependsOn.length === 0) return [];
+  const resolvedDeps = await Promise.all(
+    dependsOn.map((tag) => resolveArtifactSummary(tag, cwd)),
+  );
+  const parts: string[] = ["", "---", "", "## Prerequisites & Dependencies"];
+  for (const dep of resolvedDeps) {
+    parts.push(`- **${dep.tag}**: ${dep.invariantOrSummary}`);
   }
+  return parts;
+}
 
-  // Motives (Architectural Intent)
+async function formatMissionBriefMotives(
+  scope: string,
+  cwd: string,
+): Promise<string[]> {
   try {
     const motives = await collectAncestralMotives(scope, cwd);
-    if (motives.length > 0) {
-      parts.push("", "---", "", "## Architectural Intent (Motives)");
-      for (const m of motives) {
-        const summary = extractMotiveSummary(m.content);
-        parts.push(`- **\`${m.scope}\`**: ${summary}`);
-      }
+    if (motives.length === 0) return [];
+    const parts: string[] = ["", "---", "", "## Architectural Intent (Motives)"];
+    for (const m of motives) {
+      const summary = extractMotiveSummary(m.content);
+      parts.push(`- **\`${m.scope}\`**: ${summary}`);
     }
+    return parts;
   } catch {
-    // If motives fail to load, omit section gracefully
+    return [];
   }
+}
+
+/**
+ * Renders a task into a high-signal Markdown Mission Brief.
+ * Elevated blast radius constraint (RULE-6), numbered checklist, and governing invariants.
+ */
+export async function renderTaskMissionBrief(
+  taskDetails: TaskStatusDetails | TaskQueueItem,
+  activeBranch?: string | null,
+  cwd: string = process.cwd(),
+): Promise<string> {
+  const scope = resolveTaskScope(taskDetails.filepath, taskDetails.relativePath, cwd);
+  const parts: string[] = formatMissionBriefHeader(taskDetails, activeBranch, scope);
+
+  if (taskDetails.context && taskDetails.context.trim().length > 0) {
+    parts.push("", "---", "", "## Context", "", taskDetails.context.trim());
+  }
+
+  parts.push(...formatMissionBriefCriteria(taskDetails.acceptanceCriteria));
+
+  const invariants = await formatMissionBriefInvariants(taskDetails.links, cwd);
+  parts.push(...invariants);
+
+  const deps = await formatMissionBriefDependencies(taskDetails.depends_on, cwd);
+  parts.push(...deps);
+
+  const motives = await formatMissionBriefMotives(scope, cwd);
+  parts.push(...motives);
 
   return parts.join("\n") + "\n";
 }

@@ -15,6 +15,7 @@ import type {
   CliCommandDefinition,
   CliExecutionContext,
   CliFlagDefinition,
+  CliPositionalDefinition,
 } from "./types.ts";
 
 /**
@@ -125,6 +126,81 @@ function normalizeFlags(
   return normalized;
 }
 
+function validateRequiredPositionals(
+  declaredPositionals: CliPositionalDefinition[],
+  positionals: string[],
+  usage: string | undefined,
+  stderr: (msg: string) => void,
+): boolean {
+  for (let i = 0; i < declaredPositionals.length; i++) {
+    const posDef = declaredPositionals[i]!;
+    if (!posDef.required) continue;
+
+    const val = posDef.variadic
+      ? positionals.slice(i).join(" ").trim()
+      : positionals[i]?.trim();
+
+    if (!val) {
+      if (posDef.missingError) {
+        stderr(posDef.missingError);
+      } else {
+        const usageHint = usage ? ` Usage: ${usage}` : "";
+        stderr(`Error: Missing required ${posDef.name}.${usageHint}`);
+      }
+      return false;
+    }
+  }
+  return true;
+}
+
+function validateUnexpectedPositionals(
+  declaredPositionals: CliPositionalDefinition[],
+  positionals: string[],
+  stderr: (msg: string) => void,
+): boolean {
+  const hasVariadic = declaredPositionals.some((p) => p.variadic);
+  if (hasVariadic) return true;
+
+  const maxPos = declaredPositionals.length;
+  if (positionals.length > maxPos) {
+    const extraArg = positionals[maxPos];
+    const prefix =
+      maxPos === 0 ? "Unexpected argument" : "Unexpected additional argument";
+    stderr(`Error: ${prefix} "${extraArg}".`);
+    return false;
+  }
+  return true;
+}
+
+function handleCommandResult<TFlags, TResult>(
+  definition: CliCommandDefinition<TFlags, TResult>,
+  result: any,
+  context: CliExecutionContext<TFlags>,
+  normalizedFlags: { json?: boolean },
+  stdout: (msg: string) => void,
+): void {
+  const input = (context as any).input;
+  if (normalizedFlags.json) {
+    if (definition.renderJson) {
+      definition.renderJson(result as TResult, context, input);
+    } else if (result !== undefined) {
+      stdout(JSON.stringify(result, null, 2));
+    }
+    return;
+  }
+
+  if (definition.render) {
+    definition.render(result as TResult, context, input);
+  }
+}
+
+function formatCliErrorMessage(error: unknown): string {
+  const rawMessage = error instanceof Error ? error.message : String(error);
+  return rawMessage.startsWith("Error:")
+    ? rawMessage
+    : `Error: ${rawMessage}`;
+}
+
 /**
  * Executes a declarative CLI command definition against command arguments and I/O sinks.
  */
@@ -176,42 +252,25 @@ export async function executeCliCommand<
   ) as TFlags & { help?: boolean; json?: boolean };
 
   // 2. Validate positional arguments
-  const positionals = parsed.positionals;
   const declaredPositionals = definition.positionals ?? [];
-  const hasVariadic = declaredPositionals.some((p) => p.variadic);
-
-  for (let i = 0; i < declaredPositionals.length; i++) {
-    const posDef = declaredPositionals[i]!;
-    if (posDef.required) {
-      const val = posDef.variadic
-        ? positionals.slice(i).join(" ").trim()
-        : positionals[i]?.trim();
-
-      if (!val) {
-        if (posDef.missingError) {
-          stderr(posDef.missingError);
-        } else {
-          const usageHint = definition.usage
-            ? ` Usage: ${definition.usage}`
-            : "";
-          stderr(`Error: Missing required ${posDef.name}.${usageHint}`);
-        }
-        return 1;
-      }
-    }
+  if (
+    !validateRequiredPositionals(
+      declaredPositionals,
+      parsed.positionals,
+      definition.usage,
+      stderr,
+    )
+  ) {
+    return 1;
   }
-
-  if (!hasVariadic) {
-    const maxPos = declaredPositionals.length;
-    if (positionals.length > maxPos) {
-      const extraArg = positionals[maxPos];
-      if (maxPos === 0) {
-        stderr(`Error: Unexpected argument "${extraArg}".`);
-      } else {
-        stderr(`Error: Unexpected additional argument "${extraArg}".`);
-      }
-      return 1;
-    }
+  if (
+    !validateUnexpectedPositionals(
+      declaredPositionals,
+      parsed.positionals,
+      stderr,
+    )
+  ) {
+    return 1;
   }
 
   const workspace = await createWorkspaceContext({
@@ -221,7 +280,7 @@ export async function executeCliCommand<
 
   const context: CliExecutionContext<TFlags> = {
     args,
-    positionals,
+    positionals: parsed.positionals,
     flags: normalizedFlags,
     stdout,
     stderr,
@@ -232,31 +291,19 @@ export async function executeCliCommand<
 
   try {
     const result = await definition.run(context);
-    const input = (context as any).input;
-
     if (typeof result === "number") {
       return result;
     }
-
-    if (normalizedFlags.json) {
-      if (definition.renderJson) {
-        definition.renderJson(result as TResult, context, input);
-      } else if (result !== undefined) {
-        stdout(JSON.stringify(result, null, 2));
-      }
-    } else {
-      if (definition.render) {
-        definition.render(result as TResult, context, input);
-      }
-    }
-
+    handleCommandResult(
+      definition,
+      result,
+      context,
+      normalizedFlags,
+      stdout,
+    );
     return 0;
   } catch (error: unknown) {
-    const rawMessage = error instanceof Error ? error.message : String(error);
-    const message = rawMessage.startsWith("Error:")
-      ? rawMessage
-      : `Error: ${rawMessage}`;
-    stderr(message);
+    stderr(formatCliErrorMessage(error));
     return 1;
   }
 }

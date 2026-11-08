@@ -369,10 +369,6 @@ export async function getArtifactDetails(
     resolved.subtype === "TASK"
       ? parsedSubtypeArtifact?.acceptanceCriteria
       : undefined;
-  const plannedGovernance =
-    resolved.subtype === "TASK"
-      ? parsedSubtypeArtifact?.plannedGovernance
-      : undefined;
 
   return {
     ...resolved,
@@ -386,6 +382,5 @@ export async function getArtifactDetails(
     context: contextSection,
     sections,
     acceptanceCriteria,
-    ...(plannedGovernance ? { plannedGovernance } : {}),
   };
 }

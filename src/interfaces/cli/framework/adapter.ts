@@ -66,6 +66,35 @@ export function getZodKind(schema: any): string {
   return "";
 }
 
+const ZOD_WRAPPER_TYPES = new Set([
+  "default",
+  "optional",
+  "nullable",
+  "ZodDefault",
+  "ZodOptional",
+  "ZodNullable",
+]);
+
+const ZOD_PIPE_TYPES = new Set([
+  "pipe",
+  "ZodPipeline",
+  "effects",
+  "ZodEffects",
+]);
+
+function unwrapZodNext(curr: any, type: string): any {
+  if (ZOD_WRAPPER_TYPES.has(type)) {
+    return (
+      curr._def?.innerType ??
+      (typeof curr.unwrap === "function" ? curr.unwrap() : null)
+    );
+  }
+  if (ZOD_PIPE_TYPES.has(type)) {
+    return curr._def?.out ?? curr._def?.schema ?? curr._def?.in ?? null;
+  }
+  return null;
+}
+
 /**
  * Extracts the `.describe(...)` string from a Zod schema, unwrapping outer modifiers
  * (`optional`, `default`, `nullable`, `preprocess`/`pipe`) if needed.
@@ -78,27 +107,7 @@ export function getZodDescription(schema: any): string | undefined {
       return desc;
     }
     const type = curr._def?.type || curr._def?.typeName || "";
-    if (
-      type === "default" ||
-      type === "optional" ||
-      type === "nullable" ||
-      type === "ZodDefault" ||
-      type === "ZodOptional" ||
-      type === "ZodNullable"
-    ) {
-      curr =
-        curr._def?.innerType ??
-        (typeof curr.unwrap === "function" ? curr.unwrap() : null);
-    } else if (
-      type === "pipe" ||
-      type === "ZodPipeline" ||
-      type === "effects" ||
-      type === "ZodEffects"
-    ) {
-      curr = curr._def?.out ?? curr._def?.schema ?? curr._def?.in ?? null;
-    } else {
-      break;
-    }
+    curr = unwrapZodNext(curr, type);
   }
   return undefined;
 }
@@ -180,6 +189,90 @@ export function resolveCommandPositionals(
  * command's Zod schema, and automatically synthesizes CLI flags for any schema properties
  * not already covered by declared positionals or flags.
  */
+function trackPositionalCoveredProperties(
+  positionals?: CliPositionalDefinition[],
+  shape?: Record<string, any>,
+): Set<string> {
+  const covered = new Set<string>();
+  if (positionals && shape) {
+    for (const posDef of positionals) {
+      const propName = resolvePositionalSchemaProperty(posDef, shape);
+      if (propName) {
+        covered.add(propName);
+      }
+    }
+  }
+  return covered;
+}
+
+function trackFlagCoveredProperties(
+  flagName: string,
+  flagDef: CliFlagDefinition,
+  propName: string | undefined,
+  shape: Record<string, any> | undefined,
+  covered: Set<string>,
+): void {
+  if (propName) covered.add(propName);
+  if (!shape) return;
+  if (shape[flagName]) covered.add(flagName);
+  for (const alias of flagDef.aliases ?? []) {
+    if (shape[alias]) covered.add(alias);
+    const camelAlias = toCamelCase(alias);
+    if (shape[camelAlias]) covered.add(camelAlias);
+  }
+}
+
+function resolveSingleFlag(
+  flagName: string,
+  flagDef: CliFlagDefinition,
+  propName: string | undefined,
+  propSchema: any,
+): CliFlagDefinition {
+  const kind = propSchema ? getZodKind(propSchema) : undefined;
+  const inferredType: "string" | "boolean" =
+    kind === "boolean" ? "boolean" : "string";
+  const inferredMultiple = kind === "array" ? true : undefined;
+  const inferredDescription =
+    flagDef.description ??
+    (propSchema ? getZodDescription(propSchema) : undefined) ??
+    "";
+
+  return {
+    ...flagDef,
+    type: flagDef.type ?? inferredType,
+    ...(flagDef.multiple !== undefined
+      ? { multiple: flagDef.multiple }
+      : inferredMultiple !== undefined
+        ? { multiple: inferredMultiple }
+        : {}),
+    ...(propName && !flagDef.property ? { property: propName } : {}),
+    description: inferredDescription,
+  };
+}
+
+function synthesizeSchemaFlags(
+  shape: Record<string, any>,
+  coveredProperties: Set<string>,
+  resolvedFlags: Record<string, CliFlagDefinition>,
+): void {
+  for (const [propName, propSchema] of Object.entries(shape)) {
+    if (coveredProperties.has(propName)) {
+      continue;
+    }
+    const flagName = toKebabCase(propName);
+    if (resolvedFlags[flagName]) {
+      continue;
+    }
+    const kind = getZodKind(propSchema);
+    resolvedFlags[flagName] = {
+      type: kind === "boolean" ? "boolean" : "string",
+      ...(kind === "array" ? { multiple: true } : {}),
+      property: propName,
+      description: getZodDescription(propSchema) ?? "",
+    };
+  }
+}
+
 export function resolveCommandFlags(
   declaredFlags: Record<string, CliFlagDefinition> | undefined,
   positionals: CliPositionalDefinition[] | undefined,
@@ -191,16 +284,7 @@ export function resolveCommandFlags(
   }
 
   const resolvedFlags: Record<string, CliFlagDefinition> = {};
-  const coveredProperties = new Set<string>();
-
-  if (positionals && shape) {
-    for (const posDef of positionals) {
-      const propName = resolvePositionalSchemaProperty(posDef, shape);
-      if (propName) {
-        coveredProperties.add(propName);
-      }
-    }
-  }
+  const coveredProperties = trackPositionalCoveredProperties(positionals, shape);
 
   for (const [flagName, flagDef] of Object.entries(declaredFlags ?? {})) {
     const propName = shape
@@ -208,57 +292,12 @@ export function resolveCommandFlags(
       : flagDef.property;
     const propSchema = propName && shape ? shape[propName] : undefined;
 
-    if (propName) {
-      coveredProperties.add(propName);
-    }
-    if (shape) {
-      if (shape[flagName]) coveredProperties.add(flagName);
-      for (const alias of flagDef.aliases ?? []) {
-        if (shape[alias]) coveredProperties.add(alias);
-        const camelAlias = toCamelCase(alias);
-        if (shape[camelAlias]) coveredProperties.add(camelAlias);
-      }
-    }
-
-    const kind = propSchema ? getZodKind(propSchema) : undefined;
-    const inferredType: "string" | "boolean" =
-      kind === "boolean" ? "boolean" : "string";
-    const inferredMultiple = kind === "array" ? true : undefined;
-    const inferredDescription =
-      flagDef.description ??
-      (propSchema ? getZodDescription(propSchema) : undefined) ??
-      "";
-
-    resolvedFlags[flagName] = {
-      ...flagDef,
-      type: flagDef.type ?? inferredType,
-      ...(flagDef.multiple !== undefined
-        ? { multiple: flagDef.multiple }
-        : inferredMultiple !== undefined
-          ? { multiple: inferredMultiple }
-          : {}),
-      ...(propName && !flagDef.property ? { property: propName } : {}),
-      description: inferredDescription,
-    };
+    trackFlagCoveredProperties(flagName, flagDef, propName, shape, coveredProperties);
+    resolvedFlags[flagName] = resolveSingleFlag(flagName, flagDef, propName, propSchema);
   }
 
   if (shape) {
-    for (const [propName, propSchema] of Object.entries(shape)) {
-      if (coveredProperties.has(propName)) {
-        continue;
-      }
-      const flagName = toKebabCase(propName);
-      if (resolvedFlags[flagName]) {
-        continue;
-      }
-      const kind = getZodKind(propSchema);
-      resolvedFlags[flagName] = {
-        type: kind === "boolean" ? "boolean" : "string",
-        ...(kind === "array" ? { multiple: true } : {}),
-        property: propName,
-        description: getZodDescription(propSchema) ?? "",
-      };
-    }
+    synthesizeSchemaFlags(shape, coveredProperties, resolvedFlags);
   }
 
   return resolvedFlags;

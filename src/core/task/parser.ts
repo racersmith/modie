@@ -1,119 +1,14 @@
 import {
-  generateSlug,
   parseArtifactFilename,
   slugToTitle,
 } from "../common/index.ts";
 import {
   parseMarkdownDocument,
-  parseMarkdownSections,
   type ArtifactParseContext,
 } from "../markdown/index.ts";
 import { parseAcceptanceCriteria } from "./checklist.ts";
 import { extractTaskSummary } from "./summary.ts";
-import type {
-  ParsedPlannedGovernance,
-  PlannedGovernanceItem,
-  TaskArtifact,
-} from "./types.ts";
-
-/**
- * Extracts and parses `# Planned Governance` section into structured items.
- */
-export function parsePlannedGovernanceSection(
-  body: string,
-): ParsedPlannedGovernance | undefined {
-  const sections = parseMarkdownSections(body);
-  const sectionText =
-    sections["Planned Governance"] ??
-    Object.entries(sections).find(
-      ([k]) => k.toLowerCase() === "planned governance",
-    )?.[1];
-  if (!sectionText) {
-    return undefined;
-  }
-
-  const rules: PlannedGovernanceItem[] = [];
-  const adrs: PlannedGovernanceItem[] = [];
-
-  let currentSubtype: "RULE" | "ADR" | null = null;
-  const lines = sectionText.split("\n");
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line) continue;
-
-    if (/^##+\s+ADRs?\b/i.test(line)) {
-      currentSubtype = "ADR";
-      continue;
-    }
-    if (/^##+\s+Rules?\b/i.test(line)) {
-      currentSubtype = "RULE";
-      continue;
-    }
-
-    // Check for checkbox line: - [ ] text or - [x] text
-    const boxMatch = line.match(/^-\s*\[([ xX])\]\s*(.+)$/);
-    const bulletMatch = !boxMatch ? line.match(/^-\s*(.+)$/) : null;
-
-    if (boxMatch || bulletMatch) {
-      const completed = boxMatch ? boxMatch[1]?.toLowerCase() === "x" : false;
-      const rawItemText = (
-        boxMatch ? boxMatch[2] : bulletMatch ? bulletMatch[1] : ""
-      )!.trim();
-
-      let itemSubtype = currentSubtype;
-      const text = rawItemText;
-
-      if (!itemSubtype) {
-        if (/^ADR(?:-\w+)?:?\s*/i.test(rawItemText)) {
-          itemSubtype = "ADR";
-        } else if (/^RULE(?:-\w+)?:?\s*/i.test(rawItemText)) {
-          itemSubtype = "RULE";
-        }
-      }
-
-      const tagMatch = text.match(/\b(RULE|ADR)-([A-Za-z0-9_-]+)\b/i);
-      const tag =
-        tagMatch && tagMatch[1] && tagMatch[2]
-          ? `${tagMatch[1].toUpperCase()}-${tagMatch[2]}`
-          : undefined;
-
-      let slug: string | undefined;
-      try {
-        const cleanTitle = text
-          .replace(/^(?:RULE|ADR)(?:-\w+)?:?\s*/i, "")
-          .trim();
-        if (cleanTitle) {
-          slug = generateSlug(cleanTitle);
-        }
-      } catch {
-        // ignore slug generation failure
-      }
-
-      const item: PlannedGovernanceItem = {
-        text,
-        completed,
-        tag,
-        slug,
-      };
-
-      if (itemSubtype === "ADR") {
-        adrs.push(item);
-      } else if (itemSubtype === "RULE") {
-        rules.push(item);
-      } else {
-        // Default to rule if unspecified
-        rules.push(item);
-      }
-    }
-  }
-
-  if (rules.length === 0 && adrs.length === 0) {
-    return undefined;
-  }
-
-  return { rules, adrs };
-}
+import type { TaskArtifact } from "./types.ts";
 
 /**
  * Reconstructs a strongly-typed TaskArtifact from a standardized ArtifactParseContext.
@@ -126,7 +21,6 @@ export function parseTaskFromContext(
     Object.entries(context.sections).find(
       ([k]) => k.toLowerCase() === "context",
     )?.[1];
-  const plannedGovernance = parsePlannedGovernanceSection(context.body);
   const acceptanceCriteria = parseAcceptanceCriteria(context.body);
   const summary =
     context.frontmatterFields.summary ??
@@ -141,7 +35,6 @@ export function parseTaskFromContext(
     links: context.frontmatterFields.links,
     contextSection,
     context: contextSection,
-    plannedGovernance,
     acceptanceCriteria,
     rawContent: context.rawContent,
     filePath: context.filepath,

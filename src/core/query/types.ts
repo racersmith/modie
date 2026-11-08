@@ -8,7 +8,6 @@ import type { WorkspaceContext } from "../context/types.ts";
 import type { DirectoryGist, FileGist, GistSignpost } from "../gist/types.ts";
 import type { TaskReadiness } from "../task/types.ts";
 import type {
-  ParsedPlannedGovernance,
   TaskAcceptanceCriteriaItem,
 } from "../task/types.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
@@ -70,11 +69,6 @@ export interface ArtifactDetails extends ResolvedArtifact {
    * Parsed acceptance criteria items (for TASK artifacts).
    */
   acceptanceCriteria?: TaskAcceptanceCriteriaItem[];
-
-  /**
-   * Parsed planned governance declarations (for TASK artifacts, if present).
-   */
-  plannedGovernance?: ParsedPlannedGovernance;
 }
 
 export interface ResolveArtifactOptions {
