@@ -17,4 +17,5 @@ Author the first-class Antigravity plugin bundle in integrations/antigravity/ fo
 - [ ] Configure plugin MCP server definition to execute from compiled distribution output without static host paths or forced working directory
 - [ ] Integrate plugin validation script into workspace build configuration
 - [ ] Establish symlinked global plugin development workflow and remove obsolete unmanaged plugin artifacts
+- [ ] verify `bun run verify` passes
 - [ ] User Review
