@@ -7,7 +7,7 @@ import {
   type ArtifactParseContext,
 } from "../markdown/index.ts";
 import { parseAcceptanceCriteria } from "./checklist.ts";
-import { extractTaskSummary } from "./summary.ts";
+import { extractTaskSummary } from "./template.ts";
 import type { TaskArtifact } from "./types.ts";
 
 /**

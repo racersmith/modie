@@ -58,6 +58,7 @@ export interface CreateRuleOptions {
   id?: number | string;
   slug?: string;
   title?: string;
+  summary?: string;
   assertion?: string;
   contextSection?: string;
   context?: string;
@@ -248,6 +249,7 @@ function renderFixtureRuleContent(
     id,
     slug,
     title: options.title,
+    summary: options.summary,
     links: options.links ?? [],
     supersedes,
     superseded_by,
@@ -434,6 +436,7 @@ export async function createFixtureWorkspace(
           (options.title
             ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
             : undefined),
+        summary: options.summary,
         body:
           options.body ??
           options.assertion ??

@@ -33,6 +33,21 @@ export interface RuleArtifact {
   assertion: string;
 
   /**
+   * Concise summary of the rule (extracted from frontmatter or assertion claim).
+   */
+  summary?: string;
+
+  /**
+   * Context / description text (matches assertion or explicit context section).
+   */
+  contextSection?: string;
+
+  /**
+   * Context / description text (alias for contextSection).
+   */
+  context?: string;
+
+  /**
    * Target RULE tag(s) superseded by this rule.
    */
   supersedes?: string[];
@@ -90,6 +105,11 @@ export interface RuleRenderOptions {
   assertion?: string;
 
   /**
+   * Concise summary of the rule.
+   */
+  summary?: string;
+
+  /**
    * When true, skips frontmatter link validation (used by test fixtures).
    */
   skipValidation?: boolean;
@@ -101,6 +121,11 @@ export interface CreateRuleOptions {
    * E.g. "Rule Verification Tagging"
    */
   title: string;
+
+  /**
+   * Concise summary of the rule.
+   */
+  summary?: string;
 
   /**
    * Optional target scope directory where the rule should reside.

@@ -5,8 +5,6 @@
 
 import { readFile, stat } from "node:fs/promises";
 import { dirname, isAbsolute, resolve } from "node:path";
-import { extractAdrSummary } from "../adr/summary.ts";
-import { extractTaskSummary } from "../task/summary.ts";
 import { resolveGoverningScope } from "../common/directories.ts";
 import { parseArtifactFilename } from "../common/filename.ts";
 import {
@@ -59,27 +57,30 @@ type ArtifactLookupStrategy = (
   ctx: ArtifactLookupContext,
 ) => Promise<ArtifactHit | null>;
 
-async function resolveAdrSummary(
-  filepath: string,
-  slug: string,
-): Promise<string> {
-  try {
-    const rawContent = await readFile(filepath, "utf8");
-    return extractAdrSummary(rawContent, slug);
-  } catch {
-    return slugToTitle(slug);
+async function resolveArtifactHitSummary(
+  hit: ArtifactHit,
+  ctx: ArtifactLookupContext,
+): Promise<string | undefined> {
+  if (hit.isHistorical) {
+    return undefined;
   }
-}
-
-async function resolveTaskSummary(
-  filepath: string,
-  slug: string,
-): Promise<string> {
+  const workspaceCtx = resolveWorkspaceContext(ctx.options);
+  const definition = workspaceCtx.registry.get(hit.subtype);
+  if (!definition?.parse) {
+    return undefined;
+  }
   try {
-    const rawContent = await readFile(filepath, "utf8");
-    return extractTaskSummary(rawContent, slug);
+    const rawContent = await readFile(hit.filepath, "utf8");
+    const parseContext = buildArtifactParseContext(rawContent, {
+      id: hit.id,
+      slug: hit.slug,
+      filepath: hit.filepath,
+      filename: hit.filename,
+    });
+    const parsed = definition.parse(parseContext);
+    return parsed?.summary;
   } catch {
-    return slugToTitle(slug);
+    return slugToTitle(hit.slug);
   }
 }
 
@@ -88,7 +89,11 @@ async function byExistingPath(
   ctx: ArtifactLookupContext,
 ): Promise<ArtifactHit | null> {
   const candidatePath = isAbsolute(ident) ? ident : resolve(ctx.cwd, ident);
-  const parsedFromPath = parseArtifactFilename(candidatePath);
+  const workspaceCtx = resolveWorkspaceContext(ctx.options);
+  const parsedFromPath = parseArtifactFilename(
+    candidatePath,
+    workspaceCtx.registry,
+  );
   if (!parsedFromPath) {
     return null;
   }
@@ -117,10 +122,11 @@ async function byWorkspaceScan(
   ident: string,
   ctx: ArtifactLookupContext,
 ): Promise<ArtifactHit | null> {
-  const tagInfo = parseCanonicalTag(ident);
+  const workspaceCtx = resolveWorkspaceContext(ctx.options);
+  const tagInfo = parseCanonicalTag(ident, workspaceCtx.registry);
   const targetTag = tagInfo?.tag.toUpperCase();
   const targetSubtype = tagInfo?.subtype ?? ctx.options.subtype;
-  const artifacts = await scanActiveArtifacts(ctx.cwd, targetSubtype);
+  const artifacts = await scanActiveArtifacts(workspaceCtx, targetSubtype);
 
   let matches = artifacts.filter((a) => {
     if (targetTag) {
@@ -255,13 +261,7 @@ async function toResolvedArtifact(
   const scope = resolveGoverningScope(hit.filepath, ctx.cwd).relativeScope;
   const relativePath =
     hit.relativePath ?? toPosixRelative(ctx.cwd, hit.filepath);
-  let summary: string | undefined;
-
-  if (hit.subtype === "ADR" && !hit.isHistorical) {
-    summary = await resolveAdrSummary(hit.filepath, hit.slug);
-  } else if (hit.subtype === "TASK" && !hit.isHistorical) {
-    summary = await resolveTaskSummary(hit.filepath, hit.slug);
-  }
+  const summary = await resolveArtifactHitSummary(hit, ctx);
 
   return {
     tag: hit.tag,
@@ -315,7 +315,7 @@ export async function resolveArtifactByTag(
     }
   }
 
-  const tagInfo = parseCanonicalTag(trimmed);
+  const tagInfo = parseCanonicalTag(trimmed, workspaceCtx.registry);
   const targetSubtype = tagInfo?.subtype ?? options.subtype;
   const subtypeLabel = targetSubtype ? ` ${targetSubtype}` : "";
   throw new Error(
@@ -357,30 +357,46 @@ export async function getArtifactDetails(
     : undefined;
 
   const summary =
-    resolved.subtype === "ADR"
-      ? (parsedSubtypeArtifact?.summary ??
-        extractAdrSummary(rawContent, resolved.slug))
-      : resolved.subtype === "TASK"
-        ? (parsedSubtypeArtifact?.summary ??
-          extractTaskSummary(rawContent, resolved.slug))
-        : fmSummary;
-  const contextSection = parsedSubtypeArtifact?.context ?? sections["Context"];
+    parsedSubtypeArtifact?.summary ?? fmSummary ?? resolved.summary;
+  const contextSection =
+    parsedSubtypeArtifact?.contextSection ??
+    parsedSubtypeArtifact?.context ??
+    sections["Context"];
   const acceptanceCriteria: TaskAcceptanceCriteriaItem[] | undefined =
-    resolved.subtype === "TASK"
-      ? parsedSubtypeArtifact?.acceptanceCriteria
-      : undefined;
+    parsedSubtypeArtifact?.acceptanceCriteria;
 
   return {
     ...resolved,
+    ...(parsedSubtypeArtifact?.title
+      ? { title: parsedSubtypeArtifact.title }
+      : context.title
+        ? { title: context.title }
+        : {}),
     ...(summary ? { summary } : {}),
-    links,
-    depends_on,
-    ...(supersedes ? { supersedes } : {}),
-    ...(superseded_by ? { superseded_by } : {}),
+    links: parsedSubtypeArtifact?.links ?? links,
+    depends_on: parsedSubtypeArtifact?.depends_on ?? depends_on,
+    ...(parsedSubtypeArtifact?.supersedes || supersedes
+      ? { supersedes: parsedSubtypeArtifact?.supersedes ?? supersedes }
+      : {}),
+    ...(parsedSubtypeArtifact?.superseded_by || superseded_by
+      ? { superseded_by: parsedSubtypeArtifact?.superseded_by ?? superseded_by }
+      : {}),
     body: context.body,
     rawContent,
     context: contextSection,
     sections,
     acceptanceCriteria,
+    ...(parsedSubtypeArtifact?.assertion
+      ? { assertion: parsedSubtypeArtifact.assertion }
+      : {}),
+    ...(parsedSubtypeArtifact?.alternatives
+      ? { alternatives: parsedSubtypeArtifact.alternatives }
+      : {}),
+    ...(parsedSubtypeArtifact?.decision
+      ? { decision: parsedSubtypeArtifact.decision }
+      : {}),
+    ...(parsedSubtypeArtifact?.consequences
+      ? { consequences: parsedSubtypeArtifact.consequences }
+      : {}),
   };
 }

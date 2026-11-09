@@ -10,7 +10,7 @@ import { resolveGoverningScope } from "../common/directories.ts";
 import { slugToTitle, toPosixRelative } from "../common/index.ts";
 import type { IndexableSubtype } from "../common/types.ts";
 import { scanActiveArtifacts } from "../resolver/active-scanner.ts";
-import { extractAdrSummary } from "../adr/summary.ts";
+import { extractAdrSummary } from "../adr/template.ts";
 import {
   parseFrontmatterFields,
   splitMarkdownFrontmatter,

@@ -431,4 +431,106 @@ Task context description.
     expect(details.acceptanceCriteria?.[0]?.completed).toBe(true);
     expect(details.acceptanceCriteria?.[1]?.completed).toBe(false);
   });
+
+  // @verifies RULE-1, RULE-25, RULE-26, RULE-29, RULE-34, RULE-35, ADR-1, ADR-2, ADR-4
+  it("[RULE-1][RULE-25][RULE-26][RULE-29][RULE-34][RULE-35][ADR-1][ADR-2][ADR-4] should uniformly extract domain-specific sections across RULE, ADR, and TASK", async () => {
+    const linkAdr = makeTestTag("ADR", "TEST-70");
+    const linkRule = makeTestTag("RULE", "TEST-70");
+
+    // 1. ADR with all domain sections
+    const adr = await workspace.createAdr({
+      id: "TEST-70",
+      slug: "uniform-adr",
+      summary: "ADR summary text.",
+      context: "Context for ADR.",
+      alternatives: "Alternative solution.",
+      decision: "Decision chosen.",
+      consequences: "Positive consequences.",
+    });
+
+    const adrDetails = await getArtifactDetails(adr.tag, {
+      cwd: workspace.cwd,
+    });
+    expect(adrDetails.summary).toBe("ADR summary text.");
+    expect(adrDetails.context).toBe("Context for ADR.");
+    expect(adrDetails.alternatives).toBe("Alternative solution.");
+    expect(adrDetails.decision).toBe("Decision chosen.");
+    expect(adrDetails.consequences).toBe("Positive consequences.");
+    expect(adrDetails.acceptanceCriteria).toBeUndefined();
+
+    // 2. RULE with assertion and summary
+    const rule = await workspace.createRule({
+      id: "TEST-70",
+      slug: "uniform-rule",
+      summary: "Rule summary text.",
+      assertion: "Discrete invariant assertion statement.",
+      links: [linkAdr],
+    });
+
+    const ruleDetails = await getArtifactDetails(rule.tag, {
+      cwd: workspace.cwd,
+    });
+    expect(ruleDetails.summary).toBe("Rule summary text.");
+    expect(ruleDetails.assertion).toBe(
+      "Discrete invariant assertion statement.",
+    );
+    expect(ruleDetails.acceptanceCriteria).toBeUndefined();
+
+    // 3. TASK with criteria and summary
+    const task = await workspace.createTask({
+      id: "TEST-70",
+      slug: "uniform-task",
+      summary: "Task summary text.",
+      context: "Task execution context.",
+      links: [linkAdr, linkRule],
+      criteria: ["First deliverable", "Second deliverable"],
+    });
+
+    const taskDetails = await getArtifactDetails(task.tag, {
+      cwd: workspace.cwd,
+    });
+    expect(taskDetails.summary).toBe("Task summary text.");
+    expect(taskDetails.context).toBe("Task execution context.");
+    expect(taskDetails.acceptanceCriteria).toBeDefined();
+    expect(taskDetails.acceptanceCriteria?.length).toBeGreaterThanOrEqual(2);
+  });
+
+  // @verifies RULE-25, RULE-26, RULE-29, RULE-34, ADR-4
+  it("[RULE-25][RULE-26][RULE-29][RULE-34][ADR-4] should delegate getArtifactDetails to custom subtype parse hook without hardcoded subtype checks", async () => {
+    const customDefinition = {
+      subtype: "SPEC",
+      containerName: "specs",
+      render: ({ id, slug, title }: any) => ({
+        markdown: `# Context\nCustom spec context.\n\n# Requirements\n- Req 1\n`,
+        artifact: { id, slug, title },
+      }),
+      parse: (ctx: any) => ({
+        id: ctx.id,
+        slug: ctx.slug,
+        title: ctx.title,
+        summary: "Declarative parser hook summary.",
+        context: ctx.sections["Context"],
+        requirements: ctx.sections["Requirements"],
+      }),
+    };
+
+    workspace.context.registry.register(customDefinition);
+
+    // Write a SPEC artifact to disk
+    const specTag = makeTestTag("SPEC", 1);
+    const filename = `custom-feature.${specTag}.md`;
+    await workspace.writeFile(
+      `.modie/specs/${filename}`,
+      `---\nsummary: Declarative parser hook summary.\n---\n\n# Context\nCustom spec context.\n\n# Requirements\n- Req 1\n`,
+    );
+
+    const details = await getArtifactDetails(specTag, {
+      cwd: workspace.cwd,
+      workspace: workspace.context,
+    });
+
+    expect(details.subtype).toBe("SPEC");
+    expect(details.summary).toBe("Declarative parser hook summary.");
+    expect(details.context).toBe("Custom spec context.");
+  });
 });

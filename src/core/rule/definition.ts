@@ -29,10 +29,13 @@ export const ruleDefinition: ArtifactDefinition<
       options.context?.trim() ||
       `A discrete invariant assertion regarding ${title}.`;
 
+    const summary = options.summary?.trim() || undefined;
+
     const markdown = renderRuleMarkdown({
       id,
       slug,
       title,
+      summary,
       links,
       supersedes,
       assertion: assertionText,
@@ -42,9 +45,12 @@ export const ruleDefinition: ArtifactDefinition<
       id,
       slug,
       title,
+      ...(summary ? { summary } : {}),
       links,
       supersedes,
       assertion: assertionText,
+      contextSection: assertionText,
+      context: assertionText,
       filePath: filepath,
       rawContent: markdown,
     };
