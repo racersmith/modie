@@ -5,8 +5,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { parseArtifact } from "../pipeline/create.ts";
-import { getArtifactDetails } from "../query/artifact-query.ts";
+import { parseArtifact } from "../../pipeline/create.ts";
+import { getArtifactDetails } from "../../query/artifact-query.ts";
 import {
   createFixtureWorkspace,
   makeTestTag,

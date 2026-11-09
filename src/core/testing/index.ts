@@ -1,6 +1,5 @@
 /**
- * Core testing utilities for isolated fixture creation and invariant verification.
- * Enforces RULE-34 (fixture-based test isolation) and RULE-25 (interface-core decoupling).
+ * Backward-compatibility re-export facade for test fixture utilities (RULE-38, ADR-13).
+ * Isolated from production core exports.
  */
-
-export * from "./fixture-workspace.ts";
+export * from "../platform/testing/index.ts";
