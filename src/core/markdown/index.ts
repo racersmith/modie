@@ -1,8 +1,5 @@
 /**
- * Modie Core: Foundational Markdown and frontmatter parsing layer.
- * Complies with ADR-4, RULE-1, RULE-25, and RULE-26.
+ * Backward-compatibility re-export facade for platform Markdown codecs (RULE-38, ADR-13).
  */
+export * from "../platform/markdown/index.ts";
 
-export * from "./frontmatter.ts";
-export * from "./sections.ts";
-export * from "./parser.ts";

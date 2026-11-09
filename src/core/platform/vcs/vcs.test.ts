@@ -11,10 +11,10 @@ import {
 } from "../testing/index.ts";
 import { GitCliAdapter } from "./git-cli-adapter.ts";
 import { MockVcsAdapter } from "./mock-adapter.ts";
-import { completeTask } from "../task/completion.ts";
-import { startTaskBranch, mergeTaskBranch } from "../task/branching.ts";
-import { inspectGitTreeArtifacts } from "../resolver/artifact-history.ts";
-import { resolveWatermark } from "../resolver/watermark.ts";
+import { completeTask } from "../../task/completion.ts";
+import { startTaskBranch, mergeTaskBranch } from "../../task/branching.ts";
+import { inspectGitTreeArtifacts } from "../../resolver/artifact-history.ts";
+import { resolveWatermark } from "../../resolver/watermark.ts";
 
 describe("GitCliAdapter - Real Subprocess Fixture Tests", () => {
   let workspace: FixtureWorkspace;

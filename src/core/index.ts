@@ -7,9 +7,9 @@
 export * from "./registry.ts";
 export * from "./context.ts";
 
-// Foundational primitives and markdown layer
+// Foundational primitives and platform layer (RULE-38, ADR-13)
 export * from "./common/index.ts";
-export * from "./markdown/index.ts";
+export * from "./platform/index.ts";
 
 // Domain modules
 export * from "./pipeline/index.ts";
@@ -22,5 +22,3 @@ export * from "./archival/index.ts";
 export * from "./linking/index.ts";
 export * from "./resolver/index.ts";
 export * from "./query/index.ts";
-export * from "./vcs/index.ts";
-export * from "./config/index.ts";
