@@ -69,6 +69,26 @@ export interface ArtifactDetails extends ResolvedArtifact {
    * Parsed acceptance criteria items (for TASK artifacts).
    */
   acceptanceCriteria?: TaskAcceptanceCriteriaItem[];
+
+  /**
+   * Single invariant assertion claim (for RULE artifacts).
+   */
+  assertion?: string;
+
+  /**
+   * Alternatives considered section content (for ADR artifacts).
+   */
+  alternatives?: string;
+
+  /**
+   * Decision section content (for ADR artifacts).
+   */
+  decision?: string;
+
+  /**
+   * Consequences section content (for ADR artifacts).
+   */
+  consequences?: string;
 }
 
 export interface ResolveArtifactOptions {

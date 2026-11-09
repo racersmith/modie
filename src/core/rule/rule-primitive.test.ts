@@ -8,7 +8,12 @@ import {
   makeTestTag,
   type FixtureWorkspace,
 } from "../testing/index.ts";
-import { renderRuleMarkdown, validateRuleLinks } from "./template.ts";
+import {
+  extractRuleSummary,
+  parseRuleMarkdown,
+  renderRuleMarkdown,
+  validateRuleLinks,
+} from "./template.ts";
 
 describe("RULE Primitive - Frontmatter Links Validation (RULE-13, RULE-35)", () => {
   // @verifies RULE-13, RULE-35
@@ -118,5 +123,40 @@ describe("RULE Primitive - Template Rendering & Disk Roundtrip (RULE-3, RULE-11,
     const filePath = await workspace.writeFile(filename, rendered);
     const diskContent = await workspace.readFile(filePath);
     expect(diskContent).toBe(rendered);
+  });
+
+  // @verifies RULE-3, RULE-11, RULE-25, RULE-26, RULE-34, RULE-35
+  it("[RULE-3][RULE-11][RULE-25][RULE-26][RULE-34][RULE-35] should extract summary and roundtrip parse RULE markdown", async () => {
+    const linkAdr = makeTestTag("ADR", 1);
+    const ruleTag = makeTestTag("RULE", 1);
+    const filename = `test-rule.${ruleTag}.md`;
+
+    const explicitContent = `---
+summary: Explicit rule summary text
+links:
+  - ${linkAdr}
+---
+
+All multi-instance artifacts must reside in container directories. Additional context paragraph.
+`;
+
+    expect(extractRuleSummary(explicitContent, "test-rule")).toBe(
+      "Explicit rule summary text",
+    );
+
+    const fallbackContent = `All multi-instance artifacts must reside in container directories. Additional context paragraph.`;
+    expect(extractRuleSummary(fallbackContent, "test-rule")).toBe(
+      "All multi-instance artifacts must reside in container directories.",
+    );
+
+    const parsedExplicit = parseRuleMarkdown(
+      explicitContent,
+      filename,
+    );
+    expect(parsedExplicit.summary).toBe("Explicit rule summary text");
+    expect(parsedExplicit.links).toEqual([linkAdr]);
+    expect(parsedExplicit.assertion).toBe(
+      "All multi-instance artifacts must reside in container directories. Additional context paragraph.",
+    );
   });
 });

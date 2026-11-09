@@ -10,6 +10,7 @@ import {
 } from "../testing/index.ts";
 import {
   areAllAcceptanceCriteriaCompleted,
+  extractTaskSummary,
   parseAcceptanceCriteria,
   parseTaskMarkdown,
   renderAcceptanceCriteria,
@@ -172,5 +173,37 @@ describe("TASK Primitive - Template Rendering and Parser Roundtrip (RULE-1, RULE
       text: "Add unit tests",
       completed: true,
     });
+  });
+});
+
+describe("TASK Primitive - Summary Extraction (ADR-4, ADR-8, RULE-26)", () => {
+  // @verifies ADR-4, ADR-8, RULE-26
+  it("[ADR-4][ADR-8][RULE-26] should prefer explicit frontmatter summary and fallback to Context sentence or slug", () => {
+    const withExplicit = `---
+summary: Explicit task summary
+---
+
+# Context
+Context description paragraph.
+`;
+    expect(extractTaskSummary(withExplicit, "test-task")).toBe(
+      "Explicit task summary",
+    );
+
+    const withContextOnly = `
+# Context
+First substantive sentence of the task context. Second sentence here.
+
+# Acceptance Criteria
+- [ ] Checklist item
+`;
+    expect(extractTaskSummary(withContextOnly, "test-task")).toBe(
+      "First substantive sentence of the task context.",
+    );
+
+    const emptyDoc = ``;
+    expect(extractTaskSummary(emptyDoc, "fallback-slug-title")).toBe(
+      "fallback slug title",
+    );
   });
 });

@@ -16,8 +16,8 @@ Consolidate markdown summary and section extraction into the declarative `Artifa
 
 # Acceptance Criteria
 
-- [ ] Enhance ArtifactDefinition.parse to extract summary and domain-specific sections uniformly across all indexable subtypes
-- [ ] Refactor getArtifactDetails to remove hardcoded subtype condition checks in favor of ctx.registry.get(subtype).parse
-- [ ] Consolidate disparate markdown summary extraction helpers into subtype templates
-- [ ] `bun verify` passes all tests.
-- [ ] User Review
+- [x] Enhance ArtifactDefinition.parse to extract summary and domain-specific sections uniformly across all indexable subtypes
+- [x] Refactor getArtifactDetails to remove hardcoded subtype condition checks in favor of ctx.registry.get(subtype).parse
+- [x] Consolidate disparate markdown summary extraction helpers into subtype templates
+- [x] `bun verify` passes all tests.
+- [x] User Review

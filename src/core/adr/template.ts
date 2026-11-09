@@ -7,11 +7,73 @@ import { parseArtifactFilename } from "../common/filename.ts";
 import { slugToTitle } from "../common/index.ts";
 import { isValidGovernanceLinkTag } from "../linking/syntax.ts";
 import {
+  parseFrontmatterFields,
   parseMarkdownDocument,
+  parseMarkdownSections,
+  splitMarkdownFrontmatter,
   type ArtifactParseContext,
 } from "../markdown/index.ts";
-import { extractAdrSummary } from "./summary.ts";
 import type { AdrArtifact, AdrRenderOptions } from "./types.ts";
+
+/**
+ * Extracts a concise summary from an ADR markdown document.
+ * Prefers the explicit `summary:` YAML frontmatter field; falls back to the first
+ * substantive paragraph of `# Decision`, `# Context`, or document body, and finally
+ * the human-readable title derived from `fallbackSlug`.
+ */
+export function extractAdrSummary(
+  rawContent: string,
+  fallbackSlug?: string,
+): string {
+  const { frontmatter, body } = splitMarkdownFrontmatter(rawContent);
+  const { summary } = parseFrontmatterFields(frontmatter);
+  if (summary) {
+    return summary;
+  }
+
+  const sections = parseMarkdownSections(body);
+  const candidates = [sections["Decision"], sections["Context"], body];
+
+  for (const candidate of candidates) {
+    if (!candidate || !candidate.trim()) continue;
+    const paragraphs = candidate
+      .split(/\r?\n\s*\r?\n/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+
+    for (const para of paragraphs) {
+      if (/^#+\s+/.test(para) && !para.includes("\n")) {
+        continue;
+      }
+      if (/^(`{3,}|~{3,})/.test(para)) {
+        continue;
+      }
+      const cleaned = para
+        .split(/\r?\n/)
+        .filter((l) => !/^#+\s+/.test(l.trim()))
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (cleaned) {
+        return cleaned;
+      }
+    }
+
+    const headingCleaned = paragraphs[0]!
+      .replace(/^#+\s+/, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (headingCleaned) {
+      return headingCleaned;
+    }
+  }
+
+  if (fallbackSlug) {
+    return slugToTitle(fallbackSlug);
+  }
+
+  return "Architecture Decision Record";
+}
 
 /**
  * Validates frontmatter links per RULE-14:
@@ -132,6 +194,28 @@ export function parseAdrFromContext(
     context.frontmatterFields.summary ??
     (extractAdrSummary(context.rawContent, context.slug) || undefined);
 
+  const contextSection =
+    context.sections["Context"] ??
+    Object.entries(context.sections).find(
+      ([k]) => k.toLowerCase() === "context",
+    )?.[1];
+  const alternatives =
+    context.sections["Alternatives Considered"] ??
+    context.sections["Alternatives"] ??
+    Object.entries(context.sections).find(([k]) =>
+      k.toLowerCase().startsWith("alternative"),
+    )?.[1];
+  const decision =
+    context.sections["Decision"] ??
+    Object.entries(context.sections).find(
+      ([k]) => k.toLowerCase() === "decision",
+    )?.[1];
+  const consequences =
+    context.sections["Consequences"] ??
+    Object.entries(context.sections).find(
+      ([k]) => k.toLowerCase() === "consequence",
+    )?.[1];
+
   return {
     id: context.id,
     slug: context.slug,
@@ -144,21 +228,15 @@ export function parseAdrFromContext(
     ...(context.frontmatterFields.superseded_by
       ? { superseded_by: context.frontmatterFields.superseded_by }
       : {}),
-    ...(context.sections["Context"] !== undefined
+    ...(contextSection !== undefined
       ? {
-          contextSection: context.sections["Context"],
-          context: context.sections["Context"],
+          contextSection,
+          context: contextSection,
         }
       : {}),
-    ...(context.sections["Alternatives Considered"] !== undefined
-      ? { alternatives: context.sections["Alternatives Considered"] }
-      : {}),
-    ...(context.sections["Decision"] !== undefined
-      ? { decision: context.sections["Decision"] }
-      : {}),
-    ...(context.sections["Consequences"] !== undefined
-      ? { consequences: context.sections["Consequences"] }
-      : {}),
+    ...(alternatives !== undefined ? { alternatives } : {}),
+    ...(decision !== undefined ? { decision } : {}),
+    ...(consequences !== undefined ? { consequences } : {}),
     filePath: context.filepath ?? "",
     rawContent: context.rawContent,
   };
