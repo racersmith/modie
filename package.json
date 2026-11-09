@@ -30,7 +30,7 @@
   ],
   "scripts": {
     "build": "bun run build:bundle && bun run build:types",
-    "build:bundle": "bun build ./src/index.ts --outdir ./dist --target bun && bun build ./src/interfaces/cli/bin.ts --outdir ./dist/bin --target bun && bun build ./src/interfaces/mcp/bin.ts --outfile ./dist/bin/mcp.js --target bun",
+    "build:bundle": "bun build ./src/index.ts --outdir ./dist --target node && bun build ./src/interfaces/cli/bin.ts --outdir ./dist/bin --target node && bun build ./src/interfaces/mcp/bin.ts --outfile ./dist/bin/mcp.js --target node && cp ./src/interfaces/mcp/instructions.md ./dist/bin/instructions.md",
     "build:types": "tsc --declaration --emitDeclarationOnly --noEmit false --rootDir ./src --outDir ./dist/types",
     "modie": "PATH=\"$HOME/.bun/bin:$PATH\" bun --silent ./src/interfaces/cli/bin.ts",
     "typecheck": "bun check",
@@ -56,6 +56,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
+    "yaml": "^2.9.1",
     "zod": "^4.6.7"
   }
 }

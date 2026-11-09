@@ -3,7 +3,7 @@
  * Complies with ADR-4, RULE-1, RULE-25, and RULE-26.
  */
 
-import { YAML } from "bun";
+import YAML from "yaml";
 
 export interface ParsedFrontmatterFields {
   links: string[];

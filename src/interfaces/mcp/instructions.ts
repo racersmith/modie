@@ -5,10 +5,16 @@
  */
 
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const currentDir =
+  typeof import.meta.dirname === "string"
+    ? import.meta.dirname
+    : dirname(fileURLToPath(import.meta.url));
 
 export const DEFAULT_MCP_INSTRUCTIONS_PATH = join(
-  import.meta.dir,
+  currentDir,
   "instructions.md",
 );
 
