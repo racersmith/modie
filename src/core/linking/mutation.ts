@@ -8,7 +8,7 @@
 
 import { readFile, writeFile } from "node:fs/promises";
 import YAML from "yaml";
-import { parseCanonicalTag } from "../common/index.ts";
+import { parseCanonicalTag } from "../domain/index.ts";
 import { resolveWorkspaceContext } from "../context.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
 import {

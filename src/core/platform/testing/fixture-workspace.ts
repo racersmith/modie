@@ -10,13 +10,15 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { promisify } from "node:util";
-import { formatArtifactFilename } from "../../common/filename.ts";
-import { resolveArtifactDirectories } from "../../common/directories.ts";
-import type { IndexableSubtype } from "../../common/types.ts";
-import { renderAdrMarkdown } from "../../adr/template.ts";
+import {
+  formatArtifactFilename,
+  renderAdrMarkdown,
+  renderRuleMarkdown,
+  renderTaskMarkdown,
+  resolveArtifactDirectories,
+  type IndexableSubtype,
+} from "../../domain/index.ts";
 import { parseMarkdownSections } from "../markdown/index.ts";
-import { renderRuleMarkdown } from "../../rule/template.ts";
-import { renderTaskMarkdown } from "../../task/template.ts";
 import {
   createWorkspaceContextSync,
   type WorkspaceContext,

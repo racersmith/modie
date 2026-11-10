@@ -5,22 +5,23 @@
  * Complies with ADR-1, ADR-2, ADR-3, ADR-4, RULE-1, RULE-4, RULE-8, RULE-14, RULE-17, and RULE-25.
  */
 
-import { resolveArtifactDirectories } from "../common/index.ts";
+import {
+  adrDefinition,
+  resolveArtifactDirectories,
+  type AdrDefinition,
+  type CreateAdrOptions,
+  type CreateAdrResult,
+} from "../domain/index.ts";
 import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
 import { validateLinkTarget } from "../linking/validator.ts";
 import { createArtifact } from "../pipeline/create.ts";
 import { updateSupersededArtifactFrontmatter } from "../pipeline/supersession.ts";
-import {
-  adrDefinition,
-  type AdrDefinition,
-} from "./definition.ts";
-import type { CreateAdrOptions, CreateAdrResult } from "./types.ts";
 
-export type { CreateAdrOptions, CreateAdrResult } from "./types.ts";
+export type { CreateAdrOptions, CreateAdrResult } from "../domain/index.ts";
 export {
   adrDefinition,
   type AdrDefinition,
-} from "./definition.ts";
+} from "../domain/index.ts";
 
 /**
  * Validates frontmatter links per RULE-14, descendant rule scope per RULE-17,

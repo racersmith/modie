@@ -4,7 +4,7 @@
  */
 
 import { basename, resolve } from "node:path";
-import { parseArtifactFilename } from "../common/filename.ts";
+import { parseArtifactFilename } from "../domain/index.ts";
 import { resolveWorkspaceContext } from "../context.ts";
 import { getArtifactDetails } from "./artifact-query.ts";
 import {

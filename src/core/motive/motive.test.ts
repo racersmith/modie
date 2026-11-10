@@ -7,11 +7,13 @@ import {
   collectAncestralMotives,
   createMotive,
   readMotive,
+} from "./index.ts";
+import {
   renderMotiveMarkdown,
   resolveMotivePath,
   resolveMotivePaths,
   validateMotiveContent,
-} from "./index.ts";
+} from "../domain/index.ts";
 import {
   createFixtureWorkspace,
   makeTestTag,

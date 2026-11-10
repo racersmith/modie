@@ -6,7 +6,7 @@
  */
 
 import { readFile, writeFile } from "node:fs/promises";
-import type { IndexableSubtype } from "../common/types.ts";
+import type { IndexableSubtype } from "../domain/index.ts";
 import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
 import { mutateFrontmatterListField } from "../linking/mutation.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";

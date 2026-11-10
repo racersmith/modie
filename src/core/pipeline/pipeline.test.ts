@@ -11,9 +11,11 @@ import {
 import {
   createArtifact,
   parseArtifact,
-  type ArtifactDefinition,
-  type BaseCreateArtifactOptions,
 } from "./index.ts";
+import type {
+  ArtifactDefinition,
+  BaseCreateArtifactOptions,
+} from "../domain/index.ts";
 import {
   ARTIFACT_DEFINITIONS,
   adrDefinition,

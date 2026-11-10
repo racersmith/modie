@@ -3,7 +3,7 @@
  * Enforces RULE-25, RULE-27, and RULE-31.
  */
 
-import type { IndexableSubtype } from "../common/types.ts";
+import type { IndexableSubtype } from "../domain/index.ts";
 import type { WorkspaceContext } from "../context/types.ts";
 
 export interface ArchiveArtifactOptions {

@@ -6,14 +6,14 @@
 
 import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
-import { resolveMotivePaths } from "./paths.ts";
+import {
+  renderMotiveMarkdown,
+  resolveMotivePaths,
+  type CreateMotiveOptions,
+  type CreateMotiveResult,
+  type MotiveArtifact,
+} from "../domain/index.ts";
 import { resolveWorkspaceContext } from "../context.ts";
-import { renderMotiveMarkdown } from "./template.ts";
-import type {
-  CreateMotiveOptions,
-  CreateMotiveResult,
-  MotiveArtifact,
-} from "./types.ts";
 
 /**
  * Creates or scaffolds a singleton `MOTIVE.md` artifact within `<dir>/.modie/MOTIVE.md`.

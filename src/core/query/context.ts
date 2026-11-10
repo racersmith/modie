@@ -10,18 +10,18 @@ import { readFile } from "node:fs/promises";
 import { basename, isAbsolute, join, normalize, resolve } from "node:path";
 import {
   buildAncestralScopes,
+  parseArtifactFilename,
+  parseCanonicalTag,
   resolveGoverningScope,
   resolveScopeDirectory,
-} from "../common/directories.ts";
-import { parseArtifactFilename } from "../common/filename.ts";
-import {
-  parseCanonicalTag,
   slugToTitle,
   toPosixRelative,
-} from "../common/index.ts";
+  type DirectoryGist,
+  type FileGist,
+  type GistSignpost,
+} from "../domain/index.ts";
 import { discoverGistsForScope } from "../gist/reader.ts";
 import { resolveWorkspaceContext } from "../context.ts";
-import type { DirectoryGist, FileGist, GistSignpost } from "../gist/types.ts";
 import { collectAncestralMotives } from "../motive/reader.ts";
 import { getTaskStatus, type TaskStatusDetails } from "../task/query.ts";
 import { compareArtifactIds, listAdrs, listRules } from "./artifact-list.ts";

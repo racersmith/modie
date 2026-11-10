@@ -8,7 +8,7 @@ import {
   makeTestTag,
   type FixtureWorkspace,
 } from "../testing/index.ts";
-import { findDeepestCommonAncestor } from "../common/index.ts";
+import { findDeepestCommonAncestor } from "../domain/index.ts";
 import {
   createTask,
   parseTaskMarkdown,

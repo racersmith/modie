@@ -4,14 +4,10 @@
  */
 
 import YAML from "yaml";
+import type { ParsedFrontmatterFields } from "../../domain/types.ts";
 
-export interface ParsedFrontmatterFields {
-  links: string[];
-  depends_on?: string[];
-  supersedes?: string[];
-  superseded_by?: string[];
-  summary?: string;
-}
+export type { ParsedFrontmatterFields };
+
 
 export interface ParsedFrontmatterLinkLines {
   /** Map of 1-based line number to relationship name */

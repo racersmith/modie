@@ -3,7 +3,7 @@
  * Complies with RULE-21, RULE-22, RULE-28, and RULE-33.
  */
 
-import type { ArtifactCollision } from "./types.ts";
+import type { ArtifactCollision } from "../domain/index.ts";
 
 export interface TaskIncompleteErrorDetails {
   taskId: string;

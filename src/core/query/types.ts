@@ -3,13 +3,16 @@
  * Complies with ADR-1, ADR-2, ADR-4, RULE-9, RULE-25, RULE-27, and RULE-31.
  */
 
-import type { IndexableSubtype, ResolvedArtifact } from "../common/types.ts";
-import type { WorkspaceContext } from "../context/types.ts";
-import type { DirectoryGist, FileGist, GistSignpost } from "../gist/types.ts";
-import type { TaskReadiness } from "../task/types.ts";
 import type {
+  DirectoryGist,
+  FileGist,
+  GistSignpost,
+  IndexableSubtype,
+  ResolvedArtifact,
   TaskAcceptanceCriteriaItem,
-} from "../task/types.ts";
+  TaskReadiness,
+} from "../domain/index.ts";
+import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
 
 export type { ResolvedArtifact };

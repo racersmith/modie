@@ -9,11 +9,18 @@
 import { readFile } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
 import {
+  ADR_LINK_TAG_REGEX,
+  GOVERNANCE_LINK_TAG_REGEX,
+  TASK_DEPENDENCY_TAG_REGEX,
+  isValidAdrLinkTag,
+  isValidGovernanceLinkTag,
+  isValidTaskDependencyTag,
+  parseCanonicalTag,
   resolveArtifactDirectories,
   resolveGoverningScope,
-} from "../common/directories.ts";
-import { parseCanonicalTag } from "../common/tag.ts";
-import type { IndexableSubtype } from "../common/types.ts";
+  resolveSubtypeLinkPolicy,
+  type IndexableSubtype,
+} from "../domain/index.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
 import {
   parseFrontmatterFields,
@@ -23,7 +30,6 @@ import type { ResolvedArtifact } from "../query/types.ts";
 import { scanActiveTasks } from "../resolver/active-scanner.ts";
 import { resolveWorkspaceContext } from "../context/resolver.ts";
 import type { WorkspaceContext } from "../context/types.ts";
-import { resolveSubtypeLinkPolicy } from "./policy.ts";
 import type {
   ArtifactLinkRelationship,
   LinkAncestryScope,
@@ -137,14 +143,6 @@ function isAncestorOrSelfDir(
   return !rel.startsWith("..") && !isAbsolute(rel);
 }
 
-import {
-  ADR_LINK_TAG_REGEX,
-  GOVERNANCE_LINK_TAG_REGEX,
-  TASK_DEPENDENCY_TAG_REGEX,
-  isValidAdrLinkTag,
-  isValidGovernanceLinkTag,
-  isValidTaskDependencyTag,
-} from "./syntax.ts";
 export {
   ADR_LINK_TAG_REGEX,
   GOVERNANCE_LINK_TAG_REGEX,
@@ -152,7 +150,7 @@ export {
   isValidAdrLinkTag,
   isValidGovernanceLinkTag,
   isValidTaskDependencyTag,
-} from "./syntax.ts";
+} from "../domain/index.ts";
 
 export interface ValidateLinkTargetOptions {
   cwd?: string;

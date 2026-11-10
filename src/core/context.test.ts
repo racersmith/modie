@@ -9,7 +9,7 @@ import {
   resolveWorkspaceContext,
   type WorkspaceContext,
 } from "./context.ts";
-import type { ArtifactDefinition } from "./pipeline/types.ts";
+import type { ArtifactDefinition } from "./domain/index.ts";
 import { MockVcsAdapter } from "./vcs/mock-adapter.ts";
 
 describe("Workspace Context Container (RULE-25, RULE-34, ADR-1, ADR-2, ADR-9)", () => {

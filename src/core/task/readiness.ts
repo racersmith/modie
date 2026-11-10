@@ -5,10 +5,14 @@
  * and lifecycle status state machine (READY, BLOCKED, COMPLETED).
  */
 
-import { slugToTitle, taskKey } from "../common/index.ts";
-import type { TaskAcceptanceCriteriaItem, TaskReadiness } from "./types.ts";
+import {
+  slugToTitle,
+  taskKey,
+  type TaskAcceptanceCriteriaItem,
+  type TaskReadiness,
+} from "../domain/index.ts";
 
-export type { TaskReadiness };
+export type { TaskReadiness } from "../domain/index.ts";
 
 /**
  * Summary criteria progress statistics.

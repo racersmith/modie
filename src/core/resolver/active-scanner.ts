@@ -6,10 +6,12 @@
 
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { parseArtifactFilename } from "../common/filename.ts";
+import {
+  parseArtifactFilename,
+  type DefinitionRegistry,
+} from "../domain/index.ts";
 import { resolveWorkspaceContext } from "../context/resolver.ts";
 import type { WorkspaceContext } from "../context/types.ts";
-import type { DefinitionRegistry } from "../pipeline/registry.ts";
 import type {
   DiscoveredArtifact,
   DiscoveredTask,

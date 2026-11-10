@@ -9,7 +9,7 @@ import {
   formatCompiledContextMarkdown,
   resolveContextTarget,
 } from "./context.ts";
-import { buildAncestralScopes } from "../common/index.ts";
+import { buildAncestralScopes } from "../domain/index.ts";
 import { computeAncestralScopes } from "./scope.ts";
 import {
   createFixtureWorkspace,

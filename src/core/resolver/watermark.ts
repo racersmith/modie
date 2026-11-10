@@ -18,7 +18,7 @@ import type {
   WatermarkResolutionOptions,
 } from "./types.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
-import { escapeRegex, parseTaskBranch } from "../common/index.ts";
+import { escapeRegex, parseTaskBranch } from "../domain/index.ts";
 
 export interface SequenceAllocationOptions {
   match: RegExp;

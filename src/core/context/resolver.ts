@@ -11,7 +11,7 @@ import { defaultVcsAdapter } from "../vcs/git-cli-adapter.ts";
 import {
   createDefinitionRegistry,
   type DefinitionRegistry,
-} from "../pipeline/registry.ts";
+} from "../domain/index.ts";
 import type {
   CreateWorkspaceContextOptions,
   WorkspaceContext,

@@ -14,8 +14,8 @@ Execute Phase 2 of the core layering architecture defined in ADR-13 and RULE-38.
 
 # Acceptance Criteria
 
-- [ ] Consolidate subtype definitions (ADR, RULE, TASK, MOTIVE, GIST) and common primitives under dedicated domain namespace
-- [ ] Centralize artifact registry and composition root within domain layer
-- [ ] Enforce invariant that domain models contain zero imports to platform or engine services
-- [ ] verify `bun run verify` passes
-- [ ] User Review
+- [x] Consolidate subtype definitions (ADR, RULE, TASK, MOTIVE, GIST) and common primitives under dedicated domain namespace
+- [x] Centralize artifact registry and composition root within domain layer
+- [x] Enforce invariant that domain models contain zero imports to platform or engine services
+- [x] verify `bun run verify` passes
+- [x] User Review

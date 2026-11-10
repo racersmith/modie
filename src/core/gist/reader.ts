@@ -5,21 +5,20 @@
 
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
-import { extractCwd, toPosixRelative } from "../common/index.ts";
 import {
   DIRECTORY_GIST_FILENAME,
+  extractCwd,
   parseFileGistFilename,
   resolveFileGistPath,
   resolveGistPaths,
-} from "./paths.ts";
-import type {
-  DirectoryGist,
-  FileGist,
-  GistDiscoveryResult,
-  GistSignpost,
-  LocalGistsResult,
-  ResolveGistOptions,
-} from "./types.ts";
+  toPosixRelative,
+  type DirectoryGist,
+  type FileGist,
+  type GistDiscoveryResult,
+  type GistSignpost,
+  type LocalGistsResult,
+  type ResolveGistOptions,
+} from "../domain/index.ts";
 
 const IGNORED_CHILD_DIRECTORIES = new Set([
   ".modie",

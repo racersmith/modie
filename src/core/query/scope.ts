@@ -8,12 +8,12 @@ import { isAbsolute, join, normalize, relative, resolve } from "node:path";
 import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
 import {
   buildAncestralScopes,
+  parseArtifactFilename,
+  parseCanonicalTag,
   resolveGoverningScope,
-} from "../common/directories.ts";
-import { parseArtifactFilename } from "../common/filename.ts";
+} from "../domain/index.ts";
 import { queryTaskQueue } from "../task/query.ts";
 import { listActiveArtifacts } from "./artifact-list.ts";
-import { parseCanonicalTag } from "../common/index.ts";
 import { resolveArtifactByTag } from "./artifact-query.ts";
 import type {
   AncestralRuleChainNode,

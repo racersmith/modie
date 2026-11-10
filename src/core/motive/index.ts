@@ -1,9 +1,6 @@
 /**
- * Modie Core: MOTIVE Domain Module.
+ * Modie Core: MOTIVE creation and reader services.
  */
 
-export * from "./types.ts";
-export * from "./paths.ts";
-export * from "./template.ts";
 export * from "./creation.ts";
 export * from "./reader.ts";
