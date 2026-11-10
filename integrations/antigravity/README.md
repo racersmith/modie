@@ -4,7 +4,6 @@ First-class Antigravity plugin bundle providing ambient architectural governance
 
 ## Architecture
 
-This plugin complies with **RULE-37** and **ADR-12**:
 - Executes the compiled standalone MCP bundle (`dist/bin/mcp.js`) using environment-resolved `node`.
 - Contains no hardcoded static host paths or forced `MODIE_CWD` working directory overrides.
 - Inherits the active Antigravity workspace dynamically for seamless multi-repository usage.
@@ -24,4 +23,3 @@ bun run build
 ```
 
 Then reset or restart the Modie MCP server from the Antigravity Customizations panel or session controls.
-
