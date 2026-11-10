@@ -3,7 +3,7 @@
  * Re-exports domain registry implementation and sets default registry factory (RULE-38, ADR-13).
  */
 
-import { setDefaultRegistryFactory } from "./context/resolver.ts";
+import { setDefaultRegistryFactory } from "./engine/context/index.ts";
 import { createDefaultDefinitionRegistry } from "./domain/registry.ts";
 
 setDefaultRegistryFactory(createDefaultDefinitionRegistry);
