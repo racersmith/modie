@@ -5,5 +5,7 @@
 
 export * from "./types.ts";
 export * from "./help.ts";
+export * from "./table.ts";
 export * from "./execute.ts";
 export * from "./adapter.ts";
+export * from "./artifact-factory.ts";
