@@ -15,7 +15,6 @@ import {
   inspectGitDeletedArtifacts,
   inspectGitTreeArtifacts,
 } from "../resolver/artifact-history.ts";
-import type { DiscoveredArtifact, IndexableSubtype } from "../common/types.ts";
 import {
   formatTaskBranch,
   normalizeTaskId,
@@ -23,9 +22,12 @@ import {
   parseSubtaskId,
   parseTaskBranch,
   parseTaskIdFromBranch,
+  parseTaskMarkdown,
   taskBranchGlob,
   taskKey,
-} from "../common/index.ts";
+  type DiscoveredArtifact,
+  type IndexableSubtype,
+} from "../domain/index.ts";
 import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
 import { resolveTaskFile } from "./completion.ts";
@@ -34,7 +36,6 @@ import {
   ArtifactCollisionError,
   TaskIncompleteError,
 } from "./errors.ts";
-import { parseTaskMarkdown } from "./parser.ts";
 import { scanActiveTasks } from "../resolver/active-scanner.ts";
 import {
   detectArtifactCollisions,
@@ -58,11 +59,13 @@ export {
 
 import type {
   ArtifactCollision,
+  TaskBranchTopology,
+} from "../domain/index.ts";
+import type {
   MergeTaskBranchOptions,
   MergeTaskBranchResult,
   StartTaskBranchOptions,
   StartTaskBranchResult,
-  TaskBranchTopology,
 } from "./types.ts";
 
 /**

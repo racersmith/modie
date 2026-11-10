@@ -6,11 +6,14 @@
 import { readFile, stat } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { resolveWorkspaceContext } from "../context.ts";
-import { resolveGoverningScope } from "../common/directories.ts";
-import { slugToTitle, toPosixRelative } from "../common/index.ts";
-import type { IndexableSubtype } from "../common/types.ts";
+import {
+  extractAdrSummary,
+  resolveGoverningScope,
+  slugToTitle,
+  toPosixRelative,
+  type IndexableSubtype,
+} from "../domain/index.ts";
 import { scanActiveArtifacts } from "../resolver/active-scanner.ts";
-import { extractAdrSummary } from "../adr/template.ts";
 import {
   parseFrontmatterFields,
   splitMarkdownFrontmatter,

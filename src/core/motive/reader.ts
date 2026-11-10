@@ -4,10 +4,14 @@
  */
 
 import { readFile } from "node:fs/promises";
-import { extractCwd, walkAncestorsForFile } from "../common/index.ts";
-import { resolveMotivePaths } from "./paths.ts";
-import { validateMotiveContent } from "./template.ts";
-import type { MotiveArtifact, ResolveMotiveOptions } from "./types.ts";
+import {
+  extractCwd,
+  resolveMotivePaths,
+  validateMotiveContent,
+  walkAncestorsForFile,
+  type MotiveArtifact,
+  type ResolveMotiveOptions,
+} from "../domain/index.ts";
 
 /**
  * Reads the singleton `<dir>/.modie/MOTIVE.md` for a target directory scope.

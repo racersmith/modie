@@ -17,7 +17,7 @@ import {
   queryTaskQueue,
   toTaskQueueItem,
 } from "./index.ts";
-import { parseTaskIdFromBranch } from "../common/index.ts";
+import { parseTaskIdFromBranch } from "../domain/index.ts";
 import { MockVcsAdapter } from "../vcs/mock-adapter.ts";
 
 describe("Task Queue Query Service - ID Comparison & Natural Ordering", () => {

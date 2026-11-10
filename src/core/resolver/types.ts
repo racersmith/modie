@@ -3,7 +3,7 @@
  * Complies with RULE-1, ADR-1, ADR-2, ADR-6, and ADR-9.
  */
 
-import type { DiscoveredArtifact, IndexableSubtype } from "../common/types.ts";
+import type { DiscoveredArtifact, IndexableSubtype } from "../domain/index.ts";
 import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
 
@@ -17,7 +17,9 @@ export interface DiscoveredTask {
   status: "active" | "deleted";
 }
 
-export type AllocationStrategy = "trunk" | "subtask" | "prefixed";
+export type { AllocationStrategy, WatermarkDetails } from "../domain/types.ts";
+import type { AllocationStrategy, WatermarkDetails } from "../domain/types.ts";
+
 
 export interface WatermarkResolutionOptions {
   /**
@@ -59,17 +61,4 @@ export interface WatermarkResolutionOptions {
   workspace?: WorkspaceContext;
 }
 
-export interface WatermarkDetails {
-  nextId: string;
-  tag: string;
-  fullTaskId: string;
-  subtype: IndexableSubtype;
-  strategy: AllocationStrategy;
-  activeIds: string[];
-  otherBranchActiveIds?: string[];
-  deletedIds: string[];
-  branch?: string;
-  parentId?: string;
-  prefix?: string;
-  sequence: number;
-}
+

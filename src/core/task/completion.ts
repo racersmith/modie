@@ -6,9 +6,13 @@
 import { readFile, rm, stat, writeFile } from "node:fs/promises";
 import { basename, isAbsolute, relative, resolve } from "node:path";
 import {
+  normalizeTaskId,
+  parseAcceptanceCriteria,
   parseArtifactFilename,
   parseTaskIdFromBranch,
-} from "../common/index.ts";
+  parseTaskMarkdown,
+  type TaskArtifact,
+} from "../domain/index.ts";
 import {
   scanActiveTasks,
 } from "../resolver/active-scanner.ts";
@@ -18,15 +22,11 @@ import {
   runGitCommand,
 } from "../resolver/git-inspector.ts";
 import { inspectGitDeletedArtifactIds } from "../resolver/artifact-history.ts";
-import { normalizeTaskId } from "../common/index.ts";
 
 import type { DiscoveredTask } from "../resolver/types.ts";
 import { resolveWorkspaceContext } from "../context/resolver.ts";
 import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
-import { parseAcceptanceCriteria } from "./checklist.ts";
-import { parseTaskMarkdown } from "./parser.ts";
-import type { TaskArtifact } from "./types.ts";
 
 export interface ResolveTaskOptions {
   /**

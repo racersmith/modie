@@ -8,29 +8,31 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import {
+  defaultDefinitionRegistry,
   formatArtifactFilename,
   generateSlug,
   parseArtifactFilename,
   parseCanonicalTag,
   resolveArtifactDirectories,
+  resolveSubtypeLinkPolicy,
   slugToTitle,
-} from "../common/index.ts";
-import type { IndexableSubtype } from "../common/types.ts";
+  type ArtifactDefinition,
+  type ArtifactLinkRelationship,
+  type ArtifactParseContext,
+  type BaseCreateArtifactOptions,
+  type CreateArtifactResult,
+  type IndexableSubtype,
+} from "../domain/index.ts";
 import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
 import { buildArtifactParseContext } from "../markdown/index.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
-import { resolveNextArtifactId } from "../resolver/watermark.ts";
-import { resolveSubtypeLinkPolicy } from "../linking/policy.ts";
-import type { ArtifactLinkRelationship } from "../linking/types.ts";
+import {
+  resolveNextArtifactId,
+  resolveWatermark,
+} from "../resolver/watermark.ts";
+import { assertNotZombieTask } from "../task/completion.ts";
 import { validateLinkTarget } from "../linking/validator.ts";
-import { defaultDefinitionRegistry } from "./registry.ts";
 import { updateSupersededArtifactFrontmatter } from "./supersession.ts";
-import type {
-  ArtifactDefinition,
-  ArtifactParseContext,
-  BaseCreateArtifactOptions,
-  CreateArtifactResult,
-} from "./types.ts";
 
 /**
  * Validates frontmatter links and task dependencies dynamically driven by declarative
@@ -176,8 +178,23 @@ export async function createArtifact<
       options,
       cwd,
     });
-    id = alloc.id;
-    watermark = alloc.watermark;
+    if (typeof alloc === "string") {
+      id = alloc;
+    } else {
+      id = alloc.id;
+      watermark = alloc.watermark;
+    }
+  } else if (definition.subtype.toString().toUpperCase() === "TASK") {
+    const taskOptions = options as any;
+    const wm = await resolveWatermark({
+      cwd,
+      branch: taskOptions.branch,
+      prefix: taskOptions.prefix,
+      forceTrunk: taskOptions.forceTrunk,
+    });
+    id = wm.nextId;
+    watermark = wm;
+    await assertNotZombieTask(id, cwd);
   } else {
     id = await resolveNextArtifactId(definition.subtype as IndexableSubtype, {
       cwd,

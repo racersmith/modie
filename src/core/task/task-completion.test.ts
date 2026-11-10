@@ -16,7 +16,7 @@ import {
   getTask,
   resolveTaskFile,
 } from "./index.ts";
-import { normalizeTaskId } from "../common/index.ts";
+import { normalizeTaskId } from "../domain/index.ts";
 
 describe("Task Completion & Checklist Services - Normalization & Resolution", () => {
   it("should normalize diverse task ID formats", () => {

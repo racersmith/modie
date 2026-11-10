@@ -5,39 +5,14 @@
  * RULE-18, RULE-19, RULE-25, and RULE-36.
  */
 
-import type { ResolvedArtifact } from "../common/types.ts";
+import type { ResolvedArtifact } from "../domain/index.ts";
 import type { WorkspaceContext } from "../context/types.ts";
 
-export type ArtifactLinkRelationship = "links" | "depends_on";
-
-export type FrontmatterListField =
-  ArtifactLinkRelationship | "supersedes" | "superseded_by";
-
-/**
- * Permitted ancestry directionality and graph topology constraint for a link target.
- * - "ancestor": Target artifact must reside in source's directory or an ancestor directory.
- * - "descendant": Target artifact must reside in source's directory or a descendant subtree.
- * - "same-or-ancestor": Alias for ancestor-or-self directory constraint.
- * - "acyclic": Target is exempt from directory ancestry but must maintain a DAG without circular cycles.
- * - "any": Unrestricted spatial scope.
- */
-export type LinkAncestryScope =
-  "ancestor" | "descendant" | "same-or-ancestor" | "acyclic" | "any";
-
-/**
- * Declarative link policy for a single artifact subtype, mapping frontmatter relationship
- * fields ("links", "depends_on") to allowed target subtypes and ancestry/topology constraints.
- */
-export type SubtypeLinkPolicy = {
-  [relationship in ArtifactLinkRelationship]?: {
-    [targetSubtype: string]: LinkAncestryScope;
-  };
-};
-
-/**
- * Declarative system-wide link policy table keyed by uppercase artifact subtype ("RULE", "ADR", "TASK").
- */
-export type LinkPolicyTable = Record<string, SubtypeLinkPolicy>;
+export type * from "../domain/graph/types.ts";
+import type {
+  ArtifactLinkRelationship,
+  SubtypeLinkPolicy,
+} from "../domain/graph/types.ts";
 
 export interface ValidateLinkOptions {
   /**

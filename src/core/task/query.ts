@@ -7,12 +7,18 @@
 import { readFile } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
 import {
+  compareTaskIds,
   normalizeTaskId,
   parseTaskBranch,
   parseTaskIdFromBranch,
+  parseTaskMarkdown,
   slugToTitle,
+  sortTaskIds,
+  sortTasksById,
   taskKey,
-} from "../common/index.ts";
+  type TaskAcceptanceCriteriaItem,
+  type TaskReadiness,
+} from "../domain/index.ts";
 import { scanActiveTasks } from "../resolver/active-scanner.ts";
 import { detectGitBranch, listGitBranches } from "../resolver/git-inspector.ts";
 import {
@@ -24,8 +30,6 @@ import { resolveWorkspaceContext } from "../context/resolver.ts";
 import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter } from "../vcs/types.ts";
 import { resolveTaskFile } from "./completion.ts";
-import { parseTaskMarkdown } from "./parser.ts";
-import type { TaskAcceptanceCriteriaItem, TaskReadiness } from "./types.ts";
 import {
   type CriteriaProgress,
   type TaskQueueItem,
@@ -38,10 +42,9 @@ import {
   buildTaskQueueItems,
   filterTaskQueueItems,
 } from "./readiness.ts";
-import { compareTaskIds, sortTasksById, sortTaskIds } from "./ordering.ts";
 
 export * from "./readiness.ts";
-export * from "./ordering.ts";
+export * from "../domain/task/ordering.ts";
 
 export interface TaskQueueQueryOptions {
   /**

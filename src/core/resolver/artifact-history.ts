@@ -4,9 +4,11 @@
  */
 
 import { basename } from "node:path";
-import { parseArtifactFilename } from "../common/filename.ts";
-import { asArtifactSubtype } from "../common/tag.ts";
-import type { ArtifactSubtype } from "../common/types.ts";
+import {
+  asArtifactSubtype,
+  parseArtifactFilename,
+  type ArtifactSubtype,
+} from "../domain/index.ts";
 import { resolveWorkspaceContext } from "../context/resolver.ts";
 import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter, MultiBranchOptions } from "../vcs/types.ts";

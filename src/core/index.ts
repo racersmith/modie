@@ -3,15 +3,21 @@
  * Public API exposed to interfaces (RULE-25).
  */
 
+// Explicit re-exports to resolve ambiguity between domain and engine facades
+export { validateTaskScope } from "./domain/index.ts";
+export type { WatermarkDetails } from "./domain/index.ts";
+
+// Domain layer (ADR-13, RULE-38)
+export * from "./domain/index.ts";
+
 // Composition root and registries
 export * from "./registry.ts";
 export * from "./context.ts";
 
-// Foundational primitives and platform layer (RULE-38, ADR-13)
-export * from "./common/index.ts";
+// Platform layer (RULE-38, ADR-13)
 export * from "./platform/index.ts";
 
-// Domain modules
+// Engine modules
 export * from "./pipeline/index.ts";
 export * from "./task/index.ts";
 export * from "./rule/index.ts";

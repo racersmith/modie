@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { createFixtureWorkspace, makeTestTag } from "../testing/index.ts";
 import { MockVcsAdapter } from "../vcs/mock-adapter.ts";
-import { parseTaskBranch } from "../common/index.ts";
+import { parseTaskBranch } from "../domain/index.ts";
 import {
   allocateTaskStrategy,
   detectGitBranch,

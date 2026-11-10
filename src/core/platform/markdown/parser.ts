@@ -3,7 +3,7 @@
  * Complies with ADR-1, ADR-2, ADR-4, RULE-1, RULE-25, and RULE-26.
  */
 
-import { parseArtifactFilename, slugToTitle } from "../../common/index.ts";
+import { parseArtifactFilename, slugToTitle } from "../../domain/index.ts";
 import {
   parseFrontmatterFields,
   splitMarkdownFrontmatter,
@@ -18,18 +18,10 @@ export interface ParsedMarkdownDocument {
   sections: Record<string, string>;
 }
 
-export interface ArtifactParseContext {
-  id: string;
-  slug: string;
-  title: string;
-  filepath?: string;
-  filename?: string;
-  rawContent: string;
-  frontmatter: string;
-  body: string;
-  frontmatterFields: ParsedFrontmatterFields;
-  sections: Record<string, string>;
-}
+import type { ArtifactParseContext } from "../../domain/types.ts";
+
+export type { ArtifactParseContext };
+
 
 /**
  * Parses a markdown document into its frontmatter string, body string,

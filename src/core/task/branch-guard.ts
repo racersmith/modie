@@ -17,18 +17,19 @@ import {
   inspectGitDeletedArtifacts,
 } from "../resolver/artifact-history.ts";
 import { scanActiveTasks } from "../resolver/active-scanner.ts";
-import { normalizeTaskId, parseArtifactFilename } from "../common/index.ts";
-import type { DiscoveredArtifact } from "../common/types.ts";
-import { parseTaskMarkdown } from "./parser.ts";
+import {
+  normalizeTaskId,
+  parseArtifactFilename,
+  parseTaskMarkdown,
+  type ArtifactCollision,
+  type DiscoveredArtifact,
+  type TaskBranchTopology,
+} from "../domain/index.ts";
 import {
   ActiveSubtaskPendingError,
   ArtifactCollisionError,
   TaskIncompleteError,
 } from "./errors.ts";
-import type {
-  ArtifactCollision,
-  TaskBranchTopology,
-} from "./types.ts";
 
 /**
  * Searches for an active task file on disk matching taskIdentifier or canonical taskId.

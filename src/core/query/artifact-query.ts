@@ -5,15 +5,16 @@
 
 import { readFile, stat } from "node:fs/promises";
 import { dirname, isAbsolute, resolve } from "node:path";
-import { resolveGoverningScope } from "../common/directories.ts";
-import { parseArtifactFilename } from "../common/filename.ts";
 import {
+  parseArtifactFilename,
+  parseCanonicalTag,
   parseTaskBranch,
+  resolveGoverningScope,
   slugToTitle,
   toPosixRelative,
-} from "../common/index.ts";
-import type { IndexableSubtype } from "../common/types.ts";
-import { parseCanonicalTag } from "../common/index.ts";
+  type IndexableSubtype,
+  type TaskAcceptanceCriteriaItem,
+} from "../domain/index.ts";
 import { buildArtifactParseContext } from "../markdown/index.ts";
 import { resolveWorkspaceContext } from "../context/resolver.ts";
 import { scanActiveArtifacts } from "../resolver/active-scanner.ts";
@@ -22,7 +23,6 @@ import {
   inspectGitDeletedArtifacts,
   inspectMultiBranchActiveArtifacts,
 } from "../resolver/artifact-history.ts";
-import type { TaskAcceptanceCriteriaItem } from "../task/types.ts";
 import type {
   ArtifactDetails,
   ResolveArtifactOptions,

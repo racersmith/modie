@@ -5,14 +5,19 @@
  * Complies with ADR-1, ADR-2, ADR-3, RULE-1, RULE-3, RULE-8, RULE-11, RULE-13, RULE-16, and RULE-25.
  */
 
-import { resolveArtifactDirectories } from "../common/index.ts";
+import {
+  resolveArtifactDirectories,
+  ruleDefinition,
+  type CreateRuleOptions,
+  type CreateRuleResult,
+  type RuleDefinition,
+} from "../domain/index.ts";
 import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
 import { validateLinkTarget } from "../linking/validator.ts";
 import { createArtifact } from "../pipeline/create.ts";
-import { ruleDefinition } from "./definition.ts";
-import type { CreateRuleOptions, CreateRuleResult } from "./types.ts";
 
-export type { CreateRuleOptions, CreateRuleResult } from "./types.ts";
+export type { CreateRuleOptions, CreateRuleResult, RuleDefinition } from "../domain/index.ts";
+export { ruleDefinition } from "../domain/index.ts";
 
 /**
  * Validates frontmatter links per RULE-13 and ancestor justification per RULE-16.

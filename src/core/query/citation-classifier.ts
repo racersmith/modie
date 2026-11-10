@@ -5,8 +5,7 @@
 
 import { readFile } from "node:fs/promises";
 import { basename, extname, isAbsolute, resolve } from "node:path";
-import { escapeRegex } from "../common/index.ts";
-import { parseArtifactFilename } from "../common/filename.ts";
+import { escapeRegex, parseArtifactFilename } from "../domain/index.ts";
 import {
   parseFrontmatterFields,
   parseFrontmatterLineMap,

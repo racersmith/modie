@@ -4,14 +4,19 @@
  * Complies with ADR-4, ADR-6, RULE-1, RULE-6, RULE-8, RULE-12, RULE-15, RULE-18, RULE-22, and RULE-25.
  */
 
-import { resolveArtifactDirectories } from "../common/index.ts";
+import {
+  resolveArtifactDirectories,
+  taskDefinition,
+  validateTaskScope,
+  type CreateTaskOptions,
+  type CreateTaskResult,
+  type TaskDefinition,
+} from "../domain/index.ts";
 import { resolveWorkspaceContext, type WorkspaceContext } from "../context.ts";
 import { createArtifact } from "../pipeline/create.ts";
-import { taskDefinition, validateTaskScope } from "./definition.ts";
-import type { CreateTaskOptions, CreateTaskResult } from "./types.ts";
 
-export type { CreateTaskOptions, CreateTaskResult } from "./types.ts";
-export { validateTaskScope } from "./definition.ts";
+export type { CreateTaskOptions, CreateTaskResult, TaskDefinition } from "../domain/index.ts";
+export { taskDefinition, validateTaskScope } from "../domain/index.ts";
 
 /**
  * Normalizes scope directory and target directory per RULE-8.
