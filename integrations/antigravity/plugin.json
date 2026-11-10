@@ -1,4 +1,6 @@
 {
   "name": "modie",
+  "version": "0.0.1",
   "description": "Distributed document driven development system"
 }
+

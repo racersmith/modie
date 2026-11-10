@@ -41,7 +41,6 @@ export function registerAllResources(
   options: RegisterResourcesOptions = {},
 ) {
   const ctx = resolveWorkspaceContext(options.workspace ?? options.cwd);
-  const cwd = ctx.root;
   const instructions = options.instructions;
 
   // 1. Dynamic Active Task Brief (modie://task)
@@ -62,10 +61,10 @@ export function registerAllResources(
       if (taskId) {
         try {
           const status = await getTaskStatus(taskId, {
-            cwd,
+            cwd: ctx.root,
             workspace: ctx,
           });
-          text = await renderTaskMissionBrief(status, branch, cwd);
+          text = await renderTaskMissionBrief(status, branch, ctx.root);
         } catch {
           text = `# Mission Brief: Unknown Task (${taskId})\n\nUnable to load status for task \`${taskId}\` on branch \`${branch}\`.`;
         }
@@ -97,7 +96,7 @@ export function registerAllResources(
     },
     async (uri) => {
       const allTasks = await queryTaskQueue({
-        cwd,
+        cwd: ctx.root,
         workspace: ctx,
         readyOnly: false,
       });
@@ -127,7 +126,7 @@ export function registerAllResources(
     },
     async (uri) => {
       const allTasks = await queryTaskQueue({
-        cwd,
+        cwd: ctx.root,
         workspace: ctx,
         readyOnly: false,
       });

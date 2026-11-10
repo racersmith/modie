@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "modie": {
+      "command": "node",
+      "args": [
+        "../../dist/bin/mcp.js"
+      ]
+    }
+  }
+}
+

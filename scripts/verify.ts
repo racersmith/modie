@@ -12,6 +12,10 @@ const CHECKS = {
     name: "Circular",
     cmd: "bunx dpdm --no-warning --no-tree --exit-code circular:1 ./src/",
   },
+  plugin: {
+    name: "Plugin",
+    cmd: "bun ./scripts/validate-plugin.ts",
+  },
   duplication: {
     name: "Duplication",
     cmd: "bun run check:duplication",
