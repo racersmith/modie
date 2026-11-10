@@ -3,11 +3,9 @@
  * Complies with RULE-1, ADR-1, ADR-2, ADR-6, and ADR-9.
  */
 
-import type { DiscoveredArtifact, IndexableSubtype } from "../../domain/index.ts";
+import type { IndexableSubtype } from "../../domain/index.ts";
 import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter } from "../../platform/vcs/types.ts";
-
-export type { DiscoveredArtifact, IndexableSubtype };
 
 export interface DiscoveredTask {
   id: string;
@@ -16,9 +14,6 @@ export interface DiscoveredTask {
   filepath: string;
   status: "active" | "deleted";
 }
-
-export type { AllocationStrategy, WatermarkDetails } from "../../domain/types.ts";
-import type { AllocationStrategy, WatermarkDetails } from "../../domain/types.ts";
 
 export interface WatermarkResolutionOptions {
   /**

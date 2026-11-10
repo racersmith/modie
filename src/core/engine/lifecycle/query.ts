@@ -18,6 +18,7 @@ import {
   taskKey,
   type TaskAcceptanceCriteriaItem,
   type TaskReadiness,
+  type DiscoveredArtifact,
 } from "../../domain/index.ts";
 import { scanActiveTasks } from "../traversal/active-scanner.ts";
 import { detectGitBranch, listGitBranches } from "../traversal/git-inspector.ts";
@@ -25,7 +26,7 @@ import {
   inspectGitDeletedArtifacts,
   inspectMultiBranchActiveArtifacts,
 } from "../traversal/artifact-history.ts";
-import type { DiscoveredArtifact, DiscoveredTask } from "../traversal/types.ts";
+import type { DiscoveredTask } from "../traversal/types.ts";
 import { resolveWorkspaceContext } from "../context/resolver.ts";
 import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter } from "../../platform/vcs/types.ts";

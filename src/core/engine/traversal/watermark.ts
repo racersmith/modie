@@ -11,14 +11,15 @@ import {
 } from "./artifact-history.ts";
 import { resolveWorkspaceContext } from "../context/resolver.ts";
 import type { WorkspaceContext } from "../context/types.ts";
-import type {
-  AllocationStrategy,
-  IndexableSubtype,
-  WatermarkDetails,
-  WatermarkResolutionOptions,
-} from "./types.ts";
+import type { WatermarkResolutionOptions } from "./types.ts";
 import type { IVcsAdapter } from "../../platform/vcs/types.ts";
-import { escapeRegex, parseTaskBranch } from "../../domain/index.ts";
+import {
+  escapeRegex,
+  parseTaskBranch,
+  type AllocationStrategy,
+  type IndexableSubtype,
+  type WatermarkDetails,
+} from "../../domain/index.ts";
 
 export interface SequenceAllocationOptions {
   match: RegExp;

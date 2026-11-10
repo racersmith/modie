@@ -8,7 +8,7 @@ import { describe, expect, it } from "bun:test";
 import { findArtifactReferences } from "../query/references.ts";
 import { createFixtureWorkspace, makeTestTag } from "../../platform/testing/index.ts";
 import { archiveRule } from "../archival/index.ts";
-import { createRule } from "./creation.ts";
+import { createRule } from "./index.ts";
 
 describe("Core Rule Creation - Supersession & Bidirectional Frontmatter (RULE-3, RULE-4, RULE-13, RULE-31, RULE-34)", () => {
   // @verifies RULE-3, RULE-4, RULE-13, RULE-31, RULE-34

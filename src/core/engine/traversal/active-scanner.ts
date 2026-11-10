@@ -9,14 +9,12 @@ import { join } from "node:path";
 import {
   parseArtifactFilename,
   type DefinitionRegistry,
+  type DiscoveredArtifact,
+  type IndexableSubtype,
 } from "../../domain/index.ts";
 import { resolveWorkspaceContext } from "../context/resolver.ts";
 import type { WorkspaceContext } from "../context/types.ts";
-import type {
-  DiscoveredArtifact,
-  DiscoveredTask,
-  IndexableSubtype,
-} from "./types.ts";
+import type { DiscoveredTask } from "./types.ts";
 
 const IGNORED_DIRECTORIES = new Set([
   ".git",

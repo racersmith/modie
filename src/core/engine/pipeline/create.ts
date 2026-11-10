@@ -30,7 +30,7 @@ import {
   resolveNextArtifactId,
   resolveWatermark,
 } from "../traversal/watermark.ts";
-import { assertNotZombieTask } from "../task/completion.ts";
+import { assertNotZombieTask } from "../lifecycle/completion.ts";
 import { validateLinkTarget } from "../linking/validator.ts";
 import { updateSupersededArtifactFrontmatter } from "./supersession.ts";
 

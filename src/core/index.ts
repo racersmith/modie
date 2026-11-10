@@ -3,15 +3,6 @@
  * Public API exposed to interfaces (RULE-25).
  */
 
-// Explicit re-exports to resolve ambiguity between domain and engine facades
-export { validateTaskScope } from "./domain/index.ts";
-export type {
-  DefinitionRegistry,
-  DiscoveredArtifact,
-  IndexableSubtype,
-  WatermarkDetails,
-} from "./domain/index.ts";
-
 // Domain layer (ADR-13, RULE-38)
 export * from "./domain/index.ts";
 
