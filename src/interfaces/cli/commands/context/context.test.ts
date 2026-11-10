@@ -1,6 +1,6 @@
 /**
  * CLI integration tests for `modie context`.
- * Verifies RULE-2, RULE-6, RULE-8, RULE-9, RULE-20, RULE-25, RULE-26, RULE-27, RULE-34, RULE-35, ADR-8, and ADR-10.
+ * Verifies RULE-2, RULE-6, RULE-8, RULE-9, RULE-25, RULE-26, RULE-27, RULE-34, RULE-35, ADR-8, and ADR-10.
  */
 
 import { describe, expect, it } from "bun:test";
@@ -10,7 +10,7 @@ import {
   makeTestTag,
 } from "../../test-utils.ts";
 
-describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-20, RULE-25, RULE-26, RULE-27, RULE-34, ADR-8)", () => {
+describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-25, RULE-26, RULE-27, RULE-34, ADR-8)", () => {
   // @verifies RULE-27
   it("[RULE-27] should emit context command help to stderr with exit code 0", async () => {
     const { exitCode, stdout, stderr } = await captureCli([
@@ -26,8 +26,8 @@ describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-20, RULE-25, 
     expect(stderr).toContain("--json");
   });
 
-  // @verifies RULE-2, RULE-9, RULE-20, RULE-25, RULE-26, RULE-27, RULE-34, RULE-35, ADR-8
-  it("[RULE-2][RULE-9][RULE-20][RULE-25][RULE-26][RULE-27][RULE-34][RULE-35][ADR-8] should support default stderr summary, --raw markdown on stdout, and --json payload on stdout", async () => {
+  // @verifies RULE-2, RULE-9, RULE-25, RULE-26, RULE-27, RULE-34, RULE-35, ADR-8
+  it("[RULE-2][RULE-9][RULE-25][RULE-26][RULE-27][RULE-34][RULE-35][ADR-8] should support default stderr summary, --raw markdown on stdout, and --json payload on stdout", async () => {
     const workspace = await createTestWorkspace("modie-cli-context-");
     const ruleTag = makeTestTag("RULE", 1);
     const adrTag = makeTestTag("ADR", 1);
@@ -54,13 +54,9 @@ describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-20, RULE-25, 
         body: "Traverse upward from target scope to root.",
         links: [adrTag],
       });
-      await workspace.createGist({
-        scopeDir: "src/core",
-        content: "Core domain directory summary.",
-      });
-      await workspace.createGist({
-        scopeDir: "src/core/gist",
-        content: "Child GIST signpost summary.",
+      await workspace.createMotive({
+        scopeDir: "src/core/child",
+        content: "Child directory motive summary.",
       });
       await workspace.createTask({
         id: 1,
@@ -83,8 +79,7 @@ describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-20, RULE-25, 
       expect(humanRes.stderr).toContain(
         "Deliver concise ADR summaries in context compilation.",
       );
-      expect(humanRes.stderr).toContain("Core domain directory summary.");
-      expect(humanRes.stderr).toContain("src/core/gist");
+      expect(humanRes.stderr).toContain("src/core/child");
 
       // 2. --raw mode: emits synthesized Markdown document to stdout, stderr is empty (RULE-27)
       const rawRes = await workspace.captureCli(["context", taskTag, "--raw"]);
@@ -98,8 +93,7 @@ describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-20, RULE-25, 
       expect(rawRes.stdout).toContain(
         "## Architectural Decisions (ADR Summaries)",
       );
-      expect(rawRes.stdout).toContain("## Local GISTs (`src/core`)");
-      expect(rawRes.stdout).toContain("## Child Signposts");
+      expect(rawRes.stdout).toContain("## Child Motives");
 
       // 3. --json mode: emits structured JSON to stdout, stderr is empty (RULE-26, RULE-27)
       const jsonRes = await workspace.captureCli([
@@ -120,11 +114,8 @@ describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-20, RULE-25, 
       expect(parsed.adrs[0].summary).toBe(
         "Deliver concise ADR summaries in context compilation.",
       );
-      expect(parsed.gists.directoryGist.content).toBe(
-        "Core domain directory summary.",
-      );
-      expect(parsed.signposts).toHaveLength(1);
-      expect(parsed.signposts[0].childScope).toBe("src/core/gist");
+      expect(parsed.childMotives).toHaveLength(1);
+      expect(parsed.childMotives[0].childScope).toBe("src/core/child");
     } finally {
       await workspace.cleanup();
     }

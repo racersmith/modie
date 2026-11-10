@@ -113,24 +113,27 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
       "create_adr",
       "create_rule",
       "create_task",
+      "directory_context",
       "link_artifacts",
-      "ls_better",
       "read_artifact",
       "start_task",
       "task_context",
     ]);
 
-    // Ensure deprecated consolidated mega-tools are not registered
+    // Ensure deprecated consolidated mega-tools and retired tools are not registered
+    expect(toolNames).not.toContain("ls_better");
     expect(toolNames).not.toContain("modie_compile_context");
     expect(toolNames).not.toContain("modie_task_lifecycle");
     expect(toolNames).not.toContain("modie_create_artifact");
     expect(toolNames).not.toContain("modie_mutate_governance");
 
     // Verify behavioral annotations & output schemas
-    const lsTool = response.tools.find((t) => t.name === "ls_better")!;
-    expect(lsTool.annotations?.readOnlyHint).toBe(true);
-    expect(lsTool.annotations?.idempotentHint).toBe(true);
-    expect(lsTool.annotations?.destructiveHint).toBe(false);
+    const dirContextTool = response.tools.find(
+      (t) => t.name === "directory_context",
+    )!;
+    expect(dirContextTool.annotations?.readOnlyHint).toBe(true);
+    expect(dirContextTool.annotations?.idempotentHint).toBe(true);
+    expect(dirContextTool.annotations?.destructiveHint).toBe(false);
 
     const readTool = response.tools.find((t) => t.name === "read_artifact")!;
     expect(readTool.annotations?.readOnlyHint).toBe(true);
@@ -192,33 +195,47 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
 
   describe("Cluster 1: Spatial & Artifact Exploration Tools", () => {
     // @verifies RULE-26
-    it("ls_better should return clean plaintext tab-separated listing with Unix ls -F conventions", async () => {
-      // Create a real file and directory in workspace
-      await workspace.writeFile("sample.ts", "export const x = 1;\n");
-      await workspace.mkdir("src");
-
-      // Create a file GIST for sample.ts
-      await workspace.createGist({
-        filename: "sample.ts",
-        content: "Sample TypeScript module utility functions.",
+    it("directory_context should return token-conscious architectural context in summary and detailed modes", async () => {
+      // Create root motive and child motive
+      await workspace.createMotive({
+        content: "Root workspace intent and system purpose.",
+      });
+      await workspace.createMotive({
+        scopeDir: "src",
+        content: "Source modules and services.",
       });
 
-      const res = await client.callTool({
-        name: "ls_better",
+      // 1. Summary mode (default)
+      const summaryRes = await client.callTool({
+        name: "directory_context",
         arguments: { path: "." },
       });
 
-      expect(res.isError).toBeFalsy();
-      const text = getTextContent(res);
-      expect(typeof text).toBe("string");
-      expect(text.startsWith(".:")).toBe(true);
+      expect(summaryRes.isError).toBeFalsy();
+      const summaryText = getTextContent(summaryRes);
+      expect(typeof summaryText).toBe("string");
+      expect(summaryText).toContain("# Directory Context: .");
+      expect(summaryText).toContain("- **Scope**: `.`");
+      expect(summaryText).toContain("## Motive (`.`)");
+      expect(summaryText).toContain("Root workspace intent and system purpose.");
+      expect(summaryText).toContain("## Governing Rules");
+      expect(summaryText).toContain("## Child Directory Motives");
+      expect(summaryText).toContain("src/");
 
-      // Trailing slash on directories
-      expect(text).toContain("src/\t");
-      // File with gist summary
-      expect(text).toContain(
-        "sample.ts\tSample TypeScript module utility functions.",
-      );
+      // 2. Detailed mode
+      const detailedRes = await client.callTool({
+        name: "directory_context",
+        arguments: { path: ".", mode: "detailed" },
+      });
+
+      expect(detailedRes.isError).toBeFalsy();
+      const detailedText = getTextContent(detailedRes);
+      expect(detailedText).toContain("# Directory Context: .");
+      expect(detailedText).toContain("## Upward Motives");
+      expect(detailedText).toContain("## Governing Rules");
+      expect(detailedText).toContain("## Architectural Decisions");
+      expect(detailedText).toContain("## Child Directory Motives");
+      expect(detailedText).toContain("Source modules and services.");
     });
 
     // @verifies RULE-26, RULE-36

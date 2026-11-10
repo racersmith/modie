@@ -1,6 +1,6 @@
 /**
  * Unit and integration tests for Unified Architectural Context Compilation.
- * Verifies RULE-2, RULE-6, RULE-8, RULE-9, RULE-12, RULE-20, RULE-25, RULE-26, RULE-34, RULE-35, ADR-4, ADR-8, and ADR-10.
+ * Verifies RULE-2, RULE-6, RULE-8, RULE-9, RULE-12, RULE-25, RULE-26, RULE-34, RULE-35, ADR-4, ADR-8, and ADR-10.
  */
 
 import { describe, expect, it } from "bun:test";
@@ -16,9 +16,9 @@ import {
   makeTestTag,
 } from "../../platform/testing/fixture-workspace.ts";
 
-describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE-12, RULE-20, ADR-4, ADR-8, ADR-10)", () => {
-  // @verifies RULE-2, RULE-9, RULE-12, RULE-20, ADR-4, ADR-8, ADR-10, RULE-34, RULE-35
-  it("[RULE-2][RULE-9][RULE-12][RULE-20][ADR-4][ADR-8][ADR-10][RULE-34][RULE-35] should compile context across root, intermediate, and leaf scopes without sibling or ancestor GIST pollution", async () => {
+describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE-12, ADR-4, ADR-8, ADR-10)", () => {
+  // @verifies RULE-2, RULE-9, RULE-12, ADR-4, ADR-8, ADR-10, RULE-34, RULE-35
+  it("[RULE-2][RULE-9][RULE-12][ADR-4][ADR-8][ADR-10][RULE-34][RULE-35] should compile context across root, intermediate, and leaf scopes without sibling pollution and discover child motives", async () => {
     await using workspace = await createFixtureWorkspace(
       "modie-context-hierarchy-",
     );
@@ -31,17 +31,21 @@ describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE
     const coreAdrTag = makeTestTag("ADR", 2);
     const siblingAdrTag = makeTestTag("ADR", 3);
 
-    // 1. Motives at root (.), intermediate (src/core), leaf (src/core/gist), and sibling (src/interfaces)
+    // 1. Motives at root (.), src, intermediate (src/core), leaf (src/core/motive), and sibling (src/interfaces)
     await workspace.createMotive({
       content: "Root workspace purpose and trajectory.",
+    });
+    await workspace.createMotive({
+      scopeDir: "src",
+      content: "Source root directory purpose.",
     });
     await workspace.createMotive({
       scopeDir: "src/core",
       content: "Core domain evaluation engine purpose.",
     });
     await workspace.createMotive({
-      scopeDir: "src/core/gist",
-      content: "Leaf GIST discovery and signpost purpose.",
+      scopeDir: "src/core/motive",
+      content: "Leaf motive reader and discovery purpose.",
     });
     await workspace.createMotive({
       scopeDir: "src/interfaces",
@@ -58,11 +62,11 @@ describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE
     });
     await workspace.createAdr({
       id: 2,
-      slug: "core-signpost-decision",
+      slug: "core-motive-decision",
       scopeDir: "src/core",
-      summary: "Use shallow child GIST signposts for progressive disclosure.",
+      summary: "Use shallow child motives for progressive disclosure.",
       context: "Detailed core ADR context.",
-      decision: "Discover 1-level child signposts.",
+      decision: "Discover 1-level child motives.",
     });
     await workspace.createAdr({
       id: 3,
@@ -87,9 +91,9 @@ describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE
     });
     await workspace.createRule({
       id: 3,
-      slug: "gist-naming-invariant",
-      scopeDir: "src/core/gist",
-      body: "File GISTs must use <filename>.GIST.md suffix.",
+      slug: "leaf-naming-invariant",
+      scopeDir: "src/core/motive",
+      body: "Motive reader must ignore dot directories.",
     });
     await workspace.createRule({
       id: 4,
@@ -97,41 +101,6 @@ describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE
       scopeDir: "src/interfaces",
       body: "CLI must separate stdout and stderr.",
       links: [siblingAdrTag],
-    });
-
-    // 4. GISTs at root, intermediate (src/core), leaf (src/core/gist), and sibling (src/interfaces)
-    await workspace.createGist({
-      content: "Root workspace directory summary.",
-    });
-    await workspace.createGist({
-      scopeDir: "src",
-      content: "Source root directory summary.",
-    });
-    await workspace.createGist({
-      scopeDir: "src/core",
-      content: "Core domain services summary.",
-    });
-    await workspace.createGist({
-      scopeDir: "src/core",
-      filename: "index.ts",
-      content: "Public core barrel exports.",
-    });
-    await workspace.createGist({
-      scopeDir: "src/core/gist",
-      content: "GIST reader and signpost discovery module.",
-    });
-    await workspace.createGist({
-      scopeDir: "src/core/gist",
-      filename: "reader.ts",
-      content: "Reads directory/file GISTs and discovers child signposts.",
-    });
-    await workspace.createGist({
-      scopeDir: "src/core/motive",
-      content: "Motive creation and upward ancestry reader module.",
-    });
-    await workspace.createGist({
-      scopeDir: "src/interfaces",
-      content: "CLI and MCP transport interfaces.",
     });
 
     // --- A. Verify ROOT scope (.) ---
@@ -145,51 +114,44 @@ describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE
     expect(rootCtx.adrs[0]?.summary).toBe(
       "Encapsulate all governance metadata inside .modie containers.",
     );
-    expect(rootCtx.gists.directoryGist?.content).toBe(
-      "Root workspace directory summary.",
-    );
-    expect(rootCtx.gists.fileGists).toEqual([]);
-    // Immediate child of "." is "src" (which has src/.modie/gists/GIST.md)
-    expect(rootCtx.signposts.map((s) => s.childScope)).toEqual(["src"]);
+    // Immediate child of "." is "src" (which has src/.modie/MOTIVE.md)
+    expect(rootCtx.childMotives.map((s) => s.childScope)).toEqual(["src"]);
 
     // --- B. Verify INTERMEDIATE scope (src/core) ---
     const coreCtx = await compileContext("src/core", { cwd: workspace.cwd });
     expect(coreCtx.scope).toBe("src/core");
     expect(coreCtx.ancestralScopes).toEqual([".", "src", "src/core"]);
-    // Upward motives: src/core -> . (no motive in src, sibling src/interfaces excluded)
-    expect(coreCtx.motives.map((m) => m.scope)).toEqual(["src/core", "."]);
+    // Upward motives: src/core -> src -> . (sibling src/interfaces excluded)
+    expect(coreCtx.motives.map((m) => m.scope)).toEqual([
+      "src/core",
+      "src",
+      ".",
+    ]);
     expect(coreCtx.rules.map((r) => r.tag)).toEqual([rootRuleTag, coreRuleTag]);
     expect(coreCtx.rules[1]?.body).toBe(
       "Core services must not import interface adapters.",
     );
     expect(coreCtx.adrs.map((a) => a.tag)).toEqual([rootAdrTag, coreAdrTag]);
-    // Local GISTs strictly at src/core (never root or src GISTs per RULE-9)
-    expect(coreCtx.gists.directoryGist?.content).toBe(
-      "Core domain services summary.",
-    );
-    expect(coreCtx.gists.fileGists.map((f) => f.sourceFilename)).toEqual([
-      "index.ts",
-    ]);
-    // Shallow downward signposts for immediate children of src/core
-    expect(coreCtx.signposts.map((s) => s.childScope)).toEqual([
-      "src/core/gist",
+    // Shallow downward child motives for immediate children of src/core
+    expect(coreCtx.childMotives.map((s) => s.childScope)).toEqual([
       "src/core/motive",
     ]);
 
-    // --- C. Verify LEAF scope (src/core/gist) ---
-    const leafCtx = await compileContext("src/core/gist", {
+    // --- C. Verify LEAF scope (src/core/motive) ---
+    const leafCtx = await compileContext("src/core/motive", {
       cwd: workspace.cwd,
     });
-    expect(leafCtx.scope).toBe("src/core/gist");
+    expect(leafCtx.scope).toBe("src/core/motive");
     expect(leafCtx.ancestralScopes).toEqual([
       ".",
       "src",
       "src/core",
-      "src/core/gist",
+      "src/core/motive",
     ]);
     expect(leafCtx.motives.map((m) => m.scope)).toEqual([
-      "src/core/gist",
+      "src/core/motive",
       "src/core",
+      "src",
       ".",
     ]);
     expect(leafCtx.rules.map((r) => r.tag)).toEqual([
@@ -200,14 +162,7 @@ describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE
     expect(leafCtx.rules.map((r) => r.tag)).not.toContain(siblingRuleTag);
     expect(leafCtx.adrs.map((a) => a.tag)).toEqual([rootAdrTag, coreAdrTag]);
     expect(leafCtx.adrs.map((a) => a.tag)).not.toContain(siblingAdrTag);
-    // Local GISTs strictly at src/core/gist (ancestor src/core index.ts GIST is omitted per RULE-9)
-    expect(leafCtx.gists.directoryGist?.content).toBe(
-      "GIST reader and signpost discovery module.",
-    );
-    expect(leafCtx.gists.fileGists.map((f) => f.sourceFilename)).toEqual([
-      "reader.ts",
-    ]);
-    expect(leafCtx.signposts).toEqual([]);
+    expect(leafCtx.childMotives).toEqual([]);
   });
 
   // @verifies RULE-6, RULE-8, RULE-9, RULE-22, ADR-8, RULE-34, RULE-35
@@ -259,7 +214,7 @@ describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE
       ],
     });
 
-    await workspace.createGist({
+    await workspace.createMotive({
       scopeDir: "src/interfaces/cli",
       content: "CLI command dispatcher and subcommands.",
     });
@@ -284,20 +239,21 @@ describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE
     );
     expect(ctx.task?.blastRadius.constraint).toContain("src/interfaces");
 
-    // Verify surrounding scope governance and child signposts are compiled for the task's scope
+    // Verify surrounding scope governance and child motives are compiled for the task's scope
     expect(ctx.motives.map((m) => m.scope)).toEqual(["src/interfaces"]);
     expect(ctx.rules.map((r) => r.tag)).toEqual([ruleTag]);
     expect(ctx.adrs.map((a) => a.tag)).toEqual([adrTag]);
-    expect(ctx.signposts.map((s) => s.childScope)).toEqual([
+    expect(ctx.childMotives.map((s) => s.childScope)).toEqual([
       "src/interfaces/cli",
     ]);
 
-    // Verify markdown rendering includes task, motives, rules, ADR summaries, and signposts
+    // Verify markdown rendering includes task, motives, rules, ADR summaries, and child motives
     const markdown = formatCompiledContextMarkdown(ctx);
     expect(markdown).toContain(`# Architectural Context: ${targetTaskTag}`);
     expect(markdown).toContain("## Task Specification");
     expect(markdown).toContain("- [x] Implement CLI command");
     expect(markdown).toContain("- [ ] Register MCP tool");
+    expect(markdown).toContain("## Child Motives");
     expect(markdown).toContain(
       "Project declarative command schemas into CLI and MCP tools.",
     );

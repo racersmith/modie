@@ -29,12 +29,10 @@ src/
 │   ├── MOTIVE.md                  ← why this whole codebase exists
 │   ├── adrs/                      ← decisions made, and what was rejected
 │   ├── rules/                     ← laws that apply everywhere under src/
-│   ├── gists/                     ← concise summaries of this folder & files
 │   └── tasks/                     ← active ephemeral tasks scoped here
 ├── core/
 │   └── .modie/
-│       ├── MOTIVE.md              ← what "core" is for
-│       └── gists/                 ← summaries of core modules
+│       └── MOTIVE.md              ← what "core" is for
 └── interfaces/
     ├── .modie/rules/              ← "interfaces never reach into core internals"
     └── mcp/
@@ -52,15 +50,14 @@ This gives you:
 
 ## What goes in a `.modie/`
 
-Five kinds of artifact, each with a distinct job. If you're unsure which one something is, ask the question:
+Four kinds of artifact, each with a distinct job. If you're unsure which one something is, ask the question:
 
-| Question                                                       | Artifact                               | Lifetime                                                          |
-| :------------------------------------------------------------- | :------------------------------------- | :---------------------------------------------------------------- |
-| _Why does this part of the code exist and where is it headed?_ | **MOTIVE**                             | Permanent, rarely edited                                          |
-| _Why did we choose X over Y?_                                  | **ADR** (Architecture Decision Record) | Immutable point-in-time record; superseded, never rewritten       |
-| _What must always be true here?_                               | **RULE**                               | Long-lived, one falsifiable statement each                        |
-| _How does this currently work, in a sentence or two?_          | **GIST**                               | Concise folder/file summary with Git blob hash freshness tracking |
-| _What am I doing right now?_                                   | **TASK**                               | Ephemeral, deleted when done                                      |
+| Question                                                       | Artifact                               | Lifetime                                                    |
+| :------------------------------------------------------------- | :------------------------------------- | :---------------------------------------------------------- |
+| _Why does this part of the code exist and where is it headed?_ | **MOTIVE**                             | Permanent, rarely edited                                    |
+| _Why did we choose X over Y?_                                  | **ADR** (Architecture Decision Record) | Immutable point-in-time record; superseded, never rewritten |
+| _What must always be true here?_                               | **RULE**                               | Long-lived, one falsifiable statement each                  |
+| _What am I doing right now?_                                   | **TASK**                               | Ephemeral, deleted when done                                |
 
 Artifacts are plain Markdown files whose names carry their identity, e.g. `least-scope-placement.RULE-12.md`. IDs are allocated for you (never by hand), including across parallel branches.
 
@@ -91,7 +88,7 @@ ADRs record immutable architectural choices. Each ADR includes a concise 1–2 s
 
 ```yaml
 ---
-summary: Encapsulate all governance, intent, and GIST artifacts within a single unified .modie container directory.
+summary: Encapsulate all governance and intent artifacts within a single unified .modie container directory.
 links:
   - ADR-4
   - RULE-8
@@ -99,14 +96,6 @@ links:
 ```
 
 When compiling context or listing decisions, Modie surfaces these summaries as signposts, disclosing full decision contexts on demand without overloading agent context windows. When a decision changes, the previous ADR is superseded via bidirectional frontmatter (`supersedes` / `superseded_by`), preserving historical rationale.
-
-### GISTs provide fast, verified code summaries
-
-GISTs are compact natural-language summaries living in `.modie/gists/`:
-
-- **Directory GIST (`GIST.md`)**: A concise summary of what lives in the directory.
-- **File GIST (`<filename>.GIST.md`)**: A 1–2 sentence implementation proxy for an individual source file.
-- **Freshness Ledger (`.gists`)**: A semantic ledger that tracks Git blob hashes for each summarized file. Modie verifies whether code has drifted from its gist with zero-read hash checks.
 
 ---
 
@@ -130,7 +119,7 @@ A compiled context bundle contains:
 1. **Upward Motives**: The hierarchy of intent from the repository root down to the target scope.
 2. **Active Governing Rules**: Every rule in the ancestral tree that applies to this code.
 3. **Progressive ADR Summaries**: 1-sentence summaries of decisions made in this scope.
-4. **Local GISTs & Downward Signposts**: Summaries of local files and shallow child directories that can be explored on demand.
+4. **Child Motives**: Immediate child directory `MOTIVE.md` files that can be explored on demand.
 5. **Task Specification**: Context, acceptance criteria, and declared blast radius when scoped to a task.
 
 ---
@@ -184,12 +173,11 @@ Or run via npx:
 
 Working today:
 
-- [x] **Unified context compiler**: compile ancestral MOTIVEs, active RULEs, ADR summaries, task specs, GISTs, and child signposts (`modie context`, `context` MCP tool)
+- [x] **Unified context compiler**: compile ancestral MOTIVEs, active RULEs, ADR summaries, task specs, and child motives (`modie context`, `directory_context` MCP tool)
 - [x] **Artifact creation, lookup, supersession, and archiving**: MOTIVE, ADR, RULE, and TASK
 - [x] **Complete task lifecycle**: branch creation, acceptance criteria tracking, automatic User Review gates, two-phase completion, guarded merge, and DAG readiness
 - [x] **Front-loaded planned governance**: declare planned RULEs/ADRs on tasks upfront, enforced prior to task completion
 - [x] **Progressive disclosure**: ADR summary frontmatter and token-lean payload sanitization (RULE-26)
-- [x] **GIST discovery and freshness model**: directory-level summaries, file-level implementation proxies, and `.gists` Git blob hash tracking
 - [x] **Governance and task querying**: `rule list` and `adr list` with ancestral scope filtering, plus DAG-aware `task list` (`backlog`) and `task status`
 - [x] **Declarative frontmatter linking**: bidirectional `link` and `unlink` with graph topology, ancestry, and dependency validation
 - [x] **Collision-free ID allocation**: deterministic watermark resolution across parallel git branches
@@ -200,7 +188,6 @@ Working today:
 Planned / Roadmap:
 
 - [ ] **Architecture linter**: automated verification that all rules have active test citations, links stay valid, and scope boundaries aren't bypassed
-- [ ] **Automated GIST generation & sync**: CLI command and MCP tool to scaffold and re-hash GIST proxies as code evolves
 - [ ] **Interactive IDE integrations**: clickable artifact cross-references and diagnostics in VS Code / Antigravity
 
 Modie is its own first user. This repo's [`.modie/`](src/.modie) folders are a live example of everything above, and its [`MOTIVE.md`](MOTIVE.md) states the goal: prove the ergonomics, token efficiency, and safety of folder-scoped governance by using it.
@@ -269,7 +256,7 @@ modie mcp                           # run MCP server over stdio
 
 | Tool                                         | Purpose                                                                                  |
 | :------------------------------------------- | :--------------------------------------------------------------------------------------- |
-| `context`                                    | Compile unified architectural context (motives, rules, ADR summaries, GISTs, task)       |
+| `directory_context`                          | On-demand architectural context for a directory scope (summary or detailed mode)         |
 | `task_list` / `task_status`                  | List active tasks with DAG readiness, or inspect deep task details                       |
 | `task_create` / `task_start` / `task_check`  | Create tasks, check out task branches, and tick off acceptance criteria items            |
 | `task_complete` / `task_merge`               | Complete tasks via two-phase commit ceremony, delete task files, and merge back to trunk |

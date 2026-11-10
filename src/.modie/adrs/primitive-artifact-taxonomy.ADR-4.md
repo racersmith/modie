@@ -1,5 +1,5 @@
 ---
-summary: Define five distinct primitive artifact subtypes (MOTIVE, RULE, ADR, GIST, TASK) governed by least-scope placement to minimize upward context bloat and blast radius.
+summary: Define four distinct primitive artifact subtypes (MOTIVE, RULE, ADR, TASK) governed by least-scope placement to minimize upward context bloat and blast radius.
 links:
   - ADR-2
   - RULE-1
@@ -21,13 +21,12 @@ Architectural governance and agentic context compilation require distinct catego
 
 # Decision
 
-We adopt a taxonomy of five distinct core primitive artifact types:
+We adopt a taxonomy of four distinct core primitive artifact types:
 
 1. **`MOTIVE`**: Composable, slowest to change, expressing directory-level purpose and trajectory without referencing other documents.
 2. **`RULE`**: Atomic, falsifiable, implementation-agnostic invariants with ancestry-based influence.
 3. **`ADR`**: Immutable, point-in-time decision records capturing trade-offs, rationale, and supersession links.
-4. **`GIST`**: Ultra-concise implementation summaries for rapid wayfinding without full AST or file parsing.
-5. **`TASK`**: Ephemeral execution plans strictly constrained by directory blast radius and ancestral reference scopes.
+4. **`TASK`**: Ephemeral execution plans strictly constrained by directory blast radius and ancestral reference scopes.
 
 ## Scope Minimization and Blast Radius
 

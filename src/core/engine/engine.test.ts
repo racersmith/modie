@@ -145,8 +145,7 @@ describe("Engine Architectural Layer Invariants (RULE-38, ADR-13)", () => {
     expect(typeof engine.createRule).toBe("function");
     expect(typeof engine.createMotive).toBe("function");
     expect(typeof engine.readMotive).toBe("function");
-    expect(typeof engine.readDirectoryGist).toBe("function");
-    expect(typeof engine.readFileGist).toBe("function");
+    expect(typeof engine.discoverChildMotives).toBe("function");
   });
 });
 

@@ -11,3 +11,8 @@ All `GIST` artifacts and their freshness ledger must reside encapsulated within 
 - The directory freshness ledger must be named `.gists` (`<dir>/.modie/gists/.gists`).
 
 No GIST artifacts may exist directly in `<dir>/.modie/` or alongside source code.
+
+# Retirement Rationale
+
+Sunsetting the GIST framework and Merkle freshness ledger. Modern AI agents explore code faster and with higher fidelity using native grep, symbol lookups, and direct file inspection. High-level wayfinding is consolidated into directory `MOTIVE.md` signposts.
+

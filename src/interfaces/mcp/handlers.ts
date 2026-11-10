@@ -10,6 +10,7 @@ import {
   archiveArtifact,
   checkTaskItem,
   completeTask,
+  compileContext,
   createAdr,
   createRule,
   createTask,
@@ -21,21 +22,19 @@ import {
   mergeTaskBranch,
   normalizeTaskId,
   parseTaskIdFromBranch,
-  readDirectoryGist,
-  readFileGist,
   resolveWorkspaceContext,
   startTaskBranch,
   toPosixRelative,
   type ArtifactDetails,
   type ArtifactReferencesResult,
+  type CompiledContextResult,
   type TaskStatusDetails,
   type WorkspaceContext,
 } from "../../core/index.ts";
 import { McpToolError } from "./errors.ts";
 import {
-  extractGistSummary,
   renderArtifactMarkdown,
-  renderDirectoryListing,
+  renderDirectoryContext,
   renderTaskMissionBrief,
 } from "./renderers.ts";
 import type {
@@ -49,9 +48,9 @@ import type {
   CreateArtifactOutput,
   CreateRuleInput,
   CreateTaskInput,
+  DirectoryContextInput,
   LinkArtifactsInput,
   LinkArtifactsOutput,
-  LsBetterInput,
   ReadArtifactInput,
   StartTaskInput,
   TaskContextInput,
@@ -88,11 +87,11 @@ export async function resolveActiveTaskId(
 // ============================================================================
 
 /**
- * 1. ls_better handler
- * Plaintext tab-separated directory listing (<file|dir/>\t<gist>\n) with GISTs.
+ * 1. directory_context handler
+ * On-demand architectural context for directory exploration with child directory motives.
  */
-export async function handleLsBetter(
-  args: LsBetterInput,
+export async function handleDirectoryContext(
+  args: DirectoryContextInput,
   cwdOrContext?: string | WorkspaceContext,
 ): Promise<string> {
   const ctx = resolveWorkspaceContext(cwdOrContext);
@@ -118,60 +117,23 @@ export async function handleLsBetter(
   }
   targetPath = targetPath || ".";
 
-  const resolvedDir = resolve(cwd, targetPath);
-  let dirEntries;
+  const mode = args.mode ?? "summary";
+
+  let compiled: CompiledContextResult;
   try {
-    dirEntries = await readdir(resolvedDir, { withFileTypes: true });
+    compiled = await compileContext(targetPath, {
+      cwd,
+      workspace: ctx,
+    });
   } catch (err: any) {
     throw McpToolError.invalidParameter({
-      message: `Failed to inspect path "${targetPath}": ${err?.message ?? "Directory not found"}`,
+      message: `Failed to inspect directory context for "${targetPath}": ${err?.message ?? "Invalid path"}`,
       parameter: "path",
-      tool: "ls_better",
+      tool: "directory_context",
     });
   }
 
-  // Filter out hidden / internal directories (.git, .modie)
-  const visibleEntries = dirEntries.filter((e) => !e.name.startsWith("."));
-  visibleEntries.sort((a, b) => a.name.localeCompare(b.name));
-
-  const entriesWithGists: Array<{
-    name: string;
-    isDirectory: boolean;
-    gist?: string | null;
-  }> = [];
-
-  for (const entry of visibleEntries) {
-    const isDir = entry.isDirectory();
-    let gist: string | null = null;
-    if (isDir) {
-      try {
-        const childPath =
-          targetPath === "." ? entry.name : join(targetPath, entry.name);
-        const dirGist = await readDirectoryGist(childPath, cwd);
-        if (dirGist?.content) {
-          gist = extractGistSummary(dirGist.content);
-        }
-      } catch {}
-    } else if (entry.isFile()) {
-      try {
-        const fileGist = await readFileGist(targetPath, entry.name, cwd);
-        if (fileGist?.content) {
-          gist = extractGistSummary(fileGist.content);
-        }
-      } catch {}
-    }
-
-    entriesWithGists.push({
-      name: entry.name,
-      isDirectory: isDir,
-      gist,
-    });
-  }
-
-  const relDisplayPath = toPosixRelative(cwd, resolvedDir);
-  const displayHeader = relDisplayPath === "" ? "." : relDisplayPath;
-
-  return renderDirectoryListing(displayHeader, entriesWithGists);
+  return renderDirectoryContext(compiled, mode);
 }
 
 /**

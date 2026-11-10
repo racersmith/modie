@@ -2,7 +2,7 @@
  * Unified Architectural Context Compilation Service.
  * Synthesizes upward ancestral motives (RULE-2), active governing rules (RULE-9, RULE-12),
  * progressive-disclosure ADR summaries (ADR-8, RULE-26), task-scoped metadata and blast radius (RULE-6),
- * local directory/file GISTs (RULE-9, RULE-20), and shallow downward child signposts (ADR-8).
+ * and shallow downward child signposts (ADR-8).
  */
 
 import { existsSync } from "node:fs";
@@ -16,13 +16,12 @@ import {
   resolveScopeDirectory,
   slugToTitle,
   toPosixRelative,
-  type DirectoryGist,
-  type FileGist,
-  type GistSignpost,
 } from "../../domain/index.ts";
-import { discoverGistsForScope } from "../gist/reader.ts";
 import { resolveWorkspaceContext } from "../context/index.ts";
-import { collectAncestralMotives } from "../motive/reader.ts";
+import {
+  collectAncestralMotives,
+  discoverChildMotives,
+} from "../motive/reader.ts";
 import { getTaskStatus, type TaskStatusDetails } from "../lifecycle/query.ts";
 import { compareArtifactIds, listAdrs, listRules } from "./artifact-list.ts";
 import { getArtifactDetails, resolveArtifactByTag } from "./artifact-query.ts";
@@ -359,34 +358,6 @@ async function collectAdrs(
   );
 }
 
-async function collectGists(
-  scopeDir: string,
-  normCwd: string,
-): Promise<{
-  directoryGist: Omit<DirectoryGist, "rawContent"> | null;
-  fileGists: Omit<FileGist, "rawContent">[];
-  signposts: (GistSignpost & { childScope: string })[];
-}> {
-  const gistDiscovery = await discoverGistsForScope(scopeDir, { cwd: normCwd });
-
-  const directoryGist = gistDiscovery.directoryGist
-    ? (({ rawContent: _raw, ...rest }) => rest)(gistDiscovery.directoryGist)
-    : null;
-  const fileGists = gistDiscovery.fileGists.map(
-    ({ rawContent: _raw, ...rest }) => rest,
-  );
-  const signposts = gistDiscovery.signposts.map((sp) => ({
-    ...sp,
-    childScope: sp.scope,
-  }));
-
-  return {
-    directoryGist,
-    fileGists,
-    signposts,
-  };
-}
-
 /**
  * Compiles the unified Cone of Governance & Orientation for a target directory,
  * file path, task identifier, or artifact tag.
@@ -395,9 +366,8 @@ async function collectGists(
  * - RULE-2: Upward ancestral motive traversal without sibling pollution.
  * - RULE-6: Task blast radius boundary resolution when scoped to a task.
  * - RULE-8 & ADR-10: `.modie/` container scope normalization.
- * - RULE-9: Ancestral rules and motives from P to R; local GISTs strictly at P.
- * - RULE-20: Directory (`GIST.md`) and file-level (`<filename>.GIST.md`) GIST resolution.
- * - ADR-8 & RULE-26: Progressive disclosure via ADR summaries and shallow child directory signposts.
+ * - RULE-9: Ancestral rules and motives from P to R.
+ * - ADR-8 & RULE-26: Progressive disclosure via ADR summaries and shallow child directory motives.
  */
 export async function compileContext(
   targetInput: string = ".",
@@ -411,7 +381,11 @@ export async function compileContext(
   const motives = await collectMotives(target.scopeDir, normCwd);
   const rules = await collectRules(target.scope, normCwd);
   const adrs = await collectAdrs(target.scope, rules, target.task, normCwd);
-  const gists = await collectGists(target.scopeDir, normCwd);
+  const rawChildMotives = await discoverChildMotives(target.scopeDir, normCwd);
+  const childMotives = rawChildMotives.map((cm) => ({
+    ...cm,
+    childScope: cm.scope,
+  }));
 
   return {
     target: target.target,
@@ -424,12 +398,7 @@ export async function compileContext(
     motives,
     rules,
     adrs,
-    gists: {
-      directoryGist: gists.directoryGist,
-      fileGists: gists.fileGists,
-      signposts: gists.signposts,
-    },
-    signposts: gists.signposts,
+    childMotives,
   };
 }
 
@@ -513,43 +482,17 @@ function formatAdrsMarkdown(
   return lines;
 }
 
-function formatGistsMarkdown(
-  scope: string,
-  gists: CompiledContextResult["gists"],
+function formatChildMotivesMarkdown(
+  childMotives: CompiledContextResult["childMotives"],
 ): string[] {
-  const lines: string[] = ["", `## Local GISTs (\`${scope}\`)`];
-  if (!gists.directoryGist && gists.fileGists.length === 0) {
-    lines.push("", "_No local GIST summaries in this scope._");
-    return lines;
-  }
-  if (gists.directoryGist) {
-    lines.push(
-      "",
-      `### Directory Summary (\`${gists.directoryGist.relativePath}\`)`,
-      "",
-      gists.directoryGist.content,
-    );
-  }
-  if (gists.fileGists.length > 0) {
-    lines.push("", "### File Summaries", "");
-    for (const fg of gists.fileGists) {
-      lines.push(`- **\`${fg.sourceFilename}\`**: ${fg.content}`);
-    }
-  }
-  return lines;
-}
-
-function formatSignpostsMarkdown(
-  signposts: CompiledContextResult["signposts"],
-): string[] {
-  const lines: string[] = ["", "## Child Signposts"];
-  if (signposts.length === 0) {
-    lines.push("", "_No immediate child directory signposts._");
+  const lines: string[] = ["", "## Child Motives"];
+  if (childMotives.length === 0) {
+    lines.push("", "_No immediate child directory motives._");
     return lines;
   }
   lines.push("");
-  for (const sp of signposts) {
-    lines.push(`- **\`${sp.scope}\`** (\`${sp.relativePath}\`): ${sp.content}`);
+  for (const cm of childMotives) {
+    lines.push(`- **\`${cm.scope}\`** (\`${cm.relativePath}\`): ${cm.content}`);
   }
   return lines;
 }
@@ -574,8 +517,7 @@ export function formatCompiledContextMarkdown(
   lines.push(...formatMotivesMarkdown(result.motives));
   lines.push(...formatRulesMarkdown(result.rules));
   lines.push(...formatAdrsMarkdown(result.adrs));
-  lines.push(...formatGistsMarkdown(result.scope, result.gists));
-  lines.push(...formatSignpostsMarkdown(result.signposts));
+  lines.push(...formatChildMotivesMarkdown(result.childMotives));
 
   return `${lines.join("\n")}\n`;
 }

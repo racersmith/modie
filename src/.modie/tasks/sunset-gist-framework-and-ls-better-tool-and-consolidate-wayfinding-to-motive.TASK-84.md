@@ -10,7 +10,6 @@ links:
   - RULE-9
   - RULE-12
   - RULE-14
-  - RULE-20
 ---
 
 # Context
@@ -38,10 +37,10 @@ links:
 
 # Acceptance Criteria
 
-- [ ] Archive sole-purpose GIST governance (ADR-11, RULE-20) with retirement rationale
-- [ ] Remove GIST domain and engine modules (src/core/domain/gist/, src/core/engine/gist/) and prune GIST exports from core facades
-- [ ] Retire ls_better and implement on-demand directory_context MCP tool with summary and detailed modes
-- [ ] Update living governance in-place (ADR-4, ADR-8, RULE-8, RULE-9, RULE-12, RULE-14) and prune test fixtures
-- [ ] Update documentation (README.md, instructions.md, AGENTS.md) removing GIST and ls_better references
-- [ ] passes `verify` tests.
-- [ ] User Review
+- [x] Archive sole-purpose GIST governance (ADR-11, RULE-20) with retirement rationale
+- [x] Remove GIST domain and engine modules (src/core/domain/gist/, src/core/engine/gist/) and prune GIST exports from core facades
+- [x] Retire ls_better and implement on-demand directory_context MCP tool with summary and detailed modes
+- [x] Update living governance in-place (ADR-4, ADR-8, RULE-8, RULE-9, RULE-12, RULE-14) and prune test fixtures
+- [x] Update documentation (README.md, instructions.md, AGENTS.md) removing GIST and ls_better references
+- [x] passes `verify` tests.
+- [x] User Review

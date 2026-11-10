@@ -1,5 +1,5 @@
 ---
-summary: Compile lean initial context from upward ancestral motives and rules alongside immediate child GIST signposts for progressive on-demand territory exploration.
+summary: Compile lean initial context from upward ancestral motives and rules alongside immediate child directory motives for progressive on-demand territory exploration.
 links:
   - ADR-4
   - RULE-2
@@ -30,14 +30,14 @@ We adopt the **Signpost Model with Progressive On-Demand Disclosure**:
 
 1. **Lean Initial Context:**
    - The initial context compiler gathers only the target path's upward ancestry (`MOTIVE.md` and active `RULE`s).
-   - Along with the ancestral vector, Modie appends high-level **Signposts**—the immediate sibling folders and their 2-sentence `GIST.md` files.
+   - Along with the ancestral vector, Modie appends immediate **Child Directory Motives** (`<child>/.modie/MOTIVE.md`).
 
 2. **Interactive On-Demand Drill-Down:**
-   - When an AI agent or engineer determines that an external package or subsystem is needed, it calls an interactive inspection tool:
-     `modie_inspect_territory({ path: "src/core", depth: 2 })`
-   - Modie returns a compact structural tree of the requested territory containing exclusively its `MOTIVE.md` and `GIST.md` signposts.
-   - Raw source code is never dumped during signpost exploration.
+   - When an AI agent or engineer determines that an external package or subsystem is needed, it calls the on-demand `directory_context` MCP tool or CLI `modie context`:
+     `directory_context({ path: "src/core", mode: "summary" })`
+   - Modie returns a compact architectural overview of the requested directory containing its `MOTIVE.md`, active governing rules, and immediate child directory motives.
+   - Raw source code is never dumped during directory exploration.
 
 3. **Active Agent Navigation:**
-   - The agent uses the signpost tree to locate the exact module it needs, reading only the specific files required for the task.
+   - The agent navigates child motives to locate the exact module it needs, reading only the specific files required for the task.
    - This keeps initial prompts ultra-lean, eliminates language-specific package manager dependencies, and treats AI agents as active, reasoning engineers.
