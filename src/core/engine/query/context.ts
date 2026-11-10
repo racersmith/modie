@@ -23,7 +23,7 @@ import {
 import { discoverGistsForScope } from "../gist/reader.ts";
 import { resolveWorkspaceContext } from "../context/index.ts";
 import { collectAncestralMotives } from "../motive/reader.ts";
-import { getTaskStatus, type TaskStatusDetails } from "../task/query.ts";
+import { getTaskStatus, type TaskStatusDetails } from "../lifecycle/query.ts";
 import { compareArtifactIds, listAdrs, listRules } from "./artifact-list.ts";
 import { getArtifactDetails, resolveArtifactByTag } from "./artifact-query.ts";
 import { splitMarkdownFrontmatter } from "../../platform/markdown/index.ts";

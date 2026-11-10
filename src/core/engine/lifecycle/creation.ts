@@ -16,7 +16,6 @@ import { resolveWorkspaceContext, type WorkspaceContext } from "../context/index
 import { createArtifact } from "../pipeline/create.ts";
 
 export type { CreateTaskOptions, CreateTaskResult, TaskDefinition } from "../../domain/index.ts";
-export { taskDefinition, validateTaskScope } from "../../domain/index.ts";
 
 /**
  * Normalizes scope directory and target directory per RULE-8.

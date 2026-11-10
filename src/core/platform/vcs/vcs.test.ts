@@ -11,8 +11,8 @@ import {
 } from "../testing/index.ts";
 import { GitCliAdapter } from "./git-cli-adapter.ts";
 import { MockVcsAdapter } from "./mock-adapter.ts";
-import { completeTask } from "../../engine/task/completion.ts";
-import { startTaskBranch, mergeTaskBranch } from "../../engine/task/branching.ts";
+import { completeTask } from "../../engine/lifecycle/completion.ts";
+import { startTaskBranch, mergeTaskBranch } from "../../engine/lifecycle/branching.ts";
 import { inspectGitTreeArtifacts } from "../../engine/traversal/artifact-history.ts";
 import { resolveWatermark } from "../../engine/traversal/watermark.ts";
 

@@ -100,7 +100,7 @@ describe("Engine Architectural Layer Invariants (RULE-38, ADR-13)", () => {
     expect(violations).toEqual([]);
   });
 
-  it("[RULE-38][ADR-13] engine facade exports all primary services across traversal, context, query, linking, archival, task, and pipeline", () => {
+  it("[RULE-38][ADR-13] engine facade exports all primary services across traversal, context, query, linking, archival, lifecycle, and pipeline", () => {
     // Traversal
     expect(typeof engine.resolveWatermark).toBe("function");
     expect(typeof engine.scanActiveArtifacts).toBe("function");

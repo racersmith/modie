@@ -8,13 +8,15 @@ import {
   makeTestTag,
   type FixtureWorkspace,
 } from "../../platform/testing/index.ts";
-import { findDeepestCommonAncestor } from "../../domain/index.ts";
+import {
+  findDeepestCommonAncestor,
+  parseTaskMarkdown,
+  validateTaskScope,
+} from "../../domain/index.ts";
 import {
   createTask,
-  parseTaskMarkdown,
   queryTaskQueue,
   resolveTaskDirectories,
-  validateTaskScope,
 } from "./index.ts";
 import { getArtifactDetails } from "../query/artifact-query.ts";
 

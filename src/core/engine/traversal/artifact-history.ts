@@ -8,11 +8,12 @@ import {
   asArtifactSubtype,
   parseArtifactFilename,
   type ArtifactSubtype,
+  type DiscoveredArtifact,
+  type IndexableSubtype,
 } from "../../domain/index.ts";
 import { resolveWorkspaceContext } from "../context/resolver.ts";
 import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter, MultiBranchOptions } from "../../platform/vcs/types.ts";
-import type { DiscoveredArtifact, IndexableSubtype } from "./types.ts";
 
 /**
  * Inspects all active indexable artifact files tracked in a git tree ref.

@@ -12,7 +12,7 @@ import {
   parseCanonicalTag,
   resolveGoverningScope,
 } from "../../domain/index.ts";
-import { queryTaskQueue } from "../task/query.ts";
+import { queryTaskQueue } from "../lifecycle/query.ts";
 import { listActiveArtifacts } from "./artifact-list.ts";
 import { resolveArtifactByTag } from "./artifact-query.ts";
 import type {

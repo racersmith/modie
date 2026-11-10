@@ -28,9 +28,9 @@ In alignment with ADR-13 and RULE-38:
 
 # Acceptance Criteria
 
-- [ ] Migrate declarative artifact creation services from isolated engine subtype directories to pipeline orchestration services
-- [ ] Encapsulate ephemeral task state machine, branching coordination, and completion ceremonies into a dedicated lifecycle engine module
-- [ ] Eliminate redundant engine subtype directories and remove facade export disambiguation overrides from core entry point
-- [ ] Enforce unidirectional dependency boundaries across domain, engine, and platform layers per architectural invariants
-- [ ] passes `verify` tests.
-- [ ] User Review
+- [x] Migrate declarative artifact creation services from isolated engine subtype directories to pipeline orchestration services
+- [x] Encapsulate ephemeral task state machine, branching coordination, and completion ceremonies into a dedicated lifecycle engine module
+- [x] Eliminate redundant engine subtype directories and remove facade export disambiguation overrides from core entry point
+- [x] Enforce unidirectional dependency boundaries across domain, engine, and platform layers per architectural invariants
+- [x] passes `verify` tests.
+- [x] User Review
