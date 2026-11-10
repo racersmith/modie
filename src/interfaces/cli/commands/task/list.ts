@@ -7,6 +7,7 @@ import { z } from "zod";
 import { queryTaskQueue, type TaskQueueItem } from "../../../../core/index.ts";
 import {
   defineCommand,
+  formatAlignedTable,
   type CliCommandDefinition,
 } from "../../framework/index.ts";
 
@@ -31,10 +32,6 @@ export type TaskListInput = z.infer<typeof taskListSchema>;
  * Formats task queue items into a human-readable aligned table.
  */
 export function renderTaskQueueTable(tasks: TaskQueueItem[]): string {
-  if (tasks.length === 0) {
-    return "";
-  }
-
   const formatStatus = (t: TaskQueueItem): string => {
     if (t.isCurrent) {
       return t.readiness === "BLOCKED" ? "CURRENT (BLOCKED)" : "CURRENT";
@@ -42,40 +39,24 @@ export function renderTaskQueueTable(tasks: TaskQueueItem[]): string {
     return t.readiness;
   };
 
-  const idColWidth = Math.max(8, ...tasks.map((t) => t.fullTaskId.length));
-  const statusColWidth = Math.max(
-    9,
-    ...tasks.map((t) => formatStatus(t).length),
-  );
-  const progressColWidth = Math.max(
-    10,
-    ...tasks.map((t) => t.criteriaProgress.length),
-  );
-  const blockedColWidth = Math.max(
-    12,
-    ...tasks.map((t) =>
-      t.blockedBy.length > 0 ? t.blockedBy.join(", ").length : 1,
-    ),
-  );
-
-  const header = `${"ID".padEnd(idColWidth)}  ${"STATUS".padEnd(statusColWidth)}  ${"PROGRESS".padEnd(progressColWidth)}  ${"BLOCKED BY".padEnd(blockedColWidth)}  TITLE / SLUG`;
-  const separator = `${"-".repeat(idColWidth)}  ${"-".repeat(statusColWidth)}  ${"-".repeat(progressColWidth)}  ${"-".repeat(blockedColWidth)}  ${"-".repeat(24)}`;
-
-  const rows = tasks.map((t) => {
-    const id = t.fullTaskId.padEnd(idColWidth);
-    const status = formatStatus(t).padEnd(statusColWidth);
-    const progressText = t.allCriteriaSatisfied
-      ? `${t.criteriaProgress} ✓`
-      : t.criteriaProgress;
-    const progress = progressText.padEnd(progressColWidth);
-    const blockedStr = t.blockedBy.length > 0 ? t.blockedBy.join(", ") : "-";
-    const blocked = blockedStr.padEnd(blockedColWidth);
-    const slug = t.slug;
-
-    return `${id}  ${status}  ${progress}  ${blocked}  ${slug}`;
-  });
-
-  return [header, separator, ...rows].join("\n");
+  return formatAlignedTable(tasks, [
+    { header: "ID", minWidth: 8, value: (t) => t.fullTaskId },
+    { header: "STATUS", minWidth: 9, value: formatStatus },
+    {
+      header: "PROGRESS",
+      minWidth: 10,
+      value: (t) =>
+        t.allCriteriaSatisfied
+          ? `${t.criteriaProgress} ✓`
+          : t.criteriaProgress,
+    },
+    {
+      header: "BLOCKED BY",
+      minWidth: 12,
+      value: (t) => (t.blockedBy.length > 0 ? t.blockedBy.join(", ") : "-"),
+    },
+    { header: "TITLE / SLUG", separatorWidth: 24, value: (t) => t.slug },
+  ]);
 }
 
 /**

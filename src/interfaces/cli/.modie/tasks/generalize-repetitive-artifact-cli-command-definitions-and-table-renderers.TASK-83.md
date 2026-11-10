@@ -21,8 +21,8 @@ In alignment with RULE-25 (interface-core decoupling) and RULE-27 (stdout/stderr
 
 # Acceptance Criteria
 
-- [ ] Implement reusable command factory producing standardized listing command definitions and aligned table formatters across indexable subtypes
-- [ ] Refactor individual artifact listing commands to consume standardized framework factories
-- [ ] Preserve stdout and stderr separation and formatting consistency across all artifact commands
-- [ ] passes `verify` tests.
-- [ ] User Review
+- [x] Implement reusable command factory producing standardized listing command definitions and aligned table formatters across indexable subtypes
+- [x] Refactor individual artifact listing commands to consume standardized framework factories
+- [x] Preserve stdout and stderr separation and formatting consistency across all artifact commands
+- [x] passes `verify` tests.
+- [x] User Review
