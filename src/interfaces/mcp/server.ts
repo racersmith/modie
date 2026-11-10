@@ -16,6 +16,7 @@ import {
   type WorkspaceContext,
 } from "../../core/index.ts";
 import { formatMcpToolError } from "./errors.ts";
+import { createDynamicWorkspaceManager } from "./roots.ts";
 import {
   handleArchiveArtifact,
   handleCheckCriteria,
@@ -86,9 +87,6 @@ export function createModieMcpServer(
 ): McpServer {
   const envCwd = process.env.MODIE_CWD?.trim();
   const cwd = options.cwd || (envCwd ? envCwd : process.cwd());
-  const workspace =
-    options.workspace ??
-    createWorkspaceContextSync({ root: cwd, vcs: options.vcs });
   const stderr =
     options.stderr ?? ((msg: string) => process.stderr.write(msg + "\n"));
 
@@ -105,6 +103,15 @@ export function createModieMcpServer(
       instructions,
     },
   );
+
+  const dynamicManager = createDynamicWorkspaceManager(server, {
+    initialCwd: cwd,
+    explicitWorkspace: options.workspace,
+    vcs: options.vcs,
+    hasExplicitEnvCwd: Boolean(envCwd),
+    stderr,
+  });
+  const workspace = dynamicManager.workspace;
 
   // ==========================================================================
   // Cluster 1: Spatial & Artifact Exploration Tools (Plaintext/Markdown)
@@ -125,6 +132,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
+        await dynamicManager.ensureWorkspace();
         const text = await handleDirectoryContext(args, workspace);
         return {
           content: [{ type: "text" as const, text }],
@@ -150,6 +158,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
+        await dynamicManager.ensureWorkspace();
         const text = await handleReadArtifact(args, workspace);
         return {
           content: [{ type: "text" as const, text }],
@@ -175,6 +184,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
+        await dynamicManager.ensureWorkspace();
         const text = await handleTaskContext(args, workspace);
         return {
           content: [{ type: "text" as const, text }],
@@ -204,6 +214,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
+        await dynamicManager.ensureWorkspace();
         const text = await handleStartTask(args, workspace);
         return {
           content: [{ type: "text" as const, text }],
@@ -230,6 +241,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
+        await dynamicManager.ensureWorkspace();
         const result = await handleCheckCriteria(args, workspace);
         return {
           content: [
@@ -262,6 +274,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
+        await dynamicManager.ensureWorkspace();
         const result = await handleCompleteTask(args, workspace);
         return {
           content: [
@@ -298,6 +311,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
+        await dynamicManager.ensureWorkspace();
         const result = await handleCreateRule(args, workspace);
         return {
           content: [
@@ -330,6 +344,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
+        await dynamicManager.ensureWorkspace();
         const result = await handleCreateAdr(args, workspace);
         return {
           content: [
@@ -362,6 +377,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
+        await dynamicManager.ensureWorkspace();
         const result = await handleCreateTask(args, workspace);
         return {
           content: [
@@ -398,6 +414,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
+        await dynamicManager.ensureWorkspace();
         const result = await handleLinkArtifacts(args, workspace);
         return {
           content: [
@@ -430,6 +447,7 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
+        await dynamicManager.ensureWorkspace();
         const result = await handleArchiveArtifact(args, workspace);
         return {
           content: [

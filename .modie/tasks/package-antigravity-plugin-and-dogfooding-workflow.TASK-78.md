@@ -13,9 +13,9 @@ Author the first-class Antigravity plugin bundle in integrations/antigravity/ fo
 
 # Acceptance Criteria
 
-- [ ] Relocate and author Antigravity plugin manifest, README, and governance rules under dedicated integrations/antigravity directory
-- [ ] Configure plugin MCP server definition to execute from compiled distribution output without static host paths or forced working directory
-- [ ] Integrate plugin validation script into workspace build configuration
-- [ ] Establish symlinked global plugin development workflow and remove obsolete unmanaged plugin artifacts
-- [ ] verify `bun run verify` passes
+- [x] Relocate and author Antigravity plugin manifest, README, and governance rules under dedicated integrations/antigravity directory
+- [x] Configure plugin MCP server definition to execute from compiled distribution output without static host paths or forced working directory
+- [x] Integrate plugin validation script into workspace build configuration
+- [x] Establish symlinked global plugin development workflow and remove obsolete unmanaged plugin artifacts
+- [x] verify `bun run verify` passes
 - [ ] User Review

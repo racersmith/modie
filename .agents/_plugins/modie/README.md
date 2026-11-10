@@ -1,1 +1,0 @@
-To facilitate easier usage inside the Antigravity IDE, the mcp is packaged as a plugin and then added to the gemini plugins globablly. This allows for toggling the plugin on/off and resetting the mcp server on-demand. If the files inside this directory are updated, then copy the contents to `~/.gemini/config/plugins/modie`
