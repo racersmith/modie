@@ -1,0 +1,227 @@
+/**
+ * Bidirectional scope resolution and architectural governance query service.
+ * Complies with RULE-6, RULE-8, RULE-9, RULE-12, RULE-25, and ADR-10.
+ */
+
+import { existsSync } from "node:fs";
+import { isAbsolute, join, normalize, relative, resolve } from "node:path";
+import { resolveWorkspaceContext, type WorkspaceContext } from "../context/index.ts";
+import {
+  buildAncestralScopes,
+  parseArtifactFilename,
+  parseCanonicalTag,
+  resolveGoverningScope,
+} from "../../domain/index.ts";
+import { queryTaskQueue } from "../task/query.ts";
+import { listActiveArtifacts } from "./artifact-list.ts";
+import { resolveArtifactByTag } from "./artifact-query.ts";
+import type {
+  AncestralRuleChainNode,
+  ResolveScopeOptions,
+  ResolvedArtifact,
+  ScopeResolutionResult,
+  ScopeRuleItem,
+  ScopeTaskItem,
+} from "./types.ts";
+
+/**
+ * Computes ancestral scope relative paths along the path vector from root down to `targetScope`.
+ * Filters to directories having a `.modie` container (or root `.` or targetScope) per RULE-9.
+ */
+export function computeAncestralScopes(
+  targetScope: string,
+  cwdOrContext?: string | WorkspaceContext,
+): string[] {
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const normCwd = ctx.root;
+  const scopes = buildAncestralScopes(targetScope);
+
+  return scopes.filter(
+    (scope) =>
+      scope === "." ||
+      scope === targetScope ||
+      existsSync(join(normCwd, scope, ".modie")),
+  );
+}
+
+/**
+ * Bidirectionally resolves architectural scope boundaries, enclosing .modie root,
+ * ancestral rule chains, and active tasks for an artifact identifier or filesystem path.
+ *
+ * @param targetOrIdentifier Artifact tag (e.g. RULE-6, TASK-51), slug, or filesystem path.
+ * @param options Workspace configuration options.
+ */
+export async function resolveScope(
+  targetOrIdentifier: string,
+  options: ResolveScopeOptions = {},
+): Promise<ScopeResolutionResult> {
+  const ctx = resolveWorkspaceContext(options);
+  const cwd = ctx.root;
+  const trimmed = targetOrIdentifier?.trim();
+
+  if (!trimmed) {
+    throw new Error("Target path or artifact identifier is required.");
+  }
+
+  // 1. Determine if input resolves to an indexable artifact
+  let resolvedArtifact: ResolvedArtifact | null = null;
+
+  if (parseCanonicalTag(trimmed) || parseArtifactFilename(trimmed)) {
+    try {
+      resolvedArtifact = await resolveArtifactByTag(trimmed, {
+        cwd,
+        includeArchived: true,
+      });
+    } catch {
+      resolvedArtifact = null;
+    }
+  } else if (
+    !trimmed.includes("/") &&
+    !trimmed.includes("\\") &&
+    trimmed !== "."
+  ) {
+    // Potential artifact slug
+    try {
+      resolvedArtifact = await resolveArtifactByTag(trimmed, {
+        cwd,
+        includeArchived: true,
+      });
+    } catch {
+      resolvedArtifact = null;
+    }
+  }
+
+  // 2. Branch: Artifact resolution
+  if (resolvedArtifact) {
+    const governingScope = resolveGoverningScope(
+      resolvedArtifact.filepath,
+      cwd,
+    );
+    const scope = governingScope.relativeScope;
+    const scopeDir = governingScope.scopeDir;
+    const enclosingModieDir = relative(cwd, join(scopeDir, ".modie")).replace(
+      /\\/g,
+      "/",
+    );
+
+    const ancestralScopes = computeAncestralScopes(scope, cwd);
+
+    const activeRules = await listActiveArtifacts("RULE", { scope, cwd });
+    const rules: ScopeRuleItem[] = activeRules.map((r) => ({
+      tag: r.tag,
+      id: r.id,
+      slug: r.slug,
+      title: r.title,
+      relativePath: r.relativePath,
+      scope: r.scope,
+    }));
+
+    const ancestralRuleChains: AncestralRuleChainNode[] = ancestralScopes.map(
+      (s) => ({
+        scope: s,
+        rules: rules.filter((r) => r.scope === s),
+      }),
+    );
+
+    const allTasks = await queryTaskQueue({ cwd });
+    const tasks: ScopeTaskItem[] = allTasks
+      .filter(
+        (t) => resolveGoverningScope(t.filepath, cwd).relativeScope === scope,
+      )
+      .map((t) => ({
+        id: t.id,
+        tag: t.fullTaskId,
+        title: t.title,
+        slug: t.slug,
+        relativePath: t.relativePath,
+        scope,
+        readiness: t.readiness,
+        criteriaProgress: t.criteriaProgress,
+      }));
+
+    return {
+      target: trimmed,
+      type: "artifact",
+      targetPath: resolvedArtifact.relativePath,
+      targetAbsolutePath: resolvedArtifact.filepath,
+      scope,
+      scopeDir,
+      enclosingModieDir,
+      ancestralScopes,
+      ancestralRuleChains,
+      rules,
+      tasks,
+      artifact: resolvedArtifact,
+    };
+  }
+
+  // 3. Branch: Filesystem path resolution
+  const absPath = isAbsolute(trimmed)
+    ? normalize(trimmed)
+    : resolve(cwd, trimmed);
+  const relFromRoot = relative(cwd, absPath).replace(/\\/g, "/");
+
+  if (relFromRoot.startsWith("..") || isAbsolute(relFromRoot)) {
+    throw new Error(
+      `Invalid path "${trimmed}": path must reside within the workspace root.`,
+    );
+  }
+
+  const targetPath = relFromRoot === "" ? "." : relFromRoot;
+  const governingScope = resolveGoverningScope(absPath, cwd);
+  const scope = governingScope.relativeScope;
+  const scopeDir = governingScope.scopeDir;
+  const enclosingModieDir = relative(cwd, join(scopeDir, ".modie")).replace(
+    /\\/g,
+    "/",
+  );
+
+  const ancestralScopes = computeAncestralScopes(scope, cwd);
+
+  const activeRules = await listActiveArtifacts("RULE", { scope, cwd });
+  const rules: ScopeRuleItem[] = activeRules.map((r) => ({
+    tag: r.tag,
+    id: r.id,
+    slug: r.slug,
+    title: r.title,
+    relativePath: r.relativePath,
+    scope: r.scope,
+  }));
+
+  const ancestralRuleChains: AncestralRuleChainNode[] = ancestralScopes.map(
+    (s) => ({
+      scope: s,
+      rules: rules.filter((r) => r.scope === s),
+    }),
+  );
+
+  const allTasks = await queryTaskQueue({ cwd });
+  const tasks: ScopeTaskItem[] = allTasks
+    .filter(
+      (t) => resolveGoverningScope(t.filepath, cwd).relativeScope === scope,
+    )
+    .map((t) => ({
+      id: t.id,
+      tag: t.fullTaskId,
+      title: t.title,
+      slug: t.slug,
+      relativePath: t.relativePath,
+      scope,
+      readiness: t.readiness,
+      criteriaProgress: t.criteriaProgress,
+    }));
+
+  return {
+    target: trimmed,
+    type: "path",
+    targetPath,
+    targetAbsolutePath: absPath,
+    scope,
+    scopeDir,
+    enclosingModieDir,
+    ancestralScopes,
+    ancestralRuleChains,
+    rules,
+    tasks,
+  };
+}

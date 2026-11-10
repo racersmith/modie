@@ -14,9 +14,9 @@ Execute Phase 3 of the core layering architecture defined in ADR-13 and RULE-38.
 
 # Acceptance Criteria
 
-- [ ] Consolidate graph traversal, context compilation, query, and linking services under dedicated engine namespace
-- [ ] Consolidate task lifecycle branching, completion ceremony, and pipeline creation within engine namespace
-- [ ] Ensure unidirectional dependency flow where engine services orchestrate domain models through platform abstractions
-- [ ] Verify complete public API facade parity at core entrypoint with zero modifications required in interface consumers
-- [ ] verify `bun run verify` passes
-- [ ] User Review
+- [x] Consolidate graph traversal, context compilation, query, and linking services under dedicated engine namespace
+- [x] Consolidate task lifecycle branching, completion ceremony, and pipeline creation within engine namespace
+- [x] Ensure unidirectional dependency flow where engine services orchestrate domain models through platform abstractions
+- [x] Verify complete public API facade parity at core entrypoint with zero modifications required in interface consumers
+- [x] verify `bun run verify` passes
+- [x] User Review
