@@ -166,3 +166,16 @@ export interface CreateMotiveResult {
   scaffolded: boolean;
 }
 
+/**
+ * Immediate child directory motive (`<child>/.modie/MOTIVE.md`, depth=1) (ADR-8).
+ */
+export interface ChildMotive {
+  name: string;
+  scope: string;
+  scopeDir: string;
+  filepath: string;
+  relativePath: string;
+  content: string;
+}
+
+

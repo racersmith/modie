@@ -11,18 +11,25 @@ import { z } from "zod";
 // ============================================================================
 
 /**
- * Input schema for ls_better tool.
- * Plaintext tab-separated directory explorer with GISTs.
+ * Input schema for directory_context tool.
+ * On-demand architectural wayfinding for a directory scope powered by compileContext.
  */
-export const lsBetterSchema = z.object({
+export const directoryContextSchema = z.object({
   path: z
     .string()
     .optional()
     .describe(
-      "Directory path to inspect (e.g. 'src/core/archival'). Defaults to active task scope or '.'",
+      "Directory path to inspect (e.g. 'src/core'). Defaults to active task scope or '.'",
+    ),
+  mode: z
+    .enum(["summary", "detailed"])
+    .optional()
+    .default("summary")
+    .describe(
+      "Context detail mode: 'summary' for token-conscious overview, 'detailed' for full rule bodies and ADR summaries.",
     ),
 });
-export type LsBetterInput = z.infer<typeof lsBetterSchema>;
+export type DirectoryContextInput = z.infer<typeof directoryContextSchema>;
 
 /**
  * Input schema for read_artifact tool.

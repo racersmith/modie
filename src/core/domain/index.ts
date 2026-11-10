@@ -11,6 +11,5 @@ export * from "./adr/index.ts";
 export * from "./rule/index.ts";
 export * from "./task/index.ts";
 export * from "./motive/index.ts";
-export * from "./gist/index.ts";
 export * from "./registry.ts";
 

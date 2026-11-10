@@ -13,6 +13,7 @@ import {
   slugToTitle,
   type ArtifactDetails,
   type ArtifactReferencesResult,
+  type CompiledContextResult,
   type TaskAcceptanceCriteriaItem,
   type TaskQueueItem,
   type TaskStatusDetails,
@@ -547,21 +548,102 @@ export async function renderTaskMissionBrief(
 }
 
 /**
- * Renders an augmented directory listing into clean plaintext tab-separated format
- * (<file|dir/>\t<gist>\n) per Unix ls -F conventions.
+ * Renders on-demand architectural directory context in either 'summary' or 'detailed' mode.
+ * Enforces token economy per RULE-26.
  */
-export function renderDirectoryListing(
-  dirPath: string,
-  entries: Array<{ name: string; isDirectory: boolean; gist?: string | null }>,
+export function renderDirectoryContext(
+  result: CompiledContextResult,
+  mode: "summary" | "detailed" = "summary",
 ): string {
-  const normDir =
-    dirPath === "" || dirPath === "." ? "." : dirPath.replace(/\/+$/, "");
-  const lines: string[] = [`${normDir}:`];
+  const lines: string[] = [
+    `# Directory Context: ${result.scope}`,
+    "",
+    `- **Scope**: \`${result.scope}\``,
+    `- **Ancestral Chain**: ${result.ancestralScopes.map((s) => `\`${s}\``).join(" -> ")}`,
+  ];
 
-  for (const entry of entries) {
-    const entryName = entry.isDirectory ? `${entry.name}/` : entry.name;
-    const gist = entry.gist ? entry.gist.trim() : "";
-    lines.push(gist ? `${entryName}\t${gist}` : `${entryName}\t`);
+  if (mode === "summary") {
+    // 1. Nearest Scope Motive
+    if (result.motives.length > 0 && result.motives[0]) {
+      const nearest = result.motives[0];
+      lines.push(
+        "",
+        `## Motive (\`${nearest.scope}\`)`,
+        "",
+        nearest.content,
+      );
+    }
+
+    // 2. Governing Rules (token-conscious: tag and title)
+    lines.push("", `## Governing Rules (${result.rules.length})`);
+    if (result.rules.length === 0) {
+      lines.push("", "_No governing rules in scope._");
+    } else {
+      lines.push("");
+      for (const r of result.rules) {
+        lines.push(`- **${r.tag}** (\`${r.scope}\`): ${r.title}`);
+      }
+    }
+
+    // 3. Child Directory Motives (immediate child directories with MOTIVE.md summaries)
+    lines.push("", `## Child Directory Motives (${result.childMotives.length})`);
+    if (result.childMotives.length === 0) {
+      lines.push("", "_No child directory motives._");
+    } else {
+      lines.push("");
+      for (const cm of result.childMotives) {
+        lines.push(`- **\`${cm.name}/\`** (\`${cm.scope}\`): ${cm.content}`);
+      }
+    }
+  } else {
+    // Detailed Mode
+    // 1. Upward Ancestral Motives
+    lines.push("", `## Upward Motives (${result.motives.length})`);
+    if (result.motives.length === 0) {
+      lines.push("", "_No motives defined in ancestral chain._");
+    } else {
+      for (const m of result.motives) {
+        lines.push(
+          "",
+          `### Scope \`${m.scope}\` (\`${m.relativePath}\`)`,
+          "",
+          m.content,
+        );
+      }
+    }
+
+    // 2. Governing Rules (full invariant bodies)
+    lines.push("", `## Governing Rules (${result.rules.length})`);
+    if (result.rules.length === 0) {
+      lines.push("", "_No governing rules in scope._");
+    } else {
+      lines.push("");
+      for (const r of result.rules) {
+        lines.push(`- **${r.tag}** (\`${r.scope}\` — ${r.title}): ${r.body}`);
+      }
+    }
+
+    // 3. Architectural Decisions (ADR Summaries)
+    lines.push("", `## Architectural Decisions (${result.adrs.length})`);
+    if (result.adrs.length === 0) {
+      lines.push("", "_No active ADRs in ancestral chain._");
+    } else {
+      lines.push("");
+      for (const a of result.adrs) {
+        lines.push(`- **${a.tag}** (\`${a.scope}\` — ${a.title}): ${a.summary}`);
+      }
+    }
+
+    // 4. Child Directory Motives
+    lines.push("", `## Child Directory Motives (${result.childMotives.length})`);
+    if (result.childMotives.length === 0) {
+      lines.push("", "_No child directory motives._");
+    } else {
+      lines.push("");
+      for (const cm of result.childMotives) {
+        lines.push(`- **\`${cm.name}/\`** (\`${cm.scope}\`): ${cm.content}`);
+      }
+    }
   }
 
   return lines.join("\n") + "\n";

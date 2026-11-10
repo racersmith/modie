@@ -154,3 +154,8 @@ When a source file is renamed (`git mv`), Modie leverages content-addressing to 
 - Cumulative drift is prevented by anchoring diffs to `<baseline_hash>`.
 - Routine file renames are detected and reconciled automatically via hash matching.
 - Merging concurrent task branches touching different files or subdirectories produces zero merge conflicts.
+
+# Retirement Rationale
+
+Sunsetting the GIST framework and Merkle freshness ledger. File-level GIST proxies and Merkle ledgers introduce high maintenance friction and stale documentation risks without widespread adoption. Modern AI agents explore code faster and with higher fidelity using native grep, symbol lookups, and direct file inspection. High-level signposts are consolidated into directory `MOTIVE.md` files.
+

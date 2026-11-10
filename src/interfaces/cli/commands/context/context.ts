@@ -110,39 +110,17 @@ function renderAdrsStderr(
   }
 }
 
-function renderGistsStderr(
+function renderChildMotivesStderr(
   context: CliExecutionContext,
-  scope: string,
-  gists: CompiledContextResult["gists"],
+  childMotives: CompiledContextResult["childMotives"],
 ): void {
-  const hasLocalGists =
-    Boolean(gists.directoryGist) || gists.fileGists.length > 0;
-  context.stderr(`\nLocal GISTs [${scope}]:`);
-  if (!hasLocalGists) {
+  context.stderr(`\nChild Directory Motives (${childMotives.length}):`);
+  if (childMotives.length === 0) {
     context.stderr(`  (none)`);
     return;
   }
-  if (gists.directoryGist) {
-    context.stderr(
-      `  Directory (${gists.directoryGist.relativePath}): ${gists.directoryGist.content}`,
-    );
-  }
-  for (const fg of gists.fileGists) {
-    context.stderr(`  File ${fg.sourceFilename}: ${fg.content}`);
-  }
-}
-
-function renderSignpostsStderr(
-  context: CliExecutionContext,
-  signposts: CompiledContextResult["signposts"],
-): void {
-  context.stderr(`\nChild Signposts (${signposts.length}):`);
-  if (signposts.length === 0) {
-    context.stderr(`  (none)`);
-    return;
-  }
-  for (const sp of signposts) {
-    context.stderr(`  - [${sp.scope}] (${sp.relativePath}): ${sp.content}`);
+  for (const cm of childMotives) {
+    context.stderr(`  - [${cm.scope}] (${cm.relativePath}): ${cm.content}`);
   }
 }
 
@@ -171,8 +149,7 @@ export function renderCompiledContext(
   renderMotivesStderr(context, result.motives);
   renderRulesStderr(context, result.rules);
   renderAdrsStderr(context, result.adrs);
-  renderGistsStderr(context, result.scope, result.gists);
-  renderSignpostsStderr(context, result.signposts);
+  renderChildMotivesStderr(context, result.childMotives);
 }
 
 /**
@@ -188,9 +165,9 @@ export const contextCommand: CliCommandDefinition<
   summaryUsage: "[target] [options]",
   usage: "modie context [target-or-identifier] [options]",
   description:
-    "Compile unified architectural context (motives, rules, ADR summaries, task spec, GISTs, and signposts)",
+    "Compile unified architectural context (ancestral motives, governing rules, ADR summaries, task spec, and child directory motives)",
   agentGuidance:
-    "PRIMARY ENTRY POINT: Call this tool first when starting a task or exploring a directory scope. Synthesizes the complete Cone of Governance & Orientation in a single token-efficient call: upward ancestral MOTIVEs, active governing RULE invariants, concise ADR summaries, task acceptance criteria and blast radius boundaries when given a TASK tag, local directory/file GISTs, and immediate child directory signposts.",
+    "PRIMARY ENTRY POINT: Call this tool first when starting a task or exploring a directory scope. Synthesizes the complete Cone of Governance & Orientation in a single token-efficient call: upward ancestral MOTIVEs, active governing RULE invariants, concise ADR summaries, task acceptance criteria and blast radius boundaries when given a TASK tag, and immediate child directory motives.",
   helpUsage: "modie context --help",
   schema: contextSchema,
   positionals: [

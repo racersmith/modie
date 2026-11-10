@@ -4,9 +4,7 @@
  */
 
 import type {
-  DirectoryGist,
-  FileGist,
-  GistSignpost,
+  ChildMotive,
   IndexableSubtype,
   ResolvedArtifact,
   TaskAcceptanceCriteriaItem,
@@ -548,17 +546,11 @@ export interface CompiledContextTask {
   blastRadius: CompiledContextBlastRadius;
 }
 
-export interface CompiledContextSignpost extends GistSignpost {
+export interface CompiledContextChildMotive extends ChildMotive {
   /**
    * Alias for `scope` (normalized relative path to the child directory).
    */
   childScope: string;
-}
-
-export interface CompiledContextGists {
-  directoryGist: Omit<DirectoryGist, "rawContent"> | null;
-  fileGists: Array<Omit<FileGist, "rawContent">>;
-  signposts: CompiledContextSignpost[];
 }
 
 export interface CompiledContextResult {
@@ -572,6 +564,5 @@ export interface CompiledContextResult {
   motives: CompiledContextMotive[];
   rules: CompiledContextRule[];
   adrs: CompiledContextAdr[];
-  gists: CompiledContextGists;
-  signposts: CompiledContextSignpost[];
+  childMotives: CompiledContextChildMotive[];
 }

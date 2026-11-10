@@ -154,7 +154,7 @@ export class McpToolError extends Error {
         tool: "task_context",
         parameters: {},
         suggestion:
-          "Ensure source and target artifacts follow spatial hierarchy rules. Inspect enclosing scopes using task_context or ls_better.",
+          "Ensure source and target artifacts follow spatial hierarchy rules. Inspect enclosing scopes using task_context or directory_context.",
       },
     });
   }

@@ -91,32 +91,6 @@ export interface CreateAdrOptions {
   rawContent?: string;
 }
 
-export interface CreateGistOptions {
-  /**
-   * Target architectural scope directory (defaults to workspace root).
-   */
-  scopeDir?: string;
-
-  /**
-   * Optional source filename for a file-level GIST proxy (`<filename>.GIST.md`).
-   * Omit to create a directory-level summary (`GIST.md`).
-   */
-  filename?: string;
-
-  /**
-   * Natural-language prose content of the GIST.
-   */
-  content: string;
-}
-
-export interface CreatedFixtureGist {
-  type: "directory" | "file";
-  scope: string;
-  sourceFilename?: string;
-  filename: string;
-  filepath: string;
-  relativePath: string;
-}
 
 export interface CreateMotiveFixtureOptions {
   /**
@@ -188,7 +162,6 @@ export interface FixtureWorkspace {
   createTask(options?: CreateTaskOptions): Promise<CreatedFixtureArtifact>;
   createRule(options?: CreateRuleOptions): Promise<CreatedFixtureArtifact>;
   createAdr(options?: CreateAdrOptions): Promise<CreatedFixtureArtifact>;
-  createGist(options: CreateGistOptions): Promise<CreatedFixtureGist>;
   createMotive(
     options?: CreateMotiveFixtureOptions,
   ): Promise<CreatedFixtureMotive>;
@@ -477,35 +450,6 @@ export async function createFixtureWorkspace(
         scopeDir: options.scopeDir,
         rawContent: options.rawContent,
       });
-    },
-
-    async createGist(options: CreateGistOptions): Promise<CreatedFixtureGist> {
-      const resolvedScope = options.scopeDir?.trim()
-        ? join(cwd, options.scopeDir.trim())
-        : cwd;
-      const gistsDir = join(resolvedScope, ".modie", "gists");
-      await mkdir(gistsDir, { recursive: true });
-
-      const isFileGist = Boolean(options.filename?.trim());
-      const sourceFilename = options.filename?.trim();
-      const filename = isFileGist
-        ? sourceFilename!.endsWith(".GIST.md")
-          ? sourceFilename!
-          : `${sourceFilename!}.GIST.md`
-        : "GIST.md";
-
-      const filepath = join(gistsDir, filename);
-      await writeFile(filepath, options.content, "utf8");
-
-      const relScope = relative(cwd, resolvedScope).replace(/\\/g, "/");
-      return {
-        type: isFileGist ? "file" : "directory",
-        scope: relScope === "" ? "." : relScope,
-        ...(sourceFilename ? { sourceFilename } : {}),
-        filename,
-        filepath,
-        relativePath: relative(cwd, filepath).replace(/\\/g, "/"),
-      };
     },
 
     async createMotive(

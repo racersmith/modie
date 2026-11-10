@@ -12,4 +12,3 @@ export * from "./archival/index.ts";
 export * from "./lifecycle/index.ts";
 export * from "./pipeline/index.ts";
 export * from "./motive/index.ts";
-export * from "./gist/index.ts";

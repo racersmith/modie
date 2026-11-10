@@ -23,8 +23,8 @@ import {
   handleCreateAdr,
   handleCreateRule,
   handleCreateTask,
+  handleDirectoryContext,
   handleLinkArtifacts,
-  handleLsBetter,
   handleReadArtifact,
   handleStartTask,
   handleTaskContext,
@@ -42,9 +42,9 @@ import {
   createArtifactOutputSchema,
   createRuleSchema,
   createTaskSchema,
+  directoryContextSchema,
   linkArtifactsOutputSchema,
   linkArtifactsSchema,
-  lsBetterSchema,
   readArtifactSchema,
   startTaskSchema,
   taskContextSchema,
@@ -110,13 +110,13 @@ export function createModieMcpServer(
   // Cluster 1: Spatial & Artifact Exploration Tools (Plaintext/Markdown)
   // ==========================================================================
 
-  // 1. ls_better
+  // 1. directory_context
   server.registerTool(
-    "ls_better",
+    "directory_context",
     {
       description:
-        "Augmented directory listing with GIST summaries. Trailing slash indicates directory.",
-      inputSchema: lsBetterSchema.shape,
+        "Inspect architectural context for a directory scope: upward motives, governing rules, and child directory motives. Accepts path and mode ('summary' | 'detailed').",
+      inputSchema: directoryContextSchema.shape,
       annotations: {
         readOnlyHint: true,
         idempotentHint: true,
@@ -125,12 +125,12 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        const text = await handleLsBetter(args, workspace);
+        const text = await handleDirectoryContext(args, workspace);
         return {
           content: [{ type: "text" as const, text }],
         };
       } catch (error: any) {
-        return formatMcpToolError(error, "ls_better", args, stderr);
+        return formatMcpToolError(error, "directory_context", args, stderr);
       }
     }) as any,
   );
