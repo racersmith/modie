@@ -18,4 +18,4 @@ Author the first-class Antigravity plugin bundle in integrations/antigravity/ fo
 - [x] Integrate plugin validation script into workspace build configuration
 - [x] Establish symlinked global plugin development workflow and remove obsolete unmanaged plugin artifacts
 - [x] verify `bun run verify` passes
-- [ ] User Review
+- [x] User Review

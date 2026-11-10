@@ -117,6 +117,28 @@ const checks: ValidationCheck[] = [
       }
     },
   },
+  {
+    description: "Antigravity CLI manifest compliance (agy plugin validate --strict)",
+    run: () => {
+      if (!Bun.which("agy")) {
+        return;
+      }
+      const proc = Bun.spawnSync([
+        "agy",
+        "plugin",
+        "validate",
+        "--strict",
+        pluginDir,
+      ]);
+      if (proc.exitCode !== 0) {
+        const errorMsg = [proc.stderr.toString(), proc.stdout.toString()]
+          .filter(Boolean)
+          .join("\n")
+          .trim();
+        throw new Error(errorMsg || "agy plugin validate failed");
+      }
+    },
+  },
 ];
 
 console.log("🔍 Validating Antigravity plugin integration...\n");
@@ -139,3 +161,4 @@ if (failures > 0) {
   console.log("\n✨ Antigravity plugin integration passed all checks!\n");
   process.exit(0);
 }
+

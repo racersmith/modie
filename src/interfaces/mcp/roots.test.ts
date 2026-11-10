@@ -86,3 +86,4 @@ describe("[RULE-37][ADR-12] Dynamic MCP Workspace Roots Tracking", () => {
     expect(manager.workspace.root).toBe(initialDir);
   });
 });
+

@@ -24,3 +24,4 @@ bun run build
 ```
 
 Then reset or restart the Modie MCP server from the Antigravity Customizations panel or session controls.
+
