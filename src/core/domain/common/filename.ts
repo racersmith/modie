@@ -13,8 +13,6 @@ import {
   type SubtypeLookup,
 } from "./tag.ts";
 import type {
-  ArtifactSubtype,
-  ArtifactTag,
   FormatArtifactFilenameOptions,
   IndexableSubtype,
   ParsedArtifactFilename,

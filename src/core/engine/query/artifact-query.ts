@@ -4,7 +4,7 @@
  */
 
 import { readFile, stat } from "node:fs/promises";
-import { dirname, isAbsolute, resolve } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 import {
   parseArtifactFilename,
   parseCanonicalTag,

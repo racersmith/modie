@@ -6,8 +6,6 @@ import type { ParseArgsConfig } from "node:util";
 import { parseCliArgs } from "../arg-parser.ts";
 import type {
   CliIoOptions,
-  CliCommandResult,
-  CommandHandler,
 } from "../types.ts";
 import { generateCommandHelp } from "./help.ts";
 import { createWorkspaceContext } from "../../../core/index.ts";

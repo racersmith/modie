@@ -4,7 +4,7 @@
  */
 
 import { readdir, readFile, stat } from "node:fs/promises";
-import { basename, extname, isAbsolute, join, resolve } from "node:path";
+import { basename, extname, join, resolve } from "node:path";
 import { escapeRegex, toPosixRelative } from "../../domain/index.ts";
 import { resolveWorkspaceContext, type WorkspaceContext } from "../context/index.ts";
 import type { IVcsAdapter } from "../../platform/vcs/types.ts";

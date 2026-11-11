@@ -212,7 +212,7 @@ export function createArtifactListCommand<
       placeholder: "<path>",
       description: `Filter ${pluralLabel} governing target directory scope via ancestral traversal`,
     },
-    ...(options.flags ?? {}),
+    ...options.flags,
   };
 
   return defineCommand({

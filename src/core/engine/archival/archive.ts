@@ -4,7 +4,7 @@
  */
 
 import { rename } from "node:fs/promises";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { formatArtifactFilename } from "../../domain/index.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
 import { findArtifactReferences } from "../query/references.ts";

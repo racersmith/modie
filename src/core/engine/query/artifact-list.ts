@@ -3,8 +3,8 @@
  * Implements RULE-8, RULE-9, RULE-25, and RULE-26.
  */
 
-import { readFile, stat } from "node:fs/promises";
-import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { readFile } from "node:fs/promises";
+import { isAbsolute, relative, resolve } from "node:path";
 import { resolveWorkspaceContext } from "../context/index.ts";
 import {
   extractAdrSummary,

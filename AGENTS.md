@@ -4,8 +4,8 @@
 
 Always use the streamlined verification runner to prevent context window bloat:
 
-- **Run all checks**: `bun run verify` (runs typecheck, parallel test suite with dots, complexity, circular dependencies, knip dead code, and plugin validation in ~4.2s).
-- **Run targeted checks**: `bun run verify test`, `bun run verify types`, `bun run verify complexity`, `bun run verify circular`, `bun run verify knip`.
+- **Run all checks**: `bun run verify` (runs typecheck, parallel test suite with dots, oxlint with complexity and file length thresholds, circular dependencies, knip dead code, and plugin validation in ~4.2s).
+- **Run targeted checks**: `bun run verify test`, `bun run verify types`, `bun run verify lint`, `bun run verify circular`, `bun run verify knip`.
 - **Targeted debugging**: Only run `bun test <file>` or `bun run verify --verbose` when diagnosing a specific failing test.
 
 ## Modie Engine Architecture & Coding Standards

@@ -4,13 +4,13 @@ import { $ } from "bun";
 const CHECKS = {
   types: { name: "Typecheck", cmd: "bun check" },
   test: { name: "Tests", cmd: "bun test --parallel --dots" },
-  complexity: {
-    name: "Complexity",
-    cmd: "bun ./scripts/check-complexity.ts --ci",
+  lint: {
+    name: "Lint",
+    cmd: "oxlint",
   },
   circular: {
     name: "Circular",
-    cmd: "bunx dpdm --no-warning --no-tree --exit-code circular:1 ./src/",
+    cmd: "dpdm --no-warning --no-tree --exit-code circular:1 ./src/",
   },
   knip: {
     name: "Knip",
@@ -31,6 +31,7 @@ type CheckId = keyof typeof CHECKS;
 
 const ALIASES: Record<string, CheckId> = {
   exports: "knip",
+  complexity: "lint",
 };
 
 const args = process.argv.slice(2);

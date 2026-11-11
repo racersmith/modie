@@ -11,7 +11,6 @@ import {
 } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   MODIE_VERSION,
-  createWorkspaceContextSync,
   type IVcsAdapter,
   type WorkspaceContext,
 } from "../../core/index.ts";

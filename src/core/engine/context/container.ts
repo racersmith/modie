@@ -6,7 +6,6 @@
  */
 
 import { normalize, resolve } from "node:path";
-import type { IVcsAdapter } from "../../platform/vcs/types.ts";
 import { defaultVcsAdapter } from "../../platform/vcs/git-cli-adapter.ts";
 import { loadModieConfig } from "../../platform/config/loader.ts";
 import { createDefaultDefinitionRegistry } from "../../domain/registry.ts";

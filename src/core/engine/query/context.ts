@@ -7,7 +7,7 @@
 
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { basename, isAbsolute, join, normalize, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import {
   buildAncestralScopes,
   parseArtifactFilename,

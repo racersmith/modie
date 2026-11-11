@@ -7,10 +7,8 @@
 import {
   resolveArtifactDirectories,
   taskDefinition,
-  validateTaskScope,
   type CreateTaskOptions,
   type CreateTaskResult,
-  type TaskDefinition,
 } from "../../domain/index.ts";
 import { resolveWorkspaceContext, type WorkspaceContext } from "../context/index.ts";
 import { createArtifact } from "../pipeline/create.ts";
