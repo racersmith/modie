@@ -13,7 +13,7 @@ fixture-workspace.ts defines shadow interfaces for CreateTaskOptions, CreateRule
 
 # Acceptance Criteria
 
-- [ ] fixture-workspace.ts imports and reuses domain CreateTaskOptions, CreateRuleOptions, and CreateAdrOptions
-- [ ] Duplicate shadow interface declarations removed from fixture-workspace.ts
-- [ ] All tests pass via bun run verify test
-- [ ] User Review
+- [x] fixture-workspace.ts imports and reuses domain CreateTaskOptions, CreateRuleOptions, and CreateAdrOptions
+- [x] Duplicate shadow interface declarations removed from fixture-workspace.ts
+- [x] All tests pass via bun run verify test
+- [x] User Review

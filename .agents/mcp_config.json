@@ -4,6 +4,11 @@
       "command": "bunx",
       "args": ["-y", "mcp-checkup"],
       "type": "stdio"
+    },
+    "knip": {
+      "command": "bunx",
+      "args": ["-y", "@knip/mcp"],
+      "type": "stdio"
     }
   }
 }

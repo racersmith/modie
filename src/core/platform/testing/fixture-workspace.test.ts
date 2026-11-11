@@ -1,7 +1,7 @@
 /**
  * Unit tests for FixtureWorkspace helper methods and scopeDir resolution.
  * Tagged per ADR-7, RULE-23, and RULE-34 for universal rule verification.
- * @verifies RULE-8, RULE-12, RULE-23, RULE-34, RULE-35, ADR-10
+ * @verifies RULE-8, RULE-12, RULE-23, RULE-34, RULE-35, RULE-38, ADR-10
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
@@ -200,5 +200,72 @@ describe("FixtureWorkspace - Architectural scopeDir Resolution (RULE-8, RULE-12,
       { text: "Delegate createRule", completed: false },
       { text: "Delegate createAdr", completed: true },
     ]);
+  });
+
+  // @verifies RULE-34, RULE-38
+  it("[RULE-34][RULE-38] should accept domain options directly via consolidated option types", async () => {
+    const task2Tag = formatArtifactTag("TASK", 2);
+    const rule2Tag = formatArtifactTag("RULE", 2);
+    const adr2Tag = formatArtifactTag("ADR", 2);
+
+    const task = await workspace.createTask({
+      id: 2,
+      title: "Task with Domain Options",
+      summary: "Domain options summary",
+      contextSection: "Domain context section",
+      acceptanceCriteria: [
+        "First criterion",
+        { text: "Second criterion", completed: true },
+      ],
+      links: [rule2Tag, adr2Tag],
+    });
+
+    const rule = await workspace.createRule({
+      id: 2,
+      title: "Rule with Domain Options",
+      summary: "Rule summary",
+      assertion: "Domain assertion invariant",
+      links: [adr2Tag],
+    });
+
+    const adr = await workspace.createAdr({
+      id: 2,
+      title: "ADR with Domain Options",
+      summary: "ADR summary",
+      contextSection: "ADR context section",
+      alternatives: "Domain alternatives",
+      decision: "Domain decision",
+      consequences: "Domain consequences",
+    });
+
+    expect(await workspace.fileExists(task)).toBe(true);
+    expect(await workspace.fileExists(rule)).toBe(true);
+    expect(await workspace.fileExists(adr)).toBe(true);
+
+    const taskDetails = await getArtifactDetails(task2Tag, {
+      cwd: workspace.cwd,
+    });
+    expect(taskDetails.summary).toBe("Domain options summary");
+    expect(taskDetails.context).toBe("Domain context section");
+    expect(taskDetails.acceptanceCriteria).toEqual([
+      { text: "First criterion", completed: false },
+      { text: "Second criterion", completed: true },
+    ]);
+
+    const parsedRule = parseArtifact(
+      "RULE",
+      await workspace.readFile(rule),
+      rule.filepath,
+    ) as any;
+    expect(parsedRule.assertion).toBe("Domain assertion invariant");
+
+    const parsedAdr = parseArtifact(
+      "ADR",
+      await workspace.readFile(adr),
+      adr.filepath,
+    ) as any;
+    expect(parsedAdr.alternatives).toBe("Domain alternatives");
+    expect(parsedAdr.decision).toBe("Domain decision");
+    expect(parsedAdr.consequences).toBe("Domain consequences");
   });
 });
