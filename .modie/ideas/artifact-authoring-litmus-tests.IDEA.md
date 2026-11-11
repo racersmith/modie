@@ -1,12 +1,3 @@
----
-references:
-  - ADR-2
-  - ADR-4
-  - ADR-6
-  - RULE-25
-outputs: []
----
-
 # Problem & Motivation
 
 As Modie matures and both human engineers and AI agents author governance artifacts, there is a natural tendency to reach for high-ceremony artifacts (`ADR`, `RULE`, `TASK`) prematurely or for the wrong purposes:
@@ -22,23 +13,26 @@ Without clear, memorable **litmus tests**, artifact authoring degrades into an a
 
 # The Artifact Authoring Litmus Test Matrix
 
-To keep governance lean, durable, and high-signal, every primitive artifact subtype must satisfy a distinct, non-negotiable litmus test before authoring.
+To keep governance lean, durable, and high-signal, every artifact subtype across Modie's cognitive funnel must satisfy a distinct, non-negotiable litmus test before authoring.
 
 ```
 ┌──────────┬─────────────────────────────────────────────────────────────────────────────┐
 │ Artifact │ The Litmus Test Question                                                    │
 ├──────────┼─────────────────────────────────────────────────────────────────────────────┤
-│ ADR      │ "Does this decision actively constrain, guide, or justify how future code    │
+│ SPARK    │ "Is this a nascent realization, observation, or unvetted idea captured with │
+│          │  zero ceremony before formal architectural design or execution?"            │
+├──────────┼─────────────────────────────────────────────────────────────────────────────┤
+│ ADR      │ "Does this decision actively constrain, guide, or justify how future code   │
 │          │  must be written in this repository?"                                       │
 ├──────────┼─────────────────────────────────────────────────────────────────────────────┤
-│ RULE     │ "Is this an enduring, falsifiable invariant that can be programmatically    │
+│ RULE     │ "Is this an enduring, falsifiable invariant that can be programmatically   │
 │          │  or statically verified across the codebase?"                               │
 ├──────────┼─────────────────────────────────────────────────────────────────────────────┤
-│ TASK     │ "Has the design converged such that we can define a strict downward blast   │
-│          │  radius and deterministic, binary acceptance criteria?"                    │
+│ TASK     │ "Has the design converged such that we can define a strict downward blast  │
+│          │  radius and deterministic, binary acceptance criteria?"                     │
 ├──────────┼─────────────────────────────────────────────────────────────────────────────┤
-│ MOTIVE   │ "Does this state the enduring architectural reason and domain boundary      │
-│          │  for this directory node's existence in the system DAG?"                   │
+│ MOTIVE   │ "Does this state the enduring architectural reason and domain boundary     │
+│          │  for this directory node's existence in the system DAG?"                  │
 └──────────┴─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -46,11 +40,23 @@ To keep governance lean, durable, and high-signal, every primitive artifact subt
 
 ## Detailed Subtype Evaluation Criteria
 
-### 1. Architectural Decision Records (`ADR`)
+### 1. Sparks & Incubation (`SPARK` in `SPARKS.md` / `spark_add`)
+
+* **The Litmus Question:** *"Is this a nascent realization, observation, or unvetted idea captured with zero ceremony before formal architectural design or execution?"*
+* **Capture a SPARK when:**
+  - An engineer or agent has a fleeting thought, observation, or improvement idea during development.
+  - An agent encounters an out-of-scope defect or architectural realization during task execution that cannot be addressed without violating the task's downward blast radius (RULE-6).
+  - Capturing or incubating a rough concept before committing to formal rules, decisions, or executable tasks.
+  - *Long Explorations:* If a spark grows into a multi-paragraph architectural exploration, it remains in `SPARKS.md` or can be promoted to a standalone `[slug].IDEA.md` design file via `modie spark promote <handle>`.
+* **DO NOT capture a SPARK when:**
+  - The work is already fully designed, estimated, and ready for immediate branch execution with binary acceptance criteria (author a `TASK`).
+  - A definitive architectural choice has been made that must constrain future code (author an `ADR`).
+
+### 2. Architectural Decision Records (`ADR`)
 
 * **The Litmus Question:** *"Does this decision actively constrain, guide, or justify how future code must be written in this repository?"*
 * **Author an ADR when:**
-  - Choosing between mutually exclusive architectural approaches or design patterns.
+  - Choosing between mutually exclusive architectural patterns or system topologies.
   - Decoupling layers or establishing dependency boundaries that every future module must respect.
   - Adopting an architectural invariant whose rationale would not be obvious to a future developer.
 * **DO NOT author an ADR when:**
@@ -58,7 +64,7 @@ To keep governance lean, durable, and high-signal, every primitive artifact subt
   - Documenting an ephemeral migration procedure or one-off task checklist.
   - Making routine implementation decisions (e.g., choosing a helper function name).
 
-### 2. Architectural Rules (`RULE`)
+### 3. Architectural Rules (`RULE`)
 
 * **The Litmus Question:** *"Is this an enduring, falsifiable invariant that can be programmatically or statically verified across the codebase?"*
 * **Author a RULE when:**
@@ -69,17 +75,17 @@ To keep governance lean, durable, and high-signal, every primitive artifact subt
   - The rule represents a temporary milestone or task-specific instruction.
   - The concept is a decision rationale rather than an enforceable constraint (that belongs in an ADR).
 
-### 3. Ephemeral Tasks (`TASK`)
+### 4. Ephemeral Tasks (`TASK`)
 
 * **The Litmus Question:** *"Has the design converged such that we can define a strict downward blast radius and deterministic, binary acceptance criteria?"*
 * **Author a TASK when:**
   - The work is an executable contract ready for branch isolation, implementation, verification, and atomic commit ceremonies.
-  - Every acceptance criterion can be evaluated to a concrete, binary `[x]` checked state.
+  - Every acceptance criterion can be evaluated to a concrete, binary `[x]` checked state ending with `User Review`.
 * **DO NOT author a TASK when:**
-  - The concept is still in divergent brainstorming, exploration, or trade-off evaluation. (Use `SPARKS.md` or an `[slug].IDEA.md` file).
+  - The concept is still in divergent brainstorming, exploration, or trade-off evaluation. (Use `SPARKS.md` via `spark_add` or an incubated idea file).
   - The blast radius cannot be localized to a specific subtree.
 
-### 4. Intent & Scoping (`MOTIVE`)
+### 5. Intent & Scoping (`MOTIVE`)
 
 * **The Litmus Question:** *"Does this state the enduring architectural reason and domain boundary for this directory node's existence in the system DAG?"*
 * **Author a MOTIVE when:**
@@ -92,22 +98,34 @@ To keep governance lean, durable, and high-signal, every primitive artifact subt
 
 # Tooling & Ergonomics Integration
 
-These litmus tests should not remain passive documentation; they should be actively injected into Modie's authoring workflows:
+These litmus tests are not passive documentation; they are actively injected into Modie's authoring workflows:
 
-1. **MCP Agent Guidance (`agentGuidance`):**
-   - Inject the litmus test into tool descriptions and schemas (`create_adr`, `create_rule`, `create_task`).
-   - Specifically guide models: *"Before creating an ADR, verify that it constrains future code. If documenting a deletion or sunset, do not author an ADR."*
-2. **Interactive CLI Authoring Guards:**
-   - In interactive CLI mode (`modie adr create`), display a confirmation prompt:
-     `? Does this decision actively constrain future code? (y/N)`
-   - Prevent accidental creation of tombstone ADRs by suggesting archival or commit messages when retirement/deletion keywords are detected in the title.
-3. **Standard Guidance in `AGENTS.md`:**
-   - Document the Litmus Test Matrix in `.agents/rules/AGENTS.md` and repository guidelines so all paired agent sessions adhere to the same authoring discipline.
+### 1. MCP Agent Guidance (`agentGuidance`)
+Prepend the litmus test to MCP tool descriptions so language models evaluate the condition before invoking the authoring tools:
+* `create_adr`: *"Author an ADR. LITMUS TEST: Does this decision actively constrain future code? Do NOT author an ADR for deletions, refactors, or sunsets (use archive_artifact instead)."*
+* `create_rule`: *"Author a RULE. LITMUS TEST: Is this an enduring, falsifiable invariant verifiable in code/tests? Do NOT author rules for temporary tasks or subjective styles."*
+* `create_task`: *"Author a TASK. LITMUS TEST: Has the design converged to a strict blast radius and binary checklist criteria? If still exploring, use spark_add."*
+* `create_motive`: *"Author a MOTIVE. LITMUS TEST: Does this state the enduring architectural reason for this directory? Do not author setup steps or file inventories."*
+
+### 2. Automated Tombstone ADR Linter & Guardrail
+* In `create_adr` (MCP) and `modie adr create` (CLI):
+  - Detect sunset keywords (`sunset`, `retire`, `deprecate`, `delete`, `remove`, `cleanup`) in the proposed ADR title.
+  - Emit an actionable error diagnostic:
+    ```
+    TOMBSTONE_ADR_DETECTED:
+    ADRs must constrain future code, not record past deletions or retirements.
+    • To retire an existing decision or rule: use archive_artifact (or `modie archive <tag>`)
+    • To clean up dead code: author an ephemeral TASK
+    • If this decision genuinely constrains future code: rephrase title (or pass --force)
+    ```
+  - Allow explicit override via `--force` or `force: true` when a decision legitimately uses these words.
+
+### 3. Repository Guidelines in `AGENTS.md`
+Embed the Litmus Test Matrix directly into `AGENTS.md` under universal governance invariants, establishing an explicit protocol for all human and AI pair-programming sessions.
 
 ---
 
-# Open Questions
+# Resolved Decisions
 
-- **Automated Title Linter:** Should `create_adr` reject or warn if the title contains obvious sunset keywords (`"sunset"`, `"retire"`, `"deprecate"`) unless a `--force` flag is supplied?
-- **Graduation Check:** Should `modie idea graduate` run an interactive litmus review checklist before generating target artifacts?
-
+- **Automated Title Linter:** Resolved in favor of a low-complexity, high-value keyword check on `create_adr` (`sunset`, `retire`, `deprecate`, `delete`, `remove`) with a `--force` escape hatch to permanently eliminate changelog pollution.
+- **Graduation Check:** Resolved as non-applicable; idea graduation is a lean, manual process where `.IDEA.md` files are deleted after spawning concrete tasks and rules.
