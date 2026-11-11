@@ -14,7 +14,7 @@ src/interfaces/cli/index.ts currently re-exports an arbitrary subset of command 
 
 # Acceptance Criteria
 
-- [ ] Arbitrary partial command exports in src/interfaces/cli/index.ts replaced with complete commands index export
-- [ ] Interfaces CLI public export contract verified
-- [ ] All checks pass via bun run verify
-- [ ] User Review
+- [x] Arbitrary partial command exports in src/interfaces/cli/index.ts replaced with complete commands index export
+- [x] Interfaces CLI public export contract verified
+- [x] All checks pass via bun run verify
+- [x] User Review
