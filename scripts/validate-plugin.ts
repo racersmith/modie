@@ -5,7 +5,6 @@
  * and governance rules strictly comply with architectural invariants.
  *
  * @verifies RULE-37
- * @verifies ADR-12
  */
 
 import { existsSync, readFileSync } from "node:fs";
