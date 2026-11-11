@@ -8,7 +8,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { formatArtifactFilename, formatArtifactTag } from "../../core/index.ts";
+import { formatArtifactTag } from "../../core/index.ts";
 import {
   createFixtureWorkspace,
   type FixtureWorkspace,
@@ -34,8 +34,6 @@ describe("Modie MCP Server - 12 Singular Agent Tools Suite", () => {
   const adrTag = formatArtifactTag("ADR", 101);
   const task101Id = "101";
   const task101Tag = formatArtifactTag("TASK", task101Id);
-  const task102Id = "102";
-  const task102Tag = formatArtifactTag("TASK", task102Id);
 
   beforeEach(async () => {
     workspace = await createFixtureWorkspace("modie-mcp-test-");

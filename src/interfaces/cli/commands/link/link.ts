@@ -8,7 +8,6 @@
 import { z } from "zod";
 import {
   linkArtifact,
-  type ArtifactLinkRelationship,
   type LinkMutationResult,
 } from "../../../../core/index.ts";
 import {

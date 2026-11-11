@@ -68,7 +68,7 @@ export function generateCommandHelp(
   sections.push("\nOptions:");
 
   const standardFlags: Record<string, CliFlagDefinition> = {
-    ...(definition.flags ?? {}),
+    ...definition.flags,
   };
 
   if (!standardFlags.json) {

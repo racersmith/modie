@@ -390,7 +390,7 @@ export async function executeBranchMerge(
     cwd,
   );
 
-  const deleteSource = !Boolean(options.keepBranch);
+  const deleteSource = !options.keepBranch;
   if (deleteSource) {
     await vcs.deleteBranch(sourceBranch, cwd);
   }

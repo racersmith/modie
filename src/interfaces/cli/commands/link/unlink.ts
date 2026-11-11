@@ -7,7 +7,6 @@
 import { z } from "zod";
 import {
   unlinkArtifact,
-  type ArtifactLinkRelationship,
   type LinkMutationResult,
 } from "../../../../core/index.ts";
 import {

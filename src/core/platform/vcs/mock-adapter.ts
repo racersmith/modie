@@ -7,7 +7,6 @@ import type {
   GitGrepMatch,
   GitGrepOptions,
   IVcsAdapter,
-  MultiBranchOptions,
   StageFilesOptions,
 } from "./types.ts";
 

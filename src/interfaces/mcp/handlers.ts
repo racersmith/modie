@@ -4,8 +4,7 @@
  * Implements token economy and progressive disclosure (RULE-26).
  */
 
-import { readdir } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname } from "node:path";
 import {
   archiveArtifact,
   checkTaskItem,
@@ -25,7 +24,6 @@ import {
   parseTaskIdFromBranch,
   resolveWorkspaceContext,
   startTaskBranch,
-  toPosixRelative,
   type ArtifactDetails,
   type ArtifactReferencesResult,
   type CompiledContextResult,
