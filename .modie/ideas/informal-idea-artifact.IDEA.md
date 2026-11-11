@@ -1,13 +1,3 @@
----
-references:
-  - ADR-2
-  - ADR-4
-  - ADR-6
-  - ADR-10
-  - RULE-20
-outputs: []
----
-
 # Problem & Motivation
 
 Currently, Modie's primitive artifacts (`MOTIVE`, `ADR`, `RULE`, `TASK`) are highly formalized and carry intentional governance overhead:
@@ -21,70 +11,83 @@ Even creating a dedicated idea file in the middle of a task is too much friction
 
 # Two-Tier Incubation Architecture
 
-We separate **fleeting capture** from **active incubation** using distinct, evocative filenames, while ensuring humans can always edit plain Markdown files directly and use Modie CLI/MCP tooling as an ergonomic accelerator.
+We separate **fleeting capture** from **active incubation** using a lean, two-tier model that lives exclusively at the repository root (`.modie/ideas/`). 
 
-## Explicit Opt-In Scope Initialization & Upward Resolution
-
-To prevent sprawl across deep leaf directories while empowering monorepos and multi-package trees, the `ideas/` container is an **explicit opt-in zone**:
-
-- **Explicit Initialization (`modie ideas init [path]`):**
-  - Ideas and sparks do not proliferate into random leaf folders.
-  - Initialized at workspace root by default (`.modie/ideas/`).
-  - Major package scopes (e.g. `packages/core/.modie/ideas/`) can be explicitly activated via `modie ideas init <path>`.
-- **Nearest-Ancestor Bubble-Up Resolution:**
-  - When running `modie spark "my thought"` or calling the agent `spark_add` tool from any deep directory (e.g. `src/core/resolver/types/`), Modie walks upward to find the nearest initialized `.modie/ideas/` container.
-  - If a package-level container exists, the spark lands there; otherwise it bubbles up to the workspace root.
-  - Modie never silently spawns un-initialized idea folders.
-- **Workspace-Wide Discovery (`modie ideas --all`):**
-  - Scans and reports all active incubation zones across the monorepo, showing spark counts and in-flight ideas per package.
+Because ideas and sparks do not mutate code and have zero blast radius, they do not require complex sub-package scoping or directory traversal: there is exactly one shared incubator at workspace root.
 
 ## Incubation Stages
 
-1. **Stage 1 — The Spark Ledger (`SPARKS.md`):**
-   - A single plain-Markdown list of raw, nascent thoughts (`<scope>/.modie/ideas/SPARKS.md`).
-   - **Plain-File First:** A human can keep `SPARKS.md` open in their editor and jot down `- my thought` directly without using the CLI or memorizing verbose syntax, or run `modie spark "my thought"` from the terminal.
-   - **Agent Cognitive Safety Valve:** During task execution, agents are constrained by blast radius boundaries (RULE-6). Calling `spark_add({ thought })` gives agents an instant, compliant outlet to capture out-of-scope discoveries without derailing their active task.
-   - **Consolidation & Frequency Signal:** When multiple agent sessions or humans jot down similar sparks, an agent triage pass can consolidate duplicates and surface high-value sparks for promotion.
+### 1. Stage 1 — The Spark Ledger (`SPARKS.md`)
 
-2. **Stage 2 — Dedicated Idea File (`[slug].IDEA.md`):**
-   - **Programmatic Promotion (`modie spark promote`):** Tooling atomically extracts one or more sparks from `SPARKS.md` (by list index, substring match, or interactive selection), seeds a new `[slug].IDEA.md` file with those sparks, and removes the promoted lines from `SPARKS.md`.
-   - **Un-indexed by Design:** Uses `[slug].IDEA.md` without sequence numbers (ADR-2), keeping focus on the concept's descriptive name and avoiding cross-branch ID collisions.
-   - **Explicit Frontmatter Lineage (`references` vs `outputs`):**
-     - `references:` Durable context that inspired or informs the idea (`ADR-X`, `RULE-Y`).
-     - `outputs:` Spawned artifacts translating the idea into reality (`TASK-XX`, `ADR-YY`, `RULE-ZZ`).
-     - This distinction answers whether an idea has been translated into work (`Unplanned` when empty, `In Flight` when tasks are open, `Ready to Graduate` when complete) without risking DAG link rot on permanent records.
-   - **Config-Driven WIP Limits:** `.modie/config.json` defines soft/hard limits on active `.IDEA.md` files and `SPARKS.md` entries per scope, prompting consolidation or triage rather than infinite accumulation.
+* **Storage:** `.modie/ideas/SPARKS.md`.
+* **Heading-Delimited Ledger:** Each spark is bounded by `# [handle] Title` with no document wrapper.
+* **Plain-File First (2-Character Friction):** Writing `# My thought` takes the exact same two keystrokes as a bullet (`# ` vs `- `).
+* **Full Markdown Freedom:** Because sparks are top-level headings, thoughts can span multiple paragraphs, contain fenced code blocks, checklists, quotes, or sub-headings (`##`, `###`) without cumbersome indentation rules.
+* **Native IDE Outlines & Folding:** Every spark appears as a top-level symbol in editor outline sidebars, making jumping between thoughts and folding finished sparks instantaneous.
+* **Flexible Handles & Lazy Minting:**
+  - Humans can optionally assign custom handles (e.g. `# [ide] Clickable tags` or `# [NEXT] Refactor resolver`).
+  - Sparks drafted without handles (e.g. `# Clickable tags`) are preserved, but lazily minted in-place with short 4-character random hex tokens (e.g. `# [7a1f] Clickable tags`, verified unique within the active file) whenever Modie reads or interacts with the file (`modie spark list`, `modie spark promote`, etc.).
+  - Random hexes are generated with uniqueness checks against existing active handles, ensuring stability across text edits and typo fixes without the collision overhead of content hashing.
+  - Agents calling `spark_add({ title, body })` automatically generate a unique minted handle upon creation.
+* **Agent Cognitive Safety Valve:** During task execution, agents are constrained by blast radius boundaries (RULE-6). Calling `spark_add({ title, body })` gives agents an instant, compliant outlet to capture out-of-scope discoveries without derailing their active task.
+* **Consolidation & Frequency Signal:** When multiple agent sessions or humans jot down similar sparks, an agent triage pass can consolidate duplicates and surface high-value sparks for promotion.
 
-3. **Stage 3 — Terminal Graduation or Rejection:**
-   - Like `TASK` (ADR-6), ideas are strictly **ephemeral**.
-   - **Direct Spark Graduation (`modie spark task <id>`):** Actionable sparks can graduate directly into a formal `TASK` without requiring an intermediate idea file.
-   - **Idea Graduation (`modie idea graduate <slug>`):** Once all spawned artifacts declared in `outputs:` are created on disk, graduation reports the generated artifacts and safely deletes the `.IDEA.md` file.
-   - **Two-Tier Rejection Graveyard (`.modie/ideas/.rejected/`):**
-     - **Rejected Sparks (`.rejected/SPARKS.md`):** Discarded sparks that were never converted into ideas are archived into `.rejected/SPARKS.md` with an inline rationale (e.g. `- My thought — *Rejected 2026-10-30: Rationale*`). This preserves institutional memory of settled non-goals and eliminates repetitive re-proposals while keeping active `SPARKS.md` lean.
-     - **Rejected Ideas (`.rejected/[slug].IDEA.md`):** Promoted ideas that are abandoned are moved to `.rejected/[slug].IDEA.md` with a `# Rationale for Rejection` section rather than permanently deleted.
+### 2. Stage 2 — Dedicated Idea File (`[slug].IDEA.md`)
 
-# Authoring, Promotion & Discovery Ergonomics
+* **Storage:** `.modie/ideas/[slug].IDEA.md`.
+* **Programmatic Promotion (`modie spark promote <handle> [slug]`):** Tooling atomically extracts the spark section from `SPARKS.md`, seeds a new `[slug].IDEA.md` file, and removes the promoted section from `SPARKS.md`.
+* **Pure Markdown (Zero Frontmatter):**
+  - Idea files contain **zero YAML frontmatter**. They are pure, standard Markdown documents with freeform sections (`# Problem & Motivation`, `## Proposed Design`, etc.).
+  - Prior art (`ADR-X`, `RULE-Y`) is cited naturally in Markdown prose.
+* **Un-indexed by Design:** Uses `[slug].IDEA.md` without sequence numbers (ADR-2), keeping focus on the concept's descriptive name and avoiding cross-branch ID collisions.
+* **Unidirectional Citation Invariant:** Because ideas are strictly ephemeral, permanent artifacts (`RULE`, `ADR`) and code/tests must **never cite an `.IDEA.md` file**. Ideas flow downstream into tasks; they never pollute upstream governance.
+* **Task Context Connection:** When an idea matures and spawns a `TASK`, the task's existing, native `## Context` section simply cites the originating idea (e.g. `Originating from .modie/ideas/informal-idea-artifact.IDEA.md`). No complex reverse-lookup graph engines are required.
 
-- **Scope-Aware Discovery (`modie ideas` / `modie sparks`):**
-  - By default, displays clickable links to active `[slug].IDEA.md` files alongside numbered sparks from the nearest initialized scope.
-  - `--all` / `--workspace` aggregates across all package-level idea zones.
-- **Spark Management:**
-  - Add: `modie spark "my thought"` (or MCP `spark_add`).
-  - List: `modie sparks` (shows numbered list).
-  - Promote to Idea: `modie spark promote 1,4 --title "Clickable IDE Tags"`.
-  - Graduate to Task: `modie spark task 2 "Add summary to ADR frontmatter" --scope src`.
-  - Reject Spark: `modie spark reject 3 "Conflicts with plain-text DAG (ADR-4)"`.
-- **Idea Lifecycle:**
-  - Create: `modie idea create "My Concept"` (scaffolds sections and frontmatter).
-  - Link Output: `modie idea link <slug> TASK-54 --output`.
-  - Graduate: `modie idea graduate <slug>`.
-  - Reject: `modie idea graduate <slug> --reject "Rationale for abandonment"`.
-- **Git Merge Resilience:**
-  - `.gitattributes` declares `**/.modie/ideas/**/SPARKS.md merge=union` to allow concurrent appends to both active and rejected spark ledgers to auto-resolve across branches without merge conflicts.
+### 3. Stage 3 — Terminal Graduation or Rejection
+
+Like `TASK` (ADR-6), ideas are strictly **ephemeral**.
+
+* **Direct Spark Graduation:** When a spark is already concrete, create the formal `TASK` directly via standard task tools (`modie task create` or `create_task`) and remove the spark from `SPARKS.md`.
+* **Idea Graduation:** When an idea has finished spawning its tasks and rules, the author or agent simply deletes the `.IDEA.md` file. Git commit history preserves the permanent record of the design discussion.
+* **Two-Tier Rejection Graveyard (`.modie/ideas/.rejected/`):**
+  - **Rejected Sparks (`.rejected/SPARKS.md`):** Discarded sparks that were never converted into ideas are transferred to `.rejected/SPARKS.md` with a high-signal blockquote callout immediately below the heading:
+    ```markdown
+    # [7a1f] Clickable IDE links for artifact tags
+    > **Rejected (2026-11-11):** Decided against a proprietary IDE extension in favor of native CLI wayfinding.
+
+    Original thought text, code snippets, and rationale remain preserved here...
+    ```
+    This keeps heading titles clean in editor outlines, surfaces the rejection rationale immediately upon scanning without scrolling, and preserves the full original context to eliminate repetitive re-proposals.
+  - **Rejected Ideas (`.rejected/[slug].IDEA.md`):** Promoted ideas that are abandoned are moved to `.rejected/[slug].IDEA.md` with a `# Rationale for Rejection` section rather than permanently deleted.
+
+# Lean Tooling & Ergonomics
+
+Rather than introducing sprawling subcommand trees or custom branch routers, Modie exposes only four focused operations:
+
+1. **`modie spark add "Title" ["Body"]`** (or MCP `spark_add`):
+   - Fast capture for terminal users and agents without opening an editor.
+2. **`modie spark list`** (or `modie sparks`):
+   - Displays active sparks with handles and titles.
+3. **`modie spark promote <handle> [slug]`**:
+   - Atomically cuts the spark heading block out of `SPARKS.md` and writes it to `.modie/ideas/[slug].IDEA.md`.
+4. **`modie spark reject <handle> [reason]`**:
+   - Atomically moves the spark heading block to `.rejected/SPARKS.md` with the rejection blockquote note.
+
+*All other idea management (authoring, editing, linking context, graduating) happens directly in plain Markdown files using standard editor tools.*
+
+# Git Merge Resilience
+
+`.gitattributes` declares:
+```gitattributes
+**/.modie/ideas/**/SPARKS.md merge=union
+```
+This allows concurrent appends to both active and rejected spark ledgers to auto-resolve across branches without merge conflicts.
 
 # Resolved Questions
 
-- **Frictionless Effort/Impact in `SPARKS.md`:** Resolved against inline complexity. Adding tagging overhead to raw sparks defeats the purpose of rapid, zero-friction capture. Triage happens during promotion.
-- **Idea $\rightarrow$ Task/ADR Graduation Tooling:** Resolved in favor of explicit graduation commands for both sparks (`modie spark task`) and ideas (`modie idea graduate`), backed by explicit `outputs:` verification.
-- **Scope Proliferation:** Resolved via explicit initialization (`modie ideas init [path]`) with upward nearest-ancestor bubble-up traversal.
-- **Rejection Amnesia:** Resolved via a symmetrical two-tier rejection graveyard: `.rejected/SPARKS.md` for raw sparks with inline rationales, and `.rejected/[slug].IDEA.md` for developed concepts.
+- **Frictionless Spark Addressing & Structure:** Resolved via heading-delimited entries (`# [handle] Title`) and lazy minting: humans can write raw `# My thought` entries with zero indentation overhead and full Markdown freedom, while Modie lazily mints short 4-character random hex handles (`[7a1f]`) in-place during tool interactions.
+- **Zero Frontmatter Overhead:** Resolved by eliminating frontmatter entirely from `.IDEA.md` files. Citations live in natural prose; task linkages live in the task's native `## Context` section.
+- **Scope Proliferation (YAGNI):** Resolved by maintaining exactly one `.modie/ideas/` container at workspace root. Ideas have no blast radius and require no package partitioning.
+- **Branch Topology (YAGNI):** Resolved against custom `idea/` branch routers. Ideas iterate directly in Markdown on trunk; execution branching belongs exclusively to `TASK` artifacts where Modie's branch engine is already mature.
+- **WIP Limits (YAGNI):** Resolved against config schemas or blocking limits to keep capture 100% friction-free.
+- **Rejection Amnesia:** Resolved via a symmetrical two-tier rejection graveyard: `.rejected/SPARKS.md` for raw sparks with a top-level blockquote callout note (`> **Rejected (date):** ...`), and `.rejected/[slug].IDEA.md` for developed concepts with a `# Rationale for Rejection` section.
