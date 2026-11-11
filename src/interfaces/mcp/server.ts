@@ -1,6 +1,6 @@
 /**
  * Model Context Protocol (MCP) server implementation for Modie.
- * Registers 11 singular-purpose agent tools with flat Zod input/output schemas,
+ * Registers 12 singular-purpose agent tools with flat Zod input/output schemas,
  * declared behavioral annotations, stateless parameters with Git branch fallback,
  * and token economy progressive disclosure (RULE-25, RULE-26, RULE-27).
  */
@@ -22,6 +22,7 @@ import {
   handleCheckCriteria,
   handleCompleteTask,
   handleCreateAdr,
+  handleCreateMotive,
   handleCreateRule,
   handleCreateTask,
   handleDirectoryContext,
@@ -41,6 +42,8 @@ import {
   completeTaskSchema,
   createAdrSchema,
   createArtifactOutputSchema,
+  createMotiveOutputSchema,
+  createMotiveSchema,
   createRuleSchema,
   createTaskSchema,
   directoryContextSchema,
@@ -79,7 +82,7 @@ export interface ModieMcpServerOptions {
 }
 
 /**
- * Creates and initializes a Modie MCP server with the 11 singular agent tools
+ * Creates and initializes a Modie MCP server with the 12 singular agent tools
  * and ambient governance resources.
  */
 export function createModieMcpServer(
@@ -394,11 +397,44 @@ export function createModieMcpServer(
     }) as any,
   );
 
+  // 10. create_motive
+  server.registerTool(
+    "create_motive",
+    {
+      description:
+        "Author or scaffold a MOTIVE.md scope intent file expressing directory-level purpose and trajectory.",
+      inputSchema: createMotiveSchema.shape,
+      outputSchema: createMotiveOutputSchema.shape,
+      annotations: {
+        readOnlyHint: false,
+        idempotentHint: false,
+        destructiveHint: false,
+      },
+    },
+    (async (args: any): Promise<any> => {
+      try {
+        await dynamicManager.ensureWorkspace();
+        const result = await handleCreateMotive(args, workspace);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+          structuredContent: result,
+        };
+      } catch (error: any) {
+        return formatMcpToolError(error, "create_motive", args, stderr);
+      }
+    }) as any,
+  );
+
   // ==========================================================================
   // Cluster 4: Graph Mutation Tools
   // ==========================================================================
 
-  // 10. link_artifacts
+  // 11. link_artifacts
   server.registerTool(
     "link_artifacts",
     {
@@ -431,7 +467,7 @@ export function createModieMcpServer(
     }) as any,
   );
 
-  // 11. archive_artifact
+  // 12. archive_artifact
   server.registerTool(
     "archive_artifact",
     {

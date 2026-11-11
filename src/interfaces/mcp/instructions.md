@@ -55,9 +55,9 @@ Modie enforces a strict hierarchical directed acyclic graph (DAG):
 
 ---
 
-## 6. The 11 Singular Modie MCP Agent Tools
+## 6. The 12 Singular Modie MCP Agent Tools
 
-Modie exposes 11 singular-purpose tools designed for high signal-to-noise and progressive disclosure:
+Modie exposes 12 singular-purpose tools designed for high signal-to-noise and progressive disclosure:
 
 ### Spatial & Artifact Exploration
 
@@ -76,11 +76,12 @@ Modie exposes 11 singular-purpose tools designed for high signal-to-noise and pr
 7. **`create_rule`**: Authors an architectural governance rule (RULE) with a strongly typed invariant assertion claim and optional justifying ADR links.
 8. **`create_adr`**: Authors an Architectural Decision Record (ADR) with strongly typed context, decision, consequences, and links.
 9. **`create_task`**: Authors a scoped task specification (TASK) with contract-based acceptance criteria (must end with `User Review`), prerequisite dependencies, and governing links.
+10. **`create_motive`**: Authors or scaffolds a directory-level intent file (`MOTIVE.md`) expressing scope purpose and trajectory without cross-artifact citations.
 
 ### Graph Mutation
 
-10. **`link_artifacts`**: Establishes directional frontmatter relationships (`links`, `depends_on`) between artifacts after validating spatial ancestry and DAG constraints.
-11. **`archive_artifact`**: Archives an obsolete RULE or ADR artifact, safely marking it archived and auditing inbound references.
+11. **`link_artifacts`**: Establishes directional frontmatter relationships (`links`, `depends_on`) between artifacts after validating spatial ancestry and DAG constraints.
+12. **`archive_artifact`**: Archives an obsolete RULE or ADR artifact, safely marking it archived and auditing inbound references.
 
 ---
 
