@@ -12,6 +12,10 @@ const CHECKS = {
     name: "Circular",
     cmd: "bunx dpdm --no-warning --no-tree --exit-code circular:1 ./src/",
   },
+  knip: {
+    name: "Knip",
+    cmd: "bun knip",
+  },
   plugin: {
     name: "Plugin",
     cmd: "bun ./scripts/validate-plugin.ts",
@@ -25,10 +29,18 @@ const CHECKS = {
 
 type CheckId = keyof typeof CHECKS;
 
+const ALIASES: Record<string, CheckId> = {
+  exports: "knip",
+};
+
 const args = process.argv.slice(2);
 const failFast = args.includes("--fail-fast") || args.includes("-f");
 const verbose = args.includes("--verbose") || args.includes("-v");
-const targets = args.filter((a) => !a.startsWith("-")) as (CheckId | "all")[];
+const rawTargets = args.filter((a) => !a.startsWith("-"));
+const targets = rawTargets.map((t) => (t in ALIASES ? ALIASES[t] : t)) as (
+  | CheckId
+  | "all"
+)[];
 
 const keys: CheckId[] =
   targets.length > 0 && !targets.includes("all")

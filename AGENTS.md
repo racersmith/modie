@@ -4,8 +4,8 @@
 
 Always use the streamlined verification runner to prevent context window bloat:
 
-- **Run all checks**: `bun run verify` (runs typecheck, parallel test suite with dots, complexity, and circular dependency checks in ~3.7s).
-- **Run targeted checks**: `bun run verify test`, `bun run verify types`, `bun run verify complexity`, `bun run verify circular`.
+- **Run all checks**: `bun run verify` (runs typecheck, parallel test suite with dots, complexity, circular dependency, and dead code / unused exports checks in ~4.2s).
+- **Run targeted checks**: `bun run verify test`, `bun run verify types`, `bun run verify complexity`, `bun run verify circular`, `bun run verify knip`.
 - **Targeted debugging**: Only run `bun test <file>` or `bun run verify --verbose` when diagnosing a specific failing test.
 
 ## Architectural Governance & Ephemeral Tasks
