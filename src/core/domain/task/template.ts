@@ -120,14 +120,13 @@ export function renderTaskMarkdown(options: TaskRenderOptions): string {
     title,
     summary,
     contextSection,
-    context,
     depends_on = [],
     links = [],
     acceptanceCriteria = [],
     skipValidation,
     allowEmptyCriteria,
   } = options;
-  const effectiveContext = contextSection ?? context;
+  const effectiveContext = contextSection;
 
   // Validate frontmatter boundaries
   if (!skipValidation) {
@@ -140,6 +139,7 @@ export function renderTaskMarkdown(options: TaskRenderOptions): string {
   const trimmedSummary = summary?.trim().replace(/\s*\r?\n\s*/g, " ");
   if (trimmedSummary) {
     frontmatterLines.push(`summary: ${trimmedSummary}`);
+    frontmatterLines.push("");
   }
 
   if (depends_on.length > 0) {
@@ -208,7 +208,6 @@ export function parseTaskFromContext(
     depends_on: context.frontmatterFields.depends_on ?? [],
     links: context.frontmatterFields.links,
     contextSection,
-    context: contextSection,
     acceptanceCriteria,
     rawContent: context.rawContent,
     filePath: context.filepath,

@@ -54,7 +54,7 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14, RULE-35)", () => {
     const rendered = renderAdrMarkdown({
       title: "Subtype Directory Partitioning",
       links: [rule8, adr2],
-      context:
+      contextSection:
         "Enforcing strict dedicated folders creates unnecessary directory sprawl.",
       alternatives: "- Strict Mandatory Folders\n- Strict Flat Colocation",
       decision: "We adopt a permissive containment model.",
@@ -121,7 +121,7 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14, RULE-35)", () => {
       title: "Extracted ADR",
       summary: "Short signpost summary.",
       links: [],
-      context: "Context content.",
+      contextSection: "Context content.",
       alternatives: "Alternatives content.",
       decision: "Decision content.",
       consequences: "Consequences content.",
@@ -134,7 +134,7 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14, RULE-35)", () => {
     });
     const parsed = parseAdrMarkdown(markdown, filename);
     expect(parsed.summary).toBe("Short signpost summary.");
-    expect(parsed.context).toBe("Context content.");
+    expect(parsed.contextSection).toBe("Context content.");
     expect(parsed.alternatives).toBe("Alternatives content.");
     expect(parsed.decision).toBe("Decision content.");
     expect(parsed.consequences).toBe("Consequences content.");
@@ -149,7 +149,7 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14, RULE-35)", () => {
       summary:
         "Emit 1-2 sentence ADR summaries during context compilation to prevent prompt bloat.",
       links: [adr4, rule26],
-      context: "Full ADR bodies bloat upward context compilation.",
+      contextSection: "Full ADR bodies bloat upward context compilation.",
       decision: "Adopt frontmatter summary field.",
     });
 

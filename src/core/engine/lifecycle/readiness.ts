@@ -76,6 +76,7 @@ export interface RawTaskDataRecord {
   discovered: { id: string; slug: string; filepath: string };
   parsed: {
     summary?: string;
+    contextSection?: string;
     context?: string;
     depends_on?: string[];
     links?: string[];
@@ -241,7 +242,7 @@ export function buildTaskQueueItems(
         filepath: disc.filepath,
         relativePath,
         summary: parsed.summary,
-        context: parsed.context,
+        context: parsed.contextSection ?? parsed.context,
         depends_on: dependsOn,
         links: parsed.links ?? [],
         acceptanceCriteria: parsed.acceptanceCriteria,

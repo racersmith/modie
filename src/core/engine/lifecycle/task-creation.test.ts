@@ -136,7 +136,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     const result = await createTask({
       title: testTitle,
       scopeDir: testScope,
-      context: "Validates core task creation service end-to-end integration.",
+      contextSection: "Validates core task creation service end-to-end integration.",
       depends_on: [depTask3, depTask4],
       links: [linkAdr6, linkRule25],
       acceptanceCriteria: [
@@ -316,7 +316,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     const res = await createTask({
       title: "Explicit Summary Task",
       summary: summaryText,
-      context:
+      contextSection:
         "# Mission Brief\n\nDetailed context about decomposing interfaces.",
       cwd: workspace.cwd,
     });
@@ -340,7 +340,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
   it("[RULE-25][RULE-26][RULE-34][RULE-35] should extract fallback summary from context when summary is omitted", async () => {
     const res = await createTask({
       title: "Omitted Summary Task",
-      context:
+      contextSection:
         "# Mission Brief\n\nThis task provides fallback summary extraction from context. Additional lines follow.",
       cwd: workspace.cwd,
     });
@@ -365,49 +365,18 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
   });
 
   // @verifies ADR-4, RULE-22, RULE-25, RULE-34
-  it("[ADR-4][RULE-22][RULE-25][RULE-34] should accept contextSection and support backward-compatible context alias", async () => {
-    // 1. Create task with contextSection
-    const res1 = await createTask({
+  it("[ADR-4][RULE-22][RULE-25][RULE-34] should accept contextSection strictly and populate TaskArtifact.contextSection", async () => {
+    const res = await createTask({
       title: "Task With Context Section",
       contextSection: "Task context defined via contextSection property.",
       cwd: workspace.cwd,
     });
-    expect(res1.artifact.context).toBe(
+    expect(res.artifact.contextSection).toBe(
       "Task context defined via contextSection property.",
     );
-    expect(res1.artifact.contextSection).toBe(
+    const content = await workspace.readFile(res.filepath);
+    expect(content).toContain(
       "Task context defined via contextSection property.",
     );
-    const content1 = await workspace.readFile(res1.filepath);
-    expect(content1).toContain(
-      "Task context defined via contextSection property.",
-    );
-
-    // 2. Create task with backward-compatible context alias
-    const res2 = await createTask({
-      title: "Task With Legacy Context",
-      context: "Task context defined via backward-compatible context alias.",
-      cwd: workspace.cwd,
-    });
-    expect(res2.artifact.context).toBe(
-      "Task context defined via backward-compatible context alias.",
-    );
-    expect(res2.artifact.contextSection).toBe(
-      "Task context defined via backward-compatible context alias.",
-    );
-    const content2 = await workspace.readFile(res2.filepath);
-    expect(content2).toContain(
-      "Task context defined via backward-compatible context alias.",
-    );
-
-    // 3. contextSection takes precedence when both provided
-    const res3 = await createTask({
-      title: "Task With Precedence Context",
-      contextSection: "Primary task context text.",
-      context: "Ignored fallback task context.",
-      cwd: workspace.cwd,
-    });
-    expect(res3.artifact.context).toBe("Primary task context text.");
-    expect(res3.artifact.contextSection).toBe("Primary task context text.");
   });
 });

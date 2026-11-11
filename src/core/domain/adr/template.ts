@@ -103,13 +103,12 @@ export function renderAdrMarkdown(options: AdrRenderOptions): string {
     summary,
     links = [],
     contextSection,
-    context,
     alternatives,
     decision,
     consequences,
     skipValidation,
   } = options;
-  const effectiveContext = contextSection ?? context;
+  const effectiveContext = contextSection;
 
   // Validate frontmatter boundaries per RULE-14
   if (!skipValidation) {
@@ -229,12 +228,7 @@ export function parseAdrFromContext(context: ArtifactParseContext): AdrArtifact 
     ...(context.frontmatterFields.superseded_by
       ? { superseded_by: context.frontmatterFields.superseded_by }
       : {}),
-    ...(contextSection !== undefined
-      ? {
-          contextSection,
-          context: contextSection,
-        }
-      : {}),
+    ...(contextSection !== undefined ? { contextSection } : {}),
     ...(alternatives !== undefined ? { alternatives } : {}),
     ...(decision !== undefined ? { decision } : {}),
     ...(consequences !== undefined ? { consequences } : {}),

@@ -208,7 +208,7 @@ describe("Rule Creation - Execution & Disk Writing (RULE-1, RULE-3, RULE-8, RULE
   });
 
   // @verifies RULE-3, RULE-11, RULE-25, RULE-34
-  it("[RULE-3][RULE-11][RULE-25][RULE-34] should accept contextSection and support backward-compatible context alias", async () => {
+  it("[RULE-3][RULE-11][RULE-25][RULE-34] should accept contextSection as alias for assertion and prioritize explicit assertion", async () => {
     const workspace = await createFixtureWorkspace(
       "rule-context-disambiguation-",
     );
@@ -222,46 +222,22 @@ describe("Rule Creation - Execution & Disk Writing (RULE-1, RULE-3, RULE-8, RULE
     expect(result1.artifact.assertion).toBe(
       "Invariant assertion passed via contextSection property.",
     );
+    expect(result1.artifact.contextSection).toBe(
+      "Invariant assertion passed via contextSection property.",
+    );
     const content1 = await workspace.readFile(result1.filepath);
     expect(content1).toContain(
       "Invariant assertion passed via contextSection property.",
     );
 
-    // 2. Create with backward-compatible context alias
+    // 2. assertion takes precedence over contextSection
     const result2 = await createRule({
-      title: "Rule With Legacy Context",
-      context:
-        "Invariant assertion passed via backward-compatible context alias.",
-      cwd: workspace.cwd,
-    });
-    expect(result2.artifact.assertion).toBe(
-      "Invariant assertion passed via backward-compatible context alias.",
-    );
-    const content2 = await workspace.readFile(result2.filepath);
-    expect(content2).toContain(
-      "Invariant assertion passed via backward-compatible context alias.",
-    );
-
-    // 3. assertion takes precedence over contextSection and context
-    const result3 = await createRule({
       title: "Rule Assertion Precedence",
       assertion: "Primary assertion claim text.",
       contextSection: "Ignored contextSection.",
-      context: "Ignored legacy context.",
       cwd: workspace.cwd,
     });
-    expect(result3.artifact.assertion).toBe("Primary assertion claim text.");
-
-    // 4. contextSection takes precedence over legacy context when assertion is omitted
-    const result4 = await createRule({
-      title: "Rule ContextSection Precedence",
-      contextSection: "Primary contextSection claim text.",
-      context: "Ignored legacy context.",
-      cwd: workspace.cwd,
-    });
-    expect(result4.artifact.assertion).toBe(
-      "Primary contextSection claim text.",
-    );
+    expect(result2.artifact.assertion).toBe("Primary assertion claim text.");
 
     await workspace.cleanup();
   });
