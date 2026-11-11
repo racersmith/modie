@@ -31,6 +31,12 @@ import {
   taskCompleteCommand,
   taskMergeCommand,
 } from "./task/index.ts";
+import {
+  sparkAddCommand,
+  sparkListCommand,
+  sparkPromoteCommand,
+  sparkRejectCommand,
+} from "./spark/index.ts";
 import { mcpCommand } from "./mcp/index.ts";
 
 export * from "./find/index.ts";
@@ -44,6 +50,7 @@ export * from "./rule/index.ts";
 export * from "./adr/index.ts";
 export * from "./motive/index.ts";
 export * from "./task/index.ts";
+export * from "./spark/index.ts";
 export * from "./mcp/index.ts";
 
 /**
@@ -73,5 +80,9 @@ export const allCliCommands: CliCommandDefinition<any, any, any>[] = [
   taskMergeCommand,
   taskListCommand,
   taskStatusCommand,
+  sparkAddCommand,
+  sparkListCommand,
+  sparkPromoteCommand,
+  sparkRejectCommand,
   mcpCommand,
 ];

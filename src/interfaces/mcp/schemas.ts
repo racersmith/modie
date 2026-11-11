@@ -309,3 +309,29 @@ export const archiveArtifactOutputSchema = z
   })
   .passthrough();
 export type ArchiveArtifactOutput = z.infer<typeof archiveArtifactOutputSchema>;
+
+/**
+ * Input schema for spark_add tool.
+ */
+export const sparkAddMcpSchema = z.object({
+  title: z
+    .string()
+    .min(1)
+    .describe("Concise spark title or observation"),
+  body: z
+    .string()
+    .optional()
+    .describe("Optional detailed text, paragraphs, or code snippet"),
+  handle: z
+    .string()
+    .optional()
+    .describe("Optional custom handle for the spark"),
+});
+export type SparkAddMcpInput = z.infer<typeof sparkAddMcpSchema>;
+
+export const sparkAddOutputSchema = z.object({
+  handle: z.string().describe("Assigned or minted handle of the spark"),
+  title: z.string().describe("Spark title"),
+  relativePath: z.string().describe("Relative path to SPARKS.md"),
+});
+export type SparkAddOutput = z.infer<typeof sparkAddOutputSchema>;

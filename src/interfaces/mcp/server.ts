@@ -27,6 +27,7 @@ import {
   handleDirectoryContext,
   handleLinkArtifacts,
   handleReadArtifact,
+  handleSparkAdd,
   handleStartTask,
   handleTaskContext,
 } from "./handlers.ts";
@@ -49,6 +50,8 @@ import {
   linkArtifactsOutputSchema,
   linkArtifactsSchema,
   readArtifactSchema,
+  sparkAddMcpSchema,
+  sparkAddOutputSchema,
   startTaskSchema,
   taskContextSchema,
 } from "./schemas.ts";
@@ -495,6 +498,39 @@ export function createModieMcpServer(
         };
       } catch (error: any) {
         return formatMcpToolError(error, "archive_artifact", args, stderr);
+      }
+    }) as any,
+  );
+
+  // 13. spark_add
+  server.registerTool(
+    "spark_add",
+    {
+      description:
+        "Capture an out-of-scope architectural realization, idea, or finding without violating active task blast radius.",
+      inputSchema: sparkAddMcpSchema.shape,
+      outputSchema: sparkAddOutputSchema.shape,
+      annotations: {
+        readOnlyHint: false,
+        idempotentHint: false,
+        destructiveHint: false,
+      },
+    },
+    (async (args: any): Promise<any> => {
+      try {
+        await dynamicManager.ensureWorkspace();
+        const result = await handleSparkAdd(args, workspace);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+          structuredContent: result,
+        };
+      } catch (error: any) {
+        return formatMcpToolError(error, "spark_add", args, stderr);
       }
     }) as any,
   );
