@@ -23,7 +23,9 @@ import {
   normalizeTaskId,
   parseTaskIdFromBranch,
   resolveWorkspaceContext,
+  sparkAdd,
   startTaskBranch,
+  toPosixRelative,
   type ArtifactDetails,
   type ArtifactReferencesResult,
   type CompiledContextResult,
@@ -53,6 +55,8 @@ import type {
   LinkArtifactsInput,
   LinkArtifactsOutput,
   ReadArtifactInput,
+  SparkAddMcpInput,
+  SparkAddOutput,
   StartTaskInput,
   TaskContextInput,
 } from "./schemas.ts";
@@ -584,5 +588,29 @@ export async function handleArchiveArtifact(
     tag: result.tag,
     archivedPath: result.archivedRelativePath || result.archivedFilepath,
     reason: args.reason,
+  };
+}
+
+/**
+ * 13. spark_add handler
+ */
+export async function handleSparkAdd(
+  args: SparkAddMcpInput,
+  cwdOrContext?: string | WorkspaceContext,
+): Promise<SparkAddOutput> {
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const cwd = ctx.root;
+
+  const result = await sparkAdd({
+    title: args.title,
+    body: args.body,
+    handle: args.handle,
+    cwd,
+  });
+
+  return {
+    handle: result.spark.handle!,
+    title: result.spark.title,
+    relativePath: toPosixRelative(cwd, result.filepath),
   };
 }

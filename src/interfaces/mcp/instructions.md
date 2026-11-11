@@ -57,7 +57,7 @@ Modie enforces a strict hierarchical directed acyclic graph (DAG):
 
 ## 6. The 12 Singular Modie MCP Agent Tools
 
-Modie exposes 12 singular-purpose tools designed for high signal-to-noise and progressive disclosure:
+Modie exposes 13 singular-purpose tools designed for high signal-to-noise and progressive disclosure:
 
 ### Spatial & Artifact Exploration
 
@@ -78,10 +78,11 @@ Modie exposes 12 singular-purpose tools designed for high signal-to-noise and pr
 9. **`create_task`**: Authors a scoped task specification (TASK) with contract-based acceptance criteria (must end with `User Review`), prerequisite dependencies, and governing links.
 10. **`create_motive`**: Authors or scaffolds a directory-level intent file (`MOTIVE.md`) expressing scope purpose and trajectory without cross-artifact citations.
 
-### Graph Mutation
+### Graph Mutation & Incubation
 
 11. **`link_artifacts`**: Establishes directional frontmatter relationships (`links`, `depends_on`) between artifacts after validating spatial ancestry and DAG constraints.
 12. **`archive_artifact`**: Archives an obsolete RULE or ADR artifact, safely marking it archived and auditing inbound references.
+13. **`spark_add`**: Cognitive safety valve to capture out-of-scope architectural realizations, ideas, or discoveries into `.modie/ideas/SPARKS.md` without violating active task blast radius boundaries.
 
 ---
 

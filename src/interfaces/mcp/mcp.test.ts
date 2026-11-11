@@ -99,7 +99,7 @@ describe("Modie MCP Server - 12 Singular Agent Tools Suite", () => {
   });
 
   // @verifies RULE-25, RULE-26
-  it("should register exactly the 12 singular tools with outputSchema and behavioral annotations", async () => {
+  it("should register exactly the 13 singular tools with outputSchema and behavioral annotations", async () => {
     const response = await client.listTools();
     const toolNames = response.tools.map((t) => t.name);
 
@@ -114,6 +114,7 @@ describe("Modie MCP Server - 12 Singular Agent Tools Suite", () => {
       "directory_context",
       "link_artifacts",
       "read_artifact",
+      "spark_add",
       "start_task",
       "task_context",
     ]);
@@ -679,6 +680,30 @@ describe("Modie MCP Server - 12 Singular Agent Tools Suite", () => {
       const content = getStructuredContent(archiveRes);
       expect(content.tag).toBe(tempRuleTag);
       expect(content.archivedPath).toContain(".ARCHIVED.md");
+    });
+  });
+
+  describe("Cluster: Spark Incubation Tools", () => {
+    it("spark_add should record out-of-scope realization into .modie/ideas/SPARKS.md", async () => {
+      const res = await client.callTool({
+        name: "spark_add",
+        arguments: {
+          title: "Agent Discovery",
+          body: "Discovered an interface mismatch while implementing task.",
+        },
+      });
+
+      expect(res.isError).toBeFalsy();
+      const content = getStructuredContent(res);
+      expect(content.handle).toMatch(/^[a-f0-9]{4}$/);
+      expect(content.title).toBe("Agent Discovery");
+      expect(content.relativePath).toBe(".modie/ideas/SPARKS.md");
+
+      const fileContent = await workspace.readFile(".modie/ideas/SPARKS.md");
+      expect(fileContent).toContain(`# [${content.handle}] Agent Discovery`);
+      expect(fileContent).toContain(
+        "Discovered an interface mismatch while implementing task.",
+      );
     });
   });
 
