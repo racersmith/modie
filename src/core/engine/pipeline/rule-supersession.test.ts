@@ -1,7 +1,7 @@
 /**
  * Unit and integration tests for RULE supersession and bidirectional frontmatter links.
- * Tagged per ADR-7 and RULE-23 for universal rule verification.
- * @verifies ADR-4, RULE-1, RULE-3, RULE-4, RULE-11, RULE-13, RULE-31, RULE-34
+ * Tagged per RULE-23 for universal rule verification.
+ * @verifies RULE-1, RULE-3, RULE-4, RULE-11, RULE-13, RULE-31, RULE-34
  */
 
 import { describe, expect, it } from "bun:test";

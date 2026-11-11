@@ -1,6 +1,6 @@
 /**
  * Configuration loader for Modie.
- * Complies with ADR-9, ADR-10, and RULE-28.
+ * Complies with RULE-28.
  */
 
 import { existsSync } from "node:fs";

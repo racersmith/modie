@@ -1,6 +1,6 @@
 /**
  * Git history inspector for deleted artifacts and branch context.
- * Complies with ADR-6, ADR-9, RULE-21, and RULE-33.
+ * Complies with RULE-21 and RULE-33.
  * Delegates to IVcsAdapter to decouple process execution from domain logic.
  */
 

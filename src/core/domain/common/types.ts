@@ -1,5 +1,5 @@
 /**
- * Shared types for indexable Modie primitives (ADR-1, ADR-2, ADR-4, RULE-1).
+ * Shared types for indexable Modie primitives (RULE-1).
  */
 
 declare const SubtypeBrand: unique symbol;

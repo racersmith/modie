@@ -1,6 +1,6 @@
 /**
  * Unit and integration tests for Unified Architectural Context Compilation.
- * Verifies RULE-2, RULE-6, RULE-8, RULE-9, RULE-12, RULE-25, RULE-26, RULE-34, RULE-35, ADR-4, ADR-8, and ADR-10.
+ * Verifies RULE-2, RULE-6, RULE-8, RULE-9, RULE-12, RULE-25, RULE-26, RULE-34, and RULE-35.
  */
 
 import { describe, expect, it } from "bun:test";
@@ -15,9 +15,9 @@ import {
   createFixtureWorkspace,
 } from "../../platform/testing/fixture-workspace.ts";
 
-describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE-12, ADR-4, ADR-8, ADR-10)", () => {
-  // @verifies RULE-2, RULE-9, RULE-12, ADR-4, ADR-8, ADR-10, RULE-34, RULE-35
-  it("[RULE-2][RULE-9][RULE-12][ADR-4][ADR-8][ADR-10][RULE-34][RULE-35] should compile context across root, intermediate, and leaf scopes without sibling pollution and discover child motives", async () => {
+describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE-12)", () => {
+  // @verifies RULE-2, RULE-9, RULE-12, RULE-34, RULE-35
+  it("[RULE-2][RULE-9][RULE-12][RULE-34][RULE-35] should compile context across root, intermediate, and leaf scopes without sibling pollution and discover child motives", async () => {
     await using workspace = await createFixtureWorkspace(
       "modie-context-hierarchy-",
     );
@@ -164,8 +164,8 @@ describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE
     expect(leafCtx.childMotives).toEqual([]);
   });
 
-  // @verifies RULE-6, RULE-8, RULE-9, RULE-22, ADR-8, RULE-34, RULE-35
-  it("[RULE-6][RULE-8][RULE-9][RULE-22][ADR-8][RULE-34][RULE-35] should incorporate task-scoped metadata, dependencies, acceptance criteria, and blast radius when given a task tag", async () => {
+  // @verifies RULE-6, RULE-8, RULE-9, RULE-22, RULE-34, RULE-35
+  it("[RULE-6][RULE-8][RULE-9][RULE-22][RULE-34][RULE-35] should incorporate task-scoped metadata, dependencies, acceptance criteria, and blast radius when given a task tag", async () => {
     await using workspace = await createFixtureWorkspace("modie-context-task-");
 
     const prereqTaskTag = formatArtifactTag("TASK", 10);

@@ -1,6 +1,6 @@
 /**
  * CLI integration tests for `modie context`.
- * Verifies RULE-2, RULE-6, RULE-8, RULE-9, RULE-25, RULE-26, RULE-27, RULE-34, RULE-35, ADR-8, and ADR-10.
+ * Verifies RULE-2, RULE-6, RULE-8, RULE-9, RULE-25, RULE-26, RULE-27, RULE-34, and RULE-35.
  */
 
 import { describe, expect, it } from "bun:test";
@@ -12,7 +12,7 @@ import {
   captureCli,
 } from "../../test-utils.ts";
 
-describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-25, RULE-26, RULE-27, RULE-34, ADR-8)", () => {
+describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-25, RULE-26, RULE-27, RULE-34)", () => {
   // @verifies RULE-27
   it("[RULE-27] should emit context command help to stderr with exit code 0", async () => {
     const { exitCode, stdout, stderr } = await captureCli([
@@ -28,8 +28,8 @@ describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-25, RULE-26, 
     expect(stderr).toContain("--json");
   });
 
-  // @verifies RULE-2, RULE-9, RULE-25, RULE-26, RULE-27, RULE-34, RULE-35, ADR-8
-  it("[RULE-2][RULE-9][RULE-25][RULE-26][RULE-27][RULE-34][RULE-35][ADR-8] should support default stderr summary, --raw markdown on stdout, and --json payload on stdout", async () => {
+  // @verifies RULE-2, RULE-9, RULE-25, RULE-26, RULE-27, RULE-34, RULE-35
+  it("[RULE-2][RULE-9][RULE-25][RULE-26][RULE-27][RULE-34][RULE-35] should support default stderr summary, --raw markdown on stdout, and --json payload on stdout", async () => {
     const workspace = await createFixtureWorkspace("modie-cli-context-");
     const ruleTag = formatArtifactTag("RULE", 1);
     const adrTag = formatArtifactTag("ADR", 1);

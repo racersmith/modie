@@ -106,7 +106,7 @@ describe("Task Creation Service - Downward Blast Radius & Least Scope Validation
   });
 });
 
-describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-1, RULE-8, RULE-15, RULE-18, RULE-21, RULE-22, RULE-25, RULE-34, RULE-35, ADR-6, ADR-9)", () => {
+describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-1, RULE-8, RULE-15, RULE-18, RULE-21, RULE-22, RULE-25, RULE-34, RULE-35)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
@@ -117,8 +117,8 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     await workspace.cleanup();
   });
 
-  // @verifies RULE-1, RULE-8, RULE-22, RULE-25, RULE-34, RULE-35, ADR-6, ADR-9
-  it("[RULE-1][RULE-8][RULE-22][RULE-25][RULE-34][RULE-35][ADR-6][ADR-9] should create a valid TASK file on disk via core API", async () => {
+  // @verifies RULE-1, RULE-8, RULE-22, RULE-25, RULE-34, RULE-35
+  it("[RULE-1][RULE-8][RULE-22][RULE-25][RULE-34][RULE-35] should create a valid TASK file on disk via core API", async () => {
     const testTitle = "Task Service Integration Verification";
     const testScope = "src/core";
 
@@ -218,8 +218,8 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     expect(result.artifact.acceptanceCriteria[1]?.text).toBe("User Review");
   });
 
-  // @verifies ADR-9, RULE-34, RULE-35
-  it("[ADR-9][RULE-34][RULE-35] should allocate branch subtask IDs when on a task branch", async () => {
+  // @verifies RULE-34, RULE-35
+  it("[RULE-34][RULE-35] should allocate branch subtask IDs when on a task branch", async () => {
     const parentId = 5;
     const branchName = `task/${parentId}-task-creation-service`;
     const expectedSubtaskId = `${parentId}-1`;
@@ -239,8 +239,8 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     );
   });
 
-  // @verifies ADR-9, RULE-34, RULE-35
-  it("[ADR-9][RULE-34][RULE-35] should allocate prefixed IDs when prefix is specified", async () => {
+  // @verifies RULE-34, RULE-35
+  it("[RULE-34][RULE-35] should allocate prefixed IDs when prefix is specified", async () => {
     const prefix = "A";
     const expectedId = `${prefix}1`;
     const expectedTag = formatArtifactTag("TASK", expectedId);
@@ -283,8 +283,8 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     ).rejects.toThrow(new RegExp(`Invalid task dependency.*${rule18}`));
   });
 
-  // @verifies ADR-6, RULE-21, RULE-34, RULE-35
-  it("[ADR-6][RULE-21][RULE-34][RULE-35] should prevent zombie task resurrection for completed task IDs in git history", async () => {
+  // @verifies RULE-21, RULE-34, RULE-35
+  it("[RULE-21][RULE-34][RULE-35] should prevent zombie task resurrection for completed task IDs in git history", async () => {
     await workspace.initGit({ defaultBranch: "dev" });
 
     // Create and delete TASK-1 in git
@@ -364,8 +364,8 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     );
   });
 
-  // @verifies ADR-4, RULE-22, RULE-25, RULE-34
-  it("[ADR-4][RULE-22][RULE-25][RULE-34] should accept contextSection strictly and populate TaskArtifact.contextSection", async () => {
+  // @verifies RULE-22, RULE-25, RULE-34
+  it("[RULE-22][RULE-25][RULE-34] should accept contextSection strictly and populate TaskArtifact.contextSection", async () => {
     const res = await createTask({
       title: "Task With Context Section",
       contextSection: "Task context defined via contextSection property.",

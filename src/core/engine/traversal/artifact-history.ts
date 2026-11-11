@@ -1,6 +1,6 @@
 /**
  * Artifact history inspection across Git trees, deleted commit history, and branches.
- * Implements ADR-6, ADR-9, RULE-1, RULE-21, and RULE-33.
+ * Implements RULE-1, RULE-21, and RULE-33.
  */
 
 import { basename } from "node:path";

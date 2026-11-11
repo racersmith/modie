@@ -1,7 +1,7 @@
 /**
  * Active artifact scanner.
  * Scans the workspace filesystem for indexable artifact files (*.RULE-*.md, *.ADR-*.md, *.TASK-*.md) and extracts IDs.
- * Complies with RULE-1, ADR-1, ADR-2, ADR-6, and ADR-9.
+ * Complies with RULE-1.
  */
 
 import { readdir } from "node:fs/promises";

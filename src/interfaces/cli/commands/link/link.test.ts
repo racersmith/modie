@@ -1,6 +1,6 @@
 /**
  * Integration tests for `modie link` and `modie unlink` CLI commands.
- * Verifies ADR-5, RULE-13, RULE-15, RULE-16, RULE-17, RULE-18, RULE-19,
+ * Verifies RULE-13, RULE-15, RULE-16, RULE-17, RULE-18, and RULE-19
  * RULE-25, RULE-27, RULE-34, RULE-35, and RULE-36.
  */
 
@@ -12,7 +12,7 @@ import {
 } from "../../../../core/platform/testing/index.ts";
 import { captureCli } from "../../test-utils.ts";
 
-describe("CLI `modie link` and `modie unlink` Commands (ADR-5, RULE-27, RULE-36)", () => {
+describe("CLI `modie link` and `modie unlink` Commands (RULE-27, RULE-36)", () => {
   let workspace: FixtureWorkspace;
   let stdoutLines: string[];
   let stderrLines: string[];
@@ -82,8 +82,8 @@ describe("CLI `modie link` and `modie unlink` Commands (ADR-5, RULE-27, RULE-36)
     return res.exitCode;
   }
 
-  // @verifies ADR-5, RULE-16, RULE-27, RULE-36
-  it("[ADR-5][RULE-16][RULE-27][RULE-36] should link and unlink governance artifacts with stdout/stderr separation and --json output", async () => {
+  // @verifies RULE-16, RULE-27, RULE-36
+  it("[RULE-16][RULE-27][RULE-36] should link and unlink governance artifacts with stdout/stderr separation and --json output", async () => {
     // 1. Link subRule -> rootAdr (standard output mode)
     const linkCode = await execCli(["link", subRuleTag, rootAdrTag]);
     expect(linkCode).toBe(0);

@@ -1,7 +1,7 @@
 /**
  * Unit and integration tests for standardized artifact CLI command factory and table formatting.
- * Tagged per ADR-7 and RULE-23 for universal rule verification.
- * @verifies ADR-4, RULE-9, RULE-25, RULE-27, RULE-34, RULE-35
+ * Tagged per RULE-23 for universal rule verification.
+ * @verifies RULE-9, RULE-25, RULE-27, RULE-34, RULE-35
  */
 
 import { describe, expect, it } from "bun:test";

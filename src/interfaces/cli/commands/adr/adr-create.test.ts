@@ -1,6 +1,6 @@
 /**
  * Integration and unit tests for `modie adr create`.
- * Tagged per ADR-7 and RULE-23 for universal rule verification.
+ * Tagged per RULE-23 for universal rule verification.
  */
 
 import { describe, expect, it } from "bun:test";
@@ -12,7 +12,7 @@ import {
   captureCli, execBin,
 } from "../../test-utils.ts";
 
-describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-14, RULE-17, RULE-25, RULE-27)", () => {
+describe("CLI ADR Creation - Execution & Stream Separation (RULE-8, RULE-14, RULE-17, RULE-25, RULE-27)", () => {
   // @verifies RULE-27
   it("[RULE-27] should emit adr namespace help to stderr with exit code 0", async () => {
     await using workspace = await createFixtureWorkspace("modie-cli-adr-help-");
@@ -40,8 +40,8 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
     expect(stderr).toContain("Usage: modie adr create <title> [options]");
   });
 
-  // @verifies ADR-1, ADR-2, ADR-3, ADR-4, RULE-1, RULE-8, RULE-25, RULE-27
-  it("[ADR-4][RULE-1][RULE-8][RULE-25][RULE-27] should create an ADR with relative path to stdout and status to stderr", async () => {
+  // @verifies RULE-1, RULE-8, RULE-25, RULE-27
+  it("[RULE-1][RULE-8][RULE-25][RULE-27] should create an ADR with relative path to stdout and status to stderr", async () => {
     await using workspace = await createFixtureWorkspace("modie-cli-adr-create-");
     const expectedTag = formatArtifactTag("ADR", 1);
     const { exitCode, stdout, stderr } = await captureCli([
@@ -103,8 +103,8 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
     expect(parsed.context).toBe("JSON payload must go to stdout.");
   });
 
-  // @verifies RULE-8, ADR-12
-  it("[RULE-8][ADR-12] should reject retired --flat flag with error to stderr", async () => {
+  // @verifies RULE-8
+  it("[RULE-8] should reject retired --flat flag with error to stderr", async () => {
     await using workspace = await createFixtureWorkspace("modie-cli-adr-flat-");
     const { exitCode, stdout, stderr } = await captureCli([
       "adr",
@@ -318,8 +318,8 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
     expect(parsed.slug).toBe("subprocess-adr");
   });
 
-  // @verifies ADR-4, ADR-8, RULE-25, RULE-26, RULE-27, RULE-34
-  it("[ADR-4][ADR-8][RULE-25][RULE-26][RULE-27][RULE-34] should support --summary flag and write summary to YAML frontmatter and JSON output", async () => {
+  // @verifies RULE-25, RULE-26, RULE-27, RULE-34
+  it("[RULE-25][RULE-26][RULE-27][RULE-34] should support --summary flag and write summary to YAML frontmatter and JSON output", async () => {
     await using workspace = await createFixtureWorkspace("modie-cli-adr-summary-");
     const expectedTag = formatArtifactTag("ADR", 1);
     const { exitCode, stdout, stderr } = await captureCli([

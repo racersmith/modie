@@ -1,7 +1,7 @@
 /**
  * Git CLI implementation of IVcsAdapter.
  * Wraps local git binary execution with robust buffer management and error reporting.
- * Complies with RULE-25, RULE-28, and ADR-6.
+ * Complies with RULE-25 and RULE-28.
  */
 
 import { execFile } from "node:child_process";

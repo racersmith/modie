@@ -17,7 +17,7 @@ import { taskStartCommand } from "../commands/task/start.ts";
 import { taskCompleteCommand } from "../commands/task/complete.ts";
 import { taskMergeCommand } from "../commands/task/merge.ts";
 
-describe("Declarative CLI Subcommand Framework (ADR-4, RULE-25, RULE-27)", () => {
+describe("Declarative CLI Subcommand Framework (RULE-25, RULE-27)", () => {
   it("should generate standardized aligned help output from command metadata", () => {
     const testCommand: CliCommandDefinition = {
       name: "frobnicate",

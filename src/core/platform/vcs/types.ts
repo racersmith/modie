@@ -1,6 +1,6 @@
 /**
  * Version Control System (VCS) adapter abstraction types.
- * Complies with RULE-25, RULE-28, and ADR-6.
+ * Complies with RULE-25 and RULE-28.
  */
 
 export interface MultiBranchOptions {

@@ -1,6 +1,6 @@
 /**
  * Canonical MOTIVE reader and upward ancestral motive discovery services.
- * Enforces RULE-2, RULE-8, RULE-10, and ADR-10.
+ * Enforces RULE-2, RULE-8, and RULE-10.
  */
 
 import { readdir, readFile } from "node:fs/promises";
@@ -88,7 +88,7 @@ export async function collectAncestralMotives(
 
 /**
  * Discovers immediate child directory motives (`<child>/.modie/MOTIVE.md`, depth=1)
- * for progressive on-demand territory exploration per ADR-8.
+ * for progressive on-demand territory exploration per RULE-26.
  *
  * Does not descend past depth=1 and ignores dot-directories (`.modie`, `.git`) and build/dependency folders.
  */

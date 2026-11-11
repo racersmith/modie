@@ -127,13 +127,13 @@ export interface ArtifactDefinition<TOptions = any, TArtifact = any> {
 
   /**
    * Optional plural container directory name (e.g. "rules", "adrs", "tasks").
-   * Defaults to `${subtype.toLowerCase()}s`.
+   * Defaults to `${subtype.toLowerCase}s`.
    */
   containerName?: string;
 
   /**
    * Optional declarative link and dependency governance policy matrix.
-   * Defines permitted relationships, target subtypes, and ancestry constraints per ADR-5.
+   * Defines permitted relationships, target subtypes, and ancestry constraints per RULE-13.
    */
   linkPolicy?: SubtypeLinkPolicy;
 

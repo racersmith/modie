@@ -1,6 +1,6 @@
 /**
  * CLI integration tests for `modie motive create`.
- * Verifies RULE-8, RULE-10, RULE-25, RULE-27, RULE-34, RULE-35, ADR-2, ADR-4, and ADR-10.
+ * Verifies RULE-8, RULE-10, RULE-25, RULE-27, RULE-34, and RULE-35.
  */
 
 import { describe, expect, it } from "bun:test";
@@ -12,7 +12,7 @@ import {
   captureCli,
 } from "../../test-utils.ts";
 
-describe("CLI Command: modie motive create (RULE-8, RULE-10, RULE-25, RULE-27, RULE-34, ADR-10)", () => {
+describe("CLI Command: modie motive create (RULE-8, RULE-10, RULE-25, RULE-27, RULE-34)", () => {
   // @verifies RULE-27
   it("[RULE-27] should emit help to stderr with exit code 0 for motive namespace and motive create", async () => {
     const nsHelp = await captureCli(["motive", "--help"]);
@@ -30,8 +30,8 @@ describe("CLI Command: modie motive create (RULE-8, RULE-10, RULE-25, RULE-27, R
     expect(cmdHelp.stderr).toContain("--overwrite");
   });
 
-  // @verifies ADR-2, ADR-10, RULE-8, RULE-25, RULE-27, RULE-34
-  it("[ADR-2][ADR-10][RULE-8][RULE-25][RULE-27][RULE-34] should create MOTIVE.md from positional content or --content flag and scaffold template when omitted", async () => {
+  // @verifies RULE-8, RULE-25, RULE-27, RULE-34
+  it("[RULE-8][RULE-25][RULE-27][RULE-34] should create MOTIVE.md from positional content or --content flag and scaffold template when omitted", async () => {
     const workspace = await createFixtureWorkspace("modie-cli-motive-create-");
 
     try {
@@ -72,8 +72,8 @@ describe("CLI Command: modie motive create (RULE-8, RULE-10, RULE-25, RULE-27, R
     }
   });
 
-  // @verifies ADR-10, RULE-8, RULE-10, RULE-27, RULE-34, RULE-35
-  it("[ADR-10][RULE-8][RULE-10][RULE-27][RULE-34][RULE-35] should enforce singleton collision protection and RULE-10 reference prohibition on CLI", async () => {
+  // @verifies RULE-8, RULE-10, RULE-27, RULE-34, RULE-35
+  it("[RULE-8][RULE-10][RULE-27][RULE-34][RULE-35] should enforce singleton collision protection and RULE-10 reference prohibition on CLI", async () => {
     const workspace = await createFixtureWorkspace("modie-cli-motive-guards-");
     const forbiddenTag = formatArtifactTag("RULE", 10);
 

@@ -1,6 +1,6 @@
 /**
  * Unit tests for foundational Markdown parsing and frontmatter handling layer.
- * @verifies ADR-4, RULE-1, RULE-25, RULE-26, RULE-35
+ * @verifies RULE-1, RULE-25, RULE-26, RULE-35
  */
 
 import { describe, expect, it } from "bun:test";
@@ -130,7 +130,7 @@ superseded_by: []
     expect(parsed.depends_on).toBeUndefined();
   });
 
-  it("[ADR-4][RULE-1][RULE-25][RULE-35] should parse supersedes and superseded_by in block, inline array, and scalar formats and map line numbers", () => {
+  it("[RULE-1][RULE-25][RULE-35] should parse supersedes and superseded_by in block, inline array, and scalar formats and map line numbers", () => {
     const adr1Tag = formatArtifactTag("ADR", 1);
     const adr2Tag = formatArtifactTag("ADR", 2);
     const adr3Tag = formatArtifactTag("ADR", 3);
@@ -163,7 +163,7 @@ Unified context section.
     expect(lineMap.linkLines.get(6)).toBe("superseded_by");
   });
 
-  it("[ADR-8][RULE-25][RULE-26] should parse inline, quoted, and folded block summary fields from frontmatter", () => {
+  it("[RULE-25][RULE-26] should parse inline, quoted, and folded block summary fields from frontmatter", () => {
     const adr1Tag = formatArtifactTag("ADR", 1);
 
     const inlineParsed = parseFrontmatterFields(
@@ -259,7 +259,7 @@ Final decision paragraph.
     expect(sections["Consequences"]).toBe("- Fast zero-read verification.");
   });
 
-  it("[ADR-4][RULE-25] should compile unified document and ArtifactParseContext", () => {
+  it("[RULE-25] should compile unified document and ArtifactParseContext", () => {
     const rule1Tag = formatArtifactTag("RULE", 1);
     const adr10Tag = formatArtifactTag("ADR", 10);
     const raw = `---

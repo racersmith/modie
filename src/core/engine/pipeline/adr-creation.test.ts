@@ -1,7 +1,7 @@
 /**
  * Unit tests for Core ADR Creation Service.
- * Tagged per ADR-7 and RULE-23 for universal rule verification.
- * @verifies ADR-1, ADR-2, ADR-4, ADR-7, RULE-1, RULE-8, RULE-14, RULE-17, RULE-23, RULE-34
+ * Tagged per RULE-23 for universal rule verification.
+ * @verifies RULE-1, RULE-8, RULE-14, RULE-17, RULE-23, RULE-34
  */
 
 import { describe, expect, it } from "bun:test";
@@ -151,9 +151,9 @@ describe("ADR Creation - Frontmatter Validation & Rule Scope (RULE-14, RULE-17, 
   });
 });
 
-describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, RULE-8, RULE-34)", () => {
-  // @verifies ADR-1, ADR-2, ADR-4, RULE-1, RULE-8, RULE-34
-  it("[ADR-1][ADR-2][ADR-4][RULE-1][RULE-8][RULE-34] should create an ADR artifact on disk with sequential monotonic ID", async () => {
+describe("ADR Creation - Execution & Disk Writing (RULE-1, RULE-8, RULE-34)", () => {
+  // @verifies RULE-1, RULE-8, RULE-34
+  it("[RULE-1][RULE-8][RULE-34] should create an ADR artifact on disk with sequential monotonic ID", async () => {
     const workspace = await createFixtureWorkspace("adr-create-");
 
     const result = await createAdr({
@@ -208,8 +208,8 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
     ).rejects.toThrow("ADR title must be a non-empty string.");
   });
 
-  // @verifies ADR-4, ADR-8, RULE-25, RULE-26, RULE-34
-  it("[ADR-4][ADR-8][RULE-25][RULE-26][RULE-34] should persist summary frontmatter and support roundtrip parsing via query services", async () => {
+  // @verifies RULE-25, RULE-26, RULE-34
+  it("[RULE-25][RULE-26][RULE-34] should persist summary frontmatter and support roundtrip parsing via query services", async () => {
     const workspace = await createFixtureWorkspace("adr-summary-roundtrip-");
 
     const result = await createAdr({
@@ -248,8 +248,8 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
     await workspace.cleanup();
   });
 
-  // @verifies ADR-4, RULE-25, RULE-34
-  it("[ADR-4][RULE-25][RULE-34] should accept contextSection strictly and populate AdrArtifact.contextSection", async () => {
+  // @verifies RULE-25, RULE-34
+  it("[RULE-25][RULE-34] should accept contextSection strictly and populate AdrArtifact.contextSection", async () => {
     const workspace = await createFixtureWorkspace(
       "adr-context-disambiguation-",
     );

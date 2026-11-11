@@ -1,7 +1,7 @@
 /**
  * Declarative CLI command definition for `modie task complete <id> [options]` (alias: finish).
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
- * Enforces ADR-6, RULE-21, RULE-22, and RULE-32.
+ * Enforces RULE-21, RULE-22, and RULE-32.
  */
 
 import { z } from "zod";
@@ -61,7 +61,7 @@ export const taskCompleteCommand: CliCommandDefinition<
     "When all technical criteria and test suites pass, HALT and present a concise summary of changes and test outcomes to the user for review. " +
     "If the task contains a 'User Review' acceptance criterion, it must not be checked without explicit user sign-off. " +
     "Only call this tool when the user has reviewed and explicitly instructed you to complete the task.\n\n" +
-    "Executes the atomic two-phase commit ceremony and deletes the ephemeral task file per RULE-21 and ADR-6.\n\n" +
+    "Executes the atomic two-phase commit ceremony and deletes the ephemeral task file per RULE-21.\n\n" +
     "EPHEMERAL TASK INVARIANT: Once a task is completed, it is permanently deleted. Never leave test headers or code comments citing this completed task ID (cite durable RULEs or ADRs instead).",
   helpUsage: "modie task complete --help",
   schema: taskCompleteSchema,

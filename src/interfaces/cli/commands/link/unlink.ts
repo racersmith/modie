@@ -1,7 +1,7 @@
 /**
  * Declarative CLI command definition for `modie unlink <source> <target> [options]`.
  * Exposes `unlink_artifact` MCP tool via automatic registry projection.
- * Complies with ADR-5, RULE-25, RULE-26, RULE-27, and RULE-36.
+ * Complies with RULE-25, RULE-26, RULE-27, and RULE-36.
  */
 
 import { z } from "zod";

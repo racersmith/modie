@@ -2,7 +2,7 @@
  * Generic artifact creation pipeline.
  * Coordinates slugging, directory resolution, lifecycle validation,
  * monotonic ID allocation, template rendering, and atomic file writing.
- * Complies with ADR-1, ADR-2, ADR-4, RULE-1, RULE-8, and RULE-25.
+ * Complies with RULE-1, RULE-8, and RULE-25.
  */
 
 import { mkdir, writeFile } from "node:fs/promises";
@@ -36,7 +36,7 @@ import { updateSupersededArtifactFrontmatter } from "./supersession.ts";
 
 /**
  * Validates frontmatter links and task dependencies dynamically driven by declarative
- * definition.linkPolicy (ADR-5, RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, RULE-17, RULE-18, RULE-19).
+ * definition.linkPolicy (RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, RULE-17, RULE-18, RULE-19).
  */
 async function validateArtifactLinks<
   TOptions extends BaseCreateArtifactOptions,
@@ -113,7 +113,7 @@ export async function createArtifact<
     cwd,
   );
 
-  // 3. Declarative link and dependency validation per definition.linkPolicy (ADR-5)
+  // 3. Declarative link and dependency validation per definition.linkPolicy 
   await validateArtifactLinks(
     definition,
     options,

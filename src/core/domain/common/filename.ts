@@ -1,6 +1,6 @@
 /**
  * Filename formatting and parsing for indexable Modie artifacts (RULE, ADR, TASK).
- * Complies with RULE-1, ADR-1, ADR-2, ADR-6, and ADR-9.
+ * Complies with RULE-1.
  */
 
 import { isValidSlug } from "./slug.ts";

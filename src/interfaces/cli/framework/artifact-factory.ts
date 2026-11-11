@@ -67,7 +67,7 @@ export interface ArtifactListCommandFactoryOptions<
   definition?: ArtifactDefinition<any, any>;
   /** Subtype tag identifier (e.g. "RULE", "ADR"). */
   subtype?: IndexableSubtype | string;
-  /** CLI namespace for command grouping (defaults to subtype.toLowerCase()). */
+  /** CLI namespace for command grouping (defaults to subtype.toLowerCase). */
   namespace?: string;
   /** Unique command identifier (defaults to `${namespace}_list`). */
   id?: string;

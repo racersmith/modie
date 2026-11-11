@@ -1,7 +1,7 @@
 /**
  * Active task queue query service, DAG dependency readiness evaluation,
  * and explicit historical task work querying.
- * Implements ADR-6, ADR-9, RULE-18, RULE-21, RULE-22, and RULE-25.
+ * Implements RULE-18, RULE-21, RULE-22, and RULE-25.
  */
 
 import { readFile } from "node:fs/promises";
@@ -93,7 +93,7 @@ export interface TaskStatusQueryOptions {
 
   /**
    * Whether to query completed task history and branches in Git when the task
-   * is not active on disk (ADR-6, RULE-21). Defaults to false.
+   * is not active on disk (RULE-21). Defaults to false.
    */
   history?: boolean;
 
@@ -157,7 +157,7 @@ async function resolveNormalizedCurrentTaskId(
 
 /**
  * Queries the active task queue on disk, parses acceptance criteria progress,
- * and computes DAG dependency readiness (READY vs BLOCKED) per ADR-6 and RULE-18.
+ * and computes DAG dependency readiness (READY vs BLOCKED) per RULE-18.
  *
  * @param options Query and filtering options.
  */
@@ -332,7 +332,7 @@ async function readHistoricalTaskMarkdown(
 }
 
 /**
- * Queries completed tasks in Git deletion history and tasks on other Git branches per ADR-6.
+ * Queries completed tasks in Git deletion history and tasks on other Git branches per RULE-21.
  */
 export async function queryTaskHistory(
   options: {
@@ -465,7 +465,7 @@ export async function resolveCurrentTask(
 /**
  * Queries detailed status and inspection details for a specific task.
  * By default, strictly searches active .md files on disk.
- * When `options.history` is true, also searches completed task history and branches in Git (ADR-6).
+ * When `options.history` is true, also searches completed task history and branches in Git .
  *
  * @param taskIdentifier Task ID (e.g. "TASK-9", "9"), slug, or filepath.
  * @param options Query options including cwd and history flag.

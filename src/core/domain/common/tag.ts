@@ -1,5 +1,5 @@
 /**
- * Canonical tag grammar, ID validation, and subtype normalization helpers (ADR-1, ADR-2, RULE-1, RULE-25).
+ * Canonical tag grammar, ID validation, and subtype normalization helpers (RULE-1, RULE-25).
  */
 
 import type { ArtifactSubtype, ArtifactTag } from "./types.ts";

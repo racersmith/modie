@@ -26,7 +26,7 @@ import {
 import { createAdr, createRule, createTask } from "../../index.ts";
 import { getArtifactDetails } from "../query/artifact-query.ts";
 
-describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-35, ADR-1, ADR-4)", () => {
+describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-35)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
@@ -37,8 +37,8 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
     await workspace.cleanup();
   });
 
-  // @verifies RULE-1, RULE-8, RULE-34, RULE-35, ADR-1, ADR-4
-  it("[RULE-1][RULE-8][RULE-34][RULE-35][ADR-1][ADR-4] should create an artifact through a custom declarative ArtifactDefinition", async () => {
+  // @verifies RULE-1, RULE-8, RULE-34, RULE-35
+  it("[RULE-1][RULE-8][RULE-34][RULE-35] should create an artifact through a custom declarative ArtifactDefinition", async () => {
     interface CustomSpecOptions extends BaseCreateArtifactOptions {
       overview: string;
       tags?: string[];
@@ -156,8 +156,8 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
     ).rejects.toThrow("Rule title must be a non-empty string.");
   });
 
-  // @verifies RULE-1, RULE-8, RULE-34, RULE-35, ADR-1, ADR-4
-  it("[RULE-1][RULE-8][RULE-34][RULE-35][ADR-1][ADR-4] should support creating standard artifacts directly via standard definitions", async () => {
+  // @verifies RULE-1, RULE-8, RULE-34, RULE-35
+  it("[RULE-1][RULE-8][RULE-34][RULE-35] should support creating standard artifacts directly via standard definitions", async () => {
     const expectedRuleTag = formatArtifactTag("RULE", 1);
     const expectedAdrTag = formatArtifactTag("ADR", 1);
     const expectedTaskTag = formatArtifactTag("TASK", 1);
@@ -196,8 +196,8 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
     expect(taskRes.watermark).toBeDefined();
   });
 
-  // @verifies ADR-4, RULE-25, RULE-34, RULE-35
-  it("[ADR-4][RULE-25][RULE-34][RULE-35] should roundtrip serialize and parse RULE, ADR, and TASK artifacts bidirectionally via ArtifactDefinition.parse", async () => {
+  // @verifies RULE-25, RULE-34, RULE-35
+  it("[RULE-25][RULE-34][RULE-35] should roundtrip serialize and parse RULE, ADR, and TASK artifacts bidirectionally via ArtifactDefinition.parse", async () => {
     const adr1Tag = formatArtifactTag("ADR", 1);
     const rule1Tag = formatArtifactTag("RULE", 1);
     const task1Tag = formatArtifactTag("TASK", 1);
@@ -295,8 +295,8 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
     expect(ARTIFACT_DEFINITIONS["TASK"]).toBe(taskDefinition);
   });
 
-  // @verifies ADR-1, ADR-2, ADR-4, RULE-1, RULE-8, RULE-25, RULE-34, RULE-35
-  it("[ADR-1][ADR-4][RULE-1][RULE-8][RULE-25][RULE-34] should return standardized CreateArtifactResult from createRule, createAdr, and createTask", async () => {
+  // @verifies RULE-1, RULE-8, RULE-25, RULE-34, RULE-35
+  it("[RULE-1][RULE-8][RULE-25][RULE-34] should return standardized CreateArtifactResult from createRule, createAdr, and createTask", async () => {
     // 1. Create predecessor ADR
     const adr1 = await createAdr({
       title: "Predecessor Architecture Decision",
@@ -355,8 +355,8 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
     expect(task1.artifact.links).toEqual([adr1.tag, rule1.tag]);
   });
 
-  // @verifies ADR-5, RULE-13, RULE-14, RULE-15, RULE-18, RULE-34
-  it("[ADR-5][RULE-13][RULE-14][RULE-15][RULE-18][RULE-34] should validate links dynamically in createArtifact driven by definition.linkPolicy without definition.validate", async () => {
+  // @verifies RULE-13, RULE-14, RULE-15, RULE-18, RULE-34
+  it("[RULE-13][RULE-14][RULE-15][RULE-18][RULE-34] should validate links dynamically in createArtifact driven by definition.linkPolicy without definition.validate", async () => {
     const customDefinition: ArtifactDefinition = {
       subtype: "RULE",
       linkPolicy: {

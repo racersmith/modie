@@ -63,9 +63,9 @@ async function withWatermarkFixture(
   }
 }
 
-describe("Watermark Resolver - Active Task Scanner (RULE-1, ADR-6, RULE-34, RULE-35)", () => {
-  // @verifies RULE-1, ADR-6, RULE-34, RULE-35
-  it("[RULE-1][ADR-6][RULE-34][RULE-35] should recursively scan and detect active task files on disk", async () => {
+describe("Watermark Resolver - Active Task Scanner (RULE-1, RULE-34, RULE-35)", () => {
+  // @verifies RULE-1, RULE-34, RULE-35
+  it("[RULE-1][RULE-34][RULE-35] should recursively scan and detect active task files on disk", async () => {
     const workspace = await createFixtureWorkspace("active-scan-");
 
     // Create valid task files
@@ -97,8 +97,8 @@ describe("Watermark Resolver - Active Task Scanner (RULE-1, ADR-6, RULE-34, RULE
     await workspace.cleanup();
   });
 
-  // @verifies ADR-6, RULE-34
-  it("[ADR-6][RULE-34] should return empty array when no active tasks exist on disk", async () => {
+  // @verifies RULE-34
+  it("[RULE-34] should return empty array when no active tasks exist on disk", async () => {
     const workspace = await createFixtureWorkspace("empty-scan-");
     const taskIds = await scanActiveArtifactIds(workspace.cwd, "TASK");
     expect(taskIds).toEqual([]);
@@ -106,9 +106,9 @@ describe("Watermark Resolver - Active Task Scanner (RULE-1, ADR-6, RULE-34, RULE
   });
 });
 
-describe("Watermark Resolver - Git History & Branch Detection (ADR-6, ADR-9, RULE-21, RULE-34, RULE-35)", () => {
-  // @verifies ADR-9
-  it("[ADR-9] should parse parent task ID and slug from task branches", () => {
+describe("Watermark Resolver - Git History & Branch Detection (RULE-21, RULE-34, RULE-35)", () => {
+  // @verifies RULE-28
+  it("[RULE-28] should parse parent task ID and slug from task branches", () => {
     expect(
       parseTaskBranch("task/2-task-id-allocation-and-rule-alignment"),
     ).toEqual({
@@ -136,8 +136,8 @@ describe("Watermark Resolver - Git History & Branch Detection (ADR-6, ADR-9, RUL
     expect(parseTaskBranch("feature/user-auth")).toBeNull();
   });
 
-  // @verifies ADR-6, RULE-21, RULE-34, RULE-35
-  it("[ADR-6][RULE-21][RULE-34][RULE-35] should identify deleted task IDs from Git commit history in fixture workspace", async () => {
+  // @verifies RULE-21, RULE-34, RULE-35
+  it("[RULE-21][RULE-34][RULE-35] should identify deleted task IDs from Git commit history in fixture workspace", async () => {
     const workspace = await createFixtureWorkspace("git-deleted-task-");
     await workspace.initGit({ defaultBranch: "main" });
 
@@ -166,8 +166,8 @@ describe("Watermark Resolver - Git History & Branch Detection (ADR-6, ADR-9, RUL
     await workspace.cleanup();
   });
 
-  // @verifies ADR-9, RULE-34
-  it("[ADR-9][RULE-34] should detect current git branch accurately in fixture workspace", async () => {
+  // @verifies RULE-34
+  it("[RULE-34] should detect current git branch accurately in fixture workspace", async () => {
     const workspace = await createFixtureWorkspace("git-branch-detect-");
     await workspace.initGit({ defaultBranch: "feature/custom-branch" });
 
@@ -178,9 +178,9 @@ describe("Watermark Resolver - Git History & Branch Detection (ADR-6, ADR-9, RUL
   });
 });
 
-describe("Watermark Resolver - Trunk Monotonic Integer Progression (ADR-6, ADR-9, RULE-21, RULE-35)", () => {
-  // @verifies ADR-6, ADR-9, RULE-35
-  it("[ADR-6][ADR-9][RULE-35] should return next ID 1 for fresh repositories with no prior tasks", async () => {
+describe("Watermark Resolver - Trunk Monotonic Integer Progression (RULE-21, RULE-35)", () => {
+  // @verifies RULE-35
+  it("[RULE-35] should return next ID 1 for fresh repositories with no prior tasks", async () => {
     const expectedTag = formatArtifactTag("TASK", 1);
     await withWatermarkFixture({ branch: "dev" }, async (cwd, vcs) => {
       const details = await resolveWatermark({ cwd, vcs });
@@ -191,8 +191,8 @@ describe("Watermark Resolver - Trunk Monotonic Integer Progression (ADR-6, ADR-9
     });
   });
 
-  // @verifies ADR-6, ADR-9, RULE-21, RULE-35
-  it("[ADR-6][ADR-9][RULE-21][RULE-35] should compute monotonic watermark across active and deleted tasks", async () => {
+  // @verifies RULE-21, RULE-35
+  it("[RULE-21][RULE-35] should compute monotonic watermark across active and deleted tasks", async () => {
     const expectedTag = formatArtifactTag("TASK", 4);
     await withWatermarkFixture(
       {
@@ -212,8 +212,8 @@ describe("Watermark Resolver - Trunk Monotonic Integer Progression (ADR-6, ADR-9
     );
   });
 
-  // @verifies ADR-6, RULE-21
-  it("[ADR-6][RULE-21] should advance monotonically when ALL active tasks on disk are deleted", async () => {
+  // @verifies RULE-21
+  it("[RULE-21] should advance monotonically when ALL active tasks on disk are deleted", async () => {
     await withWatermarkFixture(
       {
         branch: "dev",
@@ -232,8 +232,8 @@ describe("Watermark Resolver - Trunk Monotonic Integer Progression (ADR-6, ADR-9
     );
   });
 
-  // @verifies ADR-9
-  it("[ADR-9] should handle non-contiguous task IDs safely without collision", async () => {
+  // @verifies RULE-1, RULE-33
+  it("[RULE-1][RULE-33] should handle non-contiguous task IDs safely without collision", async () => {
     await withWatermarkFixture(
       {
         branch: "master",
@@ -255,9 +255,9 @@ describe("Watermark Resolver - Trunk Monotonic Integer Progression (ADR-6, ADR-9
   });
 });
 
-describe("Watermark Resolver - Branch-Aware Sub-Task Namespacing (ADR-9, RULE-21, RULE-35)", () => {
-  // @verifies ADR-9, RULE-35
-  it("[ADR-9][RULE-35] should allocate first sub-task ID under parent on task branch", async () => {
+describe("Watermark Resolver - Branch-Aware Sub-Task Namespacing (RULE-21, RULE-35)", () => {
+  // @verifies RULE-35
+  it("[RULE-35] should allocate first sub-task ID under parent on task branch", async () => {
     const expectedTag = formatArtifactTag("TASK", "2-1");
     await withWatermarkFixture(
       {
@@ -279,8 +279,8 @@ describe("Watermark Resolver - Branch-Aware Sub-Task Namespacing (ADR-9, RULE-21
     );
   });
 
-  // @verifies ADR-9, RULE-35
-  it("[ADR-9][RULE-35] should increment sub-task sequence monotonically for existing sub-tasks", async () => {
+  // @verifies RULE-35
+  it("[RULE-35] should increment sub-task sequence monotonically for existing sub-tasks", async () => {
     const expectedTag = formatArtifactTag("TASK", "2-2");
     await withWatermarkFixture(
       {
@@ -298,8 +298,8 @@ describe("Watermark Resolver - Branch-Aware Sub-Task Namespacing (ADR-9, RULE-21
     );
   });
 
-  // @verifies ADR-9, RULE-21, RULE-35
-  it("[ADR-9][RULE-21][RULE-35] should respect deleted sub-tasks in git history to prevent subtask reuse", async () => {
+  // @verifies RULE-21, RULE-35
+  it("[RULE-21][RULE-35] should respect deleted sub-tasks in git history to prevent subtask reuse", async () => {
     const expectedTag = formatArtifactTag("TASK", "2-3");
     await withWatermarkFixture(
       {
@@ -320,8 +320,8 @@ describe("Watermark Resolver - Branch-Aware Sub-Task Namespacing (ADR-9, RULE-21
     );
   });
 
-  // @verifies ADR-9
-  it("[ADR-9] should isolate sub-task namespaces between different parent branches", async () => {
+  // @verifies RULE-1, RULE-33
+  it("[RULE-1][RULE-33] should isolate sub-task namespaces between different parent branches", async () => {
     await withWatermarkFixture(
       {
         branch: "task/2-parent-two",
@@ -354,9 +354,9 @@ describe("Watermark Resolver - Branch-Aware Sub-Task Namespacing (ADR-9, RULE-21
   });
 });
 
-describe("Watermark Resolver - Author / Agent Prefix Namespacing (ADR-9, RULE-35)", () => {
-  // @verifies ADR-9, RULE-35
-  it("[ADR-9][RULE-35] should allocate first prefixed ID when explicit prefix is provided", async () => {
+describe("Watermark Resolver - Author / Agent Prefix Namespacing (RULE-35)", () => {
+  // @verifies RULE-35
+  it("[RULE-35] should allocate first prefixed ID when explicit prefix is provided", async () => {
     const expectedTag = formatArtifactTag("TASK", "J1");
     await withWatermarkFixture(
       {
@@ -377,8 +377,8 @@ describe("Watermark Resolver - Author / Agent Prefix Namespacing (ADR-9, RULE-35
     );
   });
 
-  // @verifies ADR-9, RULE-35
-  it("[ADR-9][RULE-35] should advance from highest existing prefixed sequence (e.g. J101 -> J102)", async () => {
+  // @verifies RULE-35
+  it("[RULE-35] should advance from highest existing prefixed sequence (e.g. J101 -> J102)", async () => {
     const expectedTag = formatArtifactTag("TASK", "J102");
     await withWatermarkFixture(
       {
@@ -396,8 +396,8 @@ describe("Watermark Resolver - Author / Agent Prefix Namespacing (ADR-9, RULE-35
     );
   });
 
-  // @verifies ADR-9, RULE-35
-  it("[ADR-9][RULE-35] should fall back to trunk monotonic integer on feature branches without prefix", async () => {
+  // @verifies RULE-35
+  it("[RULE-35] should fall back to trunk monotonic integer on feature branches without prefix", async () => {
     const expectedTag = formatArtifactTag("TASK", 5);
     await withWatermarkFixture(
       {
@@ -418,8 +418,8 @@ describe("Watermark Resolver - Author / Agent Prefix Namespacing (ADR-9, RULE-35
     );
   });
 
-  // @verifies ADR-9, RULE-35
-  it("[ADR-9][RULE-35] should allow forceTrunk to bypass branch subtask namespacing", async () => {
+  // @verifies RULE-35
+  it("[RULE-35] should allow forceTrunk to bypass branch subtask namespacing", async () => {
     const expectedTag = formatArtifactTag("TASK", 4);
     await withWatermarkFixture(
       {
@@ -440,9 +440,9 @@ describe("Watermark Resolver - Author / Agent Prefix Namespacing (ADR-9, RULE-35
   });
 });
 
-describe("Watermark Resolver - Integrated Workspace Verification (ADR-6, ADR-9, RULE-21, RULE-34, RULE-35)", () => {
-  // @verifies ADR-6, ADR-9, RULE-21, RULE-34, RULE-35
-  it("[ADR-6][ADR-9][RULE-21][RULE-34][RULE-35] should resolve watermark accurately in an integrated workspace", async () => {
+describe("Watermark Resolver - Integrated Workspace Verification (RULE-21, RULE-34, RULE-35)", () => {
+  // @verifies RULE-21, RULE-34, RULE-35
+  it("[RULE-21][RULE-34][RULE-35] should resolve watermark accurately in an integrated workspace", async () => {
     const workspace = await createFixtureWorkspace("live-watermark-");
     await workspace.initGit({ defaultBranch: "dev" });
 
@@ -478,9 +478,9 @@ describe("Watermark Resolver - Integrated Workspace Verification (ADR-6, ADR-9, 
   });
 });
 
-describe("Watermark Resolver - Multi-Subtype Monotonic Allocation (ADR-1, ADR-2, RULE-1, RULE-34, RULE-35)", () => {
-  // @verifies ADR-1, ADR-2, RULE-1, RULE-35
-  it("[ADR-1][ADR-2][RULE-1][RULE-35] should allocate next RULE ID monotonically across active and deleted IDs", async () => {
+describe("Watermark Resolver - Multi-Subtype Monotonic Allocation (RULE-1, RULE-34, RULE-35)", () => {
+  // @verifies RULE-1, RULE-35
+  it("[RULE-1][RULE-35] should allocate next RULE ID monotonically across active and deleted IDs", async () => {
     const expectedTag = formatArtifactTag("RULE", 5);
     await withWatermarkFixture(
       {
@@ -506,8 +506,8 @@ describe("Watermark Resolver - Multi-Subtype Monotonic Allocation (ADR-1, ADR-2,
     );
   });
 
-  // @verifies ADR-1, ADR-2, RULE-1, RULE-35
-  it("[ADR-1][ADR-2][RULE-1][RULE-35] should allocate next ADR ID monotonically across active and deleted IDs", async () => {
+  // @verifies RULE-1, RULE-35
+  it("[RULE-1][RULE-35] should allocate next ADR ID monotonically across active and deleted IDs", async () => {
     const expectedTag = formatArtifactTag("ADR", 3);
     await withWatermarkFixture(
       {
@@ -531,8 +531,8 @@ describe("Watermark Resolver - Multi-Subtype Monotonic Allocation (ADR-1, ADR-2,
     );
   });
 
-  // @verifies ADR-1, ADR-2, RULE-1, RULE-34, RULE-35
-  it("[ADR-1][ADR-2][RULE-1][RULE-34][RULE-35] should resolve RULE and ADR watermarks accurately in an integrated workspace", async () => {
+  // @verifies RULE-1, RULE-34, RULE-35
+  it("[RULE-1][RULE-34][RULE-35] should resolve RULE and ADR watermarks accurately in an integrated workspace", async () => {
     const workspace = await createFixtureWorkspace("live-gov-watermark-");
     await workspace.initGit({ defaultBranch: "main" });
 
@@ -565,9 +565,9 @@ describe("Watermark Resolver - Multi-Subtype Monotonic Allocation (ADR-1, ADR-2,
   });
 });
 
-describe("Watermark Resolver - Multi-Branch Collision Guard & Discovery (RULE-1, RULE-33, RULE-34, RULE-35, ADR-1, ADR-2, ADR-6, ADR-9)", () => {
-  // @verifies RULE-33, ADR-6, ADR-9, RULE-35
-  it("[RULE-33][ADR-6][ADR-9][RULE-35] should incorporate active IDs from other branches during ID allocation", async () => {
+describe("Watermark Resolver - Multi-Branch Collision Guard & Discovery (RULE-1, RULE-33, RULE-34, RULE-35)", () => {
+  // @verifies RULE-33, RULE-35
+  it("[RULE-33][RULE-35] should incorporate active IDs from other branches during ID allocation", async () => {
     const expectedTag = formatArtifactTag("TASK", 6);
     await withWatermarkFixture(
       {
@@ -594,8 +594,8 @@ describe("Watermark Resolver - Multi-Branch Collision Guard & Discovery (RULE-1,
     );
   });
 
-  // @verifies RULE-1, RULE-33, ADR-1, ADR-2, RULE-35
-  it("[RULE-1][RULE-33][ADR-1][ADR-2][RULE-35] should allocate monotonic RULE and ADR IDs skipping other branch IDs", async () => {
+  // @verifies RULE-1, RULE-33, RULE-35
+  it("[RULE-1][RULE-33][RULE-35] should allocate monotonic RULE and ADR IDs skipping other branch IDs", async () => {
     await withWatermarkFixture(
       {
         branch: "main",
@@ -685,9 +685,9 @@ describe("Watermark Resolver - Multi-Branch Collision Guard & Discovery (RULE-1,
   });
 });
 
-describe("Sequence Calculator & Strategy Handlers (RULE-1, ADR-6, ADR-9, RULE-35)", () => {
-  // @verifies RULE-1, ADR-9, RULE-35
-  it("[RULE-1][ADR-9][RULE-35] should calculate next sequence from empty known IDs as sequence 1", () => {
+describe("Sequence Calculator & Strategy Handlers (RULE-1, RULE-35)", () => {
+  // @verifies RULE-1, RULE-35
+  it("[RULE-1][RULE-35] should calculate next sequence from empty known IDs as sequence 1", () => {
     const alloc = nextSequence([], {
       match: /^[0-9]+$/,
       format: (n) => String(n),
@@ -697,8 +697,8 @@ describe("Sequence Calculator & Strategy Handlers (RULE-1, ADR-6, ADR-9, RULE-35
     expect(String(alloc)).toBe("1");
   });
 
-  // @verifies RULE-1, ADR-9, RULE-35
-  it("[RULE-1][ADR-9][RULE-35] should calculate max + 1 and skip existing collisions", () => {
+  // @verifies RULE-1, RULE-35
+  it("[RULE-1][RULE-35] should calculate max + 1 and skip existing collisions", () => {
     const alloc = nextSequence(["1", "2", "3", "5"], {
       match: /^[0-9]+$/,
       format: (n) => String(n),
@@ -716,8 +716,8 @@ describe("Sequence Calculator & Strategy Handlers (RULE-1, ADR-6, ADR-9, RULE-35
     expect(collisionAlloc.id).toBe("5");
   });
 
-  // @verifies ADR-9, RULE-35
-  it("[ADR-9][RULE-35] should correctly extract sequence with prefix regex and format function", () => {
+  // @verifies RULE-35
+  it("[RULE-35] should correctly extract sequence with prefix regex and format function", () => {
     const alloc = nextSequence(["A1", "A2", "A99", "B100"], {
       match: /^A([0-9]+)$/i,
       format: (n) => `A${n}`,
@@ -726,16 +726,16 @@ describe("Sequence Calculator & Strategy Handlers (RULE-1, ADR-6, ADR-9, RULE-35
     expect(alloc.id).toBe("A100");
   });
 
-  // @verifies RULE-1, ADR-6, ADR-9
-  it("[RULE-1][ADR-6][ADR-9] should allocate via trunk strategy", () => {
+  // @verifies RULE-1
+  it("[RULE-1] should allocate via trunk strategy", () => {
     const result = trunkAllocationStrategy.allocate(["10", "20", "5"]);
     expect(result.strategy).toBe("trunk");
     expect(result.sequence).toBe(21);
     expect(result.nextId).toBe("21");
   });
 
-  // @verifies ADR-9
-  it("[ADR-9] should allocate via subtask strategy under parent ID", () => {
+  // @verifies RULE-1
+  it("[RULE-1] should allocate via subtask strategy under parent ID", () => {
     const result = subtaskAllocationStrategy.allocate(["4-1", "4-2"], "4");
     expect(result.strategy).toBe("subtask");
     expect(result.parentId).toBe("4");
@@ -743,8 +743,8 @@ describe("Sequence Calculator & Strategy Handlers (RULE-1, ADR-6, ADR-9, RULE-35
     expect(result.nextId).toBe("4-3");
   });
 
-  // @verifies ADR-9
-  it("[ADR-9] should allocate via prefixed strategy", () => {
+  // @verifies RULE-1
+  it("[RULE-1] should allocate via prefixed strategy", () => {
     const result = prefixedAllocationStrategy.allocate(["J101", "J102"], "J");
     expect(result.strategy).toBe("prefixed");
     expect(result.prefix).toBe("J");
@@ -752,8 +752,8 @@ describe("Sequence Calculator & Strategy Handlers (RULE-1, ADR-6, ADR-9, RULE-35
     expect(result.nextId).toBe("J103");
   });
 
-  // @verifies ADR-9, RULE-35
-  it("[ADR-9][RULE-35] should delegate strategy selection appropriately in allocateTaskStrategy", () => {
+  // @verifies RULE-35
+  it("[RULE-35] should delegate strategy selection appropriately in allocateTaskStrategy", () => {
     const trunkRes = allocateTaskStrategy(["1", "2"], {});
     expect(trunkRes.strategy).toBe("trunk");
     expect(trunkRes.nextId).toBe("3");

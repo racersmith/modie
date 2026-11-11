@@ -1,7 +1,7 @@
 /**
  * Declarative link and dependency governance policy matrix.
  * Enforces subtype compatibility, spatial ancestry/subtree scoping,
- * and DAG cycle constraints per ADR-5, RULE-7, RULE-13, RULE-14, RULE-15,
+ * and DAG cycle constraints per RULE-13, RULE-7, RULE-13, RULE-14, RULE-15,
  * RULE-16, RULE-17, RULE-18, RULE-19, and RULE-38.
  */
 
@@ -12,7 +12,7 @@ import type {
 
 /**
  * Canonical system link policy table for default Modie artifact subtypes.
- * Complies with ADR-5, RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, RULE-17,
+ * Complies with RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, and RULE-17
  * RULE-18, and RULE-19.
  */
 export const LINK_POLICY: LinkPolicyTable = {

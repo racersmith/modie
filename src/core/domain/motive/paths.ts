@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Canonical MOTIVE path resolution and scope normalization utilities.
- * Enforces ADR-2, ADR-4, ADR-10, RULE-2, RULE-8, RULE-12, and RULE-38:
+ * Enforces RULE-2, RULE-8, RULE-12, and RULE-38:
  * - Singleton containment: `<dir>/.modie/MOTIVE.md`
  */
 
@@ -16,7 +16,7 @@ export const MOTIVE_FILENAME = "MOTIVE.md";
 
 /**
  * Resolves the canonical `MOTIVE.md` paths (`<dir>/.modie/MOTIVE.md`) for a target directory
- * or path inside `<dir>/.modie` per RULE-8 and ADR-10.
+ * or path inside `<dir>/.modie` per RULE-8.
  *
  * Automatically strips `.modie` container segments if present, and normalizes file paths
  * to their enclosing directory.

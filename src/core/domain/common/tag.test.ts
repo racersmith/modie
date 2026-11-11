@@ -1,6 +1,6 @@
 /**
  * Unit tests for canonical tag grammar and subtype normalization helpers.
- * @verifies RULE-1, RULE-25, RULE-35, ADR-1, ADR-2
+ * @verifies RULE-1, RULE-25, RULE-35
  */
 
 import { describe, expect, it } from "bun:test";

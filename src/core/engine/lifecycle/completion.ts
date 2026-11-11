@@ -1,6 +1,6 @@
 /**
  * Task completion and checklist progression domain services.
- * Implements ADR-6, RULE-21, RULE-22, RULE-25, and RULE-32.
+ * Implements RULE-21, RULE-22, RULE-25, and RULE-32.
  */
 
 import { readFile, rm, stat, writeFile } from "node:fs/promises";
@@ -93,7 +93,7 @@ export interface CompleteTaskOptions {
   deleteArtifact?: boolean;
 
   /**
-   * Whether to execute the atomic two-phase Git commit ceremony per ADR-6 and RULE-21.
+   * Whether to execute the atomic two-phase Git commit ceremony per RULE-21.
    * - Phase 1: `feat(TASK-<id>): <slug>`
    * - Phase 2: `chore(task): delete completed TASK-<id> artifact`
    */
@@ -142,7 +142,7 @@ export async function detectZombieTasks(
 }
 
 /**
- * Asserts that a task ID was not previously deleted in Git history per ADR-6 and RULE-21.
+ * Asserts that a task ID was not previously deleted in Git history per RULE-21.
  * Throws a descriptive Error if the task is a resurrected zombie task.
  */
 export async function assertNotZombieTask(
@@ -391,7 +391,7 @@ export async function checkTaskItem(
  * Completes an active TASK artifact.
  * Verifies that all acceptance criteria are completed per RULE-22.
  * Deletes the ephemeral task file from the working tree per RULE-21.
- * Optionally executes the atomic two-phase Git commit ceremony per ADR-6.
+ * Optionally executes the atomic two-phase Git commit ceremony per RULE-21.
  *
  * @param taskIdentifier Task ID (e.g. "TASK-7-1", "7-1"), slug, or filepath.
  * @param options Options controlling force completion, artifact deletion, and Git commits.
@@ -503,7 +503,7 @@ export async function completeTask(
 }
 
 /**
- * Orchestrates the atomic two-phase Git commit ceremony for completing a task per ADR-6 and RULE-21.
+ * Orchestrates the atomic two-phase Git commit ceremony for completing a task per RULE-21.
  * Phase 1: Commits verified acceptance criteria (feat(TASK-<id>): <slug>).
  * Phase 2: Commits artifact deletion (chore(task): delete completed TASK-<id> artifact).
  */

@@ -1,7 +1,6 @@
 /**
  * Dynamic MCP Roots and Workspace Resolution Test Suite.
  * @verifies RULE-37
- * @verifies ADR-12
  */
 
 import { describe, expect, it } from "bun:test";
@@ -9,7 +8,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createDynamicWorkspaceManager } from "./roots.ts";
 import { createWorkspaceContextSync } from "../../core/index.ts";
 
-describe("[RULE-37][ADR-12] Dynamic MCP Workspace Roots Tracking", () => {
+describe("[RULE-37] Dynamic MCP Workspace Roots Tracking", () => {
   it("should dynamically resolve workspace root from client roots/list", async () => {
     const server = new McpServer({ name: "test-server", version: "1.0.0" });
     const initialDir = "/home/test/initial";

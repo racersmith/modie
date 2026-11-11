@@ -1,7 +1,7 @@
 /**
  * Types and interfaces for document linking, frontmatter link mutation,
  * and DAG invariant validation.
- * Complies with ADR-5, RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, RULE-17,
+ * Complies with RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, and RULE-17
  * RULE-18, RULE-19, RULE-25, and RULE-36.
  */
 
@@ -25,7 +25,7 @@ export interface ValidateLinkOptions {
 
   /**
    * Optional explicit relationship override ("links" or "depends_on").
-   * When omitted, automatically inferred from source and target subtypes per ADR-5.
+   * When omitted, automatically inferred from source and target subtypes per RULE-13.
    */
   relationship?: ArtifactLinkRelationship;
 

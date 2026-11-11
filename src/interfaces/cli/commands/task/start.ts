@@ -1,7 +1,7 @@
 /**
  * Declarative CLI command definition for `modie task start <id> [options]`.
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
- * Enforces RULE-28 and ADR-9.
+ * Enforces RULE-28.
  */
 
 import { z } from "zod";

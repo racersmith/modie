@@ -1,7 +1,7 @@
 /**
  * Unit and integration tests for ADR supersession and bidirectional frontmatter links.
- * Tagged per ADR-7 and RULE-23 for universal rule verification.
- * @verifies ADR-4, RULE-4, RULE-14, RULE-31, RULE-34
+ * Tagged per RULE-23 for universal rule verification.
+ * @verifies RULE-4, RULE-14, RULE-31, RULE-34
  */
 
 import { describe, expect, it } from "bun:test";
@@ -12,8 +12,8 @@ import { archiveAdr } from "../archival/index.ts";
 import { createAdr } from "./index.ts";
 
 describe("Core ADR Creation - Supersession & Bidirectional Frontmatter (RULE-4, RULE-14, RULE-31, RULE-34)", () => {
-  // @verifies ADR-4, RULE-4, RULE-14, RULE-34
-  it("[ADR-4][RULE-4][RULE-14][RULE-34] should create an ADR with supersedes and update predecessor ADR frontmatter bidirectionally", async () => {
+  // @verifies RULE-4, RULE-14, RULE-34
+  it("[RULE-4][RULE-14][RULE-34] should create an ADR with supersedes and update predecessor ADR frontmatter bidirectionally", async () => {
     const workspace = await createFixtureWorkspace("adr-supersession-");
 
     // 1. Create predecessor ADR-1

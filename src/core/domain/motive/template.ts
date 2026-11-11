@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: MOTIVE.md template scaffolding and RULE-10 reference prohibition validation.
- * Complies with ADR-2, ADR-4, ADR-10, RULE-10, and RULE-38 with zero platform/engine dependencies.
+ * Complies with RULE-10 and RULE-38.
  */
 
 import { parseArtifactFilename } from "../common/filename.ts";

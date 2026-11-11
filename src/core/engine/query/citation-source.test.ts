@@ -1,6 +1,6 @@
 /**
  * Isolated unit tests for CitationSource implementations (GitGrepSource and FsWalkSource).
- * Complies with ADR-4, ADR-5, RULE-25, RULE-31, RULE-34, and RULE-35.
+ * Complies with RULE-25, RULE-31, RULE-34, and RULE-35.
  * @verifies RULE-25, RULE-31, RULE-34, RULE-35
  */
 

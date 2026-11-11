@@ -1,7 +1,7 @@
 /**
  * Unit tests for pure tag and link syntax predicates.
- * Verifies ADR-5, RULE-13, RULE-14, RULE-15, RULE-18, and RULE-34.
- * @verifies ADR-5, RULE-13, RULE-14, RULE-15, RULE-18, RULE-34
+ * Verifies RULE-13, RULE-14, RULE-15, RULE-18, and RULE-34.
+ * @verifies RULE-13, RULE-14, RULE-15, RULE-18, RULE-34
  */
 
 import { describe, expect, it } from "bun:test";
@@ -14,9 +14,9 @@ import {
   isValidTaskDependencyTag,
 } from "./syntax.ts";
 
-describe("Link & Dependency Syntax Predicates (ADR-5, RULE-13, RULE-14, RULE-15, RULE-18)", () => {
-  // @verifies ADR-5, RULE-13
-  it("[ADR-5][RULE-13] should validate ADR link tags with isValidAdrLinkTag", () => {
+describe("Link & Dependency Syntax Predicates (RULE-13, RULE-14, RULE-15, RULE-18)", () => {
+  // @verifies RULE-13
+  it("[RULE-13] should validate ADR link tags with isValidAdrLinkTag", () => {
     expect(isValidAdrLinkTag("ADR-1")).toBe(true);
     expect(isValidAdrLinkTag("adr-10")).toBe(true);
     expect(isValidAdrLinkTag("ADR-42-1")).toBe(true);
@@ -29,8 +29,8 @@ describe("Link & Dependency Syntax Predicates (ADR-5, RULE-13, RULE-14, RULE-15,
     expect(isValidAdrLinkTag("invalid-tag")).toBe(false);
   });
 
-  // @verifies ADR-5, RULE-14, RULE-15
-  it("[ADR-5][RULE-14][RULE-15] should validate governance link tags with isValidGovernanceLinkTag", () => {
+  // @verifies RULE-14, RULE-15
+  it("[RULE-14][RULE-15] should validate governance link tags with isValidGovernanceLinkTag", () => {
     expect(isValidGovernanceLinkTag("ADR-1")).toBe(true);
     expect(isValidGovernanceLinkTag("adr-10")).toBe(true);
     expect(isValidGovernanceLinkTag("RULE-1")).toBe(true);
@@ -43,8 +43,8 @@ describe("Link & Dependency Syntax Predicates (ADR-5, RULE-13, RULE-14, RULE-15,
     expect(isValidGovernanceLinkTag("random-string")).toBe(false);
   });
 
-  // @verifies ADR-5, RULE-18
-  it("[ADR-5][RULE-18] should validate task dependency tags with isValidTaskDependencyTag", () => {
+  // @verifies RULE-18
+  it("[RULE-18] should validate task dependency tags with isValidTaskDependencyTag", () => {
     expect(isValidTaskDependencyTag("TASK-1")).toBe(true);
     expect(isValidTaskDependencyTag("task-10")).toBe(true);
     expect(isValidTaskDependencyTag("TASK-10-1")).toBe(true);
@@ -57,8 +57,8 @@ describe("Link & Dependency Syntax Predicates (ADR-5, RULE-13, RULE-14, RULE-15,
     expect(isValidTaskDependencyTag("TASK")).toBe(false);
   });
 
-  // @verifies ADR-5, RULE-13, RULE-14, RULE-15, RULE-18
-  it("[ADR-5][RULE-13][RULE-14][RULE-15][RULE-18] should match tag patterns using regex constants", () => {
+  // @verifies RULE-13, RULE-14, RULE-15, RULE-18
+  it("[RULE-13][RULE-14][RULE-15][RULE-18] should match tag patterns using regex constants", () => {
     expect(ADR_LINK_TAG_REGEX.test("ADR-1")).toBe(true);
     expect(ADR_LINK_TAG_REGEX.test("adr-99")).toBe(true);
     expect(ADR_LINK_TAG_REGEX.test("RULE-1")).toBe(false);

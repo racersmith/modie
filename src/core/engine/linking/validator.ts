@@ -2,7 +2,7 @@
  * Core Graph & Link Invariant Validation Engine.
  * Enforces subtype compatibility, spatial ancestry/subtree scoping,
  * sideways sibling prohibition, and task dependency cycle detection.
- * Complies with ADR-5, RULE-7, RULE-8, RULE-13, RULE-14, RULE-15, RULE-16,
+ * Complies with RULE-7, RULE-8, RULE-13, RULE-14, RULE-15, and RULE-16
  * RULE-17, RULE-18, RULE-19, RULE-25, and RULE-36.
  */
 
@@ -36,7 +36,7 @@ import type {
 
 /**
  * Automatically infers the frontmatter relationship field ("links" vs "depends_on")
- * from the source and target artifact subtypes per ADR-5, RULE-15, and RULE-18.
+ * from the source and target artifact subtypes per RULE-13, RULE-15, and RULE-18.
  *
  * - TASK -> TASK maps to "depends_on"
  * - All governance references map to "links"
@@ -384,10 +384,10 @@ async function assertAcyclicConstraint(
 /**
  * Validates a single outgoing link or dependency edge from `sourceSubtype` (at `sourceScopeDir`)
  * to `targetTag`. Enforces:
- * - Subtype compatibility matrix and link syntax (ADR-5, RULE-13, RULE-14, RULE-15, RULE-18)
- * - Self-reference prohibition (ADR-5, RULE-18, RULE-36)
+ * - Subtype compatibility matrix and link syntax (RULE-13, RULE-14, RULE-15, RULE-18)
+ * - Self-reference prohibition (RULE-18, RULE-36)
  * - Spatial ancestry / descendant subtree scoping and sideways sibling prohibition
- *   (ADR-5, RULE-7, RULE-8, RULE-16, RULE-17, RULE-19)
+ *   (RULE-7, RULE-8, RULE-16, RULE-17, RULE-19)
  * - Task dependency DAG acyclicity (RULE-18)
  *
  * @throws Error with descriptive invariant citation if any constraint is violated.
@@ -462,10 +462,10 @@ export async function validateLinkTarget(
 /**
  * Validates whether linking `sourceInput` to `targetInput` satisfies all Modie
  * governance graph and task DAG invariants:
- * - Self-reference prohibition (ADR-5, RULE-18, RULE-36)
- * - Subtype compatibility matrix (ADR-5, RULE-13, RULE-14, RULE-15, RULE-18)
+ * - Self-reference prohibition (RULE-18, RULE-36)
+ * - Subtype compatibility matrix (RULE-13, RULE-14, RULE-15, RULE-18)
  * - Spatial ancestry / descendant subtree scoping and sideways link prohibition
- *   (ADR-5, RULE-7, RULE-8, RULE-16, RULE-17, RULE-19)
+ *   (RULE-7, RULE-8, RULE-16, RULE-17, RULE-19)
  * - Task dependency DAG acyclicity (RULE-18)
  *
  * @throws Error with descriptive invariant citation if any constraint is violated.

@@ -1,6 +1,6 @@
 /**
  * Core MOTIVE Creation Service.
- * Enforces singleton containment at `<dir>/.modie/MOTIVE.md` (RULE-8, ADR-10),
+ * Enforces RULE-8
  * collision protection against accidental overwrites, and RULE-10 reference prohibition.
  */
 
@@ -18,7 +18,7 @@ import { resolveWorkspaceContext } from "../context/index.ts";
 /**
  * Creates or scaffolds a singleton `MOTIVE.md` artifact within `<dir>/.modie/MOTIVE.md`.
  *
- * - Normalizes target scope via `resolveMotivePaths` (RULE-8, ADR-10).
+ * - Normalizes target scope via `resolveMotivePaths` (RULE-8).
  * - Rejects creation if `MOTIVE.md` already exists unless `overwrite` / `force` is true.
  * - Validates content against RULE-10 before writing to disk.
  */

@@ -1,6 +1,6 @@
 /**
  * Unit tests for active task queue querying and DAG dependency readiness evaluation.
- * @verifies ADR-6, RULE-18, RULE-22, RULE-25, RULE-28
+ * @verifies RULE-18, RULE-22, RULE-25, RULE-28
  */
 
 import { describe, expect, it } from "bun:test";
@@ -39,9 +39,9 @@ describe("Task Queue Query Service - ID Comparison & Natural Ordering", () => {
   });
 });
 
-describe("Task Queue Query Service - DAG Readiness Evaluation (ADR-6, RULE-18)", () => {
-  // @verifies ADR-6, RULE-18, RULE-22
-  it("[ADR-6][RULE-18] should evaluate tasks with no dependencies as READY", async () => {
+describe("Task Queue Query Service - DAG Readiness Evaluation (RULE-18)", () => {
+  // @verifies RULE-18, RULE-22
+  it("[RULE-18] should evaluate tasks with no dependencies as READY", async () => {
     await using workspace = await createFixtureWorkspace("modie-query-ready-");
     const task = await workspace.createTask({
       id: 100,
@@ -63,8 +63,8 @@ describe("Task Queue Query Service - DAG Readiness Evaluation (ADR-6, RULE-18)",
     expect(queue[0]!.allCriteriaSatisfied).toBe(false);
   });
 
-  // @verifies ADR-6, RULE-18
-  it("[ADR-6][RULE-18] should mark task as BLOCKED when prerequisite task is active on disk", async () => {
+  // @verifies RULE-18
+  it("[RULE-18] should mark task as BLOCKED when prerequisite task is active on disk", async () => {
     await using workspace = await createFixtureWorkspace(
       "modie-query-blocked-",
     );
@@ -96,8 +96,8 @@ describe("Task Queue Query Service - DAG Readiness Evaluation (ADR-6, RULE-18)",
     expect(foundB?.blockedBy).toEqual([taskA.tag]);
   });
 
-  // @verifies ADR-6, RULE-18
-  it("[ADR-6][RULE-18] should evaluate task as READY when prerequisite task was completed and deleted (not on disk)", async () => {
+  // @verifies RULE-18
+  it("[RULE-18] should evaluate task as READY when prerequisite task was completed and deleted (not on disk)", async () => {
     await using workspace = await createFixtureWorkspace(
       "modie-query-deleted-dep-",
     );
@@ -118,8 +118,8 @@ describe("Task Queue Query Service - DAG Readiness Evaluation (ADR-6, RULE-18)",
     expect(queue[0]!.blockedBy).toEqual([]);
   });
 
-  // @verifies ADR-6, RULE-18
-  it("[ADR-6][RULE-18] should handle transitive dependency chains correctly", async () => {
+  // @verifies RULE-18
+  it("[RULE-18] should handle transitive dependency chains correctly", async () => {
     await using workspace = await createFixtureWorkspace("modie-query-chain-");
     const task1 = await workspace.createTask({
       id: 401,
@@ -289,8 +289,8 @@ describe("Task Status Inspection Service - getTaskStatus (RULE-22, RULE-25)", ()
     ).rejects.toThrow(/was not found among active tasks on disk/);
   });
 
-  // @verifies ADR-6, ADR-9, RULE-21, RULE-25, RULE-34, RULE-35
-  it("[ADR-6][ADR-9][RULE-21][RULE-25][RULE-34][RULE-35] should strictly search active .md files by default and resolve completed tasks and branches when history: true is passed", async () => {
+  // @verifies RULE-21, RULE-25, RULE-34, RULE-35
+  it("[RULE-21][RULE-25][RULE-34][RULE-35] should strictly search active .md files by default and resolve completed tasks and branches when history: true is passed", async () => {
     await using workspace = await createFixtureWorkspace(
       "modie-query-history-",
     );
@@ -381,9 +381,9 @@ describe("Task Branch Parsing Service - parseTaskIdFromBranch (RULE-28)", () => 
   });
 });
 
-describe("Criteria Progress & Queue Item Construction (RULE-22, ADR-6)", () => {
-  // @verifies RULE-22, ADR-6
-  it("[RULE-22][ADR-6] should calculate progress correctly across empty, partial, and complete criteria", () => {
+describe("Criteria Progress & Queue Item Construction (RULE-22)", () => {
+  // @verifies RULE-22
+  it("[RULE-22] should calculate progress correctly across empty, partial, and complete criteria", () => {
     const emptyActive = calculateCriteriaProgress([]);
     expect(emptyActive.criteriaTotal).toBe(0);
     expect(emptyActive.criteriaCompleted).toBe(0);
@@ -413,8 +413,8 @@ describe("Criteria Progress & Queue Item Construction (RULE-22, ADR-6)", () => {
     expect(satisfied.allCriteriaSatisfied).toBe(true);
   });
 
-  // @verifies RULE-22, ADR-6
-  it("[RULE-22][ADR-6] should map attributes to canonical TaskQueueItem via toTaskQueueItem", () => {
+  // @verifies RULE-22
+  it("[RULE-22] should map attributes to canonical TaskQueueItem via toTaskQueueItem", () => {
     const item = toTaskQueueItem({
       id: "99",
       slug: "refactor-pipeline",
@@ -451,9 +451,9 @@ describe("Criteria Progress & Queue Item Construction (RULE-22, ADR-6)", () => {
   });
 });
 
-describe("Historical Task Collection Handlers (ADR-6, RULE-21, RULE-28)", () => {
-  // @verifies ADR-6, RULE-28
-  it("[ADR-6][RULE-28] should map task branches to lookup dictionary", () => {
+describe("Historical Task Collection Handlers (RULE-21, RULE-28)", () => {
+  // @verifies RULE-28
+  it("[RULE-28] should map task branches to lookup dictionary", () => {
     const map = buildTaskBranchMap([
       "main",
       "task/10-feature-one",
@@ -464,8 +464,8 @@ describe("Historical Task Collection Handlers (ADR-6, RULE-21, RULE-28)", () => 
     expect(map.get("20-1")?.slug).toBe("subtask-two");
   });
 
-  // @verifies ADR-6, RULE-21, RULE-28
-  it("[ADR-6][RULE-21][RULE-28] should collect branch tasks, deleted tasks, and branch-only tasks without duplicates", () => {
+  // @verifies RULE-21, RULE-28
+  it("[RULE-21][RULE-28] should collect branch tasks, deleted tasks, and branch-only tasks without duplicates", () => {
     const activeDiskIds = new Set(["1"]);
     const branchMap = buildTaskBranchMap([
       "task/2-branch-task",
@@ -537,9 +537,9 @@ describe("Historical Task Collection Handlers (ADR-6, RULE-21, RULE-28)", () => 
   });
 });
 
-describe("Typed VCS Methods for Historical Queries (ADR-6, RULE-21, RULE-25)", () => {
-  // @verifies ADR-6, RULE-21, RULE-25
-  it("[ADR-6][RULE-21][RULE-25] should read files at ref and read deleted files via typed IVcsAdapter", async () => {
+describe("Typed VCS Methods for Historical Queries (RULE-21, RULE-25)", () => {
+  // @verifies RULE-21, RULE-25
+  it("[RULE-21][RULE-25] should read files at ref and read deleted files via typed IVcsAdapter", async () => {
     const mockVcs = new MockVcsAdapter({
       fileContentsAtRef: {
         "task/10-test:src/.modie/tasks/test.TASK-10.md": "# Task 10 content",

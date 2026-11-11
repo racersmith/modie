@@ -1,6 +1,6 @@
 /**
  * Types and interfaces for the Modie explicit workspace context container.
- * Complies with RULE-25, RULE-28, RULE-34, ADR-1, ADR-2, ADR-4, and ADR-9.
+ * Complies with RULE-25, RULE-28, and RULE-34.
  */
 
 import type { DefinitionRegistry } from "../../domain/index.ts";

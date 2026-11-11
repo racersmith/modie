@@ -1,8 +1,8 @@
 /**
  * Unified Architectural Context Compilation Service.
  * Synthesizes upward ancestral motives (RULE-2), active governing rules (RULE-9, RULE-12),
- * progressive-disclosure ADR summaries (ADR-8, RULE-26), task-scoped metadata and blast radius (RULE-6),
- * and shallow downward child signposts (ADR-8).
+ * progressive-disclosure ADR summaries (RULE-26), task-scoped metadata and blast radius (RULE-6),
+ * and shallow downward child signposts .
  */
 
 import { existsSync } from "node:fs";
@@ -234,7 +234,7 @@ function resolvePath(trimmed: string, normCwd: string): ContextTarget {
 
 /**
  * Resolves context target metadata by evaluating early-return candidates:
- * `tryTask() ?? tryArtifact() ?? tryBareTaskId() ?? resolvePath()`.
+ * `tryTask ?? tryArtifact ?? tryBareTaskId ?? resolvePath`.
  */
 export async function resolveContextTarget(
   targetInput: string,

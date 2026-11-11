@@ -19,9 +19,9 @@ import {
   createFixtureWorkspace,
 } from "../../platform/testing/fixture-workspace.ts";
 
-describe("Core MOTIVE Pathing, Creation, Validation & Discovery (RULE-2, RULE-8, RULE-10, ADR-2, ADR-4, ADR-10)", () => {
-  // @verifies RULE-8, ADR-2, ADR-10, RULE-34
-  it("[RULE-8][ADR-2][ADR-10][RULE-34] should resolve canonical MOTIVE.md paths and normalize .modie container segments", async () => {
+describe("Core MOTIVE Pathing, Creation, Validation & Discovery (RULE-2, RULE-8, RULE-10)", () => {
+  // @verifies RULE-8, RULE-34
+  it("[RULE-8][RULE-34] should resolve canonical MOTIVE.md paths and normalize .modie container segments", async () => {
     await using workspace = await createFixtureWorkspace("modie-motive-paths-");
 
     const rootPaths = resolveMotivePaths(".", workspace.cwd);
@@ -54,8 +54,8 @@ describe("Core MOTIVE Pathing, Creation, Validation & Discovery (RULE-2, RULE-8,
     );
   });
 
-  // @verifies ADR-2, ADR-4, ADR-10, RULE-8, RULE-34
-  it("[ADR-2][ADR-4][ADR-10][RULE-8][RULE-34] should create MOTIVE.md with explicit content and scaffold default template when content is omitted", async () => {
+  // @verifies RULE-8, RULE-34
+  it("[RULE-8][RULE-34] should create MOTIVE.md with explicit content and scaffold default template when content is omitted", async () => {
     await using workspace = await createFixtureWorkspace(
       "modie-motive-create-",
     );
@@ -89,8 +89,8 @@ describe("Core MOTIVE Pathing, Creation, Validation & Discovery (RULE-2, RULE-8,
     expect(scaffoldRes.content).toContain("`src/interfaces` directory scope");
   });
 
-  // @verifies ADR-2, ADR-10, RULE-8, RULE-34
-  it("[ADR-2][ADR-10][RULE-8][RULE-34] should enforce singleton collision guard unless overwrite is explicitly requested", async () => {
+  // @verifies RULE-8, RULE-34
+  it("[RULE-8][RULE-34] should enforce singleton collision guard unless overwrite is explicitly requested", async () => {
     await using workspace = await createFixtureWorkspace(
       "modie-motive-collision-",
     );
@@ -190,8 +190,8 @@ describe("Core MOTIVE Pathing, Creation, Validation & Discovery (RULE-2, RULE-8,
     expect(await workspace.fileExists("src/core/.modie/MOTIVE.md")).toBe(false);
   });
 
-  // @verifies RULE-2, RULE-8, ADR-10, RULE-34
-  it("[RULE-2][RULE-8][ADR-10][RULE-34] should read MOTIVE.md and collect upward ancestral motives without evaluating sibling subtrees", async () => {
+  // @verifies RULE-2, RULE-8, RULE-34
+  it("[RULE-2][RULE-8][RULE-34] should read MOTIVE.md and collect upward ancestral motives without evaluating sibling subtrees", async () => {
     await using workspace = await createFixtureWorkspace(
       "modie-motive-ancestry-",
     );
@@ -230,8 +230,8 @@ describe("Core MOTIVE Pathing, Creation, Validation & Discovery (RULE-2, RULE-8,
     ]);
   });
 
-  // @verifies ADR-2, ADR-4, ADR-10, RULE-8, RULE-25, RULE-34
-  it("[ADR-2][ADR-4][ADR-10][RULE-8][RULE-25][RULE-34] should accept contextSection as alias for content", async () => {
+  // @verifies RULE-8, RULE-25, RULE-34
+  it("[RULE-8][RULE-25][RULE-34] should accept contextSection as alias for content", async () => {
     await using workspace = await createFixtureWorkspace(
       "modie-motive-disambiguation-",
     );

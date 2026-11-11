@@ -24,7 +24,7 @@ import {
 import { defaultVcsAdapter } from "../../platform/vcs/git-cli-adapter.ts";
 import { formatArtifactTag, formatTaskBranch, parseSubtaskId } from "../../domain/index.ts";
 
-describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
+describe("Task Branching Service (RULE-28)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {

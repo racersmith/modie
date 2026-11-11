@@ -142,7 +142,7 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
   });
 });
 
-describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, RULE-25, RULE-27, RULE-34, RULE-35, ADR-6)", () => {
+describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, RULE-25, RULE-27, RULE-34, RULE-35)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
@@ -153,8 +153,8 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
     await workspace.cleanup();
   });
 
-  // @verifies RULE-21, RULE-22, RULE-27, RULE-34, RULE-35, ADR-6
-  it("[RULE-21][RULE-22][RULE-27][RULE-34][RULE-35][ADR-6] should reject completion with error to stderr when criteria are incomplete", async () => {
+  // @verifies RULE-21, RULE-22, RULE-27, RULE-34, RULE-35
+  it("[RULE-21][RULE-22][RULE-27][RULE-34][RULE-35] should reject completion with error to stderr when criteria are incomplete", async () => {
     const linkAdr = formatArtifactTag("ADR", 6);
     const linkRule21 = formatArtifactTag("RULE", 21);
     const linkRule22 = formatArtifactTag("RULE", 22);
@@ -183,8 +183,8 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
     expect(await workspace.fileExists(task)).toBe(true);
   });
 
-  // @verifies RULE-21, RULE-22, RULE-25, RULE-27, RULE-34, RULE-35, ADR-6
-  it("[RULE-21][RULE-22][RULE-25][RULE-27][RULE-34][RULE-35][ADR-6] should complete task and delete file when all criteria are satisfied", async () => {
+  // @verifies RULE-21, RULE-22, RULE-25, RULE-27, RULE-34, RULE-35
+  it("[RULE-21][RULE-22][RULE-25][RULE-27][RULE-34][RULE-35] should complete task and delete file when all criteria are satisfied", async () => {
     const linkAdr = formatArtifactTag("ADR", 6);
     const linkRule21 = formatArtifactTag("RULE", 21);
     const linkRule22 = formatArtifactTag("RULE", 22);
@@ -282,8 +282,8 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
     expect(parsed.criteriaCompleted).toBe(1);
   });
 
-  // @verifies ADR-6, RULE-21, RULE-27, RULE-34
-  it("[ADR-6][RULE-21][RULE-27][RULE-34] should execute two-phase commit ceremony with -c / --commit", async () => {
+  // @verifies RULE-21, RULE-27, RULE-34
+  it("[RULE-21][RULE-27][RULE-34] should execute two-phase commit ceremony with -c / --commit", async () => {
     await workspace.initGit();
 
     const task = await workspace.createTask({
@@ -322,8 +322,8 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
     expect(messages[1]).toBe(`feat(${task.tag}): ${task.slug}`);
   });
 
-  // @verifies ADR-6, RULE-21, RULE-27, RULE-34
-  it("[ADR-6][RULE-21][RULE-27][RULE-34] should support task finish alias for complete", async () => {
+  // @verifies RULE-21, RULE-27, RULE-34
+  it("[RULE-21][RULE-27][RULE-34] should support task finish alias for complete", async () => {
     const task = await workspace.createTask({
       id: 306,
       slug: "finish-task",
@@ -342,8 +342,8 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
     expect(await workspace.fileExists(task)).toBe(false);
   });
 
-  // @verifies ADR-6, RULE-21, RULE-27, RULE-34
-  it("[ADR-6][RULE-21][RULE-27][RULE-34] should reject completing a zombie task with error to stderr", async () => {
+  // @verifies RULE-21, RULE-27, RULE-34
+  it("[RULE-21][RULE-27][RULE-34] should reject completing a zombie task with error to stderr", async () => {
     await workspace.initGit();
 
     // Create and delete task in git

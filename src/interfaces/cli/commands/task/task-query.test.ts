@@ -1,6 +1,6 @@
 /**
  * Integration and unit tests for `modie task list` and `modie task status`.
- * Tagged per ADR-7 and RULE-23 for universal rule verification.
+ * Tagged per RULE-23 for universal rule verification.
  */
 
 import { describe, expect, it } from "bun:test";
@@ -12,7 +12,7 @@ import {
   captureCli, execBin,
 } from "../../test-utils.ts";
 
-describe("CLI Task List - Execution & Stream Separation (ADR-6, RULE-18, RULE-25, RULE-27)", () => {
+describe("CLI Task List - Execution & Stream Separation (RULE-18, RULE-25, RULE-27)", () => {
   // @verifies RULE-25, RULE-27
   it("[RULE-25][RULE-27] should emit human-readable table to stderr and empty stdout with exit code 0", async () => {
     await using workspace = await createFixtureWorkspace("modie-cli-list-");
@@ -64,8 +64,8 @@ describe("CLI Task List - Execution & Stream Separation (ADR-6, RULE-18, RULE-25
     expect(parsed[0].readiness).toBe("READY");
   });
 
-  // @verifies ADR-6, RULE-18, RULE-27
-  it("[ADR-6][RULE-18][RULE-27] should support --ready and --blocked filters", async () => {
+  // @verifies RULE-18, RULE-27
+  it("[RULE-18][RULE-27] should support --ready and --blocked filters", async () => {
     await using workspace = await createFixtureWorkspace("modie-cli-list-filter-");
     const taskA = await workspace.createTask({
       id: 503,
@@ -226,8 +226,8 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
     expect(stderr).toContain(`Error: Task "${nonExistentTag}" was not found`);
   });
 
-  // @verifies ADR-6, RULE-25, RULE-27, RULE-28
-  it("[ADR-6][RULE-25][RULE-27][RULE-28] should resolve current task on task branch for bare task status and --current", async () => {
+  // @verifies RULE-25, RULE-27, RULE-28
+  it("[RULE-25][RULE-27][RULE-28] should resolve current task on task branch for bare task status and --current", async () => {
     await using workspace = await createFixtureWorkspace(
       "modie-cli-status-branch-",
     );
@@ -304,8 +304,8 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
     expect(listItems[0].isCurrent).toBe(true);
   });
 
-  // @verifies ADR-6, ADR-9, RULE-21, RULE-25, RULE-27, RULE-34, RULE-35
-  it("[ADR-6][ADR-9][RULE-21][RULE-25][RULE-27][RULE-34][RULE-35] should support --history flag on task status to query completed task history and branches", async () => {
+  // @verifies RULE-21, RULE-25, RULE-27, RULE-34, RULE-35
+  it("[RULE-21][RULE-25][RULE-27][RULE-34][RULE-35] should support --history flag on task status to query completed task history and branches", async () => {
     await using workspace = await createFixtureWorkspace(
       "modie-cli-status-history-",
     );

@@ -1,6 +1,6 @@
 /**
  * Monotonic watermark calculation and branch-aware ID allocation.
- * Complies with RULE-1, RULE-33, ADR-1, ADR-2, ADR-6, and ADR-9.
+ * Complies with RULE-1 and RULE-33.
  */
 
 import { scanActiveArtifactIds } from "./active-scanner.ts";
@@ -192,7 +192,7 @@ async function resolveTaskPrefix(
  * for any indexable artifact subtype (RULE, ADR, TASK, or custom subtype).
  *
  * - For non-TASK subtypes (RULE, ADR, custom): Uses strict monotonic integer progression per RULE-1.
- * - For TASK: Follows the Hierarchical Branch & Author Namespaced Allocation Model defined in ADR-9.
+ * - For TASK: Follows the Hierarchical Branch & Author Namespaced Allocation Model per RULE-1 and RULE-28.
  */
 export async function resolveWatermark(
   options: WatermarkResolutionOptions = {},

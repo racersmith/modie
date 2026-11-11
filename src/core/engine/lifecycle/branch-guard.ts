@@ -1,5 +1,5 @@
 /**
- * Modie Core: Task Branch Guard & Collision Detection Service (ADR-6, ADR-9, RULE-21, RULE-28, RULE-33).
+ * Modie Core: Task Branch Guard & Collision Detection Service (RULE-21, RULE-28, RULE-33).
  *
  * Enforces tree collision guards, pre-merge branch validation, subtask hierarchy integrity,
  * and completion ceremony verification before task merges.
@@ -145,7 +145,7 @@ function checkArtifactCollision(
 
 /**
  * Detects indexable artifact collisions between a source branch and a target branch prior to merge.
- * Complies with RULE-1, ADR-6, ADR-9, and RULE-33.
+ * Complies with RULE-1 and RULE-33.
  */
 export async function detectArtifactCollisions(
   sourceBranch: string,

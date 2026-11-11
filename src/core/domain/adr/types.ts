@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Domain types and schemas for ADR primitive artifacts.
- * Complies with ADR-1, ADR-2, ADR-4, RULE-1, RULE-4, RULE-14, RULE-17, and RULE-38.
+ * Complies with RULE-1, RULE-4, RULE-14, RULE-17, and RULE-38.
  */
 
 import type { CreateArtifactResult } from "../types.ts";
@@ -29,7 +29,7 @@ export interface AdrArtifact {
   title: string;
 
   /**
-   * Concise 1-2 sentence signpost summary of the decision for progressive disclosure (ADR-8, RULE-26).
+   * Concise 1-2 sentence signpost summary of the decision for progressive disclosure (RULE-26).
    */
   summary?: string;
 
@@ -49,22 +49,22 @@ export interface AdrArtifact {
   superseded_by?: string[];
 
   /**
-   * Context / problem statement (ADR-4).
+   * Context / problem statement.
    */
   contextSection?: string;
 
   /**
-   * Alternatives considered (ADR-4).
+   * Alternatives considered.
    */
   alternatives?: string;
 
   /**
-   * Architectural decision choice (ADR-4).
+   * Architectural decision choice.
    */
   decision?: string;
 
   /**
-   * Positive outcomes, new risks, and accepted trade-offs (ADR-4).
+   * Positive outcomes, new risks, and accepted trade-offs.
    */
   consequences?: string;
 
@@ -96,7 +96,7 @@ export interface AdrRenderOptions {
   title?: string;
 
   /**
-   * Concise 1-2 sentence signpost summary of the decision for progressive disclosure (ADR-8, RULE-26).
+   * Concise 1-2 sentence signpost summary of the decision for progressive disclosure (RULE-26).
    */
   summary?: string;
 
@@ -116,22 +116,22 @@ export interface AdrRenderOptions {
   superseded_by?: string[];
 
   /**
-   * Context / problem statement (ADR-4).
+   * Context / problem statement.
    */
   contextSection?: string;
 
   /**
-   * Alternatives considered (ADR-4).
+   * Alternatives considered.
    */
   alternatives?: string;
 
   /**
-   * Decision description (ADR-4).
+   * Decision description.
    */
   decision?: string;
 
   /**
-   * Positive outcomes, new risks, and accepted trade-offs (ADR-4).
+   * Positive outcomes, new risks, and accepted trade-offs.
    */
   consequences?: string;
 
@@ -155,27 +155,27 @@ export interface CreateAdrOptions {
   scopeDir?: string;
 
   /**
-   * Concise 1-2 sentence signpost summary of the decision for progressive disclosure (ADR-8, RULE-26).
+   * Concise 1-2 sentence signpost summary of the decision for progressive disclosure (RULE-26).
    */
   summary?: string;
 
   /**
-   * Context / problem statement (ADR-4).
+   * Context / problem statement.
    */
   contextSection?: string;
 
   /**
-   * Alternatives considered (ADR-4).
+   * Alternatives considered.
    */
   alternatives?: string;
 
   /**
-   * Adopted decision description (ADR-4).
+   * Adopted decision description.
    */
   decision?: string;
 
   /**
-   * Positive outcomes, new risks, and accepted trade-offs (ADR-4).
+   * Positive outcomes, new risks, and accepted trade-offs.
    */
   consequences?: string;
 

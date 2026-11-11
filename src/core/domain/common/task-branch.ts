@@ -1,5 +1,5 @@
 /**
- * Canonical task branch parsing, formatting, and glob patterns adhering to RULE-28 and ADR-9.
+ * Canonical task branch parsing, formatting, and glob patterns adhering to RULE-28.
  */
 
 /**
@@ -29,7 +29,7 @@ export function taskKey(raw: string): string {
 }
 
 /**
- * Parses subtask parent ID and sequence from task ID token per ADR-9.
+ * Parses subtask parent ID and sequence from task ID token per RULE-28.
  * Subtasks follow `TASK-<parentId>-<sequence>` (e.g. `2-1`, `11-2`, `J101-1`).
  */
 export function parseSubtaskId(

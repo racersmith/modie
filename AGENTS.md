@@ -4,12 +4,15 @@
 
 Always use the streamlined verification runner to prevent context window bloat:
 
-- **Run all checks**: `bun run verify` (runs typecheck, parallel test suite with dots, complexity, circular dependency, and dead code / unused exports checks in ~4.2s).
+- **Run all checks**: `bun run verify` (runs typecheck, parallel test suite with dots, complexity, circular dependencies, knip dead code, and plugin validation in ~4.2s).
 - **Run targeted checks**: `bun run verify test`, `bun run verify types`, `bun run verify complexity`, `bun run verify circular`, `bun run verify knip`.
 - **Targeted debugging**: Only run `bun test <file>` or `bun run verify --verbose` when diagnosing a specific failing test.
 
-## Architectural Governance & Ephemeral Tasks
+## Modie Engine Architecture & Coding Standards
 
-- Modie manages tasks, rules, and decisions via MCP tools (`start_task`, `check_criteria`, `complete_task`, `create_rule`, `create_adr`).
-- **Ephemeral Task Decoupling**: Never cite ephemeral `TASK-XX` identifiers in code comments, test names, or docstrings. Cite durable artifacts only (`@verifies RULE-XX`, `[ADR-XX]`).
-- **Blast Radius**: Modifications for a task must remain strictly confined to the task's declared scope directory.
+When contributing to the Modie codebase, adhere to these internal invariants:
+
+- **Unidirectional Layering (RULE-38)**: Core modules follow strict unidirectional dependency flow: domain primitives (`src/core/domain`) must have zero external runtime dependencies and cannot import from `engine` or `platform`. The `engine` consumes `platform` features exclusively through abstractions.
+- **CLI Stream Separation (RULE-27)**: Declarative CLI commands must write exclusively machine-parseable output (file paths, raw JSON) to `stdout`. All human formatting, status indicators, and summary tables must be written to `stderr`.
+- **Fixture Isolation (RULE-34)**: Engine and CLI tests must execute against isolated temporary workspaces created via `FixtureWorkspace` or `withFixtureWorkspace`. Never manipulate the host repository's `.modie` state directly in tests.
+- **Zero False-Positive Citations (RULE-35)**: Test fixtures and sample data must never contain literal governance tags (e.g. `RULE-1`) that pollute `modie references` queries. Use `formatArtifactTag` to construct synthetic tags dynamically.

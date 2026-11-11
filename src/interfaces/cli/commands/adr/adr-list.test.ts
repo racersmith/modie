@@ -1,7 +1,7 @@
 /**
  * Integration and unit tests for `modie adr list`.
- * Tagged per ADR-7 and RULE-23 for universal rule verification.
- * @verifies ADR-4, RULE-9, RULE-25, RULE-27, RULE-34, RULE-35
+ * Tagged per RULE-23 for universal rule verification.
+ * @verifies RULE-9, RULE-25, RULE-27, RULE-34, RULE-35
  */
 
 import { describe, expect, it } from "bun:test";
@@ -9,7 +9,7 @@ import { formatArtifactTag } from "../../../../core/index.ts";
 import { createFixtureWorkspace } from "../../../../core/platform/testing/index.ts";
 import { captureCli } from "../../test-utils.ts";
 
-describe("CLI ADR List - Execution, Scope Filtering & Stream Separation (ADR-4, RULE-9, RULE-25, RULE-27, RULE-34, RULE-35)", () => {
+describe("CLI ADR List - Execution, Scope Filtering & Stream Separation (RULE-9, RULE-25, RULE-27, RULE-34, RULE-35)", () => {
   // @verifies RULE-27
   it("[RULE-27] should emit adr list subcommand help to stderr with exit code 0", async () => {
     const { exitCode, stdout, stderr } = await captureCli([
@@ -22,8 +22,8 @@ describe("CLI ADR List - Execution, Scope Filtering & Stream Separation (ADR-4, 
     expect(stderr).toContain("Usage: modie adr list [options]");
   });
 
-  // @verifies ADR-4, RULE-25, RULE-27, RULE-34, RULE-35
-  it("[ADR-4][RULE-25][RULE-27][RULE-34][RULE-35] should emit formatted table with titles, tags, relative paths, and links to stderr and empty stdout", async () => {
+  // @verifies RULE-25, RULE-27, RULE-34, RULE-35
+  it("[RULE-25][RULE-27][RULE-34][RULE-35] should emit formatted table with titles, tags, relative paths, and links to stderr and empty stdout", async () => {
     const workspace = await createFixtureWorkspace("modie-cli-adr-list-");
     const rule1Tag = formatArtifactTag("RULE", 1);
     const adr1 = await workspace.createAdr({

@@ -1,6 +1,6 @@
 /**
  * Active artifact collection listing and ancestral scope traversal service.
- * Implements ADR-4, RULE-8, RULE-9, RULE-25, and RULE-26.
+ * Implements RULE-8, RULE-9, RULE-25, and RULE-26.
  */
 
 import { readFile, stat } from "node:fs/promises";

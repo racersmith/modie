@@ -1,6 +1,6 @@
 /**
  * Types and schema for artifact queries, listing, references, and archival guard.
- * Complies with ADR-1, ADR-2, ADR-4, RULE-9, RULE-25, RULE-27, and RULE-31.
+ * Complies with RULE-9, RULE-25, RULE-27, and RULE-31.
  */
 
 import type {
@@ -115,7 +115,7 @@ export interface ResolveArtifactOptions {
   includeArchived?: boolean;
 
   /**
-   * Whether to query Git deletion history and branches when the artifact is not active on disk (ADR-6).
+   * Whether to query Git deletion history and branches when the artifact is not active on disk .
    * Defaults to false.
    */
   history?: boolean;

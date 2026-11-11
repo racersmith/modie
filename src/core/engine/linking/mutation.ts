@@ -2,7 +2,7 @@
  * Core Frontmatter Link & Dependency Mutation Service.
  * Safely adds or removes links and dependencies in artifact YAML frontmatter blocks
  * while preserving Markdown bodies and unrelated frontmatter fields byte-for-byte.
- * Complies with ADR-5, RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, RULE-17,
+ * Complies with RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, and RULE-17
  * RULE-18, RULE-19, RULE-25, and RULE-36.
  */
 
@@ -131,7 +131,7 @@ export async function applyLinkMutation(
 /**
  * Validates and adds a frontmatter link or dependency from `options.source` to `options.target`.
  * Enforces all subtype, spatial scope, and DAG acyclicity invariants prior to writing to disk.
- * Complies with ADR-5, RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, RULE-17, RULE-18, RULE-19, and RULE-36.
+ * Complies with RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, RULE-17, RULE-18, RULE-19, and RULE-36.
  */
 export async function linkArtifact(
   options: MutateArtifactLinkOptions,
@@ -155,7 +155,7 @@ export async function linkArtifact(
 /**
  * Removes a frontmatter link or dependency from `options.source` to `options.target`.
  * Preserves the Markdown body and unrelated frontmatter fields byte-for-byte.
- * Complies with ADR-5 and RULE-36.
+ * Complies with RULE-36.
  */
 export async function unlinkArtifact(
   options: MutateArtifactLinkOptions,

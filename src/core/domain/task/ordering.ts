@@ -1,5 +1,5 @@
 /**
- * Modie Core Domain Layer: Task Ordering & Sorting Algorithms (ADR-6, RULE-18, RULE-38).
+ * Modie Core Domain Layer: Task Ordering & Sorting Algorithms (RULE-18, RULE-38).
  *
  * Provides natural comparator and sorting functions for monotonic, hierarchical,
  * and alphanumeric task IDs (e.g. 1, 2, 9, 10, 2-1, 2-2, J101).

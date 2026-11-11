@@ -30,7 +30,7 @@ export const taskStatusSchema = z.object({
   history: z
     .boolean()
     .default(false)
-    .describe("Query completed task history and branches in Git per ADR-6"),
+    .describe("Query completed task history and branches in Git per RULE-21"),
 });
 
 export type TaskStatusInput = z.infer<typeof taskStatusSchema>;

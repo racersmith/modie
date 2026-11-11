@@ -11,7 +11,7 @@ import {
   captureCli, execBin,
 } from "../../test-utils.ts";
 
-describe("CLI Task Creation - Execution & Stream Separation (RULE-1, RULE-25, RULE-27, RULE-34, RULE-35, ADR-1, ADR-6, ADR-9)", () => {
+describe("CLI Task Creation - Execution & Stream Separation (RULE-1, RULE-25, RULE-27, RULE-34, RULE-35)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
@@ -22,8 +22,8 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-1, RULE-25, RU
     await workspace.cleanup();
   });
 
-  // @verifies RULE-1, RULE-25, RULE-27, RULE-34, RULE-35, ADR-1, ADR-6, ADR-9
-  it("[RULE-1][RULE-25][RULE-27][RULE-34][RULE-35][ADR-1][ADR-6][ADR-9] should create a task with machine path to stdout and status to stderr", async () => {
+  // @verifies RULE-1, RULE-25, RULE-27, RULE-34, RULE-35
+  it("[RULE-1][RULE-25][RULE-27][RULE-34][RULE-35] should create a task with machine path to stdout and status to stderr", async () => {
     const dep = await workspace.createTask({ id: 1, slug: "dep-task" });
     const adr = await workspace.createAdr({ id: 1, slug: "link-adr" });
     const rule = await workspace.createRule({ id: 27, slug: "link-rule" });
@@ -83,8 +83,8 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-1, RULE-25, RU
     expect(stderr).toContain("✓ Created task");
   });
 
-  // @verifies ADR-9, RULE-34, RULE-35
-  it("[ADR-9][RULE-34][RULE-35] should support prefix tag via --prefix flag", async () => {
+  // @verifies RULE-34, RULE-35
+  it("[RULE-34][RULE-35] should support prefix tag via --prefix flag", async () => {
     const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "create",

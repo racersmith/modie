@@ -166,8 +166,8 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
     expect(stdout.trim()).toBe(rule.relativePath);
   });
 
-  // @verifies ADR-6, RULE-21, RULE-25, RULE-27, RULE-34, RULE-35
-  it("[ADR-6][RULE-21][RULE-25][RULE-27][RULE-34][RULE-35] should resolve completed task in Git history only when --history is passed", async () => {
+  // @verifies RULE-21, RULE-25, RULE-27, RULE-34, RULE-35
+  it("[RULE-21][RULE-25][RULE-27][RULE-34][RULE-35] should resolve completed task in Git history only when --history is passed", async () => {
     await workspace.initGit({ defaultBranch: "dev", initialCommit: true });
     const task = await workspace.createTask({
       id: 404,

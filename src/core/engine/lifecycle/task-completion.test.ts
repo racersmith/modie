@@ -1,6 +1,6 @@
 /**
  * Unit and integration tests for task checklist progression and completion lifecycle.
- * @verifies ADR-6, RULE-21, RULE-22, RULE-25
+ * @verifies RULE-21, RULE-22, RULE-25
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
@@ -186,7 +186,7 @@ describe("Task Checklist Progression - checkTaskItem (RULE-22, RULE-25)", () => 
   });
 });
 
-describe("Task Lifecycle Completion - completeTask (ADR-6, RULE-21, RULE-22)", () => {
+describe("Task Lifecycle Completion - completeTask (RULE-21, RULE-22)", () => {
   let workspace: FixtureWorkspace;
   let testTask: CreatedFixtureArtifact;
 
@@ -223,8 +223,8 @@ describe("Task Lifecycle Completion - completeTask (ADR-6, RULE-21, RULE-22)", (
     expect(exists).toBe(true);
   });
 
-  // @verifies RULE-21, RULE-22, ADR-6
-  it("[RULE-21][RULE-22][ADR-6] should complete task and delete file from disk when all criteria are satisfied", async () => {
+  // @verifies RULE-21, RULE-22
+  it("[RULE-21][RULE-22] should complete task and delete file from disk when all criteria are satisfied", async () => {
     await checkTaskItem(testTask.filepath, 1, {
       completed: true,
       cwd: workspace.cwd,
@@ -300,7 +300,7 @@ describe("Task Lifecycle Completion - completeTask (ADR-6, RULE-21, RULE-22)", (
   });
 });
 
-describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
+describe("Two-Phase Git Commit Ceremony (RULE-21, RULE-22)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
@@ -312,8 +312,8 @@ describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
     await workspace.cleanup();
   });
 
-  // @verifies ADR-6, RULE-21, RULE-22
-  it("[ADR-6][RULE-21][RULE-22] should execute atomic two-phase commit on completeTask with commit: true", async () => {
+  // @verifies RULE-21, RULE-22
+  it("[RULE-21][RULE-22] should execute atomic two-phase commit on completeTask with commit: true", async () => {
     const task = await workspace.createTask({
       id: 50,
       slug: "feature-x",
@@ -353,8 +353,8 @@ describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
     expect(deletedOut).toContain(task.filename);
   });
 
-  // @verifies ADR-6, RULE-21
-  it("[ADR-6][RULE-21] should only execute Phase 1 commit when deleteArtifact: false", async () => {
+  // @verifies RULE-21
+  it("[RULE-21] should only execute Phase 1 commit when deleteArtifact: false", async () => {
     const task = await workspace.createTask({
       id: 51,
       slug: "retained",
@@ -383,8 +383,8 @@ describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
     expect(commitMessages[0]).toBe(`feat(${task.tag}): ${task.slug}`);
   });
 
-  // @verifies ADR-6, RULE-21, RULE-22
-  it("[ADR-6][RULE-21][RULE-22] should update unchecked items to checked on disk during forced commit", async () => {
+  // @verifies RULE-21, RULE-22
+  it("[RULE-21][RULE-22] should update unchecked items to checked on disk during forced commit", async () => {
     const task = await workspace.createTask({
       id: 52,
       slug: "forced",
@@ -422,8 +422,8 @@ describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
     ).rejects.toThrow(/directory is not a git repository/);
   });
 
-  // @verifies ADR-6, RULE-21, RULE-22, RULE-32
-  it("[ADR-6][RULE-32] should stage all pending code and task changes in Phase 1 commit when working tree is dirty", async () => {
+  // @verifies RULE-21, RULE-22, RULE-32
+  it("[RULE-32] should stage all pending code and task changes in Phase 1 commit when working tree is dirty", async () => {
     await workspace.writeFile(
       "service.ts",
       'export const value = "implemented";\n',
@@ -463,8 +463,8 @@ describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
     expect(statusOut.trim()).toBe("");
   });
 
-  // @verifies ADR-6, RULE-32
-  it("[ADR-6][RULE-32] should automatically skip Phase 1 commit when working tree is already clean", async () => {
+  // @verifies RULE-32
+  it("[RULE-32] should automatically skip Phase 1 commit when working tree is already clean", async () => {
     await workspace.writeFile("feature.ts", "export const ready = true;\n");
     const task = await workspace.createTask({
       id: 61,
@@ -508,7 +508,7 @@ describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
   });
 });
 
-describe("Zombie Task Resurrection Prevention (ADR-6, RULE-21)", () => {
+describe("Zombie Task Resurrection Prevention (RULE-21)", () => {
   let workspace: FixtureWorkspace;
   const zombieTag = formatArtifactTag("TASK", 99);
 
@@ -539,8 +539,8 @@ describe("Zombie Task Resurrection Prevention (ADR-6, RULE-21)", () => {
     await workspace.cleanup();
   });
 
-  // @verifies ADR-6, RULE-21
-  it("[ADR-6][RULE-21] should strictly resolve active .md files on disk without automatic Git deletion scanning while assertNotZombieTask guards ID reuse", async () => {
+  // @verifies RULE-21
+  it("[RULE-21] should strictly resolve active .md files on disk without automatic Git deletion scanning while assertNotZombieTask guards ID reuse", async () => {
     const { assertNotZombieTask } = await import("./index.ts");
     const zombieArtifact = await workspace.createTask({
       id: 99,
@@ -563,8 +563,8 @@ describe("Zombie Task Resurrection Prevention (ADR-6, RULE-21)", () => {
     );
   });
 
-  // @verifies ADR-6, RULE-21
-  it("[ADR-6][RULE-21] should detect zombie tasks across active queue", async () => {
+  // @verifies RULE-21
+  it("[RULE-21] should detect zombie tasks across active queue", async () => {
     const { detectZombieTasks } = await import("./index.ts");
 
     let zombies = await detectZombieTasks(workspace.cwd);

@@ -1,6 +1,6 @@
 /**
  * Hierarchical task branching automation and protected branch enforcement.
- * Complies with ADR-6, ADR-9, ADR-10, RULE-21, RULE-28, and RULE-33.
+ * Complies with RULE-21, RULE-28, and RULE-33.
  */
 
 import { readFile } from "node:fs/promises";
@@ -114,7 +114,7 @@ async function resolveTaskMetaForBranching(
 }
 
 /**
- * Finds the parent task branch for a subtask per RULE-28 and ADR-9.
+ * Finds the parent task branch for a subtask per RULE-28.
  */
 async function findParentTaskBranch(
   parentId: string,
@@ -224,7 +224,7 @@ export async function computeTaskBranchTopology(
 }
 
 /**
- * Starts a task branch per RULE-28 and ADR-9.
+ * Starts a task branch per RULE-28.
  * Validates branch hierarchy, guards against starting directly from protected branches,
  * and creates/checks out the task branch.
  */

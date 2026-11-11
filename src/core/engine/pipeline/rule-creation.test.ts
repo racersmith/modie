@@ -1,7 +1,7 @@
 /**
  * Unit tests for Core Rule Creation Service.
- * Tagged per ADR-7 and RULE-23 for universal rule verification.
- * @verifies ADR-7, RULE-1, RULE-3, RULE-8, RULE-11, RULE-13, RULE-16, RULE-23, RULE-34
+ * Tagged per RULE-23 for universal rule verification.
+ * @verifies RULE-1, RULE-3, RULE-8, RULE-11, RULE-13, RULE-16, RULE-23, RULE-34
  */
 
 import { describe, expect, it } from "bun:test";

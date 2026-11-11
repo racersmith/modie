@@ -1,6 +1,6 @@
 /**
  * Unit tests for IVcsAdapter, GitCliAdapter, and MockVcsAdapter.
- * @verifies ADR-6, RULE-25, RULE-28, RULE-34
+ * @verifies RULE-25, RULE-28, RULE-34
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";

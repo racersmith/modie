@@ -1,6 +1,6 @@
 /**
  * Modie Core: Task engine types for branch topology, branch management, and collision detection.
- * (ADR-6, ADR-9, RULE-28, RULE-33).
+ * (RULE-28, RULE-33).
  */
 
 import type { IVcsAdapter } from "../../platform/vcs/types.ts";

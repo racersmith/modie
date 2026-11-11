@@ -1,6 +1,6 @@
 /**
  * Modular citation discovery sources (git-native index query and filesystem fallback walk).
- * Implements ADR-4, ADR-5, RULE-25, and RULE-31.
+ * Implements RULE-25 and RULE-31.
  */
 
 import { readdir, readFile, stat } from "node:fs/promises";

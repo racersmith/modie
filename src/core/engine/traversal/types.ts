@@ -1,6 +1,6 @@
 /**
  * Types and interfaces for the artifact ID watermark resolver.
- * Complies with RULE-1, ADR-1, ADR-2, ADR-6, and ADR-9.
+ * Complies with RULE-1.
  */
 
 import type { IndexableSubtype } from "../../domain/index.ts";

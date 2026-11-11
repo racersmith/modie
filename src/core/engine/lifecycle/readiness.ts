@@ -1,5 +1,5 @@
 /**
- * Modie Core: Task Readiness & State Machine (ADR-6, RULE-18, RULE-22).
+ * Modie Core: Task Readiness & State Machine (RULE-18, RULE-22).
  *
  * Evaluates DAG dependency readiness, criteria completion progress,
  * and lifecycle status state machine (READY, BLOCKED, COMPLETED).

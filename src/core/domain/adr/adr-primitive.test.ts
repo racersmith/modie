@@ -1,6 +1,6 @@
 /**
  * Unit tests for ADR primitives and template rendering.
- * Tagged per ADR-7 and RULE-23 for universal rule verification.
+ * Tagged per RULE-23 for universal rule verification.
  */
 
 import { describe, expect, it } from "bun:test";
@@ -46,9 +46,9 @@ describe("ADR Primitive - Frontmatter Links Validation (RULE-14, RULE-35)", () =
   });
 });
 
-describe("ADR Primitive - Template Rendering (ADR-4, RULE-14, RULE-35)", () => {
-  // @verifies ADR-4, RULE-14, RULE-35
-  it("[ADR-4][RULE-14][RULE-35] should render standard ADR sections with frontmatter links", () => {
+describe("ADR Primitive - Template Rendering (RULE-14, RULE-35)", () => {
+  // @verifies RULE-14, RULE-35
+  it("[RULE-14][RULE-35] should render standard ADR sections with frontmatter links", () => {
     const rule8 = formatArtifactTag("RULE", 8);
     const adr2 = formatArtifactTag("ADR", 2);
     const rendered = renderAdrMarkdown({
@@ -72,8 +72,8 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14, RULE-35)", () => {
     );
   });
 
-  // @verifies ADR-4
-  it("[ADR-4] should render frontmatter with links: [] when links are empty", () => {
+  // @verifies RULE-14
+  it("[RULE-14] should render frontmatter with links: [] when links are empty", () => {
     const rendered = renderAdrMarkdown({
       title: "Standalone Decision",
       links: [],
@@ -85,8 +85,8 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14, RULE-35)", () => {
     expect(rendered).toContain("# Decision");
   });
 
-  // @verifies ADR-4
-  it("[ADR-4] should provide sensible defaults for missing section texts", () => {
+  // @verifies RULE-38
+  it("[RULE-38] should provide sensible defaults for missing section texts", () => {
     const rendered = renderAdrMarkdown({
       title: "Defaulted Decision",
     });
@@ -101,8 +101,8 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14, RULE-35)", () => {
     expect(rendered).toContain("# Consequences\n\n- None recorded.");
   });
 
-  // @verifies ADR-4
-  it("[ADR-4] should render consequences section when provided", () => {
+  // @verifies RULE-38
+  it("[RULE-38] should render consequences section when provided", () => {
     const rendered = renderAdrMarkdown({
       title: "Consolidated Tools",
       links: [],
@@ -115,8 +115,8 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14, RULE-35)", () => {
     );
   });
 
-  // @verifies ADR-4, ADR-8, RULE-26
-  it("[ADR-4][ADR-8][RULE-26] should parse ADR markdown with consequences and summary", () => {
+  // @verifies RULE-26
+  it("[RULE-26] should parse ADR markdown with consequences and summary", () => {
     const markdown = renderAdrMarkdown({
       title: "Extracted ADR",
       summary: "Short signpost summary.",
@@ -140,8 +140,8 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14, RULE-35)", () => {
     expect(parsed.consequences).toBe("Consequences content.");
   });
 
-  // @verifies ADR-4, ADR-8, RULE-26, RULE-35
-  it("[ADR-4][ADR-8][RULE-26][RULE-35] should render summary in canonical YAML frontmatter when provided", () => {
+  // @verifies RULE-26, RULE-35
+  it("[RULE-26][RULE-35] should render summary in canonical YAML frontmatter when provided", () => {
     const adr4 = formatArtifactTag("ADR", 4);
     const rule26 = formatArtifactTag("RULE", 26);
     const rendered = renderAdrMarkdown({
@@ -158,8 +158,8 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14, RULE-35)", () => {
     );
   });
 
-  // @verifies ADR-4, ADR-8
-  it("[ADR-4][ADR-8] should collapse multi-line summary into single-line YAML frontmatter and omit blank summary", () => {
+  // @verifies RULE-26
+  it("[RULE-26] should collapse multi-line summary into single-line YAML frontmatter and omit blank summary", () => {
     const multiLine = renderAdrMarkdown({
       title: "Multi-line Summary ADR",
       summary: "First sentence.\n  Second sentence.",
@@ -176,8 +176,8 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14, RULE-35)", () => {
   });
 });
 
-describe("ADR Summary Extraction (ADR-4, ADR-8, RULE-26)", () => {
-  it("[ADR-4][ADR-8][RULE-26] should prefer explicit frontmatter summary and fallback to Decision or Context when omitted", () => {
+describe("ADR Summary Extraction (RULE-26)", () => {
+  it("[RULE-26] should prefer explicit frontmatter summary and fallback to Decision or Context when omitted", () => {
     const withExplicit = `---
 summary: Explicit frontmatter summary.
 links: []

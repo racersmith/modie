@@ -1,6 +1,6 @@
 /**
  * Tests for bidirectional scope resolution and architectural governance query service.
- * Complies with RULE-6, RULE-8, RULE-9, RULE-12, RULE-25, and ADR-10.
+ * Complies with RULE-6, RULE-8, RULE-9, RULE-12, and RULE-25.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
@@ -10,7 +10,7 @@ import {
 } from "../../platform/testing/index.ts";
 import { resolveScope } from "./scope.ts";
 
-describe("Core Scope Resolution Service (RULE-6, RULE-8, RULE-9, RULE-12, RULE-25, ADR-10)", () => {
+describe("Core Scope Resolution Service (RULE-6, RULE-8, RULE-9, RULE-12, RULE-25)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {

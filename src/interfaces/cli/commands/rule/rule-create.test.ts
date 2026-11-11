@@ -1,6 +1,6 @@
 /**
  * Integration and unit tests for `modie rule create`.
- * Tagged per ADR-7 and RULE-23 for universal rule verification.
+ * Tagged per RULE-23 for universal rule verification.
  */
 
 import { describe, expect, it } from "bun:test";
@@ -80,8 +80,8 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
     expect(parsed.assertion).toBe("JSON payload must go to stdout.");
   });
 
-  // @verifies RULE-8, ADR-12
-  it("[RULE-8][ADR-12] should reject retired --flat flag with error to stderr", async () => {
+  // @verifies RULE-8
+  it("[RULE-8] should reject retired --flat flag with error to stderr", async () => {
     await using workspace = await createFixtureWorkspace("modie-cli-rule-flat-");
     const { exitCode, stdout, stderr } = await captureCli([
       "rule",

@@ -1,6 +1,6 @@
 /**
  * Dynamic MCP Client Workspace Resolution and Roots Tracking.
- * Complies with RULE-37 and ADR-12: dynamically inherits the client's active workspace.
+ * Complies with RULE-37: dynamically inherits the client's active workspace.
  */
 
 import { fileURLToPath } from "node:url";

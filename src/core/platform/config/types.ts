@@ -1,6 +1,6 @@
 /**
  * Configuration types and interfaces for Modie.
- * Complies with ADR-9, ADR-10, and RULE-28.
+ * Complies with RULE-28.
  */
 
 export interface ModieGitConfig {

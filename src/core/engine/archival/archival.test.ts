@@ -1,6 +1,6 @@
 /**
  * Unit tests for Guarded Artifact Archival core service.
- * Tagged per ADR-7 and RULE-23 for universal rule verification.
+ * Tagged per RULE-23 for universal rule verification.
  * @verifies RULE-4, RULE-25, RULE-31, RULE-34
  */
 

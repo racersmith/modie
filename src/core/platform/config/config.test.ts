@@ -13,7 +13,7 @@ import {
 
 const execFileAsync = promisify(execFile);
 
-describe("Modie Configuration Loader (ADR-9, ADR-10, RULE-28)", () => {
+describe("Modie Configuration Loader (RULE-28)", () => {
   let tempDir: string;
 
   beforeEach(async () => {

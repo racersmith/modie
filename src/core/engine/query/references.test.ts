@@ -1,7 +1,7 @@
 /**
  * Unit tests for core artifact reference resolution and subtype-agnostic archival guard.
- * Complies with ADR-4, ADR-5, ADR-7, RULE-13, RULE-14, RULE-15, RULE-23, RULE-25, RULE-27, RULE-31, RULE-34, and RULE-35.
- * @verifies ADR-7, RULE-23, RULE-25, RULE-31, RULE-34, RULE-35
+ * Complies with RULE-13, RULE-14, RULE-15, RULE-23, RULE-25, RULE-27, RULE-31, RULE-34, and RULE-35.
+ * @verifies RULE-23, RULE-25, RULE-31, RULE-34, RULE-35
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
@@ -377,9 +377,9 @@ links:
   });
 });
 
-describe("isTestVerificationCitation - Rule Verification Tag Disambiguation (ADR-7, RULE-23, RULE-35)", () => {
-  // @verifies RULE-23, ADR-7
-  it("[RULE-23][ADR-7] should recognize comment annotations as verification tags", () => {
+describe("isTestVerificationCitation - Rule Verification Tag Disambiguation (RULE-23, RULE-35)", () => {
+  // @verifies RULE-23
+  it("[RULE-23] should recognize comment annotations as verification tags", () => {
     const ruleTag = formatArtifactTag("RULE", 925);
     const rule2Tag = formatArtifactTag("RULE", 927);
     const adrTag = formatArtifactTag("ADR", 904);
@@ -405,8 +405,8 @@ describe("isTestVerificationCitation - Rule Verification Tag Disambiguation (ADR
     ).toBe(true);
   });
 
-  // @verifies RULE-23, ADR-7
-  it("[RULE-23][ADR-7] should recognize standardized bracket test headers", () => {
+  // @verifies RULE-23
+  it("[RULE-23] should recognize standardized bracket test headers", () => {
     const ruleTag = formatArtifactTag("RULE", 925);
     const rule2Tag = formatArtifactTag("RULE", 927);
     const adrTag = formatArtifactTag("ADR", 901);
@@ -431,8 +431,8 @@ describe("isTestVerificationCitation - Rule Verification Tag Disambiguation (ADR
     ).toBe(true);
   });
 
-  // @verifies RULE-23, ADR-7
-  it("[RULE-23][ADR-7] should recognize describe/suite parenthetical tags", () => {
+  // @verifies RULE-23
+  it("[RULE-23] should recognize describe/suite parenthetical tags", () => {
     const ruleTag = formatArtifactTag("RULE", 925);
     const rule2Tag = formatArtifactTag("RULE", 931);
 
@@ -450,8 +450,8 @@ describe("isTestVerificationCitation - Rule Verification Tag Disambiguation (ADR
     ).toBe(true);
   });
 
-  // @verifies RULE-23, RULE-35, ADR-7
-  it("[RULE-23][RULE-35][ADR-7] should reject test fixture data, invocations, and raw assertions", () => {
+  // @verifies RULE-23, RULE-35
+  it("[RULE-23][RULE-35] should reject test fixture data, invocations, and raw assertions", () => {
     const ruleTag = formatArtifactTag("RULE", 901);
 
     // Array literals inside CLI calls or helpers

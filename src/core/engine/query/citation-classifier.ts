@@ -1,6 +1,6 @@
 /**
  * Pure citation classification and rule verification disambiguation engine.
- * Implements ADR-4, ADR-5, ADR-7, RULE-23, RULE-25, and RULE-31.
+ * Implements RULE-23, RULE-25, and RULE-31.
  */
 
 import { readFile } from "node:fs/promises";
@@ -88,7 +88,7 @@ export async function getGovernanceArtifactData(
 
 /**
  * Evaluates whether a line within a test file represents a formal verification declaration
- * per ADR-7 and RULE-23.
+ * per RULE-23.
  *
  * Recognized formats:
  * 1. Comment annotations: `@verifies ...TAG...` or `@satisfies ...TAG...`

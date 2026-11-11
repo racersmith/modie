@@ -1,7 +1,7 @@
 /**
  * Isolated unit tests for pure citation classifier and rule verification disambiguation.
- * Implements ADR-4, ADR-5, ADR-7, RULE-23, RULE-25, RULE-31, and RULE-35.
- * @verifies ADR-7, RULE-23, RULE-25, RULE-31, RULE-35
+ * Implements RULE-23, RULE-25, RULE-31, and RULE-35.
+ * @verifies RULE-23, RULE-25, RULE-31, RULE-35
  */
 
 import { describe, expect, it } from "bun:test";
@@ -71,7 +71,7 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
     expect(item?.line).toBe(12);
   });
 
-  it("[RULE-23][RULE-35][ADR-7] should classify formal test verification citations in test files", () => {
+  it("[RULE-23][RULE-35] should classify formal test verification citations in test files", () => {
     const targetTag = formatArtifactTag("RULE", 904);
 
     // Comment annotation format: @verifies TAG
@@ -102,7 +102,7 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
     expect(suiteItem?.type).toBe("test");
   });
 
-  it("[RULE-23][RULE-35][ADR-7] should reject incidental test body data citations as unverified occurrences", () => {
+  it("[RULE-23][RULE-35] should reject incidental test body data citations as unverified occurrences", () => {
     const targetTag = formatArtifactTag("RULE", 905);
     const incidentalMatch = {
       relPath: "src/test/suite.test.ts",

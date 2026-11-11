@@ -72,9 +72,9 @@ describe("Common Primitives - Slug Generation & Validation (RULE-1, RULE-35)", (
   });
 });
 
-describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, ADR-1, ADR-2)", () => {
-  // @verifies RULE-1, RULE-35, ADR-1, ADR-2
-  it("[RULE-1][RULE-35][ADR-1][ADR-2] should format valid filenames for all indexable subtypes", () => {
+describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35)", () => {
+  // @verifies RULE-1, RULE-35
+  it("[RULE-1][RULE-35] should format valid filenames for all indexable subtypes", () => {
     const rule1Tag = formatArtifactTag("RULE", 1);
     expect(
       formatArtifactFilename({
@@ -103,8 +103,8 @@ describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, AD
     ).toBe(`show-artifact-by-tag.${task12Tag}.md`);
   });
 
-  // @verifies RULE-1, RULE-35, ADR-1
-  it("[RULE-1][RULE-35][ADR-1] should format archived artifacts with .ARCHIVED suffix", () => {
+  // @verifies RULE-1, RULE-35
+  it("[RULE-1][RULE-35] should format archived artifacts with .ARCHIVED suffix", () => {
     const rule99Tag = formatArtifactTag("RULE", 99);
     expect(
       formatArtifactFilename({
@@ -126,8 +126,8 @@ describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, AD
     ).toBe(`superseded-adr.${adr5Tag}.ARCHIVED.md`);
   });
 
-  // @verifies RULE-1, RULE-35, ADR-1, ADR-2
-  it("[RULE-1][RULE-35][ADR-1][ADR-2] should parse valid filenames across all subtypes", () => {
+  // @verifies RULE-1, RULE-35
+  it("[RULE-1][RULE-35] should parse valid filenames across all subtypes", () => {
     const rule29Tag = formatArtifactTag("RULE", 29);
     const parsedRule = parseArtifactFilename(
       `src/.modie/rules/artifact-tag-resolution.${rule29Tag}.md`,
@@ -193,7 +193,7 @@ describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, AD
   });
 });
 
-describe("Common Primitives - Subtype Directory Resolution (RULE-8, RULE-34, ADR-10)", () => {
+describe("Common Primitives - Subtype Directory Resolution (RULE-8, RULE-34)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
@@ -204,15 +204,15 @@ describe("Common Primitives - Subtype Directory Resolution (RULE-8, RULE-34, ADR
     await workspace.cleanup();
   });
 
-  // @verifies RULE-8, ADR-10
-  it("[RULE-8][ADR-10] should map subtypes to their recognized container directory names", () => {
+  // @verifies RULE-8
+  it("[RULE-8] should map subtypes to their recognized container directory names", () => {
     expect(getSubtypeContainerName("RULE")).toBe("rules");
     expect(getSubtypeContainerName("ADR")).toBe("adrs");
     expect(getSubtypeContainerName("TASK")).toBe("tasks");
   });
 
-  // @verifies RULE-8, RULE-34, ADR-10
-  it("[RULE-8][RULE-34][ADR-10] should resolve target container and normalized scope for RULE, ADR, and TASK", () => {
+  // @verifies RULE-8, RULE-34
+  it("[RULE-8][RULE-34] should resolve target container and normalized scope for RULE, ADR, and TASK", () => {
     const cwd = workspace.cwd;
 
     // RULE resolution
@@ -235,8 +235,8 @@ describe("Common Primitives - Subtype Directory Resolution (RULE-8, RULE-34, ADR
     expect(taskRes.targetDir).toBe(workspace.resolve("src/.modie/tasks"));
   });
 
-  // @verifies RULE-8, RULE-34, ADR-10
-  it("[RULE-8][RULE-34][ADR-10] should strip container segment when scope input explicitly points to container", () => {
+  // @verifies RULE-8, RULE-34
+  it("[RULE-8][RULE-34] should strip container segment when scope input explicitly points to container", () => {
     const cwd = workspace.cwd;
 
     // .modie/<subtype> container input
@@ -303,7 +303,7 @@ describe("Common Primitives - Deepest Common Ancestor (RULE-6, RULE-12, RULE-34)
   });
 });
 
-describe("Common Primitives - Centralized Governing Scope Resolution (RULE-8, RULE-9, RULE-12, ADR-10)", () => {
+describe("Common Primitives - Centralized Governing Scope Resolution (RULE-8, RULE-9, RULE-12)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
@@ -317,8 +317,8 @@ describe("Common Primitives - Centralized Governing Scope Resolution (RULE-8, RU
     await workspace.cleanup();
   });
 
-  // @verifies RULE-8, RULE-12, ADR-10
-  it("[RULE-8][RULE-12][ADR-10] should resolve governing scope for artifacts and container directories", () => {
+  // @verifies RULE-8, RULE-12
+  it("[RULE-8][RULE-12] should resolve governing scope for artifacts and container directories", () => {
     const cwd = workspace.cwd;
 
     // Artifact file inside .modie/rules
@@ -416,9 +416,9 @@ describe("Common Primitives - String Idioms: slugToTitle, normalizeTaskId, taskK
   });
 });
 
-describe("Common Primitives - Task Branch Grammar & Hierarchy (RULE-28, ADR-9)", () => {
-  // @verifies RULE-28, ADR-9
-  it("[RULE-28][ADR-9] should parse task branches into taskId and optional slug", () => {
+describe("Common Primitives - Task Branch Grammar & Hierarchy (RULE-28)", () => {
+  // @verifies RULE-28
+  it("[RULE-28] should parse task branches into taskId and optional slug", () => {
     expect(
       parseTaskBranch("task/2-task-id-allocation-and-rule-alignment"),
     ).toEqual({
@@ -463,8 +463,8 @@ describe("Common Primitives - Task Branch Grammar & Hierarchy (RULE-28, ADR-9)",
     expect(parseTaskIdFromBranch("main")).toBeNull();
   });
 
-  // @verifies RULE-28, ADR-9
-  it("[RULE-28][ADR-9] should parse subtask ID tokens into parentId and sequence", () => {
+  // @verifies RULE-28
+  it("[RULE-28] should parse subtask ID tokens into parentId and sequence", () => {
     expect(parseSubtaskId("2-1")).toEqual({ parentId: "2", sequence: "1" });
     expect(parseSubtaskId("TASK-106-2")).toEqual({
       parentId: "106",

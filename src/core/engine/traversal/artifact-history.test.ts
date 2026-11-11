@@ -1,6 +1,6 @@
 /**
  * Unit tests for artifact history inspection over pure VCS operations.
- * @verifies ADR-6, ADR-9, RULE-1, RULE-21, RULE-25, RULE-33, RULE-35
+ * @verifies RULE-1, RULE-21, RULE-25, RULE-33, RULE-35
  */
 
 import { describe, expect, it } from "bun:test";
@@ -14,7 +14,7 @@ import {
   inspectMultiBranchActiveArtifacts,
 } from "./artifact-history.ts";
 
-describe("Artifact History Inspection (ADR-6, ADR-9, RULE-21, RULE-33, RULE-35)", () => {
+describe("Artifact History Inspection (RULE-21, RULE-33, RULE-35)", () => {
   it("[RULE-1][RULE-25][RULE-35] should inspect tree artifacts from pure VCS listTreeFiles", async () => {
     const rule1Tag = formatArtifactTag("RULE", 1);
     const adr4Tag = formatArtifactTag("ADR", 4);
@@ -47,7 +47,7 @@ describe("Artifact History Inspection (ADR-6, ADR-9, RULE-21, RULE-33, RULE-35)"
     expect(rulesOnly[0]?.tag).toBe(rule1Tag);
   });
 
-  it("[RULE-21][ADR-6][RULE-35] should inspect deleted artifacts from pure VCS listDeletedFiles and log grep", async () => {
+  it("[RULE-21][RULE-35] should inspect deleted artifacts from pure VCS listDeletedFiles and log grep", async () => {
     const rule99Tag = formatArtifactTag("RULE", 99);
     const task42Tag = formatArtifactTag("TASK", 42);
     const taskGrepQuery = `delete completed ${formatArtifactTag("TASK", "")}`;

@@ -4,14 +4,15 @@ Modie is a decentralized architectural governance and task lifecycle engine. As 
 
 ---
 
-## 1. Ephemeral Task Decoupling
+## 1. Ephemeral Task Decoupling & Rule-Only Code Citations
 
 > **CRITICAL RULE**:
-> Never cite ephemeral `TASK-XX` identifiers in unit test titles (e.g. `[TASK-XX]`), code comments, or docstrings (e.g. `@verifies TASK-XX`).
+> Never cite ephemeral `TASK-XX` identifiers or `ADR-XX` decision records in unit test titles (e.g. `[TASK-XX]`, `[ADR-XX]`), code comments, or docstrings (e.g. `@verifies TASK-XX`, `@verifies ADR-XX`).
 
 - **Tasks are Ephemeral**: Once completed, a task artifact is permanently deleted from the repository. Any test or code comment referencing a `TASK-XX` tag becomes a stale citation pointing to a non-existent file.
-- **Durable Citations Only**: Code and test suites must cite exclusively durable governance artifacts: `@verifies RULE-XX`, `[RULE-XX]`, or `[ADR-XX]`.
-- **Extract Durable Invariants**: If you find yourself wanting to cite a task in code or tests, **STOP**. That indicates you have identified a durable invariant or architectural convention. Author a new `RULE` or `ADR` using `create_rule` or `create_adr` and cite that durable tag instead.
+- **Rule-Only Citations**: Code and test suites must cite exclusively falsifiable rule artifacts: `@verifies RULE-XX` or `[RULE-XX]`.
+- **ADRs are Architectural Rationale**: ADRs record decision rationale, alternatives, and trade-offs; they are not falsifiable test targets. ADRs are referenced in `RULE` artifact frontmatter (`links: [ADR-YY]`), not directly in code or test suites.
+- **Extract Durable Invariants**: If you find yourself wanting to cite a task in code or tests, **STOP**. That indicates you have identified a durable invariant or architectural convention. Author a new `RULE` using `create_rule` and cite that rule tag instead.
 
 ---
 

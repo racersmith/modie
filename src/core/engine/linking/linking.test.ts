@@ -1,7 +1,7 @@
 /**
  * Unit and integration tests for the core graph & link validation engine
  * and frontmatter link mutation service.
- * Verifies ADR-5, RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, RULE-17,
+ * Verifies RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, and RULE-17
  * RULE-18, RULE-19, RULE-34, RULE-35, and RULE-36.
  */
 
@@ -29,7 +29,7 @@ import {
   type FixtureWorkspace,
 } from "../../platform/testing/index.ts";
 
-describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13..19, RULE-36)", () => {
+describe("Core Graph & Link Validation and Frontmatter Mutation (RULE-13..19, RULE-36)", () => {
   let workspace: FixtureWorkspace;
 
   const rootAdrTag = formatArtifactTag("ADR", 501);
@@ -151,8 +151,8 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     await workspace.cleanup();
   });
 
-  // @verifies ADR-5, RULE-15, RULE-18, RULE-36
-  it("[ADR-5][RULE-15][RULE-18][RULE-36] should automatically infer relationship type from source and target subtypes", () => {
+  // @verifies RULE-15, RULE-18, RULE-36
+  it("[RULE-15][RULE-18][RULE-36] should automatically infer relationship type from source and target subtypes", () => {
     expect(inferLinkRelationship("TASK", "TASK")).toBe("depends_on");
     expect(inferLinkRelationship("TASK", "ADR")).toBe("links");
     expect(inferLinkRelationship("TASK", "RULE")).toBe("links");
@@ -161,8 +161,8 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     expect(inferLinkRelationship("ADR", "ADR")).toBe("links");
   });
 
-  // @verifies ADR-5, RULE-13, RULE-14, RULE-15, RULE-16, RULE-17, RULE-18, RULE-36
-  it("[ADR-5][RULE-13][RULE-16][RULE-17][RULE-18][RULE-36] should permit valid links and dependencies across compliant subtypes and scopes", async () => {
+  // @verifies RULE-13, RULE-14, RULE-15, RULE-16, RULE-17, RULE-18, RULE-36
+  it("[RULE-13][RULE-16][RULE-17][RULE-18][RULE-36] should permit valid links and dependencies across compliant subtypes and scopes", async () => {
     // 1. RULE in src/core linking to ancestor ADR at root (RULE-13, RULE-16)
     const ruleToAncestorAdr = await linkArtifact({
       source: coreRuleTag,
@@ -230,8 +230,8 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     expect(taskDep.depends_on).toEqual([taskCTag]);
   });
 
-  // @verifies ADR-5, RULE-13, RULE-14, RULE-15, RULE-18, RULE-36
-  it("[ADR-5][RULE-13][RULE-14][RULE-15][RULE-18][RULE-36] should reject invalid subtype combinations and self-references", async () => {
+  // @verifies RULE-13, RULE-14, RULE-15, RULE-18, RULE-36
+  it("[RULE-13][RULE-14][RULE-15][RULE-18][RULE-36] should reject invalid subtype combinations and self-references", async () => {
     // Self-reference on RULE, ADR, and TASK
     await expect(
       validateArtifactLink(rootAdrTag, rootAdrTag, { cwd: workspace.cwd }),
@@ -307,8 +307,8 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     ).rejects.toThrow(/RULE-18/);
   });
 
-  // @verifies ADR-5, RULE-7, RULE-16, RULE-17, RULE-19, RULE-36
-  it("[ADR-5][RULE-7][RULE-16][RULE-17][RULE-19][RULE-36] should reject spatial ancestry, descendant subtree, and sideways sibling violations", async () => {
+  // @verifies RULE-7, RULE-16, RULE-17, RULE-19, RULE-36
+  it("[RULE-7][RULE-16][RULE-17][RULE-19][RULE-36] should reject spatial ancestry, descendant subtree, and sideways sibling violations", async () => {
     // 1. RULE at root linking to descendant ADR in src/core (RULE-16 violation)
     await expect(
       linkArtifact({
@@ -543,8 +543,8 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     expect(onDiskAfterUnlink).toBe(`---\nlinks: []\n---\n\n${bareBody}`);
   });
 
-  // @verifies ADR-4, RULE-4, RULE-36
-  it("[ADR-4][RULE-4][RULE-36] should safely mutate supersedes and superseded_by frontmatter fields", () => {
+  // @verifies RULE-4, RULE-36
+  it("[RULE-4][RULE-36] should safely mutate supersedes and superseded_by frontmatter fields", () => {
     // 1. Add to existing inline empty array
     const docWithEmptyInline = "---\nsuperseded_by: []\n---\n\n# Body\n";
     const res1 = mutateFrontmatterListField(
@@ -612,8 +612,8 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     );
   });
 
-  // @verifies ADR-5, RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, RULE-17, RULE-18, RULE-19, RULE-36
-  it("[ADR-5][RULE-7][RULE-13..19][RULE-36] should validate link targets via shared validation primitive across subtypes and scopes", async () => {
+  // @verifies RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, RULE-17, RULE-18, RULE-19, RULE-36
+  it("[RULE-7][RULE-13..19][RULE-36] should validate link targets via shared validation primitive across subtypes and scopes", async () => {
     // 1. Prohibit self-referential linking
     await expect(
       validateLinkTarget("RULE", workspace.cwd, "links", rootRuleTag, {
@@ -779,8 +779,8 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     expect(validDep.relationship).toBe("depends_on");
   });
 
-  // @verifies ADR-5, RULE-13, RULE-14, RULE-15, RULE-18
-  it("[ADR-5][RULE-13..15][RULE-18] should define declarative LinkPolicyTable and resolve link policies correctly", () => {
+  // @verifies RULE-13, RULE-14, RULE-15, RULE-18
+  it("[RULE-13..15][RULE-18] should define declarative LinkPolicyTable and resolve link policies correctly", () => {
     expect(LINK_POLICY.RULE).toEqual({
       links: { ADR: "ancestor" },
     });
@@ -805,7 +805,7 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     expect(resolveSubtypeLinkPolicy("SPEC", customPolicy)).toBe(customPolicy);
   });
 
-  it("[ADR-5][RULE-36] should apply link and unlink mutations via shared applyLinkMutation helper", async () => {
+  it("[RULE-36] should apply link and unlink mutations via shared applyLinkMutation helper", async () => {
     const source = await resolveArtifactByTag(coreAdrTag, {
       cwd: workspace.cwd,
     });

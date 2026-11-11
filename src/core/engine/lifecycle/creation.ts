@@ -1,7 +1,7 @@
 /**
  * Core Task Creation Service.
  * Coordinates watermark resolution, template generation, filesystem scoping, and file writing.
- * Complies with ADR-4, ADR-6, RULE-1, RULE-6, RULE-8, RULE-12, RULE-15, RULE-18, RULE-22, and RULE-25.
+ * Complies with RULE-1, RULE-6, RULE-8, RULE-12, RULE-15, RULE-18, RULE-22, and RULE-25.
  */
 
 import {

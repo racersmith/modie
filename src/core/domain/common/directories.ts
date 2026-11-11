@@ -1,6 +1,6 @@
 /**
  * Subtype container and directory resolution utilities.
- * Complies with RULE-6, RULE-8, RULE-12, and ADR-10.
+ * Complies with RULE-6, RULE-8, and RULE-12.
  */
 
 import { existsSync, statSync } from "node:fs";
@@ -30,7 +30,7 @@ export interface GoverningScope {
 
 /**
  * Resolves the governing architectural scope directory for an artifact file,
- * container directory, or arbitrary filesystem path (RULE-8, RULE-9, RULE-12, ADR-10).
+ * container directory, or arbitrary filesystem path (RULE-8, RULE-9, RULE-12).
  *
  * For paths inside a `.modie/` or legacy dot-container, normalizes to the enclosing directory `<dir>`.
  * For arbitrary files or directories, traverses upward to find the nearest ancestor directory containing `.modie`.
@@ -107,7 +107,7 @@ export function resolveGoverningScope(
 }
 
 /**
- * Returns the standard container subdirectory name for an indexable subtype (RULE-8, ADR-10).
+ * Returns the standard container subdirectory name for an indexable subtype (RULE-8).
  * Convention: lowercase plural of subtype.
  */
 export function getSubtypeContainerName(subtype: IndexableSubtype): string {

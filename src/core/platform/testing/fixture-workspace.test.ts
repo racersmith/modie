@@ -1,7 +1,7 @@
 /**
  * Unit tests for FixtureWorkspace helper methods and scopeDir resolution.
- * Tagged per ADR-7, RULE-23, and RULE-34 for universal rule verification.
- * @verifies RULE-8, RULE-12, RULE-23, RULE-34, RULE-35, RULE-38, ADR-10
+ * Tagged per RULE-23 and RULE-34 for universal rule verification.
+ * @verifies RULE-8, RULE-12, RULE-23, RULE-34, RULE-35, RULE-38
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
@@ -13,7 +13,7 @@ import {
   type FixtureWorkspace,
 } from "./fixture-workspace.ts";
 
-describe("FixtureWorkspace - Architectural scopeDir Resolution (RULE-8, RULE-12, RULE-34, ADR-10)", () => {
+describe("FixtureWorkspace - Architectural scopeDir Resolution (RULE-8, RULE-12, RULE-34)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
@@ -24,8 +24,8 @@ describe("FixtureWorkspace - Architectural scopeDir Resolution (RULE-8, RULE-12,
     await workspace.cleanup();
   });
 
-  // @verifies RULE-8, RULE-12, RULE-34, ADR-10
-  it("[RULE-8][RULE-12][RULE-34][ADR-10] should place rules in nested scope when scopeDir is provided", async () => {
+  // @verifies RULE-8, RULE-12, RULE-34
+  it("[RULE-8][RULE-12][RULE-34] should place rules in nested scope when scopeDir is provided", async () => {
     const rule = await workspace.createRule({
       id: 1,
       slug: "scoped-rule",
@@ -39,8 +39,8 @@ describe("FixtureWorkspace - Architectural scopeDir Resolution (RULE-8, RULE-12,
     expect(await workspace.fileExists(rule)).toBe(true);
   });
 
-  // @verifies RULE-8, RULE-12, RULE-34, ADR-10
-  it("[RULE-8][RULE-12][RULE-34][ADR-10] should place ADRs in nested scope when scopeDir is provided", async () => {
+  // @verifies RULE-8, RULE-12, RULE-34
+  it("[RULE-8][RULE-12][RULE-34] should place ADRs in nested scope when scopeDir is provided", async () => {
     const adr = await workspace.createAdr({
       id: 1,
       slug: "scoped-decision",
@@ -54,8 +54,8 @@ describe("FixtureWorkspace - Architectural scopeDir Resolution (RULE-8, RULE-12,
     expect(await workspace.fileExists(adr)).toBe(true);
   });
 
-  // @verifies RULE-8, RULE-12, RULE-34, ADR-10
-  it("[RULE-8][RULE-12][RULE-34][ADR-10] should place tasks in nested scope when scopeDir is provided", async () => {
+  // @verifies RULE-8, RULE-12, RULE-34
+  it("[RULE-8][RULE-12][RULE-34] should place tasks in nested scope when scopeDir is provided", async () => {
     const task = await workspace.createTask({
       id: 1,
       slug: "scoped-task",
@@ -69,8 +69,8 @@ describe("FixtureWorkspace - Architectural scopeDir Resolution (RULE-8, RULE-12,
     expect(await workspace.fileExists(task)).toBe(true);
   });
 
-  // @verifies RULE-8, RULE-12, RULE-34, ADR-10
-  it("[RULE-8][RULE-12][RULE-34][ADR-10] should support createArtifact directly with scopeDir", async () => {
+  // @verifies RULE-8, RULE-12, RULE-34
+  it("[RULE-8][RULE-12][RULE-34] should support createArtifact directly with scopeDir", async () => {
     const artifact = await workspace.createArtifact({
       subtype: "RULE",
       id: 99,
@@ -100,8 +100,8 @@ describe("FixtureWorkspace - Architectural scopeDir Resolution (RULE-8, RULE-12,
     expect(await workspace.fileExists(rule)).toBe(true);
   });
 
-  // @verifies RULE-8, RULE-34, ADR-10
-  it("[RULE-8][RULE-34][ADR-10] should default to root .modie/<subtype> when neither scopeDir nor subDir is provided", async () => {
+  // @verifies RULE-8, RULE-34
+  it("[RULE-8][RULE-34] should default to root .modie/<subtype> when neither scopeDir nor subDir is provided", async () => {
     const rule = await workspace.createRule({
       id: 3,
       slug: "root-rule",
@@ -126,8 +126,8 @@ describe("FixtureWorkspace - Architectural scopeDir Resolution (RULE-8, RULE-12,
     expect(await workspace.fileExists(task)).toBe(true);
   });
 
-  // @verifies ADR-4, RULE-25, RULE-34, RULE-35
-  it("[ADR-4][RULE-25][RULE-34][RULE-35] should delegate fixture creation to canonical subtype template renderers and roundtrip parse cleanly", async () => {
+  // @verifies RULE-25, RULE-34, RULE-35
+  it("[RULE-25][RULE-34][RULE-35] should delegate fixture creation to canonical subtype template renderers and roundtrip parse cleanly", async () => {
     const adr1Tag = formatArtifactTag("ADR", 1);
     const rule1Tag = formatArtifactTag("RULE", 1);
     const task1Tag = formatArtifactTag("TASK", 1);
