@@ -4,22 +4,28 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { createTestWorkspace, makeTestTag } from "../../test-utils.ts";
+import { formatArtifactTag } from "../../../../core/index.ts";
+import {
+  createFixtureWorkspace,
+} from "../../../../core/platform/testing/index.ts";
+import {
+  captureCli, execBin,
+} from "../../test-utils.ts";
 
 describe("CLI Task List - Execution & Stream Separation (ADR-6, RULE-18, RULE-25, RULE-27)", () => {
   // @verifies RULE-25, RULE-27
   it("[RULE-25][RULE-27] should emit human-readable table to stderr and empty stdout with exit code 0", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-list-");
+    await using workspace = await createFixtureWorkspace("modie-cli-list-");
     const task = await workspace.createTask({
       id: 501,
       slug: "sample-task",
       criteria: ["Sample criterion"],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "list",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     // RULE-27: stdout must be empty in human-readable mode
@@ -33,19 +39,19 @@ describe("CLI Task List - Execution & Stream Separation (ADR-6, RULE-18, RULE-25
 
   // @verifies RULE-25, RULE-27
   it("[RULE-25][RULE-27] should emit machine-parsable JSON array to stdout when --json is passed", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-list-json-");
+    await using workspace = await createFixtureWorkspace("modie-cli-list-json-");
     const task = await workspace.createTask({
       id: 502,
       slug: "sample-task",
       criteria: ["Item one"],
-      links: [makeTestTag("ADR", 6)],
+      links: [formatArtifactTag("ADR", 6)],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "list",
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
@@ -60,7 +66,7 @@ describe("CLI Task List - Execution & Stream Separation (ADR-6, RULE-18, RULE-25
 
   // @verifies ADR-6, RULE-18, RULE-27
   it("[ADR-6][RULE-18][RULE-27] should support --ready and --blocked filters", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-list-filter-");
+    await using workspace = await createFixtureWorkspace("modie-cli-list-filter-");
     const taskA = await workspace.createTask({
       id: 503,
       slug: "ready-task",
@@ -74,12 +80,12 @@ describe("CLI Task List - Execution & Stream Separation (ADR-6, RULE-18, RULE-25
     });
 
     // Test --ready
-    const readyResult = await workspace.captureCli([
+    const readyResult = await captureCli([
       "task",
       "list",
       "--ready",
       "--json",
-    ]);
+    ], workspace.cwd);
     expect(readyResult.exitCode).toBe(0);
     const readyTasks = JSON.parse(readyResult.stdout.trim());
     expect(readyTasks.length).toBe(1);
@@ -87,12 +93,12 @@ describe("CLI Task List - Execution & Stream Separation (ADR-6, RULE-18, RULE-25
     expect(readyTasks[0].fullTaskId).toBe(taskA.tag);
 
     // Test --blocked
-    const blockedResult = await workspace.captureCli([
+    const blockedResult = await captureCli([
       "task",
       "list",
       "--blocked",
       "--json",
-    ]);
+    ], workspace.cwd);
     expect(blockedResult.exitCode).toBe(0);
     const blockedTasks = JSON.parse(blockedResult.stdout.trim());
     expect(blockedTasks.length).toBe(1);
@@ -103,11 +109,11 @@ describe("CLI Task List - Execution & Stream Separation (ADR-6, RULE-18, RULE-25
 
   // @verifies RULE-27
   it("[RULE-27] should report notice to stderr when active queue is empty", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-empty-");
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    await using workspace = await createFixtureWorkspace("modie-cli-empty-");
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "list",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
@@ -116,12 +122,12 @@ describe("CLI Task List - Execution & Stream Separation (ADR-6, RULE-18, RULE-25
 
   // @verifies RULE-27
   it("[RULE-27] should support task ls alias", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-ls-");
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    await using workspace = await createFixtureWorkspace("modie-cli-ls-");
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "ls",
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe("[]");
@@ -129,18 +135,18 @@ describe("CLI Task List - Execution & Stream Separation (ADR-6, RULE-18, RULE-25
 
   // @verifies RULE-25, RULE-27, RULE-34
   it("[RULE-25][RULE-27][RULE-34] should execute task list via bin.ts subprocess against fixture workspace", async () => {
-    await using workspace = await createTestWorkspace("modie-bin-list-");
+    await using workspace = await createFixtureWorkspace("modie-bin-list-");
     const task = await workspace.createTask({
       id: 505,
       slug: "bin-task",
       criteria: ["Item"],
     });
 
-    const { stdout, stderr } = await workspace.execBin([
+    const { stdout, stderr } = await execBin([
       "task",
       "list",
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(stderr).toBe("");
     const parsed = JSON.parse(stdout.trim());
@@ -155,20 +161,20 @@ describe("CLI Task List - Execution & Stream Separation (ADR-6, RULE-18, RULE-25
 describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-25, RULE-27)", () => {
   // @verifies RULE-22, RULE-25, RULE-27
   it("[RULE-22][RULE-25][RULE-27] should emit detailed human inspection to stderr and exit code 0", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-status-");
+    await using workspace = await createFixtureWorkspace("modie-cli-status-");
     const task = await workspace.createTask({
       id: 601,
       slug: "status-task",
       context: "Inspection test description.",
-      links: [makeTestTag("ADR", 6), makeTestTag("RULE", 22)],
+      links: [formatArtifactTag("ADR", 6), formatArtifactTag("RULE", 22)],
       criteria: [{ text: "Done item", completed: true }, "Pending item"],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "status",
       task.tag,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
@@ -181,19 +187,19 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
 
   // @verifies RULE-27
   it("[RULE-27] should emit machine JSON to stdout when --json is passed to status", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-status-json-");
+    await using workspace = await createFixtureWorkspace("modie-cli-status-json-");
     const task = await workspace.createTask({
       id: 602,
       slug: "json-status",
       criteria: ["Only item"],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "status",
       task.tag,
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
@@ -207,13 +213,13 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
 
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr when status targets non-existent task", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-status-err-");
-    const nonExistentTag = makeTestTag("TASK", 9999);
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    await using workspace = await createFixtureWorkspace("modie-cli-status-err-");
+    const nonExistentTag = formatArtifactTag("TASK", 9999);
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "status",
       nonExistentTag,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
@@ -222,7 +228,7 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
 
   // @verifies ADR-6, RULE-25, RULE-27, RULE-28
   it("[ADR-6][RULE-25][RULE-27][RULE-28] should resolve current task on task branch for bare task status and --current", async () => {
-    await using workspace = await createTestWorkspace(
+    await using workspace = await createFixtureWorkspace(
       "modie-cli-status-branch-",
     );
 
@@ -239,22 +245,22 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
     await workspace.gitCommit("add task");
 
     // 1. On non-task branch (dev): bare status returns queue table, --current throws
-    const nonTaskStatus = await workspace.captureCli([
+    const nonTaskStatus = await captureCli([
       "task",
       "status",
       "--json",
-    ]);
+    ], workspace.cwd);
     expect(nonTaskStatus.exitCode).toBe(0);
     const queue = JSON.parse(nonTaskStatus.stdout.trim());
     expect(Array.isArray(queue)).toBe(true);
     expect(queue.length).toBe(1);
     expect(queue[0].isCurrent).toBe(false);
 
-    const nonTaskCurrent = await workspace.captureCli([
+    const nonTaskCurrent = await captureCli([
       "task",
       "status",
       "--current",
-    ]);
+    ], workspace.cwd);
     expect(nonTaskCurrent.exitCode).toBe(1);
     expect(nonTaskCurrent.stderr).toContain("Not on a task branch");
 
@@ -263,7 +269,7 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
     await Bun.$`git checkout -b ${branchName}`.cwd(workspace.cwd).quiet();
 
     // Bare `task status` should now automatically resolve task
-    const branchStatus = await workspace.captureCli(["task", "status"]);
+    const branchStatus = await captureCli(["task", "status"], workspace.cwd);
     expect(branchStatus.exitCode).toBe(0);
     expect(branchStatus.stderr).toContain(`${task.tag}: ${task.slug}`);
     expect(branchStatus.stderr).toContain(
@@ -273,12 +279,12 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
     expect(branchStatus.stderr).toContain("2. [ ] Second item");
 
     // `task status --current` should also return task
-    const currentStatus = await workspace.captureCli([
+    const currentStatus = await captureCli([
       "task",
       "status",
       "-c",
       "--json",
-    ]);
+    ], workspace.cwd);
     expect(currentStatus.exitCode).toBe(0);
     const parsedCurrent = JSON.parse(currentStatus.stdout.trim());
     expect(parsedCurrent.id).toBe("701");
@@ -286,13 +292,13 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
     expect(parsedCurrent.isCurrent).toBe(true);
 
     // `task list` should display CURRENT in STATUS column
-    const listResult = await workspace.captureCli(["task", "list"]);
+    const listResult = await captureCli(["task", "list"], workspace.cwd);
     expect(listResult.exitCode).toBe(0);
     expect(listResult.stderr).toContain("CURRENT");
     expect(listResult.stderr).toContain(task.tag);
 
     // `task list --json` should have isCurrent: true
-    const listJson = await workspace.captureCli(["task", "list", "--json"]);
+    const listJson = await captureCli(["task", "list", "--json"], workspace.cwd);
     expect(listJson.exitCode).toBe(0);
     const listItems = JSON.parse(listJson.stdout.trim());
     expect(listItems[0].isCurrent).toBe(true);
@@ -300,7 +306,7 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
 
   // @verifies ADR-6, ADR-9, RULE-21, RULE-25, RULE-27, RULE-34, RULE-35
   it("[ADR-6][ADR-9][RULE-21][RULE-25][RULE-27][RULE-34][RULE-35] should support --history flag on task status to query completed task history and branches", async () => {
-    await using workspace = await createTestWorkspace(
+    await using workspace = await createFixtureWorkspace(
       "modie-cli-status-history-",
     );
     await workspace.initGit({ defaultBranch: "dev", initialCommit: true });
@@ -321,20 +327,20 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
     );
 
     // 1. Without --history: strict active resolution rejects deleted task
-    const strictRes = await workspace.captureCli(["task", "status", task.tag]);
+    const strictRes = await captureCli(["task", "status", task.tag], workspace.cwd);
     expect(strictRes.exitCode).toBe(1);
     expect(strictRes.stderr).toContain(
       `Task "${task.tag}" was not found among active tasks on disk`,
     );
 
     // 2. With --history: resolves completed task details from Git history
-    const histRes = await workspace.captureCli([
+    const histRes = await captureCli([
       "task",
       "status",
       task.tag,
       "--history",
       "--json",
-    ]);
+    ], workspace.cwd);
     expect(histRes.exitCode).toBe(0);
     const parsed = JSON.parse(histRes.stdout.trim());
     expect(parsed.fullTaskId).toBe(task.tag);
@@ -343,12 +349,12 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
     expect(parsed.criteriaCompleted).toBe(1);
 
     // 3. Bare `task status --history --json` lists historical tasks
-    const listHistRes = await workspace.captureCli([
+    const listHistRes = await captureCli([
       "task",
       "status",
       "--history",
       "--json",
-    ]);
+    ], workspace.cwd);
     expect(listHistRes.exitCode).toBe(0);
     const histList = JSON.parse(listHistRes.stdout.trim());
     expect(Array.isArray(histList)).toBe(true);

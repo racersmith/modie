@@ -12,10 +12,14 @@ import { dirname, join, relative } from "node:path";
 import { promisify } from "node:util";
 import {
   formatArtifactFilename,
+  formatArtifactTag,
   renderAdrMarkdown,
   renderRuleMarkdown,
   renderTaskMarkdown,
   resolveArtifactDirectories,
+  type CreateAdrOptions as DomainCreateAdrOptions,
+  type CreateRuleOptions as DomainCreateRuleOptions,
+  type CreateTaskOptions as DomainCreateTaskOptions,
   type IndexableSubtype,
 } from "../../domain/index.ts";
 import { parseMarkdownSections } from "../markdown/index.ts";
@@ -29,66 +33,33 @@ const execFileAsync = promisify(execFile);
 // Ensure Symbol.asyncDispose compatibility across runtimes
 (Symbol as any).asyncDispose ??= Symbol("Symbol.asyncDispose");
 
-/**
- * Programmatically constructs a canonical artifact tag (e.g. `makeTestTag("ABC", 123)` -> `"ABC-123"`).
- * Prevents literal tag strings from appearing in test source code, ensuring dogfooding citation
- * scans never match test fixture data as active repository artifacts while maintaining 100%
- * runtime parity with production tag formats.
- * @satisfies RULE-35
- */
-export function makeTestTag(subtype: string, id: number | string): string {
-  return `${subtype.toUpperCase()}-${id}`;
-}
-
 export type TaskCriterionItem = string | { text: string; completed?: boolean };
 
-export interface CreateTaskOptions {
+export interface CreateTaskOptions extends Partial<DomainCreateTaskOptions> {
   id?: number | string;
   slug?: string;
-  title?: string;
-  summary?: string;
-  contextSection?: string;
-  context?: string;
   criteria?: TaskCriterionItem[];
-  depends_on?: string[];
-  links?: string[];
-  scopeDir?: string;
   rawContent?: string;
+  context?: string;
 }
 
-export interface CreateRuleOptions {
+export interface CreateRuleOptions extends Partial<DomainCreateRuleOptions> {
   id?: number | string;
   slug?: string;
-  title?: string;
-  summary?: string;
-  assertion?: string;
-  contextSection?: string;
-  context?: string;
   body?: string;
-  links?: string[];
-  supersedes?: string | string[];
   superseded_by?: string | string[];
   isArchived?: boolean;
-  scopeDir?: string;
   rawContent?: string;
+  context?: string;
 }
 
-export interface CreateAdrOptions {
+export interface CreateAdrOptions extends Partial<DomainCreateAdrOptions> {
   id?: number | string;
   slug?: string;
-  title?: string;
-  summary?: string;
-  contextSection?: string;
-  context?: string;
-  alternatives?: string;
-  decision?: string;
-  consequences?: string;
-  links?: string[];
-  supersedes?: string | string[];
   superseded_by?: string | string[];
   isArchived?: boolean;
-  scopeDir?: string;
   rawContent?: string;
+  context?: string;
 }
 
 
@@ -267,7 +238,7 @@ function renderFixtureAdrContent(
     links: options.links ?? [],
     supersedes,
     superseded_by,
-    context: contextText,
+    contextSection: contextText,
     alternatives,
     decision,
     consequences,
@@ -285,7 +256,7 @@ function renderFixtureTaskContent(
     slug,
     title: options.title,
     summary: options.summary,
-    context:
+    contextSection:
       options.contextSection ??
       options.context ??
       options.body ??
@@ -339,7 +310,7 @@ export async function createFixtureWorkspace(
     context,
 
     makeTag(subtype: string, id: number | string): string {
-      return makeTestTag(subtype, id);
+      return formatArtifactTag(subtype, id);
     },
 
     async createArtifact(
@@ -366,7 +337,7 @@ export async function createFixtureWorkspace(
       await writeFile(filepath, content, "utf8");
 
       return {
-        tag: makeTestTag(upperSubtype, id),
+        tag: formatArtifactTag(upperSubtype, id),
         subtype: upperSubtype,
         id,
         slug,
@@ -390,8 +361,10 @@ export async function createFixtureWorkspace(
             ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
             : undefined),
         summary: options.summary,
-        context: options.contextSection ?? options.context,
-        acceptanceCriteria: options.criteria,
+        contextSection: options.contextSection ?? options.context,
+        acceptanceCriteria:
+          options.criteria ??
+          (options.acceptanceCriteria as TaskCriterionItem[] | undefined),
         depends_on: options.depends_on,
         links: options.links,
         scopeDir: options.scopeDir,
@@ -439,7 +412,7 @@ export async function createFixtureWorkspace(
             ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
             : undefined),
         summary: options.summary,
-        context: options.contextSection ?? options.context,
+        contextSection: options.contextSection ?? options.context,
         alternatives: options.alternatives,
         decision: options.decision,
         consequences: options.consequences,

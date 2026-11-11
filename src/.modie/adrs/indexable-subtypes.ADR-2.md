@@ -1,5 +1,5 @@
 ---
-summary: Partition artifacts into ID-indexed subtypes (ADR, RULE, TASK) for cross-document referencing and unindexed discoverable subtypes (MOTIVE, GIST) resolved by directory structure.
+summary: Partition artifacts into ID-indexed subtypes (ADR, RULE, TASK) for cross-document referencing and unindexed discoverable subtypes (MOTIVE) resolved by directory structure.
 links:
   - RULE-1
   - ADR-1
@@ -29,6 +29,5 @@ A `TASK` document may want to point to a specific `RULE` or `ADR` that it need t
 ## Discoverable subtypes through directory structure:
 
 - `MOTIVE`
-- `GIST`
 
 These files will be constructed by `[subtype].md` to allow for simple file creation.

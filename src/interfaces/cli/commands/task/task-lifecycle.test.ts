@@ -5,20 +5,21 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
-  captureCli,
-  createTestWorkspace,
-  makeTestTag,
-  type TestWorkspace,
+  createFixtureWorkspace, type FixtureWorkspace,
+} from "../../../../core/platform/testing/index.ts";
+import {
+  captureCli, execBin,
 } from "../../test-utils.ts";
 
 const execFileAsync = promisify(execFile);
 
 describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE-27, RULE-34, RULE-35)", () => {
-  let workspace: TestWorkspace;
+  let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
-    workspace = await createTestWorkspace("cli-check-");
+    workspace = await createFixtureWorkspace("cli-check-");
   });
 
   afterEach(async () => {
@@ -27,8 +28,8 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
 
   // @verifies RULE-22, RULE-25, RULE-27, RULE-34, RULE-35
   it("[RULE-22][RULE-25][RULE-27][RULE-34][RULE-35] should check off an item, emit file path to stdout and status to stderr", async () => {
-    const linkAdr = makeTestTag("ADR", 6);
-    const linkRule = makeTestTag("RULE", 22);
+    const linkAdr = formatArtifactTag("ADR", 6);
+    const linkRule = formatArtifactTag("RULE", 22);
 
     const task = await workspace.createTask({
       id: 200,
@@ -38,13 +39,13 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
       criteria: ["First item to check", "Second item to check"],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "check",
       task.filepath,
       "--item",
       "1",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     // Machine payload to stdout
@@ -67,14 +68,14 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
       criteria: ["JSON item"],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "check",
       task.filepath,
       "--item",
       "1",
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     const parsed = JSON.parse(stdout.trim());
@@ -98,14 +99,14 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
       criteria: [{ text: "Already checked item", completed: true }],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "check",
       task.filepath,
       "--item",
       "1",
       "--uncheck",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stderr).toContain(`○ Unchecked item 1 on ${task.tag}`);
@@ -116,7 +117,7 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
 
   // @verifies RULE-27, RULE-35
   it("[RULE-27][RULE-35] should report error to stderr when --item flag is missing", async () => {
-    const dummyTag = makeTestTag("TASK", "7-2");
+    const dummyTag = formatArtifactTag("TASK", "7-2");
     const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "check",
@@ -129,12 +130,12 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
 
   // @verifies RULE-27, RULE-34
   it("[RULE-27][RULE-34] should report error to stderr when task identifier is missing", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "check",
       "--item",
       "1",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("Error: Missing required task identifier");
@@ -142,10 +143,10 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
 });
 
 describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, RULE-25, RULE-27, RULE-34, RULE-35, ADR-6)", () => {
-  let workspace: TestWorkspace;
+  let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
-    workspace = await createTestWorkspace("cli-complete-");
+    workspace = await createFixtureWorkspace("cli-complete-");
   });
 
   afterEach(async () => {
@@ -154,9 +155,9 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
 
   // @verifies RULE-21, RULE-22, RULE-27, RULE-34, RULE-35, ADR-6
   it("[RULE-21][RULE-22][RULE-27][RULE-34][RULE-35][ADR-6] should reject completion with error to stderr when criteria are incomplete", async () => {
-    const linkAdr = makeTestTag("ADR", 6);
-    const linkRule21 = makeTestTag("RULE", 21);
-    const linkRule22 = makeTestTag("RULE", 22);
+    const linkAdr = formatArtifactTag("ADR", 6);
+    const linkRule21 = formatArtifactTag("RULE", 21);
+    const linkRule22 = formatArtifactTag("RULE", 22);
 
     const task = await workspace.createTask({
       id: 300,
@@ -166,11 +167,11 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
       criteria: ["Pending deliverable"],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "complete",
       task.filepath,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
@@ -184,9 +185,9 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
 
   // @verifies RULE-21, RULE-22, RULE-25, RULE-27, RULE-34, RULE-35, ADR-6
   it("[RULE-21][RULE-22][RULE-25][RULE-27][RULE-34][RULE-35][ADR-6] should complete task and delete file when all criteria are satisfied", async () => {
-    const linkAdr = makeTestTag("ADR", 6);
-    const linkRule21 = makeTestTag("RULE", 21);
-    const linkRule22 = makeTestTag("RULE", 22);
+    const linkAdr = formatArtifactTag("ADR", 6);
+    const linkRule21 = formatArtifactTag("RULE", 21);
+    const linkRule22 = formatArtifactTag("RULE", 22);
 
     const task = await workspace.createTask({
       id: 301,
@@ -196,11 +197,11 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
       criteria: [{ text: "Completed deliverable", completed: true }],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "complete",
       task.filepath,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     // Machine payload to stdout
@@ -223,12 +224,12 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
       criteria: ["Incomplete item"],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "complete",
       task.filepath,
       "--force",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stderr).toContain(`✓ Completed task ${task.tag}`);
@@ -244,12 +245,12 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
       criteria: [{ text: "Checked item", completed: true }],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "complete",
       task.filepath,
       "--keep-file",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stderr).toContain("(artifact retained)");
@@ -267,12 +268,12 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
       criteria: [{ text: "Item", completed: true }],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "complete",
       task.filepath,
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     const parsed = JSON.parse(stdout.trim());
@@ -292,12 +293,12 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
       criteria: [{ text: "Verified item", completed: true }],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "complete",
       task.tag,
       "--commit",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe(task.filepath);
@@ -330,11 +331,11 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
       criteria: [{ text: "Finished item", completed: true }],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "finish",
       task.tag,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stderr).toContain(`✓ Completed task ${task.tag}`);
@@ -365,11 +366,11 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
       criteria: [{ text: "Done", completed: true }],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "complete",
       originalTask.tag,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
@@ -379,10 +380,10 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
 });
 
 describe("CLI Task Lifecycle - End-to-End Subprocess via bin.ts (RULE-21, RULE-22, RULE-25, RULE-27, RULE-34)", () => {
-  let workspace: TestWorkspace;
+  let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
-    workspace = await createTestWorkspace("cli-subproc-lifecycle-");
+    workspace = await createFixtureWorkspace("cli-subproc-lifecycle-");
   });
 
   afterEach(async () => {
@@ -394,7 +395,7 @@ describe("CLI Task Lifecycle - End-to-End Subprocess via bin.ts (RULE-21, RULE-2
     await workspace.initGit();
 
     // 1. Create a task with two criteria inside isolated workspace
-    const createResult = await workspace.execBin([
+    const createResult = await execBin([
       "task",
       "create",
       "Subprocess Lifecycle Task",
@@ -403,64 +404,64 @@ describe("CLI Task Lifecycle - End-to-End Subprocess via bin.ts (RULE-21, RULE-2
       "-a",
       "Step two",
       "--json",
-    ]);
+    ], workspace.cwd);
     const created = JSON.parse(createResult.stdout.trim());
     const taskPath = created.filepath;
 
     // 2. Check item 1
-    const check1 = await workspace.execBin([
+    const check1 = await execBin([
       "task",
       "check",
       taskPath,
       "--item",
       "1",
-    ]);
+    ], workspace.cwd);
     expect(check1.stderr).toContain("✓ Checked item 1");
     expect(check1.stdout.trim()).toBe(taskPath);
 
     // 3. Attempt to complete (should fail because items 2 and 3 remain unchecked)
     try {
-      await workspace.execBin(["task", "complete", taskPath]);
+      await execBin(["task", "complete", taskPath], workspace.cwd);
       expect(true).toBe(false); // should not reach here
     } catch (err: any) {
       expect(err.stderr).toContain("2 acceptance criteria remain unchecked");
     }
 
     // 4. Check item 2
-    const check2 = await workspace.execBin([
+    const check2 = await execBin([
       "task",
       "check",
       taskPath,
       "--item",
       "2",
-    ]);
+    ], workspace.cwd);
     expect(check2.stderr).toContain("✓ Checked item 2");
 
     // 5. Attempt to complete (should fail because item 3 "User Review" remains unchecked)
     try {
-      await workspace.execBin(["task", "complete", taskPath]);
+      await execBin(["task", "complete", taskPath], workspace.cwd);
       expect(true).toBe(false); // should not reach here
     } catch (err: any) {
       expect(err.stderr).toContain("1 acceptance criteria remain unchecked");
     }
 
     // 6. Check item 3 (User Review)
-    const check3 = await workspace.execBin([
+    const check3 = await execBin([
       "task",
       "check",
       taskPath,
       "--item",
       "3",
-    ]);
+    ], workspace.cwd);
     expect(check3.stderr).toContain("✓ All acceptance criteria");
 
     // 7. Complete task inside the hermetic git repository
-    const completeResult = await workspace.execBin([
+    const completeResult = await execBin([
       "task",
       "complete",
       taskPath,
       "--commit",
-    ]);
+    ], workspace.cwd);
     expect(completeResult.stderr).toContain("✓ Completed task");
     expect(completeResult.stderr).toContain("artifact deleted");
 

@@ -5,11 +5,11 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
-  captureCli,
-  createTestWorkspace,
-  makeTestTag,
-} from "../../test-utils.ts";
+  createFixtureWorkspace,
+} from "../../../../core/platform/testing/index.ts";
+import { captureCli } from "../../test-utils.ts";
 
 describe("CLI Rule List - Execution, Scope Filtering & Stream Separation (ADR-4, RULE-9, RULE-25, RULE-27, RULE-34, RULE-35)", () => {
   // @verifies RULE-27
@@ -26,8 +26,8 @@ describe("CLI Rule List - Execution, Scope Filtering & Stream Separation (ADR-4,
 
   // @verifies ADR-4, RULE-25, RULE-27, RULE-34, RULE-35
   it("[ADR-4][RULE-25][RULE-27][RULE-34][RULE-35] should emit formatted table with titles, tags, relative paths, and links to stderr and empty stdout", async () => {
-    const workspace = await createTestWorkspace("modie-cli-rule-list-");
-    const adr1Tag = makeTestTag("ADR", 1);
+    const workspace = await createFixtureWorkspace("modie-cli-rule-list-");
+    const adr1Tag = formatArtifactTag("ADR", 1);
     const rule1 = await workspace.createRule({
       id: 1,
       slug: "first-invariant-rule",
@@ -41,10 +41,10 @@ describe("CLI Rule List - Execution, Scope Filtering & Stream Separation (ADR-4,
       body: "Second invariant.",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "list",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
@@ -63,8 +63,8 @@ describe("CLI Rule List - Execution, Scope Filtering & Stream Separation (ADR-4,
 
   // @verifies RULE-25, RULE-27, RULE-34, RULE-35
   it("[RULE-25][RULE-27][RULE-34][RULE-35] should emit machine-parsable JSON array to stdout and empty stderr when --json is passed", async () => {
-    const workspace = await createTestWorkspace("modie-cli-rule-list-json-");
-    const adr4Tag = makeTestTag("ADR", 4);
+    const workspace = await createFixtureWorkspace("modie-cli-rule-list-json-");
+    const adr4Tag = formatArtifactTag("ADR", 4);
     const rule = await workspace.createRule({
       id: 9,
       slug: "ancestral-scope-traversal",
@@ -72,11 +72,11 @@ describe("CLI Rule List - Execution, Scope Filtering & Stream Separation (ADR-4,
       body: "Ancestral scope traversal invariant.",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "list",
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
@@ -96,7 +96,7 @@ describe("CLI Rule List - Execution, Scope Filtering & Stream Separation (ADR-4,
 
   // @verifies RULE-9, RULE-25, RULE-27, RULE-34, RULE-35
   it("[RULE-9][RULE-25][RULE-27][RULE-34][RULE-35] should support --scope filtering honoring ancestral scope traversal up to workspace root", async () => {
-    const workspace = await createTestWorkspace("modie-cli-rule-scope-");
+    const workspace = await createFixtureWorkspace("modie-cli-rule-scope-");
     const rootRule = await workspace.createRule({
       id: 1,
       slug: "root-rule",
@@ -117,13 +117,13 @@ describe("CLI Rule List - Execution, Scope Filtering & Stream Separation (ADR-4,
       scopeDir: "src/interfaces/mcp",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "list",
       "--scope",
       "src/interfaces/cli",
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
@@ -139,11 +139,11 @@ describe("CLI Rule List - Execution, Scope Filtering & Stream Separation (ADR-4,
 
   // @verifies RULE-27, RULE-34
   it("[RULE-27][RULE-34] should report notice to stderr when workspace has no active rules", async () => {
-    const workspace = await createTestWorkspace("modie-cli-rule-empty-");
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const workspace = await createFixtureWorkspace("modie-cli-rule-empty-");
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "list",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
@@ -154,12 +154,12 @@ describe("CLI Rule List - Execution, Scope Filtering & Stream Separation (ADR-4,
 
   // @verifies RULE-27, RULE-34
   it("[RULE-27][RULE-34] should support rule ls alias", async () => {
-    const workspace = await createTestWorkspace("modie-cli-rule-ls-");
-    const { exitCode, stdout } = await workspace.captureCli([
+    const workspace = await createFixtureWorkspace("modie-cli-rule-ls-");
+    const { exitCode, stdout } = await captureCli([
       "rule",
       "ls",
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe("[]");

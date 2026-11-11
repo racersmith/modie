@@ -3,17 +3,19 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
-  createTestWorkspace,
-  makeTestTag,
-  type TestWorkspace,
+  createFixtureWorkspace, type FixtureWorkspace,
+} from "../../../../core/platform/testing/index.ts";
+import {
+  captureCli, execBin,
 } from "../../test-utils.ts";
 
 describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, RULE-34, RULE-35)", () => {
-  let workspace: TestWorkspace;
+  let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
-    workspace = await createTestWorkspace("modie-cli-find-");
+    workspace = await createFixtureWorkspace("modie-cli-find-");
   });
 
   afterEach(async () => {
@@ -22,10 +24,10 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
 
   // @verifies RULE-27
   it("[RULE-27] should emit find help to stderr with exit code 0", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "find",
       "--help",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Usage: modie find");
@@ -38,10 +40,10 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
       slug: "artifact-filename-structure",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "find",
       rule.tag,
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
     expect(stdout.trim()).toBe(rule.relativePath);
@@ -54,11 +56,11 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
       slug: "self-indexing-filenames",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "find",
       adr.tag,
       "--absolute",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
     expect(stdout.trim()).toBe(adr.filepath);
@@ -72,11 +74,11 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
       slug: "artifact-filename-structure",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "find",
       rule.tag,
       "--json",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
     const parsed = JSON.parse(stdout.trim());
@@ -96,19 +98,19 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
       rawContent: "---\nlinks: []\n---\n# Archived ADR\n",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "find",
       archived.tag,
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
     expect(stdout.trim()).toBe(archived.relativePath);
 
-    const jsonResult = await workspace.captureCli([
+    const jsonResult = await captureCli([
       "find",
       archived.tag,
       "--json",
-    ]);
+    ], workspace.cwd);
     expect(jsonResult.exitCode).toBe(0);
     const parsed = JSON.parse(jsonResult.stdout.trim());
     expect(parsed.isArchived).toBe(true);
@@ -117,11 +119,11 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
 
   // @verifies RULE-27, RULE-35
   it("[RULE-27][RULE-35] should report error to stderr when artifact tag is not found", async () => {
-    const missingTag = makeTestTag("RULE", "TEST-9999");
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const missingTag = formatArtifactTag("RULE", "TEST-9999");
+    const { exitCode, stdout, stderr } = await captureCli([
       "find",
       missingTag,
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain(`Error: Artifact "${missingTag}" was not found`);
@@ -129,7 +131,7 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
 
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr when tag argument is missing", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["find"]);
+    const { exitCode, stdout, stderr } = await captureCli(["find"], workspace.cwd);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("Error: Missing required artifact identifier");
@@ -142,11 +144,11 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
       slug: "artifact-filename-structure",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "find",
       rule.tag,
       "--bogus",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain('Error: Unknown flag "--bogus"');
@@ -159,7 +161,7 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
       slug: "artifact-filename-structure",
     });
 
-    const { stdout, stderr } = await workspace.execBin(["find", rule.tag]);
+    const { stdout, stderr } = await execBin(["find", rule.tag], workspace.cwd);
     expect(stderr).toBe("");
     expect(stdout.trim()).toBe(rule.relativePath);
   });
@@ -182,18 +184,18 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
     );
 
     // Without --history: fails because active file is deleted
-    const withoutHistory = await workspace.captureCli(["find", task.tag]);
+    const withoutHistory = await captureCli(["find", task.tag], workspace.cwd);
     expect(withoutHistory.exitCode).toBe(1);
     expect(withoutHistory.stderr).toContain(
       `Artifact "${task.tag}" was not found`,
     );
 
     // With --history: resolves path from Git deletion history
-    const withHistory = await workspace.captureCli([
+    const withHistory = await captureCli([
       "find",
       task.tag,
       "--history",
-    ]);
+    ], workspace.cwd);
     expect(withHistory.exitCode).toBe(0);
     expect(withHistory.stderr).toBe("");
     expect(withHistory.stdout.trim()).toBe(task.relativePath);

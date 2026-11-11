@@ -6,7 +6,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type FixtureWorkspace,
 } from "../../platform/testing/index.ts";
 import { resolveScope } from "./scope.ts";

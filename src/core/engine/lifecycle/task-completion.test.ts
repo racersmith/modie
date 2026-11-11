@@ -6,7 +6,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type CreatedFixtureArtifact,
   type FixtureWorkspace,
 } from "../../platform/testing/index.ts";
@@ -16,7 +15,7 @@ import {
   getTask,
   resolveTaskFile,
 } from "./index.ts";
-import { normalizeTaskId } from "../../domain/index.ts";
+import { formatArtifactTag, normalizeTaskId } from "../../domain/index.ts";
 
 describe("Task Completion & Checklist Services - Normalization & Resolution", () => {
   it("should normalize diverse task ID formats", () => {
@@ -53,7 +52,7 @@ describe("Task Completion & Checklist Services - Normalization & Resolution", ()
 
   it("should throw a descriptive error when task does not exist", async () => {
     await using workspace = await createFixtureWorkspace("modie-empty-test-");
-    const missingTag = makeTestTag("TASK", 99999);
+    const missingTag = formatArtifactTag("TASK", 99999);
     await expect(
       resolveTaskFile(missingTag, { cwd: workspace.cwd }),
     ).rejects.toThrow(/was not found among active tasks on disk/);
@@ -70,7 +69,7 @@ describe("Task Checklist Progression - checkTaskItem (RULE-22, RULE-25)", () => 
       id: 99,
       slug: "sample-feature",
       context: "Test task for checklist progression.",
-      links: [makeTestTag("ADR", 6), makeTestTag("RULE", 22)],
+      links: [formatArtifactTag("ADR", 6), formatArtifactTag("RULE", 22)],
       depends_on: [],
       criteria: [
         "First deliverable item",
@@ -158,8 +157,8 @@ describe("Task Checklist Progression - checkTaskItem (RULE-22, RULE-25)", () => 
 
     const content = await workspace.readFile(testTask.filepath);
     expect(content).toContain("depends_on: []");
-    expect(content).toContain(`- ${makeTestTag("ADR", 6)}`);
-    expect(content).toContain(`- ${makeTestTag("RULE", 22)}`);
+    expect(content).toContain(`- ${formatArtifactTag("ADR", 6)}`);
+    expect(content).toContain(`- ${formatArtifactTag("RULE", 22)}`);
     expect(content).toContain(
       "# Context\n\nTest task for checklist progression.",
     );
@@ -198,9 +197,9 @@ describe("Task Lifecycle Completion - completeTask (ADR-6, RULE-21, RULE-22)", (
       slug: "ephemeral-lifecycle",
       context: "Demonstrating ephemeral task completion lifecycle.",
       links: [
-        makeTestTag("ADR", 6),
-        makeTestTag("RULE", 21),
-        makeTestTag("RULE", 22),
+        formatArtifactTag("ADR", 6),
+        formatArtifactTag("RULE", 21),
+        formatArtifactTag("RULE", 22),
       ],
       criteria: ["Unfinished deliverable A", "Unfinished deliverable B"],
     });
@@ -511,7 +510,7 @@ describe("Two-Phase Git Commit Ceremony (ADR-6, RULE-21, RULE-22)", () => {
 
 describe("Zombie Task Resurrection Prevention (ADR-6, RULE-21)", () => {
   let workspace: FixtureWorkspace;
-  const zombieTag = makeTestTag("TASK", 99);
+  const zombieTag = formatArtifactTag("TASK", 99);
 
   beforeEach(async () => {
     workspace = await createFixtureWorkspace("modie-zombie-git-");

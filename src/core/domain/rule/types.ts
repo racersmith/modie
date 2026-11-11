@@ -42,11 +42,6 @@ export interface RuleArtifact {
   contextSection?: string;
 
   /**
-   * Context / description text (alias for contextSection).
-   */
-  context?: string;
-
-  /**
    * Target RULE tag(s) superseded by this rule.
    */
   supersedes?: string[];
@@ -141,11 +136,6 @@ export interface CreateRuleOptions {
    * Context / description alias for assertion.
    */
   contextSection?: string;
-
-  /**
-   * @deprecated Use `contextSection` instead. Backward-compatible alias.
-   */
-  context?: string;
 
   /**
    * ADR artifact links (`links`). Must only reference `ADR-` identifiers per RULE-13.

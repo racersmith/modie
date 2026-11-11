@@ -6,7 +6,8 @@
 
 import { describe, expect, it } from "bun:test";
 import { findArtifactReferences } from "../query/references.ts";
-import { createFixtureWorkspace, makeTestTag } from "../../platform/testing/index.ts";
+import { createFixtureWorkspace } from "../../platform/testing/index.ts";
+import { formatArtifactTag } from "../../domain/index.ts";
 import { archiveRule } from "../archival/index.ts";
 import { createRule } from "./index.ts";
 
@@ -32,7 +33,7 @@ describe("Core Rule Creation - Supersession & Bidirectional Frontmatter (RULE-3,
       cwd: workspace.cwd,
     });
 
-    const expectedRule2Tag = makeTestTag("RULE", 2);
+    const expectedRule2Tag = formatArtifactTag("RULE", 2);
     expect(result.tag).toBe(expectedRule2Tag);
     expect(result.artifact.supersedes).toEqual([rule1.tag]);
 
@@ -105,7 +106,7 @@ describe("Core Rule Creation - Supersession & Bidirectional Frontmatter (RULE-3,
   it("[RULE-4][RULE-34] should append without duplication when superseded_by already exists on predecessor rule", async () => {
     const workspace = await createFixtureWorkspace("rule-supersession-multi-");
 
-    const rule2Tag = makeTestTag("RULE", 2);
+    const rule2Tag = formatArtifactTag("RULE", 2);
     const rule1 = await workspace.createRule({
       id: 1,
       slug: "initial-rule",
@@ -142,7 +143,7 @@ describe("Core Rule Creation - Supersession & Bidirectional Frontmatter (RULE-3,
     const workspace = await createFixtureWorkspace(
       "rule-supersession-invalid-",
     );
-    const adrTag = makeTestTag("ADR", 1);
+    const adrTag = formatArtifactTag("ADR", 1);
 
     expect(
       createRule({

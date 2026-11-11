@@ -5,11 +5,11 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type FixtureWorkspace,
 } from "../../platform/testing/index.ts";
 import {
   findDeepestCommonAncestor,
+  formatArtifactTag,
   parseTaskMarkdown,
   validateTaskScope,
 } from "../../domain/index.ts";
@@ -52,7 +52,7 @@ describe("Task Creation Service - Downward Blast Radius & Least Scope Validation
 
   // @verifies RULE-6
   it("[RULE-6] should reject target paths that escape task scope directory", () => {
-    const rule6 = makeTestTag("RULE", 6);
+    const rule6 = formatArtifactTag("RULE", 6);
     expect(() => {
       validateTaskScope("/app/src/core", [
         "/app/src/core/index.ts",
@@ -78,7 +78,7 @@ describe("Task Creation Service - Downward Blast Radius & Least Scope Validation
 
   // @verifies RULE-12
   it("[RULE-12] should reject higher-scoped task placement when deeper common ancestor exists", () => {
-    const rule12 = makeTestTag("RULE", 12);
+    const rule12 = formatArtifactTag("RULE", 12);
     expect(() => {
       validateTaskScope(
         "/app/src",
@@ -122,11 +122,11 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     const testTitle = "Task Service Integration Verification";
     const testScope = "src/core";
 
-    const depTask3 = makeTestTag("TASK", 3);
-    const depTask4 = makeTestTag("TASK", 4);
-    const linkAdr6 = makeTestTag("ADR", 6);
-    const linkRule25 = makeTestTag("RULE", 25);
-    const expectedTaskTag = makeTestTag("TASK", 5);
+    const depTask3 = formatArtifactTag("TASK", 3);
+    const depTask4 = formatArtifactTag("TASK", 4);
+    const linkAdr6 = formatArtifactTag("ADR", 6);
+    const linkRule25 = formatArtifactTag("RULE", 25);
+    const expectedTaskTag = formatArtifactTag("TASK", 5);
 
     await workspace.createTask({ id: 3, slug: "dep-task-three" });
     await workspace.createTask({ id: 4, slug: "dep-task-four" });
@@ -136,7 +136,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     const result = await createTask({
       title: testTitle,
       scopeDir: testScope,
-      context: "Validates core task creation service end-to-end integration.",
+      contextSection: "Validates core task creation service end-to-end integration.",
       depends_on: [depTask3, depTask4],
       links: [linkAdr6, linkRule25],
       acceptanceCriteria: [
@@ -223,7 +223,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     const parentId = 5;
     const branchName = `task/${parentId}-task-creation-service`;
     const expectedSubtaskId = `${parentId}-1`;
-    const expectedSubtaskTag = makeTestTag("TASK", expectedSubtaskId);
+    const expectedSubtaskTag = formatArtifactTag("TASK", expectedSubtaskId);
 
     const result = await createTask({
       title: "Subtask Under Task 5",
@@ -243,7 +243,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
   it("[ADR-9][RULE-34][RULE-35] should allocate prefixed IDs when prefix is specified", async () => {
     const prefix = "A";
     const expectedId = `${prefix}1`;
-    const expectedTag = makeTestTag("TASK", expectedId);
+    const expectedTag = formatArtifactTag("TASK", expectedId);
 
     const result = await createTask({
       title: "Agent Delegated Task",
@@ -259,10 +259,10 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
 
   // @verifies RULE-15, RULE-18, RULE-34, RULE-35
   it("[RULE-15][RULE-18][RULE-34][RULE-35] should reject invalid link types or invalid dependency identifiers", async () => {
-    const invalidLinkTag = makeTestTag("TASK", 1);
-    const invalidDepTag = makeTestTag("RULE", 1);
-    const rule15 = makeTestTag("RULE", 15);
-    const rule18 = makeTestTag("RULE", 18);
+    const invalidLinkTag = formatArtifactTag("TASK", 1);
+    const invalidDepTag = formatArtifactTag("RULE", 1);
+    const rule15 = formatArtifactTag("RULE", 15);
+    const rule18 = formatArtifactTag("RULE", 18);
 
     // RULE-15: TASK links cannot be in links:
     await expect(
@@ -305,7 +305,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
       cwd: workspace.cwd,
     });
 
-    const expectedNextTag = makeTestTag("TASK", 2);
+    const expectedNextTag = formatArtifactTag("TASK", 2);
     expect(res.artifact.id).toBe("2");
     expect(res.filename).toBe(`new-task-after-deletion.${expectedNextTag}.md`);
   });
@@ -316,7 +316,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     const res = await createTask({
       title: "Explicit Summary Task",
       summary: summaryText,
-      context:
+      contextSection:
         "# Mission Brief\n\nDetailed context about decomposing interfaces.",
       cwd: workspace.cwd,
     });
@@ -340,7 +340,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
   it("[RULE-25][RULE-26][RULE-34][RULE-35] should extract fallback summary from context when summary is omitted", async () => {
     const res = await createTask({
       title: "Omitted Summary Task",
-      context:
+      contextSection:
         "# Mission Brief\n\nThis task provides fallback summary extraction from context. Additional lines follow.",
       cwd: workspace.cwd,
     });
@@ -365,49 +365,18 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
   });
 
   // @verifies ADR-4, RULE-22, RULE-25, RULE-34
-  it("[ADR-4][RULE-22][RULE-25][RULE-34] should accept contextSection and support backward-compatible context alias", async () => {
-    // 1. Create task with contextSection
-    const res1 = await createTask({
+  it("[ADR-4][RULE-22][RULE-25][RULE-34] should accept contextSection strictly and populate TaskArtifact.contextSection", async () => {
+    const res = await createTask({
       title: "Task With Context Section",
       contextSection: "Task context defined via contextSection property.",
       cwd: workspace.cwd,
     });
-    expect(res1.artifact.context).toBe(
+    expect(res.artifact.contextSection).toBe(
       "Task context defined via contextSection property.",
     );
-    expect(res1.artifact.contextSection).toBe(
+    const content = await workspace.readFile(res.filepath);
+    expect(content).toContain(
       "Task context defined via contextSection property.",
     );
-    const content1 = await workspace.readFile(res1.filepath);
-    expect(content1).toContain(
-      "Task context defined via contextSection property.",
-    );
-
-    // 2. Create task with backward-compatible context alias
-    const res2 = await createTask({
-      title: "Task With Legacy Context",
-      context: "Task context defined via backward-compatible context alias.",
-      cwd: workspace.cwd,
-    });
-    expect(res2.artifact.context).toBe(
-      "Task context defined via backward-compatible context alias.",
-    );
-    expect(res2.artifact.contextSection).toBe(
-      "Task context defined via backward-compatible context alias.",
-    );
-    const content2 = await workspace.readFile(res2.filepath);
-    expect(content2).toContain(
-      "Task context defined via backward-compatible context alias.",
-    );
-
-    // 3. contextSection takes precedence when both provided
-    const res3 = await createTask({
-      title: "Task With Precedence Context",
-      contextSection: "Primary task context text.",
-      context: "Ignored fallback task context.",
-      cwd: workspace.cwd,
-    });
-    expect(res3.artifact.context).toBe("Primary task context text.");
-    expect(res3.artifact.contextSection).toBe("Primary task context text.");
   });
 });

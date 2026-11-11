@@ -4,21 +4,23 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
-  createTestWorkspace,
-  makeTestTag,
-  type TestWorkspace,
+  createFixtureWorkspace, type FixtureWorkspace,
+} from "../../../../core/platform/testing/index.ts";
+import {
+  captureCli, execBin,
 } from "../../test-utils.ts";
 
 describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-27, RULE-31, RULE-34)", () => {
-  let workspace: TestWorkspace;
-  const adr1Tag = makeTestTag("ADR", 1);
-  const adr4Tag = makeTestTag("ADR", 4);
-  const rule25Tag = makeTestTag("RULE", 25);
-  const rule31Tag = makeTestTag("RULE", 31);
+  let workspace: FixtureWorkspace;
+  const adr1Tag = formatArtifactTag("ADR", 1);
+  const adr4Tag = formatArtifactTag("ADR", 4);
+  const rule25Tag = formatArtifactTag("RULE", 25);
+  const rule31Tag = formatArtifactTag("RULE", 31);
 
   beforeEach(async () => {
-    workspace = await createTestWorkspace("modie-cli-refs-");
+    workspace = await createFixtureWorkspace("modie-cli-refs-");
 
     // 1. Target and related ADRs
     await workspace.createAdr({
@@ -71,10 +73,10 @@ export function run() {
   });
 
   it("[RULE-25][RULE-27][RULE-34] should emit human formatted output to stderr and exit code 0", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "references",
       rule25Tag,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     // RULE-27: stdout strictly empty for human command output
@@ -87,11 +89,11 @@ export function run() {
   });
 
   it("[RULE-27][RULE-34] should emit machine-parsable JSON to stdout when --json is passed", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "references",
       rule25Tag,
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
@@ -106,10 +108,10 @@ export function run() {
   });
 
   it("[RULE-34] should support the refs alias via CLI entrypoint in fixture workspace", async () => {
-    const { exitCode, stderr } = await workspace.captureCli([
+    const { exitCode, stderr } = await captureCli([
       "refs",
       rule25Tag,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stderr).toContain(`Target: ${rule25Tag}`);
@@ -117,11 +119,11 @@ export function run() {
   });
 
   it("[RULE-34] should support --to flag to show only outbound declared links in fixture workspace", async () => {
-    const { exitCode, stderr } = await workspace.captureCli([
+    const { exitCode, stderr } = await captureCli([
       "references",
       rule31Tag,
       "--to",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stderr).toContain("[Links To]");
@@ -130,12 +132,12 @@ export function run() {
   });
 
   it("[RULE-34] should support --by flag to show only citations found across workspace", async () => {
-    const { exitCode, stderr } = await workspace.captureCli([
+    const { exitCode, stderr } = await captureCli([
       "references",
       adr4Tag,
       "--by",
       "--governance-only",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stderr).toContain("[Found In]");
@@ -144,10 +146,10 @@ export function run() {
   });
 
   it("[RULE-27] should emit help to stderr with exit code 0 when --help is passed", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "references",
       "--help",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
@@ -157,9 +159,9 @@ export function run() {
   });
 
   it("[RULE-27] should report error to stderr when required tag argument is missing", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "references",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
@@ -167,11 +169,11 @@ export function run() {
   });
 
   it("[RULE-27] should report error to stderr when querying non-existent artifact", async () => {
-    const nonExistent = makeTestTag("RULE", 9999);
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const nonExistent = formatArtifactTag("RULE", 9999);
+    const { exitCode, stdout, stderr } = await captureCli([
       "references",
       nonExistent,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
@@ -179,11 +181,11 @@ export function run() {
   });
 
   it("[RULE-25][RULE-27][RULE-34] should execute references via bin.ts subprocess against fixture workspace", async () => {
-    const { stdout, stderr } = await workspace.execBin([
+    const { stdout, stderr } = await execBin([
       "references",
       rule25Tag,
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(stderr).toBe("");
     const parsed = JSON.parse(stdout);

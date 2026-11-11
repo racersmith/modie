@@ -360,7 +360,6 @@ export async function getArtifactDetails(
     parsedSubtypeArtifact?.summary ?? fmSummary ?? resolved.summary;
   const contextSection =
     parsedSubtypeArtifact?.contextSection ??
-    parsedSubtypeArtifact?.context ??
     sections["Context"];
   const acceptanceCriteria: TaskAcceptanceCriteriaItem[] | undefined =
     parsedSubtypeArtifact?.acceptanceCriteria;

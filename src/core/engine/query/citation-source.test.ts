@@ -7,9 +7,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type FixtureWorkspace,
 } from "../../platform/testing/index.ts";
+import { formatArtifactTag } from "../../domain/index.ts";
 import { MockVcsAdapter } from "../../platform/vcs/index.ts";
 import {
   FsWalkSource,
@@ -29,7 +29,7 @@ describe("CitationSource Abstraction (RULE-25, RULE-34, RULE-35)", () => {
   });
 
   it("[RULE-25][RULE-35] should correctly generate tag regex with word boundary protections", () => {
-    const targetTag = makeTestTag("RULE", 930);
+    const targetTag = formatArtifactTag("RULE", 930);
     const regex = createTagRegex(targetTag);
 
     expect(regex.test(`// Cites ${targetTag} directly`)).toBe(true);
@@ -41,7 +41,7 @@ describe("CitationSource Abstraction (RULE-25, RULE-34, RULE-35)", () => {
   });
 
   it("[RULE-25][RULE-34][RULE-35] should extract citations with FsWalkSource", async () => {
-    const targetTag = makeTestTag("RULE", 931);
+    const targetTag = formatArtifactTag("RULE", 931);
     const targetFile = "target.md";
 
     await workspace.writeFile(targetFile, `# Target\nThis is ${targetTag}.\n`);
@@ -78,7 +78,7 @@ describe("CitationSource Abstraction (RULE-25, RULE-34, RULE-35)", () => {
 
   it("[RULE-25][RULE-34][RULE-35] should extract citations with GitGrepSource", async () => {
     await workspace.initGit();
-    const targetTag = makeTestTag("RULE", 932);
+    const targetTag = formatArtifactTag("RULE", 932);
     const targetFile = "target.md";
 
     await workspace.writeFile(targetFile, `# Target\nThis is ${targetTag}.\n`);
@@ -104,7 +104,7 @@ describe("CitationSource Abstraction (RULE-25, RULE-34, RULE-35)", () => {
   });
 
   it("[RULE-25][RULE-35] should fail GitGrepSource scan when directory is not a git repository", async () => {
-    const targetTag = makeTestTag("RULE", 933);
+    const targetTag = formatArtifactTag("RULE", 933);
     const mockVcs = new MockVcsAdapter({ insideWorkTree: false });
     const source = new GitGrepSource(mockVcs);
 

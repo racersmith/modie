@@ -25,7 +25,6 @@ describe("Link & Dependency Syntax Predicates (ADR-5, RULE-13, RULE-14, RULE-15,
     expect(isValidAdrLinkTag("RULE-1")).toBe(false);
     expect(isValidAdrLinkTag("TASK-1")).toBe(false);
     expect(isValidAdrLinkTag("MOTIVE")).toBe(false);
-    expect(isValidAdrLinkTag("GIST")).toBe(false);
     expect(isValidAdrLinkTag("")).toBe(false);
     expect(isValidAdrLinkTag("invalid-tag")).toBe(false);
   });
@@ -40,7 +39,6 @@ describe("Link & Dependency Syntax Predicates (ADR-5, RULE-13, RULE-14, RULE-15,
     expect(isValidGovernanceLinkTag("TASK-1")).toBe(false);
     expect(isValidGovernanceLinkTag("task-5")).toBe(false);
     expect(isValidGovernanceLinkTag("MOTIVE")).toBe(false);
-    expect(isValidGovernanceLinkTag("GIST")).toBe(false);
     expect(isValidGovernanceLinkTag("")).toBe(false);
     expect(isValidGovernanceLinkTag("random-string")).toBe(false);
   });
@@ -55,7 +53,6 @@ describe("Link & Dependency Syntax Predicates (ADR-5, RULE-13, RULE-14, RULE-15,
     expect(isValidTaskDependencyTag("ADR-1")).toBe(false);
     expect(isValidTaskDependencyTag("RULE-1")).toBe(false);
     expect(isValidTaskDependencyTag("MOTIVE")).toBe(false);
-    expect(isValidTaskDependencyTag("GIST")).toBe(false);
     expect(isValidTaskDependencyTag("")).toBe(false);
     expect(isValidTaskDependencyTag("TASK")).toBe(false);
   });

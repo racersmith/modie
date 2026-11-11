@@ -4,17 +4,19 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
-  createTestWorkspace,
-  makeTestTag,
-  type TestWorkspace,
+  createFixtureWorkspace, type FixtureWorkspace,
+} from "../../../../core/platform/testing/index.ts";
+import {
+  captureCli, execBin,
 } from "../../test-utils.ts";
 
 describe("CLI Read - Execution & Stream Separation (RULE-25, RULE-26, RULE-27, RULE-29, RULE-34, RULE-35)", () => {
-  let workspace: TestWorkspace;
+  let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
-    workspace = await createTestWorkspace("modie-cli-read-");
+    workspace = await createFixtureWorkspace("modie-cli-read-");
   });
 
   afterEach(async () => {
@@ -23,10 +25,10 @@ describe("CLI Read - Execution & Stream Separation (RULE-25, RULE-26, RULE-27, R
 
   // @verifies RULE-27
   it("[RULE-27] should emit read help to stderr with exit code 0", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "read",
       "--help",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Usage: modie read");
@@ -40,10 +42,10 @@ describe("CLI Read - Execution & Stream Separation (RULE-25, RULE-26, RULE-27, R
       body: "All indexable Modie artifact filenames must conform to grammar.",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "read",
       rule.tag,
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(0);
     // RULE-27: stdout must be empty for human overview mode
     expect(stdout).toBe("");
@@ -58,8 +60,8 @@ describe("CLI Read - Execution & Stream Separation (RULE-25, RULE-26, RULE-27, R
 
   // @verifies RULE-25, RULE-26, RULE-27, RULE-34, RULE-35
   it("[RULE-25][RULE-26][RULE-27][RULE-34][RULE-35] should emit agent-optimized JSON to stdout and empty stderr when --json is passed", async () => {
-    const linkAdr1 = makeTestTag("ADR", "TEST-1");
-    const linkAdr2 = makeTestTag("ADR", "TEST-2");
+    const linkAdr1 = formatArtifactTag("ADR", "TEST-1");
+    const linkAdr2 = formatArtifactTag("ADR", "TEST-2");
 
     const rule = await workspace.createRule({
       id: "TEST-1",
@@ -68,11 +70,11 @@ describe("CLI Read - Execution & Stream Separation (RULE-25, RULE-26, RULE-27, R
       links: [linkAdr1, linkAdr2],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "read",
       rule.tag,
       "--json",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
 
@@ -90,7 +92,7 @@ describe("CLI Read - Execution & Stream Separation (RULE-25, RULE-26, RULE-27, R
 
   // @verifies RULE-27, RULE-34, RULE-35
   it("[RULE-27][RULE-34][RULE-35] should emit raw unparsed markdown to stdout and empty stderr when --raw is passed", async () => {
-    const linkAdr1 = makeTestTag("ADR", "TEST-1");
+    const linkAdr1 = formatArtifactTag("ADR", "TEST-1");
     const rule = await workspace.createRule({
       id: "TEST-1",
       slug: "artifact-filename-structure",
@@ -98,11 +100,11 @@ describe("CLI Read - Execution & Stream Separation (RULE-25, RULE-26, RULE-27, R
       links: [linkAdr1],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "read",
       rule.tag,
       "--raw",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
     expect(stdout).toContain("links:");
@@ -113,8 +115,8 @@ describe("CLI Read - Execution & Stream Separation (RULE-25, RULE-26, RULE-27, R
 
   // @verifies RULE-25, RULE-27, RULE-34, RULE-35
   it("[RULE-25][RULE-27][RULE-34][RULE-35] should read task with dependencies, context, criteria, and scope", async () => {
-    const taskDep = makeTestTag("TASK", "TEST-700");
-    const taskLink = makeTestTag("RULE", "TEST-1");
+    const taskDep = formatArtifactTag("TASK", "TEST-700");
+    const taskLink = formatArtifactTag("RULE", "TEST-1");
 
     const task = await workspace.createTask({
       id: "TEST-701",
@@ -136,10 +138,10 @@ Detailed test context for read command.
 `,
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "read",
       task.tag,
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain(`${task.tag}: sample-work`);
@@ -154,7 +156,7 @@ Detailed test context for read command.
     expect(stderr).toContain("2. [ ] Second pending criteria");
 
     // Also verify --json with criteria and depends_on
-    const jsonResult = await workspace.captureCli(["read", task.tag, "--json"]);
+    const jsonResult = await captureCli(["read", task.tag, "--json"], workspace.cwd);
     expect(jsonResult.exitCode).toBe(0);
     const parsed = JSON.parse(jsonResult.stdout.trim());
     expect(parsed.depends_on).toEqual([taskDep]);
@@ -174,19 +176,19 @@ Detailed test context for read command.
       body: "Scoped rule content",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "read",
       scopedRule.tag,
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Scope:       src/interfaces/cli");
 
-    const jsonResult = await workspace.captureCli([
+    const jsonResult = await captureCli([
       "read",
       scopedRule.tag,
       "--json",
-    ]);
+    ], workspace.cwd);
     expect(jsonResult.exitCode).toBe(0);
     const parsed = JSON.parse(jsonResult.stdout.trim());
     expect(parsed.scope).toBe("src/interfaces/cli");
@@ -194,11 +196,11 @@ Detailed test context for read command.
 
   // @verifies RULE-27, RULE-35
   it("[RULE-27][RULE-35] should report error to stderr when artifact is not found", async () => {
-    const missingTag = makeTestTag("ADR", "TEST-9999");
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const missingTag = formatArtifactTag("ADR", "TEST-9999");
+    const { exitCode, stdout, stderr } = await captureCli([
       "read",
       missingTag,
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain(`Error: Artifact "${missingTag}" was not found`);
@@ -206,7 +208,7 @@ Detailed test context for read command.
 
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr when tag argument is missing", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["read"]);
+    const { exitCode, stdout, stderr } = await captureCli(["read"], workspace.cwd);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("Error: Missing required artifact identifier");
@@ -219,11 +221,11 @@ Detailed test context for read command.
       slug: "artifact-filename-structure",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "read",
       rule.tag,
       "--invalid",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain('Error: Unknown flag "--invalid"');
@@ -236,11 +238,11 @@ Detailed test context for read command.
       slug: "artifact-filename-structure",
     });
 
-    const { stdout, stderr } = await workspace.execBin([
+    const { stdout, stderr } = await execBin([
       "read",
       rule.tag,
       "--json",
-    ]);
+    ], workspace.cwd);
     expect(stderr).toBe("");
     const parsed = JSON.parse(stdout.trim());
     expect(parsed.tag).toBe(rule.tag);
@@ -250,10 +252,10 @@ Detailed test context for read command.
 });
 
 describe("Purged Show Command (TASK-50)", () => {
-  let workspace: TestWorkspace;
+  let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
-    workspace = await createTestWorkspace("modie-purged-show-");
+    workspace = await createFixtureWorkspace("modie-purged-show-");
   });
 
   afterEach(async () => {
@@ -261,10 +263,10 @@ describe("Purged Show Command (TASK-50)", () => {
   });
 
   it("should reject show as an unknown command", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "show",
       "RULE-1",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain('Error: Unknown command "show"');

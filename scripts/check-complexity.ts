@@ -41,7 +41,7 @@
  * ```
  */
 
-import ts from "typescript";
+import { parseSync } from "oxc-parser";
 import { readFileSync } from "node:fs";
 import { resolve, relative, join, dirname } from "node:path";
 import { Glob } from "bun";
@@ -315,40 +315,96 @@ export function classifyTier(cc: number): ComplexityTier {
 }
 
 /**
+ * Pre-computes 0-based character offsets for the start of every line in the source text.
+ */
+function computeLineStarts(text: string): number[] {
+  const starts = [0];
+  for (let i = 0; i < text.length; i++) {
+    if (text.charCodeAt(i) === 10) {
+      starts.push(i + 1);
+    }
+  }
+  return starts;
+}
+
+/**
+ * Resolves a 1-based line number for a character offset using binary search.
+ */
+function getLine(offset: number, lineStarts: number[]): number {
+  let low = 0;
+  let high = lineStarts.length - 1;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    if (lineStarts[mid] <= offset) {
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return high + 1;
+}
+
+/**
  * Resolves a human-readable identifier for a function AST node.
  *
  * Traversal heuristics:
- * 1. Named functions/methods/constructors/accessors.
- * 2. Assigned variable declaration (e.g. `const myHandler = () => ...`).
- * 3. Object literal property assignment (e.g. `{ execute: () => ... }`).
- * 4. Call expression context for inline callbacks (e.g. `<cb:array.map>`).
- * 5. Anonymous fallback (`<anon>`).
+ * 1. Named function declaration/expression (`n.id.name`).
+ * 2. Class/object method or property definition (`parent.key.name || parent.key.value`).
+ * 3. Assigned variable declaration (`parent.id.name`).
+ * 4. Assignment expression target (e.g. `obj.prop = ...`).
+ * 5. Call expression context for inline callbacks (e.g. `<cb:array.map>`).
+ * 6. Anonymous fallback (`<anon>`).
  */
-function fnName(n: ts.Node): string {
-  const anyN = n as any;
-  if (anyN.name && ts.isIdentifier(anyN.name)) return anyN.name.text;
-  if (anyN.name) return anyN.name.getText();
-  const p = n.parent;
-  if (p && ts.isVariableDeclaration(p)) return p.name.getText();
-  if (p && ts.isPropertyAssignment(p)) return p.name.getText();
-  if (p && ts.isCallExpression(p)) {
-    const expr = p.expression.getText();
-    return `<cb:${expr.length > 30 ? expr.slice(0, 27) + "..." : expr}>`;
+function fnName(n: any, parent: any, text: string): string {
+  if (n.id?.name) return n.id.name;
+
+  if (parent) {
+    if (parent.type === "VariableDeclarator" && parent.id?.name) {
+      return parent.id.name;
+    }
+    if (parent.type === "MethodDefinition" && parent.key) {
+      return parent.key.name ?? parent.key.value ?? "<method>";
+    }
+    if (parent.type === "PropertyDefinition" && parent.key) {
+      return parent.key.name ?? parent.key.value ?? "<prop>";
+    }
+    if (parent.type === "Property" && parent.key) {
+      return parent.key.name ?? parent.key.value ?? "<prop>";
+    }
+    if (parent.type === "AssignmentExpression" && parent.left) {
+      if (parent.left.start !== undefined && parent.left.end !== undefined) {
+        return text.slice(parent.left.start, parent.left.end);
+      }
+      return "<assign>";
+    }
+    if (parent.type === "CallExpression") {
+      const callee = parent.callee;
+      if (callee?.start !== undefined && callee?.end !== undefined) {
+        const expr = text
+          .slice(callee.start, callee.end)
+          .replace(/\s+/g, " ")
+          .trim();
+        return `<cb:${expr.length > 30 ? expr.slice(0, 27) + "..." : expr}>`;
+      }
+      return "<cb>";
+    }
   }
+
   return "<anon>";
 }
 
 /**
- * Determines whether a TypeScript AST node marks a callable function boundary.
+ * Determines whether an ESTree AST node marks a callable function boundary.
  */
-const isFn = (n: ts.Node): boolean =>
-  ts.isFunctionDeclaration(n) ||
-  ts.isMethodDeclaration(n) ||
-  ts.isArrowFunction(n) ||
-  ts.isFunctionExpression(n) ||
-  ts.isConstructorDeclaration(n) ||
-  ts.isGetAccessor(n) ||
-  ts.isSetAccessor(n);
+function isFn(n: any): boolean {
+  if (!n || typeof n !== "object") return false;
+  return (
+    (n.type === "FunctionDeclaration" ||
+      n.type === "FunctionExpression" ||
+      n.type === "ArrowFunctionExpression") &&
+    Boolean(n.body)
+  );
+}
 
 /**
  * Computes McCabe Cyclomatic Complexity of a function AST node.
@@ -357,7 +413,7 @@ const isFn = (n: ts.Node): boolean =>
  *   CC = 1 + (decision points)
  *
  * Decision points counted:
- * - Conditionals & switches: `if`, `?:` (ternary), `case`
+ * - Conditionals & switches: `if`, `?:` (ternary), `case` (excluding `default`)
  * - Loops: `for`, `for..in`, `for..of`, `while`, `do..while`
  * - Error handling: `catch`
  * - Short-circuit boolean operators: `&&`, `||`, `??`
@@ -366,39 +422,57 @@ const isFn = (n: ts.Node): boolean =>
  * Traversal does NOT recurse into nested functions because nested functions
  * represent independent callable units and are counted as separate `FunctionMetric` records.
  */
-function complexity(fn: ts.Node): number {
+function complexity(fn: any): number {
   let cc = 1;
-  const visit = (n: ts.Node) => {
+
+  function visit(n: any): void {
+    if (!n || typeof n !== "object") return;
     // Nested functions are analyzed independently; skip descending into them.
     if (n !== fn && isFn(n)) return;
 
-    switch (n.kind) {
-      case ts.SyntaxKind.IfStatement:
-      case ts.SyntaxKind.ForStatement:
-      case ts.SyntaxKind.ForInStatement:
-      case ts.SyntaxKind.ForOfStatement:
-      case ts.SyntaxKind.WhileStatement:
-      case ts.SyntaxKind.DoStatement:
-      case ts.SyntaxKind.CatchClause:
-      case ts.SyntaxKind.ConditionalExpression:
-      case ts.SyntaxKind.CaseClause:
+    switch (n.type) {
+      case "IfStatement":
+      case "ForStatement":
+      case "ForInStatement":
+      case "ForOfStatement":
+      case "WhileStatement":
+      case "DoWhileStatement":
+      case "CatchClause":
+      case "ConditionalExpression":
         cc++;
         break;
-      case ts.SyntaxKind.BinaryExpression: {
-        const op = (n as ts.BinaryExpression).operatorToken.kind;
-        if (
-          op === ts.SyntaxKind.AmpersandAmpersandToken ||
-          op === ts.SyntaxKind.BarBarToken ||
-          op === ts.SyntaxKind.QuestionQuestionToken
-        ) {
+      case "SwitchCase":
+        // In ESTree, only non-null test indicates a 'case' clause (null indicates 'default').
+        if (n.test !== null && n.test !== undefined) {
           cc++;
         }
         break;
+      case "LogicalExpression":
+        if (n.operator === "&&" || n.operator === "||" || n.operator === "??") {
+          cc++;
+        }
+        break;
+    }
+
+    for (const key of Object.keys(n)) {
+      if (key === "parent") continue;
+      const val = n[key];
+      if (Array.isArray(val)) {
+        for (const item of val) {
+          if (item && typeof item === "object" && item.type) {
+            visit(item);
+          }
+        }
+      } else if (val && typeof val === "object" && val.type) {
+        visit(val);
       }
     }
-    ts.forEachChild(n, visit);
-  };
-  visit(fn);
+  }
+
+  if (fn.body) {
+    visit(fn.body);
+  }
+
   return cc;
 }
 
@@ -430,46 +504,67 @@ const imports: Record<string, Set<string>> = {};
 
 for (const rel of files) {
   const full = join(root, rel);
-  const sf = ts.createSourceFile(
-    full,
-    readFileSync(full, "utf8"),
-    ts.ScriptTarget.Latest,
-    true,
-  );
+  const text = readFileSync(full, "utf8");
+  const lineStarts = computeLineStarts(text);
+  const parsed = parseSync(rel, text);
   imports[rel] = new Set();
 
-  const walk = (n: ts.Node) => {
+  const walk = (n: any, parent: any) => {
+    if (!n || typeof n !== "object") return;
+
     // Collect module imports and exports for coupling & cycle analysis
     if (
-      (ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) &&
-      n.moduleSpecifier
+      (n.type === "ImportDeclaration" ||
+        n.type === "ExportNamedDeclaration" ||
+        n.type === "ExportAllDeclaration") &&
+      n.source &&
+      typeof n.source.value === "string"
     ) {
-      imports[rel].add((n.moduleSpecifier as ts.StringLiteral).text);
+      imports[rel].add(n.source.value);
     }
 
     // Collect function metrics
     if (isFn(n)) {
-      const start = sf.getLineAndCharacterOfPosition(n.getStart()).line + 1;
-      const end = sf.getLineAndCharacterOfPosition(n.getEnd()).line + 1;
+      // For method/property definitions, use the outer definition span for accurate start line
+      const spanNode =
+        parent?.type === "MethodDefinition" ||
+        parent?.type === "PropertyDefinition"
+          ? parent
+          : n;
+      const start = getLine(spanNode.start, lineStarts);
+      const end = getLine(spanNode.end, lineStarts);
       const cc = complexity(n);
       const displayPath = relative(process.cwd(), full);
 
       fns.push({
         file: rel,
         displayPath,
-        name: fnName(n),
+        name: fnName(n, parent, text),
         line: start,
         endLine: end,
         cc,
         len: end - start + 1,
-        params: (n as any).parameters?.length ?? 0,
+        params: n.params?.length ?? 0,
         tier: classifyTier(cc),
       });
     }
 
-    ts.forEachChild(n, walk);
+    for (const key of Object.keys(n)) {
+      if (key === "parent") continue;
+      const val = n[key];
+      if (Array.isArray(val)) {
+        for (const item of val) {
+          if (item && typeof item === "object" && item.type) {
+            walk(item, n);
+          }
+        }
+      } else if (val && typeof val === "object" && val.type) {
+        walk(val, n);
+      }
+    }
   };
-  walk(sf);
+
+  walk(parsed.program, null);
 }
 
 // =============================================================================

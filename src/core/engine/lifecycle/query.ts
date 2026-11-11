@@ -8,38 +8,27 @@ import { readFile } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
 import {
   compareTaskIds,
-  normalizeTaskId,
   parseTaskBranch,
   parseTaskIdFromBranch,
   parseTaskMarkdown,
-  slugToTitle,
-  sortTaskIds,
-  sortTasksById,
   taskKey,
-  type TaskAcceptanceCriteriaItem,
-  type TaskReadiness,
   type DiscoveredArtifact,
 } from "../../domain/index.ts";
-import { scanActiveTasks } from "../traversal/active-scanner.ts";
+import { scanActiveArtifacts } from "../traversal/active-scanner.ts";
 import { detectGitBranch, listGitBranches } from "../traversal/git-inspector.ts";
 import {
   inspectGitDeletedArtifacts,
   inspectMultiBranchActiveArtifacts,
 } from "../traversal/artifact-history.ts";
-import type { DiscoveredTask } from "../traversal/types.ts";
 import { resolveWorkspaceContext } from "../context/resolver.ts";
 import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter } from "../../platform/vcs/types.ts";
 import { resolveTaskFile } from "./completion.ts";
 import {
-  type CriteriaProgress,
   type TaskQueueItem,
-  type ToTaskQueueItemParams,
   type RawTaskDataRecord,
-  calculateCriteriaProgress,
   toTaskQueueItem,
   buildActiveTaskMap,
-  resolveTaskBlockers,
   buildTaskQueueItems,
   filterTaskQueueItems,
 } from "./readiness.ts";
@@ -78,7 +67,7 @@ export interface TaskQueueQueryOptions {
   /**
    * Pre-provided active task metadata (useful for isolated unit testing).
    */
-  activeTasks?: DiscoveredTask[];
+  activeTasks?: DiscoveredArtifact[];
 
   /**
    * Optional git branch name override for resolving the current active task.
@@ -134,7 +123,7 @@ export type TaskBranchInfoMap = Map<
 type RawTaskRecord = RawTaskDataRecord;
 
 async function loadRawTaskFiles(
-  discovered: DiscoveredTask[],
+  discovered: DiscoveredArtifact[],
   cwd: string,
 ): Promise<RawTaskRecord[]> {
   const rawTasks: RawTaskRecord[] = [];
@@ -179,7 +168,9 @@ export async function queryTaskQueue(
   const cwd = ctx.root;
 
   // 1. Discover active task files on disk and read markdown content
-  const discovered = options.activeTasks ?? (await scanActiveTasks(cwd));
+  const discovered =
+    options.activeTasks ??
+    (await scanActiveArtifacts(cwd, "TASK")).filter((a) => !a.isArchived);
   const rawTasks = await loadRawTaskFiles(discovered, cwd);
 
   // 2. Build active task ID lookup map for DAG evaluation
@@ -361,7 +352,9 @@ export async function queryTaskHistory(
     localBranches,
     currentBranch,
   ] = await Promise.all([
-    scanActiveTasks(cwd),
+    scanActiveArtifacts(cwd, "TASK").then((arts) =>
+      arts.filter((a) => !a.isArchived),
+    ),
     inspectGitDeletedArtifacts(cwd, "TASK", vcs),
     inspectMultiBranchActiveArtifacts(
       cwd,
@@ -413,7 +406,7 @@ export async function queryTaskHistory(
         filepath: resolve(cwd, entry.relativePath),
         relativePath: entry.relativePath,
         summary: parsed?.summary,
-        context: parsed?.context,
+        context: parsed?.contextSection,
         depends_on: parsed?.depends_on,
         links: parsed?.links,
         acceptanceCriteria: parsed?.acceptanceCriteria,

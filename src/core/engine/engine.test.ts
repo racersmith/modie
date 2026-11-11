@@ -104,7 +104,6 @@ describe("Engine Architectural Layer Invariants (RULE-38)", () => {
     // Traversal
     expect(typeof engine.resolveWatermark).toBe("function");
     expect(typeof engine.scanActiveArtifacts).toBe("function");
-    expect(typeof engine.scanActiveTasks).toBe("function");
     expect(typeof engine.detectGitBranch).toBe("function");
 
     // Context

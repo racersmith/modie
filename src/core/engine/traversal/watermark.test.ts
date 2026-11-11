@@ -6,9 +6,9 @@ import { describe, expect, it } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { createFixtureWorkspace, makeTestTag } from "../../platform/testing/index.ts";
+import { createFixtureWorkspace } from "../../platform/testing/index.ts";
 import { MockVcsAdapter } from "../../platform/vcs/mock-adapter.ts";
-import { parseTaskBranch } from "../../domain/index.ts";
+import { formatArtifactTag, parseTaskBranch } from "../../domain/index.ts";
 import {
   allocateTaskStrategy,
   detectGitBranch,
@@ -21,7 +21,7 @@ import {
   resolveNextArtifactId,
   resolveWatermark,
   scanActiveArtifactIds,
-  scanActiveTasks,
+  scanActiveArtifacts,
   subtaskAllocationStrategy,
   trunkAllocationStrategy,
 } from "./index.ts";
@@ -80,7 +80,7 @@ describe("Watermark Resolver - Active Task Scanner (RULE-1, ADR-6, RULE-34, RULE
       scopeDir: "src/core",
     });
 
-    const ignoredTaskTag = makeTestTag("TASK", 999);
+    const ignoredTaskTag = formatArtifactTag("TASK", 999);
     // Create non-task files and files in ignored directories
     await workspace.writeFile("src/README.md", "# Readme");
     await workspace.writeFile(
@@ -88,7 +88,7 @@ describe("Watermark Resolver - Active Task Scanner (RULE-1, ADR-6, RULE-34, RULE
       "# Ignored",
     );
 
-    const tasks = await scanActiveTasks(workspace.cwd);
+    const tasks = await scanActiveArtifacts(workspace.cwd, "TASK");
     expect(tasks.length).toBe(2);
 
     const taskIds = await scanActiveArtifactIds(workspace.cwd, "TASK");
@@ -181,7 +181,7 @@ describe("Watermark Resolver - Git History & Branch Detection (ADR-6, ADR-9, RUL
 describe("Watermark Resolver - Trunk Monotonic Integer Progression (ADR-6, ADR-9, RULE-21, RULE-35)", () => {
   // @verifies ADR-6, ADR-9, RULE-35
   it("[ADR-6][ADR-9][RULE-35] should return next ID 1 for fresh repositories with no prior tasks", async () => {
-    const expectedTag = makeTestTag("TASK", 1);
+    const expectedTag = formatArtifactTag("TASK", 1);
     await withWatermarkFixture({ branch: "dev" }, async (cwd, vcs) => {
       const details = await resolveWatermark({ cwd, vcs });
       expect(details.strategy).toBe("trunk");
@@ -193,14 +193,14 @@ describe("Watermark Resolver - Trunk Monotonic Integer Progression (ADR-6, ADR-9
 
   // @verifies ADR-6, ADR-9, RULE-21, RULE-35
   it("[ADR-6][ADR-9][RULE-21][RULE-35] should compute monotonic watermark across active and deleted tasks", async () => {
-    const expectedTag = makeTestTag("TASK", 4);
+    const expectedTag = formatArtifactTag("TASK", 4);
     await withWatermarkFixture(
       {
         branch: "main",
-        activeFiles: [`.modie/tasks/task-one.${makeTestTag("TASK", 1)}.md`],
+        activeFiles: [`.modie/tasks/task-one.${formatArtifactTag("TASK", 1)}.md`],
         deletedFiles: [
-          `task-two.${makeTestTag("TASK", 2)}.md`,
-          `task-three.${makeTestTag("TASK", 3)}.md`,
+          `task-two.${formatArtifactTag("TASK", 2)}.md`,
+          `task-three.${formatArtifactTag("TASK", 3)}.md`,
         ],
       },
       async (cwd, vcs) => {
@@ -218,11 +218,11 @@ describe("Watermark Resolver - Trunk Monotonic Integer Progression (ADR-6, ADR-9
       {
         branch: "dev",
         deletedFiles: [
-          `task-1.${makeTestTag("TASK", 1)}.md`,
-          `task-2.${makeTestTag("TASK", 2)}.md`,
-          `task-3.${makeTestTag("TASK", 3)}.md`,
-          `task-4.${makeTestTag("TASK", 4)}.md`,
-          `task-5.${makeTestTag("TASK", 5)}.md`,
+          `task-1.${formatArtifactTag("TASK", 1)}.md`,
+          `task-2.${formatArtifactTag("TASK", 2)}.md`,
+          `task-3.${formatArtifactTag("TASK", 3)}.md`,
+          `task-4.${formatArtifactTag("TASK", 4)}.md`,
+          `task-5.${formatArtifactTag("TASK", 5)}.md`,
         ],
       },
       async (cwd, vcs) => {
@@ -238,13 +238,13 @@ describe("Watermark Resolver - Trunk Monotonic Integer Progression (ADR-6, ADR-9
       {
         branch: "master",
         activeFiles: [
-          `.modie/tasks/task-1.${makeTestTag("TASK", 1)}.md`,
-          `.modie/tasks/task-5.${makeTestTag("TASK", 5)}.md`,
-          `.modie/tasks/task-8.${makeTestTag("TASK", 8)}.md`,
+          `.modie/tasks/task-1.${formatArtifactTag("TASK", 1)}.md`,
+          `.modie/tasks/task-5.${formatArtifactTag("TASK", 5)}.md`,
+          `.modie/tasks/task-8.${formatArtifactTag("TASK", 8)}.md`,
         ],
         deletedFiles: [
-          `task-2.${makeTestTag("TASK", 2)}.md`,
-          `task-3.${makeTestTag("TASK", 3)}.md`,
+          `task-2.${formatArtifactTag("TASK", 2)}.md`,
+          `task-3.${formatArtifactTag("TASK", 3)}.md`,
         ],
       },
       async (cwd, vcs) => {
@@ -258,14 +258,14 @@ describe("Watermark Resolver - Trunk Monotonic Integer Progression (ADR-6, ADR-9
 describe("Watermark Resolver - Branch-Aware Sub-Task Namespacing (ADR-9, RULE-21, RULE-35)", () => {
   // @verifies ADR-9, RULE-35
   it("[ADR-9][RULE-35] should allocate first sub-task ID under parent on task branch", async () => {
-    const expectedTag = makeTestTag("TASK", "2-1");
+    const expectedTag = formatArtifactTag("TASK", "2-1");
     await withWatermarkFixture(
       {
         branch: "task/2-task-id-allocation-and-rule-alignment",
         activeFiles: [
-          `.modie/tasks/task-1.${makeTestTag("TASK", 1)}.md`,
-          `.modie/tasks/task-2.${makeTestTag("TASK", 2)}.md`,
-          `.modie/tasks/task-3.${makeTestTag("TASK", 3)}.md`,
+          `.modie/tasks/task-1.${formatArtifactTag("TASK", 1)}.md`,
+          `.modie/tasks/task-2.${formatArtifactTag("TASK", 2)}.md`,
+          `.modie/tasks/task-3.${formatArtifactTag("TASK", 3)}.md`,
         ],
       },
       async (cwd, vcs) => {
@@ -281,11 +281,11 @@ describe("Watermark Resolver - Branch-Aware Sub-Task Namespacing (ADR-9, RULE-21
 
   // @verifies ADR-9, RULE-35
   it("[ADR-9][RULE-35] should increment sub-task sequence monotonically for existing sub-tasks", async () => {
-    const expectedTag = makeTestTag("TASK", "2-2");
+    const expectedTag = formatArtifactTag("TASK", "2-2");
     await withWatermarkFixture(
       {
         branch: "task/2-task-id-allocation-and-rule-alignment",
-        activeFiles: [`.modie/tasks/task-sub.${makeTestTag("TASK", "2-1")}.md`],
+        activeFiles: [`.modie/tasks/task-sub.${formatArtifactTag("TASK", "2-1")}.md`],
       },
       async (cwd, vcs) => {
         const details = await resolveWatermark({ cwd, vcs });
@@ -300,13 +300,13 @@ describe("Watermark Resolver - Branch-Aware Sub-Task Namespacing (ADR-9, RULE-21
 
   // @verifies ADR-9, RULE-21, RULE-35
   it("[ADR-9][RULE-21][RULE-35] should respect deleted sub-tasks in git history to prevent subtask reuse", async () => {
-    const expectedTag = makeTestTag("TASK", "2-3");
+    const expectedTag = formatArtifactTag("TASK", "2-3");
     await withWatermarkFixture(
       {
         branch: "task/2-something",
         deletedFiles: [
-          `sub-1.${makeTestTag("TASK", "2-1")}.md`,
-          `sub-2.${makeTestTag("TASK", "2-2")}.md`,
+          `sub-1.${formatArtifactTag("TASK", "2-1")}.md`,
+          `sub-2.${formatArtifactTag("TASK", "2-2")}.md`,
         ],
       },
       async (cwd, vcs) => {
@@ -326,9 +326,9 @@ describe("Watermark Resolver - Branch-Aware Sub-Task Namespacing (ADR-9, RULE-21
       {
         branch: "task/2-parent-two",
         activeFiles: [
-          `.modie/tasks/sub-1.${makeTestTag("TASK", "2-1")}.md`,
-          `.modie/tasks/sub-2.${makeTestTag("TASK", "3-1")}.md`,
-          `.modie/tasks/sub-3.${makeTestTag("TASK", "3-2")}.md`,
+          `.modie/tasks/sub-1.${formatArtifactTag("TASK", "2-1")}.md`,
+          `.modie/tasks/sub-2.${formatArtifactTag("TASK", "3-1")}.md`,
+          `.modie/tasks/sub-3.${formatArtifactTag("TASK", "3-2")}.md`,
         ],
       },
       async (cwd, vcs) => {
@@ -341,9 +341,9 @@ describe("Watermark Resolver - Branch-Aware Sub-Task Namespacing (ADR-9, RULE-21
       {
         branch: "task/3-parent-three",
         activeFiles: [
-          `.modie/tasks/sub-1.${makeTestTag("TASK", "2-1")}.md`,
-          `.modie/tasks/sub-2.${makeTestTag("TASK", "3-1")}.md`,
-          `.modie/tasks/sub-3.${makeTestTag("TASK", "3-2")}.md`,
+          `.modie/tasks/sub-1.${formatArtifactTag("TASK", "2-1")}.md`,
+          `.modie/tasks/sub-2.${formatArtifactTag("TASK", "3-1")}.md`,
+          `.modie/tasks/sub-3.${formatArtifactTag("TASK", "3-2")}.md`,
         ],
       },
       async (cwd, vcs) => {
@@ -357,13 +357,13 @@ describe("Watermark Resolver - Branch-Aware Sub-Task Namespacing (ADR-9, RULE-21
 describe("Watermark Resolver - Author / Agent Prefix Namespacing (ADR-9, RULE-35)", () => {
   // @verifies ADR-9, RULE-35
   it("[ADR-9][RULE-35] should allocate first prefixed ID when explicit prefix is provided", async () => {
-    const expectedTag = makeTestTag("TASK", "J1");
+    const expectedTag = formatArtifactTag("TASK", "J1");
     await withWatermarkFixture(
       {
         branch: "feature/awesome-ui",
         activeFiles: [
-          `.modie/tasks/task-1.${makeTestTag("TASK", 1)}.md`,
-          `.modie/tasks/task-2.${makeTestTag("TASK", 2)}.md`,
+          `.modie/tasks/task-1.${formatArtifactTag("TASK", 1)}.md`,
+          `.modie/tasks/task-2.${formatArtifactTag("TASK", 2)}.md`,
         ],
       },
       async (cwd, vcs) => {
@@ -379,7 +379,7 @@ describe("Watermark Resolver - Author / Agent Prefix Namespacing (ADR-9, RULE-35
 
   // @verifies ADR-9, RULE-35
   it("[ADR-9][RULE-35] should advance from highest existing prefixed sequence (e.g. J101 -> J102)", async () => {
-    const expectedTag = makeTestTag("TASK", "J102");
+    const expectedTag = formatArtifactTag("TASK", "J102");
     await withWatermarkFixture(
       {
         branch: "feature/awesome-ui",
@@ -398,16 +398,16 @@ describe("Watermark Resolver - Author / Agent Prefix Namespacing (ADR-9, RULE-35
 
   // @verifies ADR-9, RULE-35
   it("[ADR-9][RULE-35] should fall back to trunk monotonic integer on feature branches without prefix", async () => {
-    const expectedTag = makeTestTag("TASK", 5);
+    const expectedTag = formatArtifactTag("TASK", 5);
     await withWatermarkFixture(
       {
         branch: "feature/no-prefix",
         activeFiles: [
-          `.modie/tasks/task-1.${makeTestTag("TASK", 1)}.md`,
-          `.modie/tasks/task-2.${makeTestTag("TASK", 2)}.md`,
-          `.modie/tasks/task-3.${makeTestTag("TASK", 3)}.md`,
+          `.modie/tasks/task-1.${formatArtifactTag("TASK", 1)}.md`,
+          `.modie/tasks/task-2.${formatArtifactTag("TASK", 2)}.md`,
+          `.modie/tasks/task-3.${formatArtifactTag("TASK", 3)}.md`,
         ],
-        deletedFiles: [`task-4.${makeTestTag("TASK", 4)}.md`],
+        deletedFiles: [`task-4.${formatArtifactTag("TASK", 4)}.md`],
       },
       async (cwd, vcs) => {
         const details = await resolveWatermark({ cwd, vcs });
@@ -420,15 +420,15 @@ describe("Watermark Resolver - Author / Agent Prefix Namespacing (ADR-9, RULE-35
 
   // @verifies ADR-9, RULE-35
   it("[ADR-9][RULE-35] should allow forceTrunk to bypass branch subtask namespacing", async () => {
-    const expectedTag = makeTestTag("TASK", 4);
+    const expectedTag = formatArtifactTag("TASK", 4);
     await withWatermarkFixture(
       {
         branch: "task/4-resolver",
         activeFiles: [
-          `.modie/tasks/task-1.${makeTestTag("TASK", 1)}.md`,
-          `.modie/tasks/task-2.${makeTestTag("TASK", 2)}.md`,
+          `.modie/tasks/task-1.${formatArtifactTag("TASK", 1)}.md`,
+          `.modie/tasks/task-2.${formatArtifactTag("TASK", 2)}.md`,
         ],
-        deletedFiles: [`task-3.${makeTestTag("TASK", 3)}.md`],
+        deletedFiles: [`task-3.${formatArtifactTag("TASK", 3)}.md`],
       },
       async (cwd, vcs) => {
         const details = await resolveWatermark({ cwd, vcs, forceTrunk: true });
@@ -463,7 +463,7 @@ describe("Watermark Resolver - Integrated Workspace Verification (ADR-6, ADR-9, 
     expect(liveDetails.deletedIds).toContain("2");
     expect(liveDetails.deletedIds).toContain("3");
     expect(liveDetails.nextId).toBe("4");
-    expect(liveDetails.fullTaskId).toBe(makeTestTag("TASK", 4));
+    expect(liveDetails.fullTaskId).toBe(formatArtifactTag("TASK", 4));
 
     // Resolving for trunk dev branch
     const trunkDetails = await resolveWatermark({
@@ -472,7 +472,7 @@ describe("Watermark Resolver - Integrated Workspace Verification (ADR-6, ADR-9, 
     });
     expect(trunkDetails.strategy).toBe("trunk");
     expect(trunkDetails.nextId).toBe("4");
-    expect(trunkDetails.fullTaskId).toBe(makeTestTag("TASK", 4));
+    expect(trunkDetails.fullTaskId).toBe(formatArtifactTag("TASK", 4));
 
     await workspace.cleanup();
   });
@@ -481,16 +481,16 @@ describe("Watermark Resolver - Integrated Workspace Verification (ADR-6, ADR-9, 
 describe("Watermark Resolver - Multi-Subtype Monotonic Allocation (ADR-1, ADR-2, RULE-1, RULE-34, RULE-35)", () => {
   // @verifies ADR-1, ADR-2, RULE-1, RULE-35
   it("[ADR-1][ADR-2][RULE-1][RULE-35] should allocate next RULE ID monotonically across active and deleted IDs", async () => {
-    const expectedTag = makeTestTag("RULE", 5);
+    const expectedTag = formatArtifactTag("RULE", 5);
     await withWatermarkFixture(
       {
         branch: "main",
         activeFiles: [
-          `.modie/rules/rule-1.${makeTestTag("RULE", 1)}.md`,
-          `.modie/rules/rule-2.${makeTestTag("RULE", 2)}.md`,
-          `.modie/rules/rule-3.${makeTestTag("RULE", 3)}.md`,
+          `.modie/rules/rule-1.${formatArtifactTag("RULE", 1)}.md`,
+          `.modie/rules/rule-2.${formatArtifactTag("RULE", 2)}.md`,
+          `.modie/rules/rule-3.${formatArtifactTag("RULE", 3)}.md`,
         ],
-        deletedFiles: [`rule-4.${makeTestTag("RULE", 4)}.md`],
+        deletedFiles: [`rule-4.${formatArtifactTag("RULE", 4)}.md`],
       },
       async (cwd, vcs) => {
         const details = await resolveWatermark({
@@ -508,13 +508,13 @@ describe("Watermark Resolver - Multi-Subtype Monotonic Allocation (ADR-1, ADR-2,
 
   // @verifies ADR-1, ADR-2, RULE-1, RULE-35
   it("[ADR-1][ADR-2][RULE-1][RULE-35] should allocate next ADR ID monotonically across active and deleted IDs", async () => {
-    const expectedTag = makeTestTag("ADR", 3);
+    const expectedTag = formatArtifactTag("ADR", 3);
     await withWatermarkFixture(
       {
         branch: "main",
         activeFiles: [
-          `.modie/adrs/adr-1.${makeTestTag("ADR", 1)}.md`,
-          `.modie/adrs/adr-2.${makeTestTag("ADR", 2)}.md`,
+          `.modie/adrs/adr-1.${formatArtifactTag("ADR", 1)}.md`,
+          `.modie/adrs/adr-2.${formatArtifactTag("ADR", 2)}.md`,
         ],
       },
       async (cwd, vcs) => {
@@ -549,7 +549,7 @@ describe("Watermark Resolver - Multi-Subtype Monotonic Allocation (ADR-1, ADR-2,
     });
     expect(ruleDetails.subtype).toBe("RULE");
     expect(ruleDetails.nextId).toBe("3");
-    expect(ruleDetails.tag).toBe(makeTestTag("RULE", 3));
+    expect(ruleDetails.tag).toBe(formatArtifactTag("RULE", 3));
 
     // Active ADR 1
     await workspace.createAdr({ id: 1, slug: "first-adr" });
@@ -559,7 +559,7 @@ describe("Watermark Resolver - Multi-Subtype Monotonic Allocation (ADR-1, ADR-2,
     });
     expect(adrDetails.subtype).toBe("ADR");
     expect(adrDetails.nextId).toBe("2");
-    expect(adrDetails.tag).toBe(makeTestTag("ADR", 2));
+    expect(adrDetails.tag).toBe(formatArtifactTag("ADR", 2));
 
     await workspace.cleanup();
   });
@@ -568,19 +568,19 @@ describe("Watermark Resolver - Multi-Subtype Monotonic Allocation (ADR-1, ADR-2,
 describe("Watermark Resolver - Multi-Branch Collision Guard & Discovery (RULE-1, RULE-33, RULE-34, RULE-35, ADR-1, ADR-2, ADR-6, ADR-9)", () => {
   // @verifies RULE-33, ADR-6, ADR-9, RULE-35
   it("[RULE-33][ADR-6][ADR-9][RULE-35] should incorporate active IDs from other branches during ID allocation", async () => {
-    const expectedTag = makeTestTag("TASK", 6);
+    const expectedTag = formatArtifactTag("TASK", 6);
     await withWatermarkFixture(
       {
         branch: "dev",
         activeFiles: [
-          `.modie/tasks/task-1.${makeTestTag("TASK", 1)}.md`,
-          `.modie/tasks/task-2.${makeTestTag("TASK", 2)}.md`,
+          `.modie/tasks/task-1.${formatArtifactTag("TASK", 1)}.md`,
+          `.modie/tasks/task-2.${formatArtifactTag("TASK", 2)}.md`,
         ],
-        deletedFiles: [`task-3.${makeTestTag("TASK", 3)}.md`],
+        deletedFiles: [`task-3.${formatArtifactTag("TASK", 3)}.md`],
         treeFiles: {
           "feature/other": [
-            `src/.modie/tasks/task-4.${makeTestTag("TASK", 4)}.md`,
-            `src/.modie/tasks/task-5.${makeTestTag("TASK", 5)}.md`,
+            `src/.modie/tasks/task-4.${formatArtifactTag("TASK", 4)}.md`,
+            `src/.modie/tasks/task-5.${formatArtifactTag("TASK", 5)}.md`,
           ],
         },
       },
@@ -599,11 +599,11 @@ describe("Watermark Resolver - Multi-Branch Collision Guard & Discovery (RULE-1,
     await withWatermarkFixture(
       {
         branch: "main",
-        activeFiles: [`.modie/rules/rule-1.${makeTestTag("RULE", 1)}.md`],
+        activeFiles: [`.modie/rules/rule-1.${formatArtifactTag("RULE", 1)}.md`],
         treeFiles: {
           "feature/other": [
-            `src/.modie/rules/rule-2.${makeTestTag("RULE", 2)}.md`,
-            `src/.modie/rules/rule-5.${makeTestTag("RULE", 5)}.md`,
+            `src/.modie/rules/rule-2.${formatArtifactTag("RULE", 2)}.md`,
+            `src/.modie/rules/rule-5.${formatArtifactTag("RULE", 5)}.md`,
           ],
         },
       },
@@ -614,7 +614,7 @@ describe("Watermark Resolver - Multi-Branch Collision Guard & Discovery (RULE-1,
           vcs,
         });
         expect(ruleDetails.nextId).toBe("6");
-        expect(ruleDetails.tag).toBe(makeTestTag("RULE", 6));
+        expect(ruleDetails.tag).toBe(formatArtifactTag("RULE", 6));
       },
     );
 
@@ -622,13 +622,13 @@ describe("Watermark Resolver - Multi-Branch Collision Guard & Discovery (RULE-1,
       {
         branch: "main",
         activeFiles: [
-          `.modie/adrs/adr-1.${makeTestTag("ADR", 1)}.md`,
-          `.modie/adrs/adr-2.${makeTestTag("ADR", 2)}.md`,
+          `.modie/adrs/adr-1.${formatArtifactTag("ADR", 1)}.md`,
+          `.modie/adrs/adr-2.${formatArtifactTag("ADR", 2)}.md`,
         ],
         treeFiles: {
           "feature/other": [
-            `src/.modie/adrs/adr-3.${makeTestTag("ADR", 3)}.md`,
-            `src/.modie/adrs/adr-7.${makeTestTag("ADR", 7)}.md`,
+            `src/.modie/adrs/adr-3.${formatArtifactTag("ADR", 3)}.md`,
+            `src/.modie/adrs/adr-7.${formatArtifactTag("ADR", 7)}.md`,
           ],
         },
       },
@@ -639,7 +639,7 @@ describe("Watermark Resolver - Multi-Branch Collision Guard & Discovery (RULE-1,
           vcs,
         });
         expect(adrDetails.nextId).toBe("8");
-        expect(adrDetails.tag).toBe(makeTestTag("ADR", 8));
+        expect(adrDetails.tag).toBe(formatArtifactTag("ADR", 8));
       },
     );
   });

@@ -5,10 +5,13 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
+import {
+  createFixtureWorkspace,
+} from "../../../../core/platform/testing/index.ts";
 import {
   captureCli,
-  createTestWorkspace,
-  makeTestTag,
+  execBin,
 } from "../../test-utils.ts";
 
 describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31, RULE-34)", () => {
@@ -36,19 +39,19 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
 
   // @verifies RULE-25, RULE-27, RULE-31, RULE-34
   it("[RULE-25][RULE-27][RULE-31][RULE-34] should archive an unreferenced ADR with relative path to stdout and status to stderr", async () => {
-    const workspace = await createTestWorkspace("cli-adr-archive-");
-    const adrTag = makeTestTag("ADR", 1);
+    const workspace = await createFixtureWorkspace("cli-adr-archive-");
+    const adrTag = formatArtifactTag("ADR", 1);
     const adr = await workspace.createAdr({
       id: 1,
       slug: "single-database",
       context: "Single database.",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "adr",
       "archive",
       adr.tag,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe(
@@ -66,16 +69,16 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
 
   // @verifies RULE-27, RULE-31, RULE-34
   it("[RULE-27][RULE-31][RULE-34] should reject archiving when active references exist", async () => {
-    const workspace = await createTestWorkspace("cli-adr-reject-");
+    const workspace = await createFixtureWorkspace("cli-adr-reject-");
 
-    const adrTag = makeTestTag("ADR", 1);
+    const adrTag = formatArtifactTag("ADR", 1);
     const adr = await workspace.createAdr({
       id: 1,
       slug: "target-decision",
       context: "Target.",
     });
 
-    const ruleTag = makeTestTag("RULE", 1);
+    const ruleTag = formatArtifactTag("RULE", 1);
     await workspace.createRule({
       id: 1,
       slug: "dependent",
@@ -83,11 +86,11 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
       body: "Dependent rule.",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "adr",
       "archive",
       adr.tag,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
@@ -103,16 +106,16 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
 
   // @verifies RULE-25, RULE-27, RULE-31, RULE-34
   it("[RULE-25][RULE-27][RULE-31][RULE-34] should bypass active references guard with --force", async () => {
-    const workspace = await createTestWorkspace("cli-adr-force-");
+    const workspace = await createFixtureWorkspace("cli-adr-force-");
 
-    const adrTag = makeTestTag("ADR", 1);
+    const adrTag = formatArtifactTag("ADR", 1);
     const adr = await workspace.createAdr({
       id: 1,
       slug: "forced-decision",
       context: "Forced.",
     });
 
-    const ruleTag = makeTestTag("RULE", 1);
+    const ruleTag = formatArtifactTag("RULE", 1);
     await workspace.createRule({
       id: 1,
       slug: "dependent",
@@ -120,12 +123,12 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
       body: "Dependent.",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "adr",
       "archive",
       adr.tag,
       "--force",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe(
@@ -140,21 +143,21 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
 
   // @verifies RULE-27, RULE-34
   it("[RULE-27][RULE-34] should emit machine JSON to stdout when --json is passed", async () => {
-    const workspace = await createTestWorkspace("cli-adr-json-");
+    const workspace = await createFixtureWorkspace("cli-adr-json-");
 
-    const adrTag = makeTestTag("ADR", 1);
+    const adrTag = formatArtifactTag("ADR", 1);
     const adr = await workspace.createAdr({
       id: 1,
       slug: "json-decision",
       context: "Json.",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "adr",
       "archive",
       adr.tag,
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stderr).toContain(`✓ Archived ADR ${adrTag}`);
@@ -169,20 +172,20 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
 
   // @verifies RULE-25, RULE-27, RULE-34
   it("[RULE-25][RULE-27][RULE-34] should execute adr archive via bin.ts subprocess", async () => {
-    const workspace = await createTestWorkspace("cli-adr-subprocess-");
+    const workspace = await createFixtureWorkspace("cli-adr-subprocess-");
 
-    const adrTag = makeTestTag("ADR", 1);
+    const adrTag = formatArtifactTag("ADR", 1);
     const adr = await workspace.createAdr({
       id: 1,
       slug: "sub-decision",
       context: "Subprocess.",
     });
 
-    const { stdout, stderr } = await workspace.execBin([
+    const { stdout, stderr } = await execBin([
       "adr",
       "archive",
       adr.tag,
-    ]);
+    ], workspace.cwd);
 
     expect(stdout.trim()).toBe(
       `.modie/adrs/sub-decision.${adrTag}.ARCHIVED.md`,

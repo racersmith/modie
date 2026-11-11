@@ -7,6 +7,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   adrDefinition,
+  formatArtifactTag,
   ruleDefinition,
   type ArtifactDefinition,
   type ListedArtifact,
@@ -18,7 +19,7 @@ import {
   generateCommandHelp,
   renderArtifactListTable,
 } from "./index.ts";
-import { createTestWorkspace, makeTestTag } from "../test-utils.ts";
+import { createFixtureWorkspace } from "../../../core/platform/testing/index.ts";
 
 describe("Artifact CLI Command Factory & Table Formatting (RULE-25, RULE-27, RULE-34, RULE-35)", () => {
   // @verifies RULE-25, RULE-27
@@ -74,8 +75,8 @@ describe("Artifact CLI Command Factory & Table Formatting (RULE-25, RULE-27, RUL
 
   // @verifies RULE-25, RULE-27, RULE-34
   it("[RULE-25][RULE-27][RULE-34] should execute list command and render table to stderr with empty stdout", async () => {
-    await using workspace = await createTestWorkspace("modie-artifact-factory-");
-    const ruleTag = makeTestTag("RULE", 1);
+    await using workspace = await createFixtureWorkspace("modie-artifact-factory-");
+    const ruleTag = formatArtifactTag("RULE", 1);
     const adr = await workspace.createAdr({
       id: 1,
       slug: "factory-test-decision",
@@ -110,7 +111,7 @@ describe("Artifact CLI Command Factory & Table Formatting (RULE-25, RULE-27, RUL
 
   // @verifies RULE-25, RULE-27, RULE-34
   it("[RULE-25][RULE-27][RULE-34] should emit machine-parsable JSON to stdout and empty stderr when --json is passed", async () => {
-    await using workspace = await createTestWorkspace("modie-artifact-factory-json-");
+    await using workspace = await createFixtureWorkspace("modie-artifact-factory-json-");
     const rule = await workspace.createRule({
       id: 10,
       slug: "factory-rule-test",
@@ -144,7 +145,7 @@ describe("Artifact CLI Command Factory & Table Formatting (RULE-25, RULE-27, RUL
 
   // @verifies RULE-25, RULE-27, RULE-34
   it("[RULE-25][RULE-27][RULE-34] should emit notice to stderr when workspace has no artifacts", async () => {
-    await using workspace = await createTestWorkspace("modie-artifact-factory-empty-");
+    await using workspace = await createFixtureWorkspace("modie-artifact-factory-empty-");
     const cmd = createArtifactListCommand(adrDefinition);
 
     let stdout = "";
@@ -167,7 +168,7 @@ describe("Artifact CLI Command Factory & Table Formatting (RULE-25, RULE-27, RUL
 
   // @verifies RULE-9, RULE-25, RULE-27, RULE-34
   it("[RULE-9][RULE-25][RULE-27][RULE-34] should emit scope notice when no artifacts govern the scope", async () => {
-    await using workspace = await createTestWorkspace("modie-artifact-factory-scope-empty-");
+    await using workspace = await createFixtureWorkspace("modie-artifact-factory-scope-empty-");
     const cmd = createArtifactListCommand(ruleDefinition);
 
     let stdout = "";
@@ -222,7 +223,7 @@ describe("Artifact CLI Command Factory & Table Formatting (RULE-25, RULE-27, RUL
   it("[RULE-25][RULE-27] should format listed artifacts with renderArtifactListTable", () => {
     const sample: ListedArtifact[] = [
       {
-        tag: makeTestTag("RULE", 1),
+        tag: formatArtifactTag("RULE", 1),
         subtype: "RULE",
         id: "1",
         slug: "first-rule",
@@ -231,7 +232,7 @@ describe("Artifact CLI Command Factory & Table Formatting (RULE-25, RULE-27, RUL
         filepath: "/abs/path/first-rule.md",
         relativePath: ".modie/rules/first-rule.md",
         scope: ".",
-        links: [makeTestTag("ADR", 2)],
+        links: [formatArtifactTag("ADR", 2)],
       },
     ];
 

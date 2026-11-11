@@ -3,7 +3,8 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { captureCli, createTestWorkspace, makeTestTag } from "./test-utils.ts";
+import { createFixtureWorkspace } from "../../core/platform/testing/index.ts";
+import { captureCli } from "./test-utils.ts";
 import { MODIE_VERSION } from "./cli.ts";
 
 describe("CLI Harness - Global Commands & Stream Separation (RULE-25, RULE-27, RULE-34, RULE-35)", () => {
@@ -68,15 +69,16 @@ describe("CLI Harness - Global Commands & Stream Separation (RULE-25, RULE-27, R
 
   // @verifies RULE-25, RULE-27, RULE-34, RULE-35
   it("[RULE-25][RULE-27][RULE-34][RULE-35] should route top-level backlog command to task list in fixture workspace", async () => {
-    const workspace = await createTestWorkspace("modie-cli-backlog-");
+    const workspace = await createFixtureWorkspace("modie-cli-backlog-");
     const task = await workspace.createTask({
       id: "TEST-1",
       slug: "fixture-backlog-item",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
-      "backlog",
-    ]);
+    const { exitCode, stdout, stderr } = await captureCli(
+      ["backlog"],
+      workspace.cwd,
+    );
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Active Task Queue");
@@ -87,16 +89,16 @@ describe("CLI Harness - Global Commands & Stream Separation (RULE-25, RULE-27, R
 
   // @verifies RULE-25, RULE-27, RULE-34, RULE-35
   it("[RULE-25][RULE-27][RULE-34][RULE-35] should route task backlog subcommand alias to task list in fixture workspace", async () => {
-    const workspace = await createTestWorkspace("modie-cli-backlog-alias-");
+    const workspace = await createFixtureWorkspace("modie-cli-backlog-alias-");
     const task = await workspace.createTask({
       id: "TEST-1",
       slug: "fixture-backlog-item",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
-      "task",
-      "backlog",
-    ]);
+    const { exitCode, stdout, stderr } = await captureCli(
+      ["task", "backlog"],
+      workspace.cwd,
+    );
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Active Task Queue");
@@ -107,16 +109,16 @@ describe("CLI Harness - Global Commands & Stream Separation (RULE-25, RULE-27, R
 
   // @verifies RULE-25, RULE-27, RULE-34, RULE-35
   it("[RULE-25][RULE-27][RULE-34][RULE-35] should emit machine JSON array when backlog --json is passed in fixture workspace", async () => {
-    const workspace = await createTestWorkspace("modie-cli-backlog-json-");
+    const workspace = await createFixtureWorkspace("modie-cli-backlog-json-");
     const task = await workspace.createTask({
       id: "TEST-1",
       slug: "fixture-backlog-item",
     });
 
-    const { exitCode, stdout } = await workspace.captureCli([
-      "backlog",
-      "--json",
-    ]);
+    const { exitCode, stdout } = await captureCli(
+      ["backlog", "--json"],
+      workspace.cwd,
+    );
     expect(exitCode).toBe(0);
     const parsed = JSON.parse(stdout);
     expect(Array.isArray(parsed)).toBe(true);
@@ -222,5 +224,59 @@ describe("CLI Harness - Global Commands & Stream Separation (RULE-25, RULE-27, R
     expect(joinedHelp).toContain("(alias: frob)");
     expect(joinedHelp).toContain("gizmo tweak <item>");
     expect(joinedHelp).toContain("(alias: tw)");
+  });
+});
+
+describe("CLI Public Export Contract (RULE-25)", () => {
+  // @verifies RULE-25
+  it("[RULE-25] should export complete commands, dispatcher, and framework APIs from index", async () => {
+    const cliIndex = await import("./index.ts");
+
+    // CLI harness and routing exports
+    expect(typeof cliIndex.runCli).toBe("function");
+    expect(typeof cliIndex.buildCliRouter).toBe("function");
+    expect(typeof cliIndex.MODIE_VERSION).toBe("string");
+
+    // Framework exports
+    expect(typeof cliIndex.defineCommand).toBe("function");
+    expect(typeof cliIndex.executeCliCommand).toBe("function");
+    expect(typeof cliIndex.formatCommandTable).toBe("function");
+
+    // Commands index and individual definitions
+    expect(Array.isArray(cliIndex.allCliCommands)).toBe(true);
+    expect(cliIndex.allCliCommands.length).toBeGreaterThanOrEqual(23);
+
+    const expectedCommands = [
+      cliIndex.findCommand,
+      cliIndex.readCommand,
+      cliIndex.scopeCommand,
+      cliIndex.contextCommand,
+      cliIndex.referencesCommandDefinition,
+      cliIndex.archiveCommand,
+      cliIndex.linkCommand,
+      cliIndex.unlinkCommand,
+      cliIndex.ruleCreateCommand,
+      cliIndex.ruleListCommand,
+      cliIndex.ruleArchiveCommand,
+      cliIndex.adrCreateCommand,
+      cliIndex.adrListCommand,
+      cliIndex.adrArchiveCommand,
+      cliIndex.motiveCreateCommand,
+      cliIndex.taskCreateCommand,
+      cliIndex.taskStartCommand,
+      cliIndex.taskCheckCommand,
+      cliIndex.taskCompleteCommand,
+      cliIndex.taskMergeCommand,
+      cliIndex.taskListCommand,
+      cliIndex.taskStatusCommand,
+      cliIndex.mcpCommand,
+    ];
+
+    for (const cmd of expectedCommands) {
+      expect(cmd).toBeDefined();
+      expect(cmd.name).toBeDefined();
+      expect(typeof cmd.execute).toBe("function");
+      expect(cliIndex.allCliCommands).toContain(cmd);
+    }
   });
 });
