@@ -17,6 +17,9 @@ import {
   renderRuleMarkdown,
   renderTaskMarkdown,
   resolveArtifactDirectories,
+  type CreateAdrOptions as DomainCreateAdrOptions,
+  type CreateRuleOptions as DomainCreateRuleOptions,
+  type CreateTaskOptions as DomainCreateTaskOptions,
   type IndexableSubtype,
 } from "../../domain/index.ts";
 import { parseMarkdownSections } from "../markdown/index.ts";
@@ -32,52 +35,27 @@ const execFileAsync = promisify(execFile);
 
 export type TaskCriterionItem = string | { text: string; completed?: boolean };
 
-export interface CreateTaskOptions {
+export interface CreateTaskOptions extends Partial<DomainCreateTaskOptions> {
   id?: number | string;
   slug?: string;
-  title?: string;
-  summary?: string;
-  contextSection?: string;
-  context?: string;
   criteria?: TaskCriterionItem[];
-  depends_on?: string[];
-  links?: string[];
-  scopeDir?: string;
   rawContent?: string;
 }
 
-export interface CreateRuleOptions {
+export interface CreateRuleOptions extends Partial<DomainCreateRuleOptions> {
   id?: number | string;
   slug?: string;
-  title?: string;
-  summary?: string;
-  assertion?: string;
-  contextSection?: string;
-  context?: string;
   body?: string;
-  links?: string[];
-  supersedes?: string | string[];
   superseded_by?: string | string[];
   isArchived?: boolean;
-  scopeDir?: string;
   rawContent?: string;
 }
 
-export interface CreateAdrOptions {
+export interface CreateAdrOptions extends Partial<DomainCreateAdrOptions> {
   id?: number | string;
   slug?: string;
-  title?: string;
-  summary?: string;
-  contextSection?: string;
-  context?: string;
-  alternatives?: string;
-  decision?: string;
-  consequences?: string;
-  links?: string[];
-  supersedes?: string | string[];
   superseded_by?: string | string[];
   isArchived?: boolean;
-  scopeDir?: string;
   rawContent?: string;
 }
 
@@ -381,7 +359,9 @@ export async function createFixtureWorkspace(
             : undefined),
         summary: options.summary,
         context: options.contextSection ?? options.context,
-        acceptanceCriteria: options.criteria,
+        acceptanceCriteria:
+          options.criteria ??
+          (options.acceptanceCriteria as TaskCriterionItem[] | undefined),
         depends_on: options.depends_on,
         links: options.links,
         scopeDir: options.scopeDir,
