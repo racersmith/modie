@@ -16,30 +16,6 @@ import type { FoundInItem } from "./types.ts";
 
 export const TEST_FILE_REGEX = /\.(test|spec)\.[a-zA-Z0-9]+$/;
 
-export const CODE_EXTENSIONS = new Set([
-  ".ts",
-  ".tsx",
-  ".js",
-  ".jsx",
-  ".mjs",
-  ".cjs",
-  ".py",
-  ".rs",
-  ".go",
-  ".java",
-  ".c",
-  ".cpp",
-  ".h",
-  ".hpp",
-  ".cs",
-  ".rb",
-  ".php",
-  ".swift",
-  ".kt",
-  ".sh",
-  ".bash",
-]);
-
 export const DOC_EXTENSIONS = new Set([".md", ".markdown", ".txt", ".rst"]);
 
 /**

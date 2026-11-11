@@ -56,5 +56,3 @@ export function resolveMotivePath(
   return resolveMotivePaths(targetDirInput, cwdOrOptions).filepath;
 }
 
-export const resolveMotiveFilepath = resolveMotivePath;
-

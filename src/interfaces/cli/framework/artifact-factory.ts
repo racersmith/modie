@@ -259,5 +259,3 @@ export function createArtifactListCommand<
   });
 }
 
-export const defineArtifactListCommand = createArtifactListCommand;
-

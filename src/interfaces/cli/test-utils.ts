@@ -2,9 +2,6 @@ import { join } from "node:path";
 import { runCli } from "./cli.ts";
 import type { CliIoOptions } from "./types.ts";
 
-export { runCli };
-export type { CliIoOptions };
-
 export interface CapturedCliResult {
   exitCode: number;
   stdout: string;

@@ -10,7 +10,7 @@ import {
   createFixtureWorkspace,
   type FixtureWorkspace,
 } from "../../../../core/platform/testing/index.ts";
-import { runCli } from "../../test-utils.ts";
+import { captureCli } from "../../test-utils.ts";
 
 describe("CLI `modie link` and `modie unlink` Commands (ADR-5, RULE-27, RULE-36)", () => {
   let workspace: FixtureWorkspace;
@@ -75,14 +75,11 @@ describe("CLI `modie link` and `modie unlink` Commands (ADR-5, RULE-27, RULE-36)
     await workspace.cleanup();
   });
 
-  function execCli(args: string[]): Promise<number> {
-    stdoutLines = [];
-    stderrLines = [];
-    return runCli(args, {
-      cwd: workspace.cwd,
-      stdout: (msg) => stdoutLines.push(msg),
-      stderr: (msg) => stderrLines.push(msg),
-    });
+  async function execCli(args: string[]): Promise<number> {
+    const res = await captureCli(args, workspace);
+    stdoutLines = res.stdout ? res.stdout.split("\n") : [];
+    stderrLines = res.stderr ? res.stderr.split("\n") : [];
+    return res.exitCode;
   }
 
   // @verifies ADR-5, RULE-16, RULE-27, RULE-36
