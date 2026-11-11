@@ -12,6 +12,7 @@ import { dirname, join, relative } from "node:path";
 import { promisify } from "node:util";
 import {
   formatArtifactFilename,
+  formatArtifactTag,
   renderAdrMarkdown,
   renderRuleMarkdown,
   renderTaskMarkdown,
@@ -28,17 +29,6 @@ const execFileAsync = promisify(execFile);
 
 // Ensure Symbol.asyncDispose compatibility across runtimes
 (Symbol as any).asyncDispose ??= Symbol("Symbol.asyncDispose");
-
-/**
- * Programmatically constructs a canonical artifact tag (e.g. `makeTestTag("ABC", 123)` -> `"ABC-123"`).
- * Prevents literal tag strings from appearing in test source code, ensuring dogfooding citation
- * scans never match test fixture data as active repository artifacts while maintaining 100%
- * runtime parity with production tag formats.
- * @satisfies RULE-35
- */
-export function makeTestTag(subtype: string, id: number | string): string {
-  return `${subtype.toUpperCase()}-${id}`;
-}
 
 export type TaskCriterionItem = string | { text: string; completed?: boolean };
 
@@ -339,7 +329,7 @@ export async function createFixtureWorkspace(
     context,
 
     makeTag(subtype: string, id: number | string): string {
-      return makeTestTag(subtype, id);
+      return formatArtifactTag(subtype, id);
     },
 
     async createArtifact(
@@ -366,7 +356,7 @@ export async function createFixtureWorkspace(
       await writeFile(filepath, content, "utf8");
 
       return {
-        tag: makeTestTag(upperSubtype, id),
+        tag: formatArtifactTag(upperSubtype, id),
         subtype: upperSubtype,
         id,
         slug,

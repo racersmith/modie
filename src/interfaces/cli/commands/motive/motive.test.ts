@@ -4,10 +4,10 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
   captureCli,
   createTestWorkspace,
-  makeTestTag,
 } from "../../test-utils.ts";
 
 describe("CLI Command: modie motive create (RULE-8, RULE-10, RULE-25, RULE-27, RULE-34, ADR-10)", () => {
@@ -73,7 +73,7 @@ describe("CLI Command: modie motive create (RULE-8, RULE-10, RULE-25, RULE-27, R
   // @verifies ADR-10, RULE-8, RULE-10, RULE-27, RULE-34, RULE-35
   it("[ADR-10][RULE-8][RULE-10][RULE-27][RULE-34][RULE-35] should enforce singleton collision protection and RULE-10 reference prohibition on CLI", async () => {
     const workspace = await createTestWorkspace("modie-cli-motive-guards-");
-    const forbiddenTag = makeTestTag("RULE", 10);
+    const forbiddenTag = formatArtifactTag("RULE", 10);
 
     try {
       await workspace.captureCli([

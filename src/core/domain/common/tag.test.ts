@@ -4,7 +4,6 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { makeTestTag } from "../../platform/testing/index.ts";
 import {
   asArtifactSubtype,
   asArtifactTag,
@@ -21,9 +20,9 @@ describe("Tag Grammar & Normalization (RULE-1, RULE-25, RULE-35)", () => {
   });
 
   it("[RULE-1][RULE-35] should normalize strings to uppercase branded artifact tag", () => {
-    const rule1Tag = makeTestTag("RULE", 1);
-    const adr42Tag = makeTestTag("ADR", 42);
-    const taskSubTag = makeTestTag("TASK", "2-1");
+    const rule1Tag = formatArtifactTag("RULE", 1);
+    const adr42Tag = formatArtifactTag("ADR", 42);
+    const taskSubTag = formatArtifactTag("TASK", "2-1");
 
     expect(asArtifactTag(rule1Tag.toLowerCase())).toBe(rule1Tag as any);
     expect(asArtifactTag(` ${adr42Tag.toLowerCase()} `)).toBe(adr42Tag as any);
@@ -31,9 +30,9 @@ describe("Tag Grammar & Normalization (RULE-1, RULE-25, RULE-35)", () => {
   });
 
   it("[RULE-1][RULE-35] should format canonical artifact tag from components", () => {
-    const rule1Tag = makeTestTag("RULE", 1);
-    const adr6Tag = makeTestTag("ADR", 6);
-    const taskSubTag = makeTestTag("TASK", "250-1");
+    const rule1Tag = formatArtifactTag("RULE", 1);
+    const adr6Tag = formatArtifactTag("ADR", 6);
+    const taskSubTag = formatArtifactTag("TASK", "250-1");
 
     expect(formatArtifactTag("rule", 1)).toBe(rule1Tag as any);
     expect(formatArtifactTag("ADR", "6")).toBe(adr6Tag as any);
@@ -41,9 +40,9 @@ describe("Tag Grammar & Normalization (RULE-1, RULE-25, RULE-35)", () => {
   });
 
   it("[RULE-1][RULE-35] should parse valid canonical tags", () => {
-    const rule1Tag = makeTestTag("RULE", 1);
-    const adr42Tag = makeTestTag("ADR", 42);
-    const taskSubTag = makeTestTag("TASK", "250-1");
+    const rule1Tag = formatArtifactTag("RULE", 1);
+    const adr42Tag = formatArtifactTag("ADR", 42);
+    const taskSubTag = formatArtifactTag("TASK", "250-1");
 
     expect(parseCanonicalTag(rule1Tag)).toEqual({
       subtype: "RULE" as any,
@@ -71,9 +70,9 @@ describe("Tag Grammar & Normalization (RULE-1, RULE-25, RULE-35)", () => {
   });
 
   it("[RULE-1][RULE-35] should check tag validity with isValidArtifactTag", () => {
-    const rule1Tag = makeTestTag("RULE", 1);
-    const taskSubTag = makeTestTag("TASK", "7-1");
-    const adr10Tag = makeTestTag("ADR", 10);
+    const rule1Tag = formatArtifactTag("RULE", 1);
+    const taskSubTag = formatArtifactTag("TASK", "7-1");
+    const adr10Tag = formatArtifactTag("ADR", 10);
 
     expect(isValidArtifactTag(rule1Tag)).toBe(true);
     expect(isValidArtifactTag(taskSubTag.toLowerCase())).toBe(true);

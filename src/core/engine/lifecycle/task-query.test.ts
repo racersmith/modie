@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { createFixtureWorkspace, makeTestTag } from "../../platform/testing/index.ts";
+import { createFixtureWorkspace } from "../../platform/testing/index.ts";
 import {
   buildTaskBranchMap,
   calculateCriteriaProgress,
@@ -16,7 +16,7 @@ import {
   queryTaskQueue,
   toTaskQueueItem,
 } from "./index.ts";
-import { compareTaskIds, parseTaskIdFromBranch } from "../../domain/index.ts";
+import { compareTaskIds, formatArtifactTag, parseTaskIdFromBranch } from "../../domain/index.ts";
 import { MockVcsAdapter } from "../../platform/vcs/mock-adapter.ts";
 
 describe("Task Queue Query Service - ID Comparison & Natural Ordering", () => {
@@ -47,7 +47,7 @@ describe("Task Queue Query Service - DAG Readiness Evaluation (ADR-6, RULE-18)",
       id: 100,
       slug: "root-task",
       context: "Root task with no prerequisites.",
-      links: [makeTestTag("ADR", 6)],
+      links: [formatArtifactTag("ADR", 6)],
       criteria: ["Deliverable 1", "Deliverable 2"],
     });
 
@@ -101,7 +101,7 @@ describe("Task Queue Query Service - DAG Readiness Evaluation (ADR-6, RULE-18)",
     await using workspace = await createFixtureWorkspace(
       "modie-query-deleted-dep-",
     );
-    const task301Tag = makeTestTag("TASK", 301);
+    const task301Tag = formatArtifactTag("TASK", 301);
     const taskB = await workspace.createTask({
       id: 302,
       slug: "downstream-task",
@@ -168,8 +168,8 @@ describe("Task Queue Query Service - DAG Readiness Evaluation (ADR-6, RULE-18)",
   // @verifies RULE-18
   it("[RULE-18] should handle mutual circular dependencies safely without infinite loop", async () => {
     await using workspace = await createFixtureWorkspace("modie-query-cycle-");
-    const task501Tag = makeTestTag("TASK", 501);
-    const task502Tag = makeTestTag("TASK", 502);
+    const task501Tag = formatArtifactTag("TASK", 501);
+    const task502Tag = formatArtifactTag("TASK", 502);
 
     const taskA = await workspace.createTask({
       id: 501,
@@ -259,7 +259,7 @@ describe("Task Status Inspection Service - getTaskStatus (RULE-22, RULE-25)", ()
       id: 801,
       slug: "inspection-task",
       context: "Detailed inspection test.",
-      links: [makeTestTag("ADR", 6), makeTestTag("RULE", 18)],
+      links: [formatArtifactTag("ADR", 6), formatArtifactTag("RULE", 18)],
       criteria: [
         { text: "First item checked", completed: true },
         "Second item pending",
@@ -274,8 +274,8 @@ describe("Task Status Inspection Service - getTaskStatus (RULE-22, RULE-25)", ()
     expect(status.criteriaCompleted).toBe(1);
     expect(status.incompleteCriteria).toEqual(["Second item pending"]);
     expect(status.links).toEqual([
-      makeTestTag("ADR", 6),
-      makeTestTag("RULE", 18),
+      formatArtifactTag("ADR", 6),
+      formatArtifactTag("RULE", 18),
     ]);
   });
 
@@ -283,7 +283,7 @@ describe("Task Status Inspection Service - getTaskStatus (RULE-22, RULE-25)", ()
     await using workspace = await createFixtureWorkspace(
       "modie-query-missing-",
     );
-    const missingTag = makeTestTag("TASK", 9999);
+    const missingTag = formatArtifactTag("TASK", 9999);
     await expect(
       getTaskStatus(missingTag, { cwd: workspace.cwd }),
     ).rejects.toThrow(/was not found among active tasks on disk/);
@@ -296,7 +296,7 @@ describe("Task Status Inspection Service - getTaskStatus (RULE-22, RULE-25)", ()
     );
     await workspace.initGit({ defaultBranch: "dev", initialCommit: true });
 
-    const rule1Tag = makeTestTag("RULE", 1);
+    const rule1Tag = formatArtifactTag("RULE", 1);
     const completedTask = await workspace.createTask({
       id: 810,
       slug: "completed-historical-task",
@@ -423,7 +423,7 @@ describe("Criteria Progress & Queue Item Construction (RULE-22, ADR-6)", () => {
       summary: "Pipeline refactor",
       context: "Context text",
       depends_on: ["TASK-1"],
-      links: [makeTestTag("ADR", 6)],
+      links: [formatArtifactTag("ADR", 6)],
       acceptanceCriteria: [
         { text: "Step 1", completed: true },
         { text: "Step 2", completed: false },
@@ -440,7 +440,7 @@ describe("Criteria Progress & Queue Item Construction (RULE-22, ADR-6)", () => {
     expect(item.summary).toBe("Pipeline refactor");
     expect(item.context).toBe("Context text");
     expect(item.depends_on).toEqual(["TASK-1"]);
-    expect(item.links).toEqual([makeTestTag("ADR", 6)]);
+    expect(item.links).toEqual([formatArtifactTag("ADR", 6)]);
     expect(item.readiness).toBe("READY");
     expect(item.blockedBy).toEqual([]);
     expect(item.criteriaTotal).toBe(2);

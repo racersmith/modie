@@ -5,13 +5,13 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type FixtureWorkspace,
 } from "../../platform/testing/index.ts";
 import {
   escapeRegex,
   findDeepestCommonAncestor,
   formatArtifactFilename,
+  formatArtifactTag,
   formatTaskBranch,
   generateSlug,
   getSubtypeContainerName,
@@ -39,7 +39,7 @@ import {
 describe("Common Primitives - Slug Generation & Validation (RULE-1, RULE-35)", () => {
   // @verifies RULE-1, RULE-35
   it("[RULE-1][RULE-35] should generate valid kebab-case slugs from human titles", () => {
-    const rule25Tag = makeTestTag("RULE", 25);
+    const rule25Tag = formatArtifactTag("RULE", 25);
     expect(generateSlug("Artifact Tag Resolution")).toBe(
       "artifact-tag-resolution",
     );
@@ -75,7 +75,7 @@ describe("Common Primitives - Slug Generation & Validation (RULE-1, RULE-35)", (
 describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, ADR-1, ADR-2)", () => {
   // @verifies RULE-1, RULE-35, ADR-1, ADR-2
   it("[RULE-1][RULE-35][ADR-1][ADR-2] should format valid filenames for all indexable subtypes", () => {
-    const rule1Tag = makeTestTag("RULE", 1);
+    const rule1Tag = formatArtifactTag("RULE", 1);
     expect(
       formatArtifactFilename({
         slug: "artifact-filename-structure",
@@ -84,7 +84,7 @@ describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, AD
       }),
     ).toBe(`artifact-filename-structure.${rule1Tag}.md`);
 
-    const adr1Tag = makeTestTag("ADR", 1);
+    const adr1Tag = formatArtifactTag("ADR", 1);
     expect(
       formatArtifactFilename({
         slug: "self-indexing-filenames",
@@ -93,7 +93,7 @@ describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, AD
       }),
     ).toBe(`self-indexing-filenames.${adr1Tag}.md`);
 
-    const task12Tag = makeTestTag("TASK", 12);
+    const task12Tag = formatArtifactTag("TASK", 12);
     expect(
       formatArtifactFilename({
         slug: "show-artifact-by-tag",
@@ -105,7 +105,7 @@ describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, AD
 
   // @verifies RULE-1, RULE-35, ADR-1
   it("[RULE-1][RULE-35][ADR-1] should format archived artifacts with .ARCHIVED suffix", () => {
-    const rule99Tag = makeTestTag("RULE", 99);
+    const rule99Tag = formatArtifactTag("RULE", 99);
     expect(
       formatArtifactFilename({
         slug: "legacy-rule",
@@ -115,7 +115,7 @@ describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, AD
       }),
     ).toBe(`legacy-rule.${rule99Tag}.ARCHIVED.md`);
 
-    const adr5Tag = makeTestTag("ADR", 5);
+    const adr5Tag = formatArtifactTag("ADR", 5);
     expect(
       formatArtifactFilename({
         slug: "superseded-adr",
@@ -128,7 +128,7 @@ describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, AD
 
   // @verifies RULE-1, RULE-35, ADR-1, ADR-2
   it("[RULE-1][RULE-35][ADR-1][ADR-2] should parse valid filenames across all subtypes", () => {
-    const rule29Tag = makeTestTag("RULE", 29);
+    const rule29Tag = formatArtifactTag("RULE", 29);
     const parsedRule = parseArtifactFilename(
       `src/.modie/rules/artifact-tag-resolution.${rule29Tag}.md`,
     );
@@ -139,7 +139,7 @@ describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, AD
     expect(parsedRule?.tag).toBe(rule29Tag);
     expect(parsedRule?.isArchived).toBe(false);
 
-    const adr6Tag = makeTestTag("ADR", 6);
+    const adr6Tag = formatArtifactTag("ADR", 6);
     const parsedAdr = parseArtifactFilename(
       `src/.modie/adrs/ephemeral-task-lifecycle.${adr6Tag}.md`,
     );
@@ -149,7 +149,7 @@ describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, AD
     expect(parsedAdr?.tag).toBe(adr6Tag);
     expect(parsedAdr?.isArchived).toBe(false);
 
-    const adr3Tag = makeTestTag("ADR", 3);
+    const adr3Tag = formatArtifactTag("ADR", 3);
     const parsedArchived = parseArtifactFilename(
       `old-decision.${adr3Tag}.ARCHIVED.md`,
     );
@@ -157,7 +157,7 @@ describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, AD
     expect(parsedArchived?.isArchived).toBe(true);
     expect(parsedArchived?.tag).toBe(adr3Tag);
 
-    const taskSubTag = makeTestTag("TASK", "2-1");
+    const taskSubTag = formatArtifactTag("TASK", "2-1");
     const parsedTask = parseArtifactFilename(`task-list.${taskSubTag}.md`);
     expect(parsedTask).not.toBeNull();
     expect(parsedTask?.subtype).toBe("TASK");
@@ -168,7 +168,6 @@ describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, AD
   it("should return null for non-artifact filenames", () => {
     expect(parseArtifactFilename("README.md")).toBeNull();
     expect(parseArtifactFilename("MOTIVE.md")).toBeNull();
-    expect(parseArtifactFilename("GIST.md")).toBeNull();
     expect(parseArtifactFilename("invalid.UNKNOWN-1.md")).toBeNull();
   });
 
@@ -183,9 +182,9 @@ describe("Common Primitives - Filename Formatting & Parsing (RULE-1, RULE-35, AD
 
   // @verifies RULE-35
   it("[RULE-35] should identify artifact files by subtype using isArtifactFilename", () => {
-    const rule1Tag = makeTestTag("RULE", 1);
-    const adr1Tag = makeTestTag("ADR", 1);
-    const task1Tag = makeTestTag("TASK", 1);
+    const rule1Tag = formatArtifactTag("RULE", 1);
+    const adr1Tag = formatArtifactTag("ADR", 1);
+    const task1Tag = formatArtifactTag("TASK", 1);
     expect(isArtifactFilename(`rule-test.${rule1Tag}.md`)).toBe(true);
     expect(isArtifactFilename(`rule-test.${rule1Tag}.md`, "RULE")).toBe(true);
     expect(isArtifactFilename(`rule-test.${rule1Tag}.md`, "ADR")).toBe(false);
@@ -508,11 +507,6 @@ describe("Common Primitives - Scope Directory Resolution & Ancestral Walking", (
     const r1 = resolveScopeDirectory(".", normCwd);
     expect(r1.scope).toBe(".");
     expect(r1.scopeDir).toBe(normCwd);
-
-    // Deep nested with .modie
-    const r2 = resolveScopeDirectory("src/core/.modie/gists", normCwd, "GIST");
-    expect(r2.scope).toBe("src/core");
-    expect(r2.scopeDir).toContain("src/core");
 
     // Invalid outside workspace root
     expect(() =>

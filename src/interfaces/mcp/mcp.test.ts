@@ -8,10 +8,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { formatArtifactFilename } from "../../core/index.ts";
+import { formatArtifactFilename, formatArtifactTag } from "../../core/index.ts";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type FixtureWorkspace,
 } from "../../core/platform/testing/index.ts";
 import { createModieMcpServer } from "./server.ts";
@@ -31,12 +30,12 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
   let workspace: FixtureWorkspace;
   let server: ReturnType<typeof createModieMcpServer>;
   let client: Client;
-  const ruleTag = makeTestTag("RULE", 101);
-  const adrTag = makeTestTag("ADR", 101);
+  const ruleTag = formatArtifactTag("RULE", 101);
+  const adrTag = formatArtifactTag("ADR", 101);
   const task101Id = "101";
-  const task101Tag = makeTestTag("TASK", task101Id);
+  const task101Tag = formatArtifactTag("TASK", task101Id);
   const task102Id = "102";
-  const task102Tag = makeTestTag("TASK", task102Id);
+  const task102Tag = formatArtifactTag("TASK", task102Id);
 
   beforeEach(async () => {
     workspace = await createFixtureWorkspace("modie-mcp-test-");
@@ -548,7 +547,7 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
 
       const res = await customClient.callTool({
         name: "read_artifact",
-        arguments: { tag: makeTestTag("RULE", 9999) },
+        arguments: { tag: formatArtifactTag("RULE", 9999) },
       });
 
       expect(res.isError).toBe(true);

@@ -10,7 +10,7 @@ outputs: []
 
 # Problem & Motivation
 
-Currently, Modie's primitive artifacts (`MOTIVE`, `ADR`, `RULE`, `TASK`, `GIST`) are highly formalized and carry intentional governance overhead:
+Currently, Modie's primitive artifacts (`MOTIVE`, `ADR`, `RULE`, `TASK`) are highly formalized and carry intentional governance overhead:
 
 - `ADR` and `RULE` artifacts represent committed architectural decisions and falsifiable invariants that should be slow to change.
 - `TASK` artifacts represent actionable execution plans with defined blast radii, acceptance criteria, and branch/ID ceremony.

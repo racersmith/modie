@@ -71,22 +71,6 @@ export async function resolveArtifactSummary(
 }
 
 /**
- * Extracts a concise single-line summary from a GIST file or directory content.
- */
-export function extractGistSummary(rawContent: string): string {
-  const lines = rawContent
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean);
-
-  for (const line of lines) {
-    if (line.startsWith("#")) continue;
-    return line;
-  }
-  return lines[0]?.replace(/^#+\s*/, "") ?? "";
-}
-
-/**
  * Extracts a concise summary from MOTIVE markdown content.
  */
 export function extractMotiveSummary(rawContent: string): string {

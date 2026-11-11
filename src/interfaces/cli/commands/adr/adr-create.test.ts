@@ -4,7 +4,8 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { createTestWorkspace, makeTestTag } from "../../test-utils.ts";
+import { formatArtifactTag } from "../../../../core/index.ts";
+import { createTestWorkspace } from "../../test-utils.ts";
 
 describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-14, RULE-17, RULE-25, RULE-27)", () => {
   // @verifies RULE-27
@@ -37,7 +38,7 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
   // @verifies ADR-1, ADR-2, ADR-3, ADR-4, RULE-1, RULE-8, RULE-25, RULE-27
   it("[ADR-4][RULE-1][RULE-8][RULE-25][RULE-27] should create an ADR with relative path to stdout and status to stderr", async () => {
     await using workspace = await createTestWorkspace("modie-cli-adr-create-");
-    const expectedTag = makeTestTag("ADR", 1);
+    const expectedTag = formatArtifactTag("ADR", 1);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "adr",
       "create",
@@ -73,7 +74,7 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
   // @verifies RULE-27
   it("[RULE-27] should emit machine-parsable JSON to stdout when --json is passed", async () => {
     await using workspace = await createTestWorkspace("modie-cli-adr-json-");
-    const expectedTag = makeTestTag("ADR", 1);
+    const expectedTag = formatArtifactTag("ADR", 1);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "adr",
       "create",
@@ -115,7 +116,7 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
   // @verifies RULE-8
   it("[RULE-8] should support --scope flag to target specific directory", async () => {
     await using workspace = await createTestWorkspace("modie-cli-adr-scope-");
-    const expectedTag = makeTestTag("ADR", 1);
+    const expectedTag = formatArtifactTag("ADR", 1);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "adr",
       "create",
@@ -192,7 +193,7 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
     await using workspace = await createTestWorkspace(
       "modie-cli-adr-invalid-link-",
     );
-    const invalidTarget = makeTestTag("TASK", 1);
+    const invalidTarget = formatArtifactTag("TASK", 1);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "adr",
       "create",
@@ -273,7 +274,7 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
       context: "First.",
     });
 
-    const newTag = makeTestTag("ADR", 2);
+    const newTag = formatArtifactTag("ADR", 2);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "adr",
       "create",
@@ -298,7 +299,7 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
   // @verifies RULE-25, RULE-27
   it("[RULE-25][RULE-27] should execute adr create via bin.ts subprocess", async () => {
     await using workspace = await createTestWorkspace("modie-cli-adr-subproc-");
-    const expectedTag = makeTestTag("ADR", 1);
+    const expectedTag = formatArtifactTag("ADR", 1);
     const { stdout, stderr } = await workspace.execBin([
       "adr",
       "create",
@@ -315,7 +316,7 @@ describe("CLI ADR Creation - Execution & Stream Separation (ADR-4, RULE-8, RULE-
   // @verifies ADR-4, ADR-8, RULE-25, RULE-26, RULE-27, RULE-34
   it("[ADR-4][ADR-8][RULE-25][RULE-26][RULE-27][RULE-34] should support --summary flag and write summary to YAML frontmatter and JSON output", async () => {
     await using workspace = await createTestWorkspace("modie-cli-adr-summary-");
-    const expectedTag = makeTestTag("ADR", 1);
+    const expectedTag = formatArtifactTag("ADR", 1);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "adr",
       "create",

@@ -45,13 +45,17 @@
     "check:duplication": "jscpd src --pattern '**/*.ts' --ignore '**/*.test.ts' --min-lines 5 --min-tokens 50",
     "check:circular": "bunx dpdm --no-warning --no-tree --exit-code circular:1 ./src/",
     "count:all": "find src -type f \\( -name \"*.ts\" -o -name \"*.tsx\" \\) | xargs wc -l",
-    "count:src": "find src -type f \\( -name \"*.ts\" -o -name \"*.tsx\" \\) ! -name \"*.test.ts\" ! -name \"*.spec.ts\" | xargs wc -l"
+    "count:src": "find src -type f \\( -name \"*.ts\" -o -name \"*.tsx\" \\) ! -name \"*.test.ts\" ! -name \"*.spec.ts\" | xargs wc -l",
+    "knip": "knip"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/node": "^26.6.6",
     "jscpd": "^5.4.2",
+    "knip": "^6.45.0",
     "mcp-checkup": "^0.1.9",
-    "typescript": "^5.6.0"
+    "oxc-parser": "^0.158.0",
+    "typescript": "^7.0.2"
   },
   "peerDependencies": {
     "typescript": "^7.0.2"

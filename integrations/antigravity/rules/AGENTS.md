@@ -4,7 +4,7 @@ Modie is a distributed document-driven development tool used to maintain archite
 
 ## Artifacts & Tag Disambiguation
 - Tagged artifacts: `TASK-<id>`, `RULE-<id>`, `ADR-<id>`
-- Untagged documents: `MOTIVE`, `GIST`
+- Untagged documents: `MOTIVE`
 
 ## Agent Guidelines
 - To check backlog readiness or active tasks, query the MCP resources `modie://tasks/ready` or `modie://tasks/all`.

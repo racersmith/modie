@@ -8,9 +8,9 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { formatArtifactTag } from "../../core/index.ts";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type FixtureWorkspace,
 } from "../../core/platform/testing/index.ts";
 import { registerAllResources } from "./resources.ts";
@@ -19,7 +19,7 @@ describe("Modie Ambient MCP Resources (RULE-25, RULE-26)", () => {
   let workspace: FixtureWorkspace;
   let server: McpServer;
   let client: Client;
-  const taskTag = makeTestTag("TASK", 101);
+  const taskTag = formatArtifactTag("TASK", 101);
 
   beforeEach(async () => {
     workspace = await createFixtureWorkspace("modie-resource-test-");
@@ -93,7 +93,7 @@ describe("Modie Ambient MCP Resources (RULE-25, RULE-26)", () => {
 
   // @verifies RULE-26
   it("should serve modie://tasks/all as grouped Markdown backlog with dependency leverage", async () => {
-    const task102Tag = makeTestTag("TASK", 102);
+    const task102Tag = formatArtifactTag("TASK", 102);
     await workspace.createTask({
       id: 102,
       slug: "blocked-task",

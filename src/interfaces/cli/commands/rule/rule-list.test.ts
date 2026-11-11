@@ -5,10 +5,10 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
   captureCli,
   createTestWorkspace,
-  makeTestTag,
 } from "../../test-utils.ts";
 
 describe("CLI Rule List - Execution, Scope Filtering & Stream Separation (ADR-4, RULE-9, RULE-25, RULE-27, RULE-34, RULE-35)", () => {
@@ -27,7 +27,7 @@ describe("CLI Rule List - Execution, Scope Filtering & Stream Separation (ADR-4,
   // @verifies ADR-4, RULE-25, RULE-27, RULE-34, RULE-35
   it("[ADR-4][RULE-25][RULE-27][RULE-34][RULE-35] should emit formatted table with titles, tags, relative paths, and links to stderr and empty stdout", async () => {
     const workspace = await createTestWorkspace("modie-cli-rule-list-");
-    const adr1Tag = makeTestTag("ADR", 1);
+    const adr1Tag = formatArtifactTag("ADR", 1);
     const rule1 = await workspace.createRule({
       id: 1,
       slug: "first-invariant-rule",
@@ -64,7 +64,7 @@ describe("CLI Rule List - Execution, Scope Filtering & Stream Separation (ADR-4,
   // @verifies RULE-25, RULE-27, RULE-34, RULE-35
   it("[RULE-25][RULE-27][RULE-34][RULE-35] should emit machine-parsable JSON array to stdout and empty stderr when --json is passed", async () => {
     const workspace = await createTestWorkspace("modie-cli-rule-list-json-");
-    const adr4Tag = makeTestTag("ADR", 4);
+    const adr4Tag = formatArtifactTag("ADR", 4);
     const rule = await workspace.createRule({
       id: 9,
       slug: "ancestral-scope-traversal",

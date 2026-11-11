@@ -5,10 +5,10 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
   captureCli,
   createTestWorkspace,
-  makeTestTag,
 } from "../../test-utils.ts";
 
 describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31, RULE-34)", () => {
@@ -37,7 +37,7 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
   // @verifies RULE-25, RULE-27, RULE-31, RULE-34
   it("[RULE-25][RULE-27][RULE-31][RULE-34] should archive an unreferenced ADR with relative path to stdout and status to stderr", async () => {
     const workspace = await createTestWorkspace("cli-adr-archive-");
-    const adrTag = makeTestTag("ADR", 1);
+    const adrTag = formatArtifactTag("ADR", 1);
     const adr = await workspace.createAdr({
       id: 1,
       slug: "single-database",
@@ -68,14 +68,14 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
   it("[RULE-27][RULE-31][RULE-34] should reject archiving when active references exist", async () => {
     const workspace = await createTestWorkspace("cli-adr-reject-");
 
-    const adrTag = makeTestTag("ADR", 1);
+    const adrTag = formatArtifactTag("ADR", 1);
     const adr = await workspace.createAdr({
       id: 1,
       slug: "target-decision",
       context: "Target.",
     });
 
-    const ruleTag = makeTestTag("RULE", 1);
+    const ruleTag = formatArtifactTag("RULE", 1);
     await workspace.createRule({
       id: 1,
       slug: "dependent",
@@ -105,14 +105,14 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
   it("[RULE-25][RULE-27][RULE-31][RULE-34] should bypass active references guard with --force", async () => {
     const workspace = await createTestWorkspace("cli-adr-force-");
 
-    const adrTag = makeTestTag("ADR", 1);
+    const adrTag = formatArtifactTag("ADR", 1);
     const adr = await workspace.createAdr({
       id: 1,
       slug: "forced-decision",
       context: "Forced.",
     });
 
-    const ruleTag = makeTestTag("RULE", 1);
+    const ruleTag = formatArtifactTag("RULE", 1);
     await workspace.createRule({
       id: 1,
       slug: "dependent",
@@ -142,7 +142,7 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
   it("[RULE-27][RULE-34] should emit machine JSON to stdout when --json is passed", async () => {
     const workspace = await createTestWorkspace("cli-adr-json-");
 
-    const adrTag = makeTestTag("ADR", 1);
+    const adrTag = formatArtifactTag("ADR", 1);
     const adr = await workspace.createAdr({
       id: 1,
       slug: "json-decision",
@@ -171,7 +171,7 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
   it("[RULE-25][RULE-27][RULE-34] should execute adr archive via bin.ts subprocess", async () => {
     const workspace = await createTestWorkspace("cli-adr-subprocess-");
 
-    const adrTag = makeTestTag("ADR", 1);
+    const adrTag = formatArtifactTag("ADR", 1);
     const adr = await workspace.createAdr({
       id: 1,
       slug: "sub-decision",

@@ -5,9 +5,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type FixtureWorkspace,
 } from "../../platform/testing/index.ts";
+import { formatArtifactTag } from "../common/tag.ts";
 import {
   areAllAcceptanceCriteriaCompleted,
   extractTaskSummary,
@@ -85,10 +85,10 @@ Some context.
 describe("TASK Primitive - Frontmatter Links & Dependencies (RULE-15, RULE-18)", () => {
   // @verifies RULE-15, RULE-35
   it("[RULE-15][RULE-35] should allow ADR and RULE links and reject TASK links in links", () => {
-    const validAdr = makeTestTag("ADR", 101);
-    const validRule = makeTestTag("RULE", 201);
-    const invalidTask = makeTestTag("TASK", 301);
-    const invalidCustom = makeTestTag("INVALID", 1);
+    const validAdr = formatArtifactTag("ADR", 101);
+    const validRule = formatArtifactTag("RULE", 201);
+    const invalidTask = formatArtifactTag("TASK", 301);
+    const invalidCustom = formatArtifactTag("INVALID", 1);
     expect(() => validateTaskLinks([validAdr, validRule])).not.toThrow();
     expect(() => validateTaskLinks([invalidTask])).toThrow(
       "Invalid task link target",
@@ -100,10 +100,10 @@ describe("TASK Primitive - Frontmatter Links & Dependencies (RULE-15, RULE-18)",
 
   // @verifies RULE-18, RULE-35
   it("[RULE-18][RULE-35] should allow TASK dependencies and reject non-TASK references in depends_on", () => {
-    const taskDep1 = makeTestTag("TASK", 301);
-    const taskDep2 = makeTestTag("TASK", "302-1");
-    const invalidRule = makeTestTag("RULE", 201);
-    const invalidAdr = makeTestTag("ADR", 101);
+    const taskDep1 = formatArtifactTag("TASK", 301);
+    const taskDep2 = formatArtifactTag("TASK", "302-1");
+    const invalidRule = formatArtifactTag("RULE", 201);
+    const invalidAdr = formatArtifactTag("ADR", 101);
 
     expect(() => validateTaskDependencies([taskDep1, taskDep2])).not.toThrow();
     expect(() => validateTaskDependencies([invalidRule])).toThrow(
@@ -129,10 +129,10 @@ describe("TASK Primitive - Template Rendering and Parser Roundtrip (RULE-1, RULE
   // @verifies RULE-1, RULE-15, RULE-18, RULE-22, RULE-34, RULE-35
   it("[RULE-1][RULE-15][RULE-18][RULE-22][RULE-34][RULE-35] should render and parse a complete task markdown document", async () => {
     const taskId = "3";
-    const depTaskTag = makeTestTag("TASK", 2);
-    const linkAdrTag = makeTestTag("ADR", 101);
-    const linkRuleTag = makeTestTag("RULE", 201);
-    const taskTag = makeTestTag("TASK", taskId);
+    const depTaskTag = formatArtifactTag("TASK", 2);
+    const linkAdrTag = formatArtifactTag("ADR", 101);
+    const linkRuleTag = formatArtifactTag("RULE", 201);
+    const taskTag = formatArtifactTag("TASK", taskId);
     const filename = `task-primitive-model.${taskTag}.md`;
 
     const rendered = renderTaskMarkdown({

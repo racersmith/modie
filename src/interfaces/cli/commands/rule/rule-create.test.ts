@@ -4,7 +4,8 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { createTestWorkspace, makeTestTag } from "../../test-utils.ts";
+import { formatArtifactTag } from "../../../../core/index.ts";
+import { createTestWorkspace } from "../../test-utils.ts";
 
 describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RULE-16, RULE-25, RULE-27)", () => {
   // @verifies RULE-27
@@ -22,7 +23,7 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
   // @verifies RULE-1, RULE-8, RULE-25, RULE-27
   it("[RULE-1][RULE-8][RULE-25][RULE-27] should create a rule with relative path to stdout and status to stderr", async () => {
     await using workspace = await createTestWorkspace("modie-cli-rule-create-");
-    const expectedTag = makeTestTag("RULE", 1);
+    const expectedTag = formatArtifactTag("RULE", 1);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "rule",
       "create",
@@ -50,7 +51,7 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
   // @verifies RULE-27
   it("[RULE-27] should emit machine-parsable JSON to stdout when --json is passed", async () => {
     await using workspace = await createTestWorkspace("modie-cli-rule-json-");
-    const expectedTag = makeTestTag("RULE", 1);
+    const expectedTag = formatArtifactTag("RULE", 1);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "rule",
       "create",
@@ -118,7 +119,7 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
   // @verifies RULE-13, RULE-27
   it("[RULE-13][RULE-27] should reject non-ADR link with error to stderr", async () => {
     await using workspace = await createTestWorkspace("modie-cli-rule-err-");
-    const invalidTarget = makeTestTag("RULE", 1);
+    const invalidTarget = formatArtifactTag("RULE", 1);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "rule",
       "create",
@@ -173,7 +174,7 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
       body: "Old rule assertion.",
     });
 
-    const newTag = makeTestTag("RULE", 2);
+    const newTag = formatArtifactTag("RULE", 2);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "rule",
       "create",
@@ -206,7 +207,7 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
       body: "Old assertion.",
     });
 
-    const newTag = makeTestTag("RULE", 2);
+    const newTag = formatArtifactTag("RULE", 2);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "rule",
       "create",
@@ -231,7 +232,7 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
     await using workspace = await createTestWorkspace(
       "modie-cli-rule-sup-err-",
     );
-    const invalidTarget = makeTestTag("ADR", 1);
+    const invalidTarget = formatArtifactTag("ADR", 1);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "rule",
       "create",
@@ -250,7 +251,7 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
     await using workspace = await createTestWorkspace(
       "modie-cli-rule-subproc-",
     );
-    const expectedTag = makeTestTag("RULE", 1);
+    const expectedTag = formatArtifactTag("RULE", 1);
     const { stdout, stderr } = await workspace.execBin([
       "rule",
       "create",

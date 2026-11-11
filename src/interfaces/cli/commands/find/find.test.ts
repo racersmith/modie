@@ -3,9 +3,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
   createTestWorkspace,
-  makeTestTag,
   type TestWorkspace,
 } from "../../test-utils.ts";
 
@@ -117,7 +117,7 @@ describe("CLI Find - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, R
 
   // @verifies RULE-27, RULE-35
   it("[RULE-27][RULE-35] should report error to stderr when artifact tag is not found", async () => {
-    const missingTag = makeTestTag("RULE", "TEST-9999");
+    const missingTag = formatArtifactTag("RULE", "TEST-9999");
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "find",
       missingTag,

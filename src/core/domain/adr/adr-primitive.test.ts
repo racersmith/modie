@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { formatArtifactFilename } from "../common/filename.ts";
-import { makeTestTag } from "../../platform/testing/index.ts";
+import { formatArtifactTag } from "../common/tag.ts";
 import {
   extractAdrSummary,
   parseAdrMarkdown,
@@ -16,9 +16,9 @@ import {
 describe("ADR Primitive - Frontmatter Links Validation (RULE-14, RULE-35)", () => {
   // @verifies RULE-14, RULE-35
   it("[RULE-14][RULE-35] should accept valid ADR and RULE link targets", () => {
-    const adr1 = makeTestTag("ADR", 1);
-    const rule8 = makeTestTag("RULE", 8);
-    const adr4 = makeTestTag("ADR", 4);
+    const adr1 = formatArtifactTag("ADR", 1);
+    const rule8 = formatArtifactTag("RULE", 8);
+    const adr4 = formatArtifactTag("ADR", 4);
     expect(() => validateAdrLinks([adr1])).not.toThrow();
     expect(() => validateAdrLinks([rule8])).not.toThrow();
     expect(() => validateAdrLinks([adr1, rule8, adr4])).not.toThrow();
@@ -30,19 +30,15 @@ describe("ADR Primitive - Frontmatter Links Validation (RULE-14, RULE-35)", () =
   });
 
   // @verifies RULE-14, RULE-35
-  it("[RULE-14][RULE-35] should reject TASK, MOTIVE, GIST and invalid link targets with RULE-14 error", () => {
-    const task1 = makeTestTag("TASK", 1);
-    const motive1 = makeTestTag("MOTIVE", 1);
-    const gist1 = makeTestTag("GIST", 1);
+  it("[RULE-14][RULE-35] should reject TASK, MOTIVE and invalid link targets with RULE-14 error", () => {
+    const task1 = formatArtifactTag("TASK", 1);
+    const motive1 = formatArtifactTag("MOTIVE", 1);
 
     expect(() => validateAdrLinks([task1])).toThrow(
       `Invalid ADR link target: "${task1}". An ADR artifact's frontmatter links must exclusively reference ADR or RULE artifacts.`,
     );
     expect(() => validateAdrLinks([motive1])).toThrow(
       `Invalid ADR link target: "${motive1}". An ADR artifact's frontmatter links must exclusively reference ADR or RULE artifacts.`,
-    );
-    expect(() => validateAdrLinks([gist1])).toThrow(
-      `Invalid ADR link target: "${gist1}". An ADR artifact's frontmatter links must exclusively reference ADR or RULE artifacts.`,
     );
     expect(() => validateAdrLinks(["INVALID"])).toThrow(
       'Invalid ADR link target: "INVALID". An ADR artifact\'s frontmatter links must exclusively reference ADR or RULE artifacts.',
@@ -53,8 +49,8 @@ describe("ADR Primitive - Frontmatter Links Validation (RULE-14, RULE-35)", () =
 describe("ADR Primitive - Template Rendering (ADR-4, RULE-14, RULE-35)", () => {
   // @verifies ADR-4, RULE-14, RULE-35
   it("[ADR-4][RULE-14][RULE-35] should render standard ADR sections with frontmatter links", () => {
-    const rule8 = makeTestTag("RULE", 8);
-    const adr2 = makeTestTag("ADR", 2);
+    const rule8 = formatArtifactTag("RULE", 8);
+    const adr2 = formatArtifactTag("ADR", 2);
     const rendered = renderAdrMarkdown({
       title: "Subtype Directory Partitioning",
       links: [rule8, adr2],
@@ -146,8 +142,8 @@ describe("ADR Primitive - Template Rendering (ADR-4, RULE-14, RULE-35)", () => {
 
   // @verifies ADR-4, ADR-8, RULE-26, RULE-35
   it("[ADR-4][ADR-8][RULE-26][RULE-35] should render summary in canonical YAML frontmatter when provided", () => {
-    const adr4 = makeTestTag("ADR", 4);
-    const rule26 = makeTestTag("RULE", 26);
+    const adr4 = formatArtifactTag("ADR", 4);
+    const rule26 = formatArtifactTag("RULE", 26);
     const rendered = renderAdrMarkdown({
       title: "Signpost Progressive Disclosure",
       summary:

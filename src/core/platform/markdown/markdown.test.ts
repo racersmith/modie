@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { makeTestTag } from "../testing/index.ts";
+import { formatArtifactTag } from "../../domain/index.ts";
 import {
   buildArtifactParseContext,
   parseFrontmatterFields,
@@ -16,7 +16,7 @@ import {
 
 describe("Markdown Foundational Layer - splitMarkdownFrontmatter (RULE-1, RULE-25)", () => {
   it("[RULE-1][RULE-25] should split valid YAML frontmatter and markdown body", () => {
-    const adr1Tag = makeTestTag("ADR", 1);
+    const adr1Tag = formatArtifactTag("ADR", 1);
     const content = `---
 links:
   - ${adr1Tag}
@@ -40,7 +40,7 @@ Body text here.
   });
 
   it("[RULE-1][RULE-25] should return empty frontmatter when opening delimiter is unclosed", () => {
-    const adr1Tag = makeTestTag("ADR", 1);
+    const adr1Tag = formatArtifactTag("ADR", 1);
     const content = `---\nlinks:\n  - ${adr1Tag}\n# Context\nUnclosed frontmatter`;
     const { frontmatter, body } = splitMarkdownFrontmatter(content);
     expect(frontmatter).toBe("");
@@ -48,7 +48,7 @@ Body text here.
   });
 
   it("[RULE-1][RULE-25] should not prematurely split on mid-line --- inside frontmatter comments or values", () => {
-    const adr1Tag = makeTestTag("ADR", 1);
+    const adr1Tag = formatArtifactTag("ADR", 1);
     const content = `---
 # --- Governance Links ---
 links:
@@ -71,7 +71,7 @@ End of body.`;
   });
 
   it("[RULE-1][RULE-25] should handle CRLF line endings cleanly", () => {
-    const rule1Tag = makeTestTag("RULE", 1);
+    const rule1Tag = formatArtifactTag("RULE", 1);
     const content = `---\r\nlinks:\r\n  - ${rule1Tag}\r\n---\r\n\r\nRule assertion text.\r\n`;
     const { frontmatter, body } = splitMarkdownFrontmatter(content);
     expect(frontmatter).toBe(`links:\r\n  - ${rule1Tag}`);
@@ -81,9 +81,9 @@ End of body.`;
 
 describe("Markdown Foundational Layer - parseFrontmatterFields (RULE-1, RULE-25, RULE-35)", () => {
   it("[RULE-1][RULE-25][RULE-35] should parse block list links and depends_on fields", () => {
-    const adr1Tag = makeTestTag("ADR", 1);
-    const rule2Tag = makeTestTag("RULE", 2);
-    const task3Tag = makeTestTag("TASK", 3);
+    const adr1Tag = formatArtifactTag("ADR", 1);
+    const rule2Tag = formatArtifactTag("RULE", 2);
+    const task3Tag = formatArtifactTag("TASK", 3);
 
     const frontmatter = `
 # Frontmatter comment
@@ -101,8 +101,8 @@ links:
   });
 
   it("[RULE-1][RULE-25][RULE-35] should parse inline bracketed arrays and omit empty depends_on", () => {
-    const adr4Tag = makeTestTag("ADR", 4);
-    const rule9Tag = makeTestTag("RULE", 9);
+    const adr4Tag = formatArtifactTag("ADR", 4);
+    const rule9Tag = formatArtifactTag("RULE", 9);
 
     const parsed = parseFrontmatterFields(
       `depends_on: []\nlinks: [${adr4Tag}, "${rule9Tag}"]`,
@@ -112,8 +112,8 @@ links:
   });
 
   it("[RULE-1][RULE-25][RULE-35] should ignore unrelated YAML keys between or after target lists", () => {
-    const adr1Tag = makeTestTag("ADR", 1);
-    const adr2Tag = makeTestTag("ADR", 2);
+    const adr1Tag = formatArtifactTag("ADR", 1);
+    const adr2Tag = formatArtifactTag("ADR", 2);
 
     const frontmatter = `
 links:
@@ -131,9 +131,9 @@ superseded_by: []
   });
 
   it("[ADR-4][RULE-1][RULE-25][RULE-35] should parse supersedes and superseded_by in block, inline array, and scalar formats and map line numbers", () => {
-    const adr1Tag = makeTestTag("ADR", 1);
-    const adr2Tag = makeTestTag("ADR", 2);
-    const adr3Tag = makeTestTag("ADR", 3);
+    const adr1Tag = formatArtifactTag("ADR", 1);
+    const adr2Tag = formatArtifactTag("ADR", 2);
+    const adr3Tag = formatArtifactTag("ADR", 3);
 
     const docText = `---
 summary: Unified parser test
@@ -164,7 +164,7 @@ Unified context section.
   });
 
   it("[ADR-8][RULE-25][RULE-26] should parse inline, quoted, and folded block summary fields from frontmatter", () => {
-    const adr1Tag = makeTestTag("ADR", 1);
+    const adr1Tag = formatArtifactTag("ADR", 1);
 
     const inlineParsed = parseFrontmatterFields(
       `summary: Adopt flat self-indexing filenames.\nlinks:\n  - ${adr1Tag}`,
@@ -260,8 +260,8 @@ Final decision paragraph.
   });
 
   it("[ADR-4][RULE-25] should compile unified document and ArtifactParseContext", () => {
-    const rule1Tag = makeTestTag("RULE", 1);
-    const adr10Tag = makeTestTag("ADR", 10);
+    const rule1Tag = formatArtifactTag("RULE", 1);
+    const adr10Tag = formatArtifactTag("ADR", 10);
     const raw = `---
 links:
   - ${rule1Tag}

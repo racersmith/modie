@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
   createTestWorkspace,
-  makeTestTag,
   type TestWorkspace,
 } from "../../test-utils.ts";
 
@@ -137,7 +137,7 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     await workspace.gitCommit("docs: parent");
     await workspace.captureCli(["task", "start", parentTask.tag]);
 
-    const subTaskTag = makeTestTag("TASK", "203-1");
+    const subTaskTag = formatArtifactTag("TASK", "203-1");
     const subTask = await workspace.createTask({
       id: "203-1",
       slug: "sub",
@@ -188,7 +188,7 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     await workspace.gitCommit("docs: parent");
     await workspace.captureCli(["task", "start", parentTask.tag]);
 
-    const subTaskTag = makeTestTag("TASK", "204-1");
+    const subTaskTag = formatArtifactTag("TASK", "204-1");
     const subTask = await workspace.createTask({
       id: "204-1",
       slug: "sub",

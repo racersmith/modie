@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { makeTestTag } from "../../platform/testing/index.ts";
+import { formatArtifactTag } from "../../domain/index.ts";
 import {
   classifyCitation,
   isTestVerificationCitation,
@@ -16,7 +16,7 @@ import { buildLinksTo } from "./references.ts";
 
 describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-31, RULE-35)", () => {
   it("[RULE-25][RULE-35] should return null when target tag is not present or boundary check fails", () => {
-    const targetTag = makeTestTag("RULE", 901);
+    const targetTag = formatArtifactTag("RULE", 901);
     const longerTag = `${targetTag}9`;
 
     // No tag match
@@ -41,7 +41,7 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
   });
 
   it("[RULE-25][RULE-35] should classify code citations in standard source files", () => {
-    const targetTag = makeTestTag("RULE", 902);
+    const targetTag = formatArtifactTag("RULE", 902);
     const match = {
       relPath: "src/domain/service.ts",
       line: 42,
@@ -57,7 +57,7 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
   });
 
   it("[RULE-25][RULE-35] should classify documentation citations in general markdown and text documents", () => {
-    const targetTag = makeTestTag("ADR", 903);
+    const targetTag = formatArtifactTag("ADR", 903);
     const match = {
       relPath: "docs/architecture.md",
       line: 12,
@@ -72,7 +72,7 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
   });
 
   it("[RULE-23][RULE-35][ADR-7] should classify formal test verification citations in test files", () => {
-    const targetTag = makeTestTag("RULE", 904);
+    const targetTag = formatArtifactTag("RULE", 904);
 
     // Comment annotation format: @verifies TAG
     const commentMatch = {
@@ -103,7 +103,7 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
   });
 
   it("[RULE-23][RULE-35][ADR-7] should reject incidental test body data citations as unverified occurrences", () => {
-    const targetTag = makeTestTag("RULE", 905);
+    const targetTag = formatArtifactTag("RULE", 905);
     const incidentalMatch = {
       relPath: "src/test/suite.test.ts",
       line: 25,
@@ -114,8 +114,8 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
   });
 
   it("[RULE-25][RULE-31][RULE-35] should classify active governance links as blocking archival", () => {
-    const targetTag = makeTestTag("ADR", 906);
-    const citingTag = makeTestTag("RULE", 907);
+    const targetTag = formatArtifactTag("ADR", 906);
+    const citingTag = formatArtifactTag("RULE", 907);
 
     const cache: GovernanceArtifactCache = new Map();
     const govData: GovernanceArtifactData = {
@@ -149,8 +149,8 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
   });
 
   it("[RULE-25][RULE-31][RULE-35] should classify archived governance links as non-blocking archival", () => {
-    const targetTag = makeTestTag("ADR", 908);
-    const citingTag = makeTestTag("RULE", 909);
+    const targetTag = formatArtifactTag("ADR", 908);
+    const citingTag = formatArtifactTag("RULE", 909);
 
     const cache: GovernanceArtifactCache = new Map();
     const govData: GovernanceArtifactData = {
@@ -181,8 +181,8 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
   });
 
   it("[RULE-25][RULE-31][RULE-35] should classify superseding successor relationships as non-blocking", () => {
-    const targetTag = makeTestTag("ADR", 910);
-    const successorTag = makeTestTag("ADR", 911);
+    const targetTag = formatArtifactTag("ADR", 910);
+    const successorTag = formatArtifactTag("ADR", 911);
 
     const cache: GovernanceArtifactCache = new Map();
     const govData: GovernanceArtifactData = {
@@ -212,8 +212,8 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
   });
 
   it("[RULE-25][RULE-35] should classify governance document body citations as governance-prose", () => {
-    const targetTag = makeTestTag("ADR", 912);
-    const citingTag = makeTestTag("RULE", 913);
+    const targetTag = formatArtifactTag("ADR", 912);
+    const citingTag = formatArtifactTag("RULE", 913);
 
     const cache: GovernanceArtifactCache = new Map();
     const govData: GovernanceArtifactData = {
@@ -247,11 +247,11 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
 
 describe("buildLinksTo Pure Extraction (RULE-25, RULE-35)", () => {
   it("[RULE-25][RULE-35] should extract and deduplicate all outbound links, dependencies, and supersessions", () => {
-    const adrTag = makeTestTag("ADR", 920);
-    const ruleTag = makeTestTag("RULE", 921);
-    const taskTag1 = makeTestTag("TASK", 922);
-    const taskTag2 = makeTestTag("TASK", 923);
-    const successorTag = makeTestTag("ADR", 924);
+    const adrTag = formatArtifactTag("ADR", 920);
+    const ruleTag = formatArtifactTag("RULE", 921);
+    const taskTag1 = formatArtifactTag("TASK", 922);
+    const taskTag2 = formatArtifactTag("TASK", 923);
+    const successorTag = formatArtifactTag("ADR", 924);
 
     const rawContent = `---
 links:

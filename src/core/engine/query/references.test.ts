@@ -7,9 +7,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type FixtureWorkspace,
 } from "../../platform/testing/index.ts";
+import { formatArtifactTag } from "../../domain/index.ts";
 import { MockVcsAdapter } from "../../platform/vcs/index.ts";
 import { findArtifactReferences } from "./references.ts";
 import { isTestVerificationCitation } from "./citation-classifier.ts";
@@ -26,11 +26,11 @@ describe("Artifact References Query Engine (RULE-25, RULE-31, RULE-34, RULE-35)"
   });
 
   it("should discover linksTo, foundIn categories, and evaluate archival guard in a fixture workspace", async () => {
-    const targetAdrTag = makeTestTag("ADR", 501);
-    const ancestorAdrTag = makeTestTag("ADR", 500);
-    const activeRuleTag = makeTestTag("RULE", 501);
-    const archivedRuleTag = makeTestTag("RULE", 502);
-    const activeTaskTag = makeTestTag("TASK", 501);
+    const targetAdrTag = formatArtifactTag("ADR", 501);
+    const ancestorAdrTag = formatArtifactTag("ADR", 500);
+    const activeRuleTag = formatArtifactTag("RULE", 501);
+    const archivedRuleTag = formatArtifactTag("RULE", 502);
+    const activeTaskTag = formatArtifactTag("TASK", 501);
 
     // 1. Target ADR
     await workspace.createAdr({
@@ -159,8 +159,8 @@ Follow ${targetAdrTag} for architectural guidelines.
   });
 
   it("should permit archival when all citing governance artifacts are archived or absent", async () => {
-    const targetRuleTag = makeTestTag("RULE", 610);
-    const archivedTaskTag = makeTestTag("TASK", 605);
+    const targetRuleTag = formatArtifactTag("RULE", 610);
+    const archivedTaskTag = formatArtifactTag("TASK", 605);
 
     // 1. Target Rule
     await workspace.createRule({
@@ -201,7 +201,7 @@ links:
   });
 
   it("should reject querying non-existent artifact tags with a descriptive error", async () => {
-    const missingTag = makeTestTag("ADR", 9999);
+    const missingTag = formatArtifactTag("ADR", 9999);
     expect(
       findArtifactReferences(missingTag, { cwd: workspace.cwd }),
     ).rejects.toThrow(`Artifact "${missingTag}" was not found`);
@@ -209,7 +209,7 @@ links:
 
   // @verifies RULE-34
   it("[RULE-34] should execute findArtifactReferences against isolated fixture workspace artifacts", async () => {
-    const ruleTag = makeTestTag("RULE", 725);
+    const ruleTag = formatArtifactTag("RULE", 725);
     await workspace.createRule({
       id: 725,
       slug: "interface-core-decoupling",
@@ -234,7 +234,7 @@ links:
   // @verifies RULE-25, RULE-31, RULE-34
   it("[RULE-25][RULE-31][RULE-34] should discover citations using git-native grep index and include untracked working-tree files", async () => {
     await workspace.initGit();
-    const ruleTag = makeTestTag("RULE", 801);
+    const ruleTag = formatArtifactTag("RULE", 801);
 
     await workspace.createRule({
       id: 801,
@@ -269,8 +269,8 @@ links:
   // @verifies RULE-25, RULE-31, RULE-34, RULE-35
   it("[RULE-25][RULE-31][RULE-34][RULE-35] should produce identical citation discovery results between git-native query and filesystem fallback", async () => {
     await workspace.initGit();
-    const targetTag = makeTestTag("RULE", 802);
-    const linkingTag = makeTestTag("RULE", 803);
+    const targetTag = formatArtifactTag("RULE", 802);
+    const linkingTag = formatArtifactTag("RULE", 803);
 
     await workspace.createRule({
       id: 802,
@@ -326,7 +326,7 @@ links:
   // @verifies RULE-25, RULE-31, RULE-34
   it("[RULE-25][RULE-31][RULE-34] should benchmark git-native query execution against synthetic fixture tree", async () => {
     await workspace.initGit();
-    const targetTag = makeTestTag("RULE", 804);
+    const targetTag = formatArtifactTag("RULE", 804);
 
     await workspace.createRule({
       id: 804,
@@ -380,10 +380,10 @@ links:
 describe("isTestVerificationCitation - Rule Verification Tag Disambiguation (ADR-7, RULE-23, RULE-35)", () => {
   // @verifies RULE-23, ADR-7
   it("[RULE-23][ADR-7] should recognize comment annotations as verification tags", () => {
-    const ruleTag = makeTestTag("RULE", 925);
-    const rule2Tag = makeTestTag("RULE", 927);
-    const adrTag = makeTestTag("ADR", 904);
-    const rule3Tag = makeTestTag("RULE", 934);
+    const ruleTag = formatArtifactTag("RULE", 925);
+    const rule2Tag = formatArtifactTag("RULE", 927);
+    const adrTag = formatArtifactTag("ADR", 904);
+    const rule3Tag = formatArtifactTag("RULE", 934);
 
     expect(isTestVerificationCitation(`// @verifies ${ruleTag}`, ruleTag)).toBe(
       true,
@@ -407,9 +407,9 @@ describe("isTestVerificationCitation - Rule Verification Tag Disambiguation (ADR
 
   // @verifies RULE-23, ADR-7
   it("[RULE-23][ADR-7] should recognize standardized bracket test headers", () => {
-    const ruleTag = makeTestTag("RULE", 925);
-    const rule2Tag = makeTestTag("RULE", 927);
-    const adrTag = makeTestTag("ADR", 901);
+    const ruleTag = formatArtifactTag("RULE", 925);
+    const rule2Tag = formatArtifactTag("RULE", 927);
+    const adrTag = formatArtifactTag("ADR", 901);
 
     expect(
       isTestVerificationCitation(
@@ -433,8 +433,8 @@ describe("isTestVerificationCitation - Rule Verification Tag Disambiguation (ADR
 
   // @verifies RULE-23, ADR-7
   it("[RULE-23][ADR-7] should recognize describe/suite parenthetical tags", () => {
-    const ruleTag = makeTestTag("RULE", 925);
-    const rule2Tag = makeTestTag("RULE", 931);
+    const ruleTag = formatArtifactTag("RULE", 925);
+    const rule2Tag = formatArtifactTag("RULE", 931);
 
     expect(
       isTestVerificationCitation(
@@ -452,7 +452,7 @@ describe("isTestVerificationCitation - Rule Verification Tag Disambiguation (ADR
 
   // @verifies RULE-23, RULE-35, ADR-7
   it("[RULE-23][RULE-35][ADR-7] should reject test fixture data, invocations, and raw assertions", () => {
-    const ruleTag = makeTestTag("RULE", 901);
+    const ruleTag = formatArtifactTag("RULE", 901);
 
     // Array literals inside CLI calls or helpers
     expect(

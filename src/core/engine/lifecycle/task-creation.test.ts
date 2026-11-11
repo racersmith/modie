@@ -5,11 +5,11 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type FixtureWorkspace,
 } from "../../platform/testing/index.ts";
 import {
   findDeepestCommonAncestor,
+  formatArtifactTag,
   parseTaskMarkdown,
   validateTaskScope,
 } from "../../domain/index.ts";
@@ -52,7 +52,7 @@ describe("Task Creation Service - Downward Blast Radius & Least Scope Validation
 
   // @verifies RULE-6
   it("[RULE-6] should reject target paths that escape task scope directory", () => {
-    const rule6 = makeTestTag("RULE", 6);
+    const rule6 = formatArtifactTag("RULE", 6);
     expect(() => {
       validateTaskScope("/app/src/core", [
         "/app/src/core/index.ts",
@@ -78,7 +78,7 @@ describe("Task Creation Service - Downward Blast Radius & Least Scope Validation
 
   // @verifies RULE-12
   it("[RULE-12] should reject higher-scoped task placement when deeper common ancestor exists", () => {
-    const rule12 = makeTestTag("RULE", 12);
+    const rule12 = formatArtifactTag("RULE", 12);
     expect(() => {
       validateTaskScope(
         "/app/src",
@@ -122,11 +122,11 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     const testTitle = "Task Service Integration Verification";
     const testScope = "src/core";
 
-    const depTask3 = makeTestTag("TASK", 3);
-    const depTask4 = makeTestTag("TASK", 4);
-    const linkAdr6 = makeTestTag("ADR", 6);
-    const linkRule25 = makeTestTag("RULE", 25);
-    const expectedTaskTag = makeTestTag("TASK", 5);
+    const depTask3 = formatArtifactTag("TASK", 3);
+    const depTask4 = formatArtifactTag("TASK", 4);
+    const linkAdr6 = formatArtifactTag("ADR", 6);
+    const linkRule25 = formatArtifactTag("RULE", 25);
+    const expectedTaskTag = formatArtifactTag("TASK", 5);
 
     await workspace.createTask({ id: 3, slug: "dep-task-three" });
     await workspace.createTask({ id: 4, slug: "dep-task-four" });
@@ -223,7 +223,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     const parentId = 5;
     const branchName = `task/${parentId}-task-creation-service`;
     const expectedSubtaskId = `${parentId}-1`;
-    const expectedSubtaskTag = makeTestTag("TASK", expectedSubtaskId);
+    const expectedSubtaskTag = formatArtifactTag("TASK", expectedSubtaskId);
 
     const result = await createTask({
       title: "Subtask Under Task 5",
@@ -243,7 +243,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
   it("[ADR-9][RULE-34][RULE-35] should allocate prefixed IDs when prefix is specified", async () => {
     const prefix = "A";
     const expectedId = `${prefix}1`;
-    const expectedTag = makeTestTag("TASK", expectedId);
+    const expectedTag = formatArtifactTag("TASK", expectedId);
 
     const result = await createTask({
       title: "Agent Delegated Task",
@@ -259,10 +259,10 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
 
   // @verifies RULE-15, RULE-18, RULE-34, RULE-35
   it("[RULE-15][RULE-18][RULE-34][RULE-35] should reject invalid link types or invalid dependency identifiers", async () => {
-    const invalidLinkTag = makeTestTag("TASK", 1);
-    const invalidDepTag = makeTestTag("RULE", 1);
-    const rule15 = makeTestTag("RULE", 15);
-    const rule18 = makeTestTag("RULE", 18);
+    const invalidLinkTag = formatArtifactTag("TASK", 1);
+    const invalidDepTag = formatArtifactTag("RULE", 1);
+    const rule15 = formatArtifactTag("RULE", 15);
+    const rule18 = formatArtifactTag("RULE", 18);
 
     // RULE-15: TASK links cannot be in links:
     await expect(
@@ -305,7 +305,7 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
       cwd: workspace.cwd,
     });
 
-    const expectedNextTag = makeTestTag("TASK", 2);
+    const expectedNextTag = formatArtifactTag("TASK", 2);
     expect(res.artifact.id).toBe("2");
     expect(res.filename).toBe(`new-task-after-deletion.${expectedNextTag}.md`);
   });

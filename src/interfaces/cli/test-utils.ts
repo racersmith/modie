@@ -1,7 +1,6 @@
 import { join } from "node:path";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type CreateAdrOptions,
   type CreateFixtureArtifactOptions,
   type CreateRuleOptions,
@@ -13,7 +12,6 @@ import {
 import { runCli } from "./cli.ts";
 import type { CliIoOptions } from "./types.ts";
 
-export { makeTestTag };
 export type {
   CreateAdrOptions,
   CreateFixtureArtifactOptions,

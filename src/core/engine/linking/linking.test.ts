@@ -17,6 +17,7 @@ import {
   isValidTaskDependencyTag,
   linkArtifact,
   mutateFrontmatterListField,
+  formatArtifactTag,
   resolveArtifactByTag,
   resolveSubtypeLinkPolicy,
   unlinkArtifact,
@@ -25,28 +26,27 @@ import {
 } from "../../index.ts";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type FixtureWorkspace,
 } from "../../platform/testing/index.ts";
 
 describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13..19, RULE-36)", () => {
   let workspace: FixtureWorkspace;
 
-  const rootAdrTag = makeTestTag("ADR", 501);
-  const rootAdr2Tag = makeTestTag("ADR", 502);
-  const coreAdrTag = makeTestTag("ADR", 503);
-  const cliAdrTag = makeTestTag("ADR", 504);
-  const mcpAdrTag = makeTestTag("ADR", 505);
+  const rootAdrTag = formatArtifactTag("ADR", 501);
+  const rootAdr2Tag = formatArtifactTag("ADR", 502);
+  const coreAdrTag = formatArtifactTag("ADR", 503);
+  const cliAdrTag = formatArtifactTag("ADR", 504);
+  const mcpAdrTag = formatArtifactTag("ADR", 505);
 
-  const rootRuleTag = makeTestTag("RULE", 501);
-  const coreRuleTag = makeTestTag("RULE", 502);
-  const cliRuleTag = makeTestTag("RULE", 503);
-  const mcpRuleTag = makeTestTag("RULE", 504);
+  const rootRuleTag = formatArtifactTag("RULE", 501);
+  const coreRuleTag = formatArtifactTag("RULE", 502);
+  const cliRuleTag = formatArtifactTag("RULE", 503);
+  const mcpRuleTag = formatArtifactTag("RULE", 504);
 
-  const taskATag = makeTestTag("TASK", 501);
-  const taskBTag = makeTestTag("TASK", 502);
-  const taskCTag = makeTestTag("TASK", 503);
-  const cliTaskTag = makeTestTag("TASK", 504);
+  const taskATag = formatArtifactTag("TASK", 501);
+  const taskBTag = formatArtifactTag("TASK", 502);
+  const taskCTag = formatArtifactTag("TASK", 503);
+  const cliTaskTag = formatArtifactTag("TASK", 504);
 
   beforeEach(async () => {
     workspace = await createFixtureWorkspace("modie-linking-core-");
@@ -441,7 +441,7 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
       "links:",
       `  - ${rootAdrTag}`,
       "supersedes:",
-      `  - ${makeTestTag("RULE", 499)}`,
+      `  - ${formatArtifactTag("RULE", 499)}`,
       "---",
       "",
       "# Custom Rule Heading",
@@ -475,7 +475,7 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
       );
 
     expect(addChanged).toBe(true);
-    expect(afterAdd).toContain(`supersedes:\n  - ${makeTestTag("RULE", 499)}`);
+    expect(afterAdd).toContain(`supersedes:\n  - ${formatArtifactTag("RULE", 499)}`);
     expect(afterAdd).toContain(`links:\n  - ${rootAdrTag}\n  - ${rootAdr2Tag}`);
     expect(afterAdd.endsWith(expectedBodyWithLeadingFence)).toBe(true);
 
@@ -491,7 +491,7 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     expect(rem1Changed).toBe(true);
     expect(afterRemove1).toContain(`links:\n  - ${rootAdr2Tag}`);
     expect(afterRemove1).toContain(
-      `supersedes:\n  - ${makeTestTag("RULE", 499)}`,
+      `supersedes:\n  - ${formatArtifactTag("RULE", 499)}`,
     );
     expect(afterRemove1.endsWith(expectedBodyWithLeadingFence)).toBe(true);
 
@@ -501,7 +501,7 @@ describe("Core Graph & Link Validation and Frontmatter Mutation (ADR-5, RULE-13.
     expect(rem2Changed).toBe(true);
     expect(afterRemove2).toContain("links: []");
     expect(afterRemove2).toContain(
-      `supersedes:\n  - ${makeTestTag("RULE", 499)}`,
+      `supersedes:\n  - ${formatArtifactTag("RULE", 499)}`,
     );
     expect(afterRemove2.endsWith(expectedBodyWithLeadingFence)).toBe(true);
 
