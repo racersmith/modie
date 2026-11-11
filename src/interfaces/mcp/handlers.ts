@@ -1,5 +1,5 @@
 /**
- * Domain handlers for the 11 singular Modie MCP tools.
+ * Domain handlers for the 12 singular Modie MCP tools.
  * Exclusively consumes pure domain logic from src/core/ public API (RULE-25).
  * Implements token economy and progressive disclosure (RULE-26).
  */
@@ -12,6 +12,7 @@ import {
   completeTask,
   compileContext,
   createAdr,
+  createMotive,
   createRule,
   createTask,
   detectGitBranch,
@@ -46,6 +47,8 @@ import type {
   CompleteTaskOutput,
   CreateAdrInput,
   CreateArtifactOutput,
+  CreateMotiveInput,
+  CreateMotiveOutput,
   CreateRuleInput,
   CreateTaskInput,
   DirectoryContextInput,
@@ -472,12 +475,61 @@ export async function handleCreateTask(
   };
 }
 
+/**
+ * 10. create_motive handler
+ */
+export async function handleCreateMotive(
+  args: CreateMotiveInput,
+  cwdOrContext?: string | WorkspaceContext,
+): Promise<CreateMotiveOutput> {
+  const ctx = resolveWorkspaceContext(cwdOrContext);
+  const cwd = ctx.root;
+  let resolvedScopeDir = (args.scope_dir ?? args.scope)?.trim();
+  if (!resolvedScopeDir || resolvedScopeDir === ".") {
+    try {
+      const branch = await detectGitBranch(ctx);
+      if (branch) {
+        const fromBranch = parseTaskIdFromBranch(branch);
+        if (fromBranch) {
+          const status = await getTaskStatus(fromBranch, {
+            cwd,
+            workspace: ctx,
+          });
+          resolvedScopeDir = status.relativePath
+            ? dirname(status.relativePath).replace(/\/\.modie\/tasks$/, "") ||
+              "."
+            : ".";
+        }
+      }
+    } catch {}
+  }
+  resolvedScopeDir = resolvedScopeDir || ".";
+
+  const res = await createMotive({
+    scopeDir: resolvedScopeDir,
+    content: args.content ?? args.context,
+    overwrite: args.overwrite,
+    cwd,
+    workspace: ctx,
+  });
+
+  return {
+    kind: "MOTIVE",
+    scope: res.scope,
+    filename: res.filename,
+    filepath: res.filepath,
+    relativePath: res.relativePath,
+    overwritten: res.overwritten,
+    scaffolded: res.scaffolded,
+  };
+}
+
 // ============================================================================
 // Cluster 4: Graph Mutation Handlers
 // ============================================================================
 
 /**
- * 10. link_artifacts handler
+ * 11. link_artifacts handler
  */
 export async function handleLinkArtifacts(
   args: LinkArtifactsInput,
@@ -516,7 +568,7 @@ export async function handleLinkArtifacts(
 }
 
 /**
- * 11. archive_artifact handler
+ * 12. archive_artifact handler
  */
 export async function handleArchiveArtifact(
   args: ArchiveArtifactInput,

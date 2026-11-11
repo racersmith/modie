@@ -13,9 +13,9 @@ Modie CLI supports `modie motive create`, but the MCP server does not expose an 
 
 # Acceptance Criteria
 
-- [ ] Define schema and input validation for motive creation tool adhering to token economy
-- [ ] Implement MCP request handler delegating to core createMotive domain function
-- [ ] Register motive creation tool on MCP server with operational annotations
-- [ ] Add unit and integration tests verifying motive creation via MCP client transport
-- [ ] Pass `verify` tests.
-- [ ] User Review
+- [x] Define schema and input validation for motive creation tool adhering to token economy
+- [x] Implement MCP request handler delegating to core createMotive domain function
+- [x] Register motive creation tool on MCP server with operational annotations
+- [x] Add unit and integration tests verifying motive creation via MCP client transport
+- [x] Pass `verify` tests.
+- [x] User Review

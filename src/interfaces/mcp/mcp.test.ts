@@ -1,6 +1,6 @@
 /**
  * Integration and unit tests for Modie Model Context Protocol (MCP) server.
- * Verifies the 11 Singular Agent Tools, Frontmatter-to-Markdown rendering engine,
+ * Verifies the 12 Singular Agent Tools, Frontmatter-to-Markdown rendering engine,
  * RULE-25 (interface-core decoupling), RULE-26 (token economy), and RULE-27 (stream separation).
  * @verifies RULE-6, RULE-21, RULE-22, RULE-25, RULE-26, RULE-27, RULE-28, RULE-30, RULE-31, RULE-32, RULE-36
  */
@@ -26,7 +26,7 @@ function getStructuredContent(result: any): any {
   return result?.structuredContent ?? JSON.parse(getTextContent(result));
 }
 
-describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
+describe("Modie MCP Server - 12 Singular Agent Tools Suite", () => {
   let workspace: FixtureWorkspace;
   let server: ReturnType<typeof createModieMcpServer>;
   let client: Client;
@@ -101,7 +101,7 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
   });
 
   // @verifies RULE-25, RULE-26
-  it("should register exactly the 11 singular tools with outputSchema and behavioral annotations", async () => {
+  it("should register exactly the 12 singular tools with outputSchema and behavioral annotations", async () => {
     const response = await client.listTools();
     const toolNames = response.tools.map((t) => t.name);
 
@@ -110,6 +110,7 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
       "check_criteria",
       "complete_task",
       "create_adr",
+      "create_motive",
       "create_rule",
       "create_task",
       "directory_context",
@@ -171,6 +172,12 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
 
     const taskTool = response.tools.find((t) => t.name === "create_task")!;
     expect(taskTool.outputSchema).toBeDefined();
+
+    const motiveTool = response.tools.find((t) => t.name === "create_motive")!;
+    expect(motiveTool.annotations?.readOnlyHint).toBe(false);
+    expect(motiveTool.annotations?.idempotentHint).toBe(false);
+    expect(motiveTool.annotations?.destructiveHint).toBe(false);
+    expect(motiveTool.outputSchema).toBeDefined();
 
     const linkTool = response.tools.find((t) => t.name === "link_artifacts")!;
     expect(linkTool.outputSchema).toBeDefined();
@@ -460,6 +467,157 @@ describe("Modie MCP Server - 11 Singular Agent Tools Suite", () => {
       });
       const readyMarkdown = (readyRes.contents[0] as any).text;
       expect(readyMarkdown).toContain(summaryText);
+    });
+
+    // @verifies RULE-25, RULE-26
+    it("create_motive should author MOTIVE.md with explicit prose in target scope directory", async () => {
+      const res = await client.callTool({
+        name: "create_motive",
+        arguments: {
+          scope_dir: "src/domain",
+          content: "Domain layer providing architectural invariants and entities.",
+        },
+      });
+
+      expect(res.isError).toBeFalsy();
+      const content = getStructuredContent(res);
+      expect(content.kind).toBe("MOTIVE");
+      expect(content.scope).toBe("src/domain");
+      expect(content.filename).toBe("MOTIVE.md");
+      expect(content.relativePath).toBe("src/domain/.modie/MOTIVE.md");
+      expect(content.overwritten).toBe(false);
+      expect(content.scaffolded).toBe(false);
+      // Verify token economy: unsolicited raw document content omitted from response payload
+      expect(content.content).toBeUndefined();
+
+      // Verify file exists on disk with rendered prose
+      const diskContent = await workspace.readFile(
+        "src/domain/.modie/MOTIVE.md",
+      );
+      expect(diskContent).toBe(
+        "Domain layer providing architectural invariants and entities.\n",
+      );
+    });
+
+    // @verifies RULE-25, RULE-26
+    it("create_motive should scaffold default template when content is omitted", async () => {
+      const res = await client.callTool({
+        name: "create_motive",
+        arguments: {
+          scope_dir: "src/adapters",
+        },
+      });
+
+      expect(res.isError).toBeFalsy();
+      const content = getStructuredContent(res);
+      expect(content.kind).toBe("MOTIVE");
+      expect(content.scope).toBe("src/adapters");
+      expect(content.scaffolded).toBe(true);
+      expect(content.overwritten).toBe(false);
+
+      const diskContent = await workspace.readFile(
+        "src/adapters/.modie/MOTIVE.md",
+      );
+      expect(diskContent).toContain(
+        "core architectural purpose and domain responsibility",
+      );
+    });
+
+    // @verifies RULE-25, RULE-26
+    it("create_motive should reject overwriting existing file unless overwrite is true", async () => {
+      // First creation
+      await client.callTool({
+        name: "create_motive",
+        arguments: {
+          scope_dir: "src/collision",
+          content: "Initial intent.",
+        },
+      });
+
+      // Second creation without overwrite flag should fail
+      const failedRes = await client.callTool({
+        name: "create_motive",
+        arguments: {
+          scope_dir: "src/collision",
+          content: "Updated intent.",
+        },
+      });
+
+      expect(failedRes.isError).toBe(true);
+
+      // Third creation with overwrite: true should succeed
+      const successRes = await client.callTool({
+        name: "create_motive",
+        arguments: {
+          scope_dir: "src/collision",
+          content: "Updated intent.",
+          overwrite: true,
+        },
+      });
+
+      expect(successRes.isError).toBeFalsy();
+      const content = getStructuredContent(successRes);
+      expect(content.overwritten).toBe(true);
+
+      const diskContent = await workspace.readFile(
+        "src/collision/.modie/MOTIVE.md",
+      );
+      expect(diskContent).toContain("Updated intent.");
+    });
+
+    // @verifies RULE-25, RULE-26
+    it("create_motive should reject content containing cross-document artifact citations", async () => {
+      const invalidTag = formatArtifactTag("RULE", 999);
+      const res = await client.callTool({
+        name: "create_motive",
+        arguments: {
+          scope_dir: "src/prohibited",
+          content: `Intent illegally citing ${invalidTag} directly.`,
+        },
+      });
+
+      expect(res.isError).toBe(true);
+      const err = getStructuredContent(res);
+      expect(err.message).toMatch(
+        /RULE-10|cross-document references|cannot cite/i,
+      );
+    });
+
+    // @verifies RULE-25, RULE-26
+    it("create_motive should infer target scope from active task branch when scope_dir is omitted", async () => {
+      const scopedTaskId = "201";
+      await workspace.createTask({
+        id: scopedTaskId,
+        slug: "subscope-task",
+        title: "Subscope Task",
+        context: "Subscope task context.",
+        criteria: ["Work on subscope", "User Review"],
+        scopeDir: "src/subscope",
+      });
+
+      // Switch to the task branch via start_task
+      await client.callTool({
+        name: "start_task",
+        arguments: { task_id: scopedTaskId },
+      });
+
+      // Call create_motive without scope_dir
+      const res = await client.callTool({
+        name: "create_motive",
+        arguments: {
+          content: "Inferred subscope motive intent.",
+        },
+      });
+
+      expect(res.isError).toBeFalsy();
+      const content = getStructuredContent(res);
+      expect(content.scope).toBe("src/subscope");
+      expect(content.relativePath).toBe("src/subscope/.modie/MOTIVE.md");
+
+      const diskContent = await workspace.readFile(
+        "src/subscope/.modie/MOTIVE.md",
+      );
+      expect(diskContent).toContain("Inferred subscope motive intent.");
     });
   });
 

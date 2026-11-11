@@ -1,5 +1,5 @@
 /**
- * Flat Zod schemas for the 11 singular Modie MCP agent tools.
+ * Flat Zod schemas for the 12 singular Modie MCP agent tools.
  * Complies with RULE-25 (interface-core decoupling), RULE-26 (token economy),
  * and scratch/mcp-design.md specifications.
  */
@@ -208,6 +208,51 @@ export const createTaskSchema = z.object({
   scope_dir: z.string().optional().describe("Blast radius root directory"),
 });
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
+
+/**
+ * Input schema for create_motive tool.
+ */
+export const createMotiveSchema = z.object({
+  content: z
+    .string()
+    .optional()
+    .describe(
+      "Motive prose expressing scope-level purpose and trajectory (no artifact tags or cross-document references per RULE-10). When omitted, scaffolds a default MOTIVE.md template.",
+    ),
+  context: z.string().optional().describe("Alias for content"),
+  scope_dir: z
+    .string()
+    .optional()
+    .describe(
+      "Architectural directory scope (defaults to active task scope or '.')",
+    ),
+  scope: z.string().optional().describe("Alias for scope_dir"),
+  overwrite: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      "Explicitly allow overwriting an existing MOTIVE.md in the target scope",
+    ),
+});
+export type CreateMotiveInput = z.infer<typeof createMotiveSchema>;
+
+export const createMotiveOutputSchema = z
+  .object({
+    kind: z.literal("MOTIVE").default("MOTIVE"),
+    scope: z.string().describe("Architectural directory scope"),
+    filename: z.string().describe("Canonical filename ('MOTIVE.md')"),
+    filepath: z.string().describe("Absolute path to MOTIVE.md"),
+    relativePath: z.string().describe("Relative path to MOTIVE.md"),
+    overwritten: z
+      .boolean()
+      .describe("Whether an existing MOTIVE.md was overwritten"),
+    scaffolded: z
+      .boolean()
+      .describe("Whether default template content was scaffolded"),
+  })
+  .passthrough();
+export type CreateMotiveOutput = z.infer<typeof createMotiveOutputSchema>;
 
 export const createArtifactOutputSchema = z
   .object({
