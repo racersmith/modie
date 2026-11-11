@@ -7,8 +7,10 @@
 import { describe, expect, it } from "bun:test";
 import { formatArtifactTag } from "../../../../core/index.ts";
 import {
-  captureCli,
-  createTestWorkspace,
+  createFixtureWorkspace,
+} from "../../../../core/platform/testing/index.ts";
+import {
+  captureCli, execBin,
 } from "../../test-utils.ts";
 
 describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31, RULE-34)", () => {
@@ -36,7 +38,7 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
 
   // @verifies RULE-25, RULE-27, RULE-31, RULE-34
   it("[RULE-25][RULE-27][RULE-31][RULE-34] should archive an unreferenced RULE with relative path to stdout and status to stderr", async () => {
-    const workspace = await createTestWorkspace("cli-rule-archive-");
+    const workspace = await createFixtureWorkspace("cli-rule-archive-");
     const ruleTag = formatArtifactTag("RULE", 1);
     const rule = await workspace.createRule({
       id: 1,
@@ -44,11 +46,11 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
       body: "Rule description.\n",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "archive",
       rule.tag,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe(
@@ -66,7 +68,7 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
 
   // @verifies RULE-27, RULE-31, RULE-34
   it("[RULE-27][RULE-31][RULE-34] should reject archiving when active references exist", async () => {
-    const workspace = await createTestWorkspace("cli-rule-reject-");
+    const workspace = await createFixtureWorkspace("cli-rule-reject-");
 
     const ruleTag = formatArtifactTag("RULE", 1);
     const rule = await workspace.createRule({
@@ -83,11 +85,11 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
       context: "Dependent task.",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "archive",
       rule.tag,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
@@ -103,7 +105,7 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
 
   // @verifies RULE-25, RULE-27, RULE-31, RULE-34
   it("[RULE-25][RULE-27][RULE-31][RULE-34] should bypass active references guard with --force", async () => {
-    const workspace = await createTestWorkspace("cli-rule-force-");
+    const workspace = await createFixtureWorkspace("cli-rule-force-");
 
     const ruleTag = formatArtifactTag("RULE", 1);
     const rule = await workspace.createRule({
@@ -120,12 +122,12 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
       context: "Dependent task.",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "archive",
       rule.tag,
       "--force",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe(
@@ -140,7 +142,7 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
 
   // @verifies RULE-27, RULE-34
   it("[RULE-27][RULE-34] should emit machine JSON to stdout when --json is passed", async () => {
-    const workspace = await createTestWorkspace("cli-rule-json-");
+    const workspace = await createFixtureWorkspace("cli-rule-json-");
 
     const ruleTag = formatArtifactTag("RULE", 1);
     const rule = await workspace.createRule({
@@ -149,12 +151,12 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
       body: "Json rule.",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "archive",
       rule.tag,
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stderr).toContain(`✓ Archived RULE ${ruleTag}`);
@@ -169,7 +171,7 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
 
   // @verifies RULE-25, RULE-27, RULE-34
   it("[RULE-25][RULE-27][RULE-34] should execute rule archive via bin.ts subprocess", async () => {
-    const workspace = await createTestWorkspace("cli-rule-subprocess-");
+    const workspace = await createFixtureWorkspace("cli-rule-subprocess-");
 
     const ruleTag = formatArtifactTag("RULE", 1);
     const rule = await workspace.createRule({
@@ -178,11 +180,11 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
       body: "Subprocess rule.",
     });
 
-    const { stdout, stderr } = await workspace.execBin([
+    const { stdout, stderr } = await execBin([
       "rule",
       "archive",
       rule.tag,
-    ]);
+    ], workspace.cwd);
 
     expect(stdout.trim()).toBe(`.modie/rules/sub-rule.${ruleTag}.ARCHIVED.md`);
     expect(stderr).toContain(

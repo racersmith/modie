@@ -5,16 +5,21 @@
 
 import { describe, expect, it } from "bun:test";
 import { formatArtifactTag } from "../../../../core/index.ts";
-import { createTestWorkspace } from "../../test-utils.ts";
+import {
+  createFixtureWorkspace,
+} from "../../../../core/platform/testing/index.ts";
+import {
+  captureCli, execBin,
+} from "../../test-utils.ts";
 
 describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RULE-16, RULE-25, RULE-27)", () => {
   // @verifies RULE-27
   it("[RULE-27] should emit rule subcommand help to stderr with exit code 0", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-rule-help-");
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    await using workspace = await createFixtureWorkspace("modie-cli-rule-help-");
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "--help",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Usage: modie rule <subcommand>");
@@ -22,15 +27,15 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
   // @verifies RULE-1, RULE-8, RULE-25, RULE-27
   it("[RULE-1][RULE-8][RULE-25][RULE-27] should create a rule with relative path to stdout and status to stderr", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-rule-create-");
+    await using workspace = await createFixtureWorkspace("modie-cli-rule-create-");
     const expectedTag = formatArtifactTag("RULE", 1);
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "create",
       "CLI Stream Verification Rule",
       "--context",
       "Command output must separate machine and human streams.",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     // RULE-27: stdout strictly contains relative file path
@@ -50,16 +55,16 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
   // @verifies RULE-27
   it("[RULE-27] should emit machine-parsable JSON to stdout when --json is passed", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-rule-json-");
+    await using workspace = await createFixtureWorkspace("modie-cli-rule-json-");
     const expectedTag = formatArtifactTag("RULE", 1);
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "create",
       "JSON Mode Rule",
       "--context",
       "JSON payload must go to stdout.",
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stderr).toContain(`✓ Created rule ${expectedTag}`);
@@ -77,13 +82,13 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
   // @verifies RULE-8, ADR-12
   it("[RULE-8][ADR-12] should reject retired --flat flag with error to stderr", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-rule-flat-");
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    await using workspace = await createFixtureWorkspace("modie-cli-rule-flat-");
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "create",
       "Flat File Rule",
       "--flat",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
@@ -92,21 +97,21 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
   // @verifies RULE-13, RULE-16
   it("[RULE-13][RULE-16] should support linking to an ancestor ADR via --link", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-rule-link-");
+    await using workspace = await createFixtureWorkspace("modie-cli-rule-link-");
     const adr50 = await workspace.createAdr({
       id: 50,
       slug: "design",
       context: "Design ADR",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "create",
       "Linked Rule",
       "--link",
       adr50.tag,
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     const parsed = JSON.parse(stdout.trim());
@@ -118,15 +123,15 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
   // @verifies RULE-13, RULE-27
   it("[RULE-13][RULE-27] should reject non-ADR link with error to stderr", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-rule-err-");
+    await using workspace = await createFixtureWorkspace("modie-cli-rule-err-");
     const invalidTarget = formatArtifactTag("RULE", 1);
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "create",
       "Illegal Link Rule",
       "--link",
       invalidTarget,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
@@ -136,13 +141,13 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr when title is omitted", async () => {
-    await using workspace = await createTestWorkspace(
+    await using workspace = await createFixtureWorkspace(
       "modie-cli-rule-notitle-",
     );
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "create",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("Error: Missing required rule title");
@@ -150,13 +155,13 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr on unknown flag", async () => {
-    await using workspace = await createTestWorkspace("modie-cli-rule-flag-");
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    await using workspace = await createFixtureWorkspace("modie-cli-rule-flag-");
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "create",
       "Test Rule",
       "--bogus",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain('Error: Unknown flag "--bogus"');
@@ -164,7 +169,7 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
   // @verifies RULE-4, RULE-25, RULE-27
   it("[RULE-4][RULE-25][RULE-27] should create a rule with --supersedes and update predecessor", async () => {
-    await using workspace = await createTestWorkspace(
+    await using workspace = await createFixtureWorkspace(
       "modie-cli-rule-supersedes-",
     );
     const oldRule = await workspace.createRule({
@@ -175,7 +180,7 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
     });
 
     const newTag = formatArtifactTag("RULE", 2);
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "create",
       "New Rule",
@@ -183,7 +188,7 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
       "New rule assertion.",
       "--supersedes",
       oldRule.tag,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe(`.modie/rules/new-rule.${newTag}.md`);
@@ -197,7 +202,7 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
   // @verifies RULE-4, RULE-27
   it("[RULE-4][RULE-27] should emit supersedes in JSON output when --supersedes and --json are passed", async () => {
-    await using workspace = await createTestWorkspace(
+    await using workspace = await createFixtureWorkspace(
       "modie-cli-rule-sup-json-",
     );
     const oldRule = await workspace.createRule({
@@ -208,14 +213,14 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
     });
 
     const newTag = formatArtifactTag("RULE", 2);
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "create",
       "Superseding JSON Rule",
       "-S",
       oldRule.tag,
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     expect(stderr).toContain(
@@ -229,17 +234,17 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
   // @verifies RULE-13, RULE-27
   it("[RULE-13][RULE-27] should reject invalid --supersedes target with error to stderr", async () => {
-    await using workspace = await createTestWorkspace(
+    await using workspace = await createFixtureWorkspace(
       "modie-cli-rule-sup-err-",
     );
     const invalidTarget = formatArtifactTag("ADR", 1);
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "rule",
       "create",
       "Invalid Target Rule",
       "--supersedes",
       invalidTarget,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
@@ -248,16 +253,16 @@ describe("CLI Rule Creation - Execution & Stream Separation (RULE-8, RULE-13, RU
 
   // @verifies RULE-25, RULE-27
   it("[RULE-25][RULE-27] should execute rule create via bin.ts subprocess", async () => {
-    await using workspace = await createTestWorkspace(
+    await using workspace = await createFixtureWorkspace(
       "modie-cli-rule-subproc-",
     );
     const expectedTag = formatArtifactTag("RULE", 1);
-    const { stdout, stderr } = await workspace.execBin([
+    const { stdout, stderr } = await execBin([
       "rule",
       "create",
       "Subprocess Rule",
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(stderr).toContain(`✓ Created rule ${expectedTag}`);
     const parsed = JSON.parse(stdout.trim());

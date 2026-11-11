@@ -10,7 +10,7 @@ import {
   createFixtureWorkspace,
   type FixtureWorkspace,
 } from "../../../../core/platform/testing/index.ts";
-import { runCli } from "../../cli.ts";
+import { runCli } from "../../test-utils.ts";
 
 describe("CLI `modie link` and `modie unlink` Commands (ADR-5, RULE-27, RULE-36)", () => {
   let workspace: FixtureWorkspace;
