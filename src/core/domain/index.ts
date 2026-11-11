@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Pure artifact schemas, graph primitives, subtype definitions,
- * and definition registry (ADR-13, RULE-38).
+ * and definition registry (RULE-38).
  * Strictly isolated with zero imports to platform or engine services.
  */
 

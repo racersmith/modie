@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: ADR markdown template generator, renderer, and parser.
- * Pure domain logic enforcing ADR-4, ADR-13, RULE-14, and RULE-38 with zero platform/engine dependencies.
+ * Pure domain logic enforcing ADR-4, RULE-14, and RULE-38 with zero platform/engine dependencies.
  */
 
 import { parseArtifactMarkdownDocument } from "../common/parser.ts";
@@ -244,7 +244,7 @@ export function parseAdrFromContext(context: ArtifactParseContext): AdrArtifact 
 }
 
 /**
- * Parses an ADR markdown document into a structured AdrArtifact object (ADR-13, RULE-38).
+ * Parses an ADR markdown document into a structured AdrArtifact object (RULE-38).
  */
 export function parseAdrMarkdown(
   content: string,

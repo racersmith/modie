@@ -1,7 +1,7 @@
 /**
  * Pure tag and link syntax predicates for Modie artifacts.
  * Enforces subtype syntax grammar for document linking and task dependencies.
- * Complies with ADR-5, ADR-13, RULE-13, RULE-14, RULE-15, RULE-18, and RULE-38.
+ * Complies with ADR-5, RULE-13, RULE-14, RULE-15, RULE-18, and RULE-38.
  */
 
 import { parseCanonicalTag } from "../common/tag.ts";

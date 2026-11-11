@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Declarative artifact definition for TASK artifacts.
- * Pure domain model complying with ADR-4, ADR-6, ADR-9, ADR-13, RULE-1, RULE-6, RULE-8, RULE-12, RULE-15, RULE-18, RULE-21, RULE-22, and RULE-38.
+ * Pure domain model complying with ADR-4, ADR-6, ADR-9, RULE-1, RULE-6, RULE-8, RULE-12, RULE-15, RULE-18, RULE-21, RULE-22, and RULE-38.
  */
 
 import { slugToTitle } from "../common/slug.ts";

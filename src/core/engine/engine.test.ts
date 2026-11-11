@@ -31,9 +31,9 @@ function extractImportSpecifiers(content: string): string[] {
   return specifiers;
 }
 
-// @verifies RULE-38, ADR-13
-describe("Engine Architectural Layer Invariants (RULE-38, ADR-13)", () => {
-  it("[RULE-38][ADR-13] engine services must only import from domain, platform, and engine namespaces", async () => {
+// @verifies RULE-38
+describe("Engine Architectural Layer Invariants (RULE-38)", () => {
+  it("[RULE-38] engine services must only import from domain, platform, and engine namespaces", async () => {
     const engineFiles = await collectTsFiles(ENGINE_DIR);
     expect(engineFiles.length).toBeGreaterThan(15);
 
@@ -100,7 +100,7 @@ describe("Engine Architectural Layer Invariants (RULE-38, ADR-13)", () => {
     expect(violations).toEqual([]);
   });
 
-  it("[RULE-38][ADR-13] engine facade exports all primary services across traversal, context, query, linking, archival, lifecycle, and pipeline", () => {
+  it("[RULE-38] engine facade exports all primary services across traversal, context, query, linking, archival, lifecycle, and pipeline", () => {
     // Traversal
     expect(typeof engine.resolveWatermark).toBe("function");
     expect(typeof engine.scanActiveArtifacts).toBe("function");

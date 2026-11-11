@@ -12,7 +12,7 @@ import {
   createFixtureWorkspace,
   makeTestTag,
   type FixtureWorkspace,
-} from "../../core/testing/index.ts";
+} from "../../core/platform/testing/index.ts";
 import { registerAllResources } from "./resources.ts";
 
 describe("Modie Ambient MCP Resources (RULE-25, RULE-26)", () => {

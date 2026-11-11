@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Domain types and schemas for TASK primitive artifacts.
- * Complies with ADR-4, ADR-6, ADR-9, ADR-13, RULE-1, RULE-6, RULE-8, RULE-12, RULE-15, RULE-18, RULE-21, RULE-22, and RULE-38.
+ * Complies with ADR-4, ADR-6, ADR-9, RULE-1, RULE-6, RULE-8, RULE-12, RULE-15, RULE-18, RULE-21, RULE-22, and RULE-38.
  */
 
 import type { CreateArtifactResult, WatermarkDetails } from "../types.ts";

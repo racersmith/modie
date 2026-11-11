@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "bun:test";
 import { formatArtifactFilename } from "../common/filename.ts";
-import { makeTestTag } from "../../testing/index.ts";
+import { makeTestTag } from "../../platform/testing/index.ts";
 import {
   extractAdrSummary,
   parseAdrMarkdown,

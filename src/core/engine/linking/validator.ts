@@ -19,7 +19,10 @@ import {
   resolveArtifactDirectories,
   resolveGoverningScope,
   resolveSubtypeLinkPolicy,
+  type ArtifactLinkRelationship,
   type IndexableSubtype,
+  type LinkAncestryScope,
+  type SubtypeLinkPolicy,
 } from "../../domain/index.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
 import {
@@ -31,9 +34,6 @@ import { scanActiveTasks } from "../traversal/active-scanner.ts";
 import { resolveWorkspaceContext } from "../context/resolver.ts";
 import type { WorkspaceContext } from "../context/types.ts";
 import type {
-  ArtifactLinkRelationship,
-  LinkAncestryScope,
-  SubtypeLinkPolicy,
   ValidateLinkOptions,
   ValidatedLinkContext,
 } from "./types.ts";

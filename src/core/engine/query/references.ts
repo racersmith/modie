@@ -35,9 +35,6 @@ import type {
   ResolvedArtifact,
 } from "./types.ts";
 
-export * from "./citation-source.ts";
-export * from "./citation-classifier.ts";
-
 /**
  * Pure function that extracts and normalizes all outbound declared links,
  * dependencies, and supersession relationships from an artifact.

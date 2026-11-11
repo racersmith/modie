@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Task markdown template generator, renderer, and parser.
- * Pure domain logic enforcing ADR-13, RULE-15, RULE-18, RULE-22, and RULE-38 with zero platform/engine dependencies.
+ * Pure domain logic enforcing RULE-15, RULE-18, RULE-22, and RULE-38 with zero platform/engine dependencies.
  */
 
 import { parseArtifactMarkdownDocument } from "../common/parser.ts";
@@ -216,7 +216,7 @@ export function parseTaskFromContext(
 }
 
 /**
- * Parses a TASK markdown document into a structured TaskArtifact object (ADR-13, RULE-38).
+ * Parses a TASK markdown document into a structured TaskArtifact object (RULE-38).
  */
 export function parseTaskMarkdown(
   content: string,

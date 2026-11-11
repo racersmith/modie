@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Rule markdown template generator, renderer, and parser.
- * Pure domain logic enforcing ADR-13, RULE-3, RULE-11, RULE-13, and RULE-38 with zero platform/engine dependencies.
+ * Pure domain logic enforcing RULE-3, RULE-11, RULE-13, and RULE-38 with zero platform/engine dependencies.
  */
 
 import { parseArtifactMarkdownDocument } from "../common/parser.ts";
@@ -165,7 +165,7 @@ export function parseRuleFromContext(context: ArtifactParseContext): RuleArtifac
 }
 
 /**
- * Parses a RULE markdown document into a structured RuleArtifact object (ADR-13, RULE-38).
+ * Parses a RULE markdown document into a structured RuleArtifact object (RULE-38).
  */
 export function parseRuleMarkdown(
   content: string,

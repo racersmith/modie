@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Domain types and schemas for ADR primitive artifacts.
- * Complies with ADR-1, ADR-2, ADR-4, ADR-13, RULE-1, RULE-4, RULE-14, RULE-17, and RULE-38.
+ * Complies with ADR-1, ADR-2, ADR-4, RULE-1, RULE-4, RULE-14, RULE-17, and RULE-38.
  */
 
 import type { CreateArtifactResult } from "../types.ts";

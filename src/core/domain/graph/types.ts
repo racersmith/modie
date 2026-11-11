@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Graph primitives and linking types.
- * Defines graph relationships, link ancestry scopes, and declarative link policies (ADR-5, ADR-13, RULE-38).
+ * Defines graph relationships, link ancestry scopes, and declarative link policies (ADR-5, RULE-38).
  */
 
 export type ArtifactLinkRelationship = "links" | "depends_on";

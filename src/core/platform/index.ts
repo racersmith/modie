@@ -1,5 +1,5 @@
 /**
- * Modie Core Platform: Host infrastructure layer (RULE-38, ADR-13).
+ * Modie Core Platform: Host infrastructure layer (RULE-38).
  * Provides isolated I/O adapters for VCS, Markdown parsing, and configuration loading.
  * Does not export test fixtures to production bundles.
  */

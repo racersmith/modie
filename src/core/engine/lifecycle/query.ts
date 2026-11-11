@@ -44,9 +44,6 @@ import {
   filterTaskQueueItems,
 } from "./readiness.ts";
 
-export * from "./readiness.ts";
-export * from "../../domain/task/ordering.ts";
-
 export interface TaskQueueQueryOptions {
   /**
    * Root directory for active task scanning.

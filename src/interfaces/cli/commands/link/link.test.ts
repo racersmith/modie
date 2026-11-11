@@ -9,7 +9,7 @@ import {
   createFixtureWorkspace,
   makeTestTag,
   type FixtureWorkspace,
-} from "../../../../core/testing/index.ts";
+} from "../../../../core/platform/testing/index.ts";
 import { runCli } from "../../cli.ts";
 
 describe("CLI `modie link` and `modie unlink` Commands (ADR-5, RULE-27, RULE-36)", () => {

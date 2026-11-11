@@ -20,8 +20,6 @@ import {
 } from "../../platform/markdown/index.ts";
 import type { ListArtifactsOptions, ListedArtifact } from "./types.ts";
 
-export type { ListArtifactsOptions, ListedArtifact } from "./types.ts";
-
 /**
  * Natural comparator for sorting artifact IDs (e.g. 1, 2, 9, 10, TEST-1, TEST-2).
  */

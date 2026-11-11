@@ -7,7 +7,7 @@ import {
   createFixtureWorkspace,
   makeTestTag,
   type FixtureWorkspace,
-} from "../../testing/index.ts";
+} from "../../platform/testing/index.ts";
 import {
   escapeRegex,
   findDeepestCommonAncestor,

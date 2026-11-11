@@ -7,7 +7,7 @@
 import { describe, expect, it } from "bun:test";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { createDynamicWorkspaceManager } from "./roots.ts";
-import { createWorkspaceContextSync } from "../../core/context.ts";
+import { createWorkspaceContextSync } from "../../core/index.ts";
 
 describe("[RULE-37][ADR-12] Dynamic MCP Workspace Roots Tracking", () => {
   it("should dynamically resolve workspace root from client roots/list", async () => {

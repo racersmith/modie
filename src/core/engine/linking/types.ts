@@ -7,8 +7,6 @@
 
 import type { ResolvedArtifact } from "../../domain/index.ts";
 import type { WorkspaceContext } from "../context/types.ts";
-
-export type * from "../../domain/graph/types.ts";
 import type {
   ArtifactLinkRelationship,
   SubtypeLinkPolicy,

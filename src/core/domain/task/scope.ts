@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Task Scope & Spatial Placement Invariant Validators.
- * Pure domain logic enforcing ADR-13, RULE-6, RULE-12, and RULE-38 with zero platform/engine dependencies.
+ * Pure domain logic enforcing RULE-6, RULE-12, and RULE-38 with zero platform/engine dependencies.
  */
 
 import { isAbsolute, relative, resolve } from "node:path";

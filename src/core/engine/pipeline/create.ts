@@ -258,8 +258,6 @@ export async function createArtifact<
   };
 }
 
-export { buildArtifactParseContext } from "../../platform/markdown/index.ts";
-
 /**
  * Parses raw markdown content into a strongly-typed artifact object using the
  * subtype's bidirectional ArtifactDefinition.parse contract.

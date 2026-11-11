@@ -13,7 +13,7 @@ import {
   createFixtureWorkspace,
   makeTestTag,
   type FixtureWorkspace,
-} from "../../core/testing/index.ts";
+} from "../../core/platform/testing/index.ts";
 import { createModieMcpServer } from "./server.ts";
 
 function getTextContent(result: any): string {

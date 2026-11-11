@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Domain types for Modie MOTIVE artifacts.
- * Enforces ADR-2, ADR-4, ADR-10, ADR-13, RULE-2, RULE-8, RULE-10, RULE-12, and RULE-38.
+ * Enforces ADR-2, ADR-4, ADR-10, RULE-2, RULE-8, RULE-10, RULE-12, and RULE-38.
  */
 
 export interface ResolveMotiveOptions {

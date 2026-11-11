@@ -10,7 +10,7 @@ import type {
   CommandHandler,
 } from "../types.ts";
 import { generateCommandHelp } from "./help.ts";
-import { createWorkspaceContext } from "../../../core/context.ts";
+import { createWorkspaceContext } from "../../../core/index.ts";
 import type {
   CliCommandDefinition,
   CliExecutionContext,

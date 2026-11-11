@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Primitive domain types for RULE artifacts.
- * Complies with ADR-13, RULE-1, RULE-3, RULE-11, RULE-13, and RULE-38.
+ * Complies with RULE-1, RULE-3, RULE-11, RULE-13, and RULE-38.
  */
 
 import type { CreateArtifactResult } from "../types.ts";

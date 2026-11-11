@@ -8,7 +8,11 @@
 
 import { readFile, writeFile } from "node:fs/promises";
 import YAML from "yaml";
-import { parseCanonicalTag } from "../../domain/index.ts";
+import {
+  parseCanonicalTag,
+  type ArtifactLinkRelationship,
+  type FrontmatterListField,
+} from "../../domain/index.ts";
 import { resolveWorkspaceContext } from "../context/index.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
 import {
@@ -17,8 +21,6 @@ import {
 } from "../../platform/markdown/index.ts";
 import type { ResolvedArtifact } from "../query/types.ts";
 import type {
-  ArtifactLinkRelationship,
-  FrontmatterListField,
   LinkMutationResult,
   MutateArtifactLinkOptions,
 } from "./types.ts";

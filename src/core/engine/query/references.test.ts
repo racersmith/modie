@@ -11,10 +11,8 @@ import {
   type FixtureWorkspace,
 } from "../../platform/testing/index.ts";
 import { MockVcsAdapter } from "../../platform/vcs/index.ts";
-import {
-  findArtifactReferences,
-  isTestVerificationCitation,
-} from "./references.ts";
+import { findArtifactReferences } from "./references.ts";
+import { isTestVerificationCitation } from "./citation-classifier.ts";
 
 describe("Artifact References Query Engine (RULE-25, RULE-31, RULE-34, RULE-35)", () => {
   let workspace: FixtureWorkspace;

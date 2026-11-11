@@ -1,7 +1,7 @@
 /**
  * Declarative link and dependency governance policy matrix.
  * Enforces subtype compatibility, spatial ancestry/subtree scoping,
- * and DAG cycle constraints per ADR-5, ADR-13, RULE-7, RULE-13, RULE-14, RULE-15,
+ * and DAG cycle constraints per ADR-5, RULE-7, RULE-13, RULE-14, RULE-15,
  * RULE-16, RULE-17, RULE-18, RULE-19, and RULE-38.
  */
 

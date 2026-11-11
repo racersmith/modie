@@ -11,13 +11,12 @@ import {
   collectBranchOnlyTasks,
   collectBranchTasks,
   collectDeletedTasks,
-  compareTaskIds,
   getTaskStatus,
   queryTaskHistory,
   queryTaskQueue,
   toTaskQueueItem,
 } from "./index.ts";
-import { parseTaskIdFromBranch } from "../../domain/index.ts";
+import { compareTaskIds, parseTaskIdFromBranch } from "../../domain/index.ts";
 import { MockVcsAdapter } from "../../platform/vcs/mock-adapter.ts";
 
 describe("Task Queue Query Service - ID Comparison & Natural Ordering", () => {

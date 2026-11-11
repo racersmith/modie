@@ -1,6 +1,6 @@
 /**
  * Modie Core: Engine Layer.
- * Graph traversal, context compilation, query, linking, archival, task lifecycle management, and artifact pipelines (ADR-13, RULE-38).
+ * Graph traversal, context compilation, query, linking, archival, task lifecycle management, and artifact pipelines (RULE-38).
  */
 
 // Engine services

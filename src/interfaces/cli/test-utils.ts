@@ -9,7 +9,7 @@ import {
   type CreatedFixtureArtifact,
   type FixtureWorkspace,
   type TaskCriterionItem,
-} from "../../core/testing/index.ts";
+} from "../../core/platform/testing/index.ts";
 import { runCli } from "./cli.ts";
 import type { CliIoOptions } from "./types.ts";
 

@@ -6,8 +6,10 @@
 import { fileURLToPath } from "node:url";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { RootsListChangedNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
-import { createWorkspaceContextSync } from "../../core/context.ts";
-import type { WorkspaceContext } from "../../core/context.ts";
+import {
+  createWorkspaceContextSync,
+  type WorkspaceContext,
+} from "../../core/index.ts";
 import type { IVcsAdapter } from "../../core/platform/vcs/types.ts";
 
 export interface DynamicWorkspaceManager {

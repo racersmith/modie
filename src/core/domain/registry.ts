@@ -1,7 +1,7 @@
 /**
  * Modie Core Domain Layer: Composition Root for Artifact Definitions and Extensions.
  * Registers concrete subtype definitions into the declarative pipeline DefinitionRegistry.
- * Complies with ADR-1, ADR-2, ADR-4, ADR-13, RULE-25, and RULE-38.
+ * Complies with ADR-1, ADR-2, ADR-4, RULE-25, and RULE-38.
  */
 
 import { adrDefinition, type AdrDefinition } from "./adr/definition.ts";

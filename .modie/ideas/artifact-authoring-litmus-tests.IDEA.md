@@ -51,7 +51,7 @@ To keep governance lean, durable, and high-signal, every primitive artifact subt
 * **The Litmus Question:** *"Does this decision actively constrain, guide, or justify how future code must be written in this repository?"*
 * **Author an ADR when:**
   - Choosing between mutually exclusive architectural approaches or design patterns.
-  - Decoupling layers or establishing dependency boundaries that every future module must respect (e.g., ADR-13).
+  - Decoupling layers or establishing dependency boundaries that every future module must respect.
   - Adopting an architectural invariant whose rationale would not be obvious to a future developer.
 * **DO NOT author an ADR when:**
   - Recording the retirement, deletion, or cleanup of an obsolete feature. (Use Git commit history, task context, or archive status on the original ADR).

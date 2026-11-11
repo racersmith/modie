@@ -9,7 +9,7 @@ import { formatCommandTable } from "./framework/help.ts";
 import type { CliCommandDefinition } from "./framework/types.ts";
 import type { CliIoOptions, CommandHandler } from "./types.ts";
 
-import { MODIE_VERSION } from "../../core/common/version.ts";
+import { MODIE_VERSION } from "../../core/index.ts";
 
 export { MODIE_VERSION };
 

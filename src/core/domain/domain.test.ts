@@ -39,9 +39,9 @@ function extractImportSpecifiers(content: string): string[] {
   return specifiers;
 }
 
-// @verifies RULE-38, ADR-13
-describe("Domain Architectural Layer Invariants (RULE-38, ADR-13)", () => {
-  it("[RULE-38][ADR-13] domain models must contain zero imports to platform or engine services", async () => {
+// @verifies RULE-38
+describe("Domain Architectural Layer Invariants (RULE-38)", () => {
+  it("[RULE-38] domain models must contain zero imports to platform or engine services", async () => {
     const domainFiles = await collectTsFiles(DOMAIN_DIR);
     expect(domainFiles.length).toBeGreaterThan(10);
 
@@ -120,8 +120,8 @@ describe("Domain Architectural Layer Invariants (RULE-38, ADR-13)", () => {
     expect(violations).toEqual([]);
   });
 
-  // @verifies ADR-13, RULE-25
-  it("[ADR-13][RULE-25] domain registry centralizes composition root across built-in subtypes", () => {
+  // @verifies RULE-25
+  it("[RULE-25] domain registry centralizes composition root across built-in subtypes", () => {
     const registry = createDefaultDefinitionRegistry();
     expect(registry.has("RULE")).toBe(true);
     expect(registry.has("ADR")).toBe(true);

@@ -22,7 +22,7 @@ import { parseMarkdownSections } from "../markdown/index.ts";
 import {
   createWorkspaceContextSync,
   type WorkspaceContext,
-} from "../../context.ts";
+} from "../../engine/context/index.ts";
 
 const execFileAsync = promisify(execFile);
 

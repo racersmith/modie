@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { makeTestTag } from "../../testing/index.ts";
+import { makeTestTag } from "../../platform/testing/index.ts";
 import {
   asArtifactSubtype,
   asArtifactTag,

@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Declarative artifact definition for ADR artifacts.
- * Pure domain model complying with ADR-1, ADR-2, ADR-4, ADR-13, RULE-1, RULE-4, RULE-8, RULE-14, RULE-17, and RULE-38.
+ * Pure domain model complying with ADR-1, ADR-2, ADR-4, RULE-1, RULE-4, RULE-8, RULE-14, RULE-17, and RULE-38.
  */
 
 import { LINK_POLICY } from "../graph/policy.ts";

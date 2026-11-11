@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Canonical MOTIVE path resolution and scope normalization utilities.
- * Enforces ADR-2, ADR-4, ADR-10, ADR-13, RULE-2, RULE-8, RULE-12, and RULE-38:
+ * Enforces ADR-2, ADR-4, ADR-10, RULE-2, RULE-8, RULE-12, and RULE-38:
  * - Singleton containment: `<dir>/.modie/MOTIVE.md`
  */
 

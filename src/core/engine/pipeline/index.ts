@@ -1,5 +1,5 @@
 /**
- * Modie Core: Generic and declarative artifact pipeline engine services (RULE-38, ADR-13).
+ * Modie Core: Generic and declarative artifact pipeline engine services (RULE-38).
  */
 
 export * from "./create.ts";

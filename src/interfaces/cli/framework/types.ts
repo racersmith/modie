@@ -5,7 +5,7 @@
 
 import type { z } from "zod";
 import type { CliIoOptions } from "../types.ts";
-import type { WorkspaceContext } from "../../../core/context.ts";
+import type { WorkspaceContext } from "../../../core/index.ts";
 
 export interface CliFlagDefinition {
   /**

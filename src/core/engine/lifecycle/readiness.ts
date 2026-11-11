@@ -12,8 +12,6 @@ import {
   type TaskReadiness,
 } from "../../domain/index.ts";
 
-export type { TaskReadiness } from "../../domain/index.ts";
-
 /**
  * Summary criteria progress statistics.
  */

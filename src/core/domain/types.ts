@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Core pipeline types and subtype contracts.
- * Pure domain schemas with zero dependencies on engine or platform services (ADR-13, RULE-38).
+ * Pure domain schemas with zero dependencies on engine or platform services (RULE-38).
  */
 
 import type { ArtifactSubtype, IndexableSubtype } from "./common/types.ts";

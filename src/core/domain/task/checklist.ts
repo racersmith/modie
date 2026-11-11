@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Acceptance criteria checklist parser and validator for TASK artifacts.
- * Complies with ADR-13, RULE-22, and RULE-38.
+ * Complies with RULE-22, and RULE-38.
  */
 
 import type { TaskAcceptanceCriteriaItem } from "./types.ts";

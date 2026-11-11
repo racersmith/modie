@@ -1,6 +1,6 @@
 /**
  * Modie Core: Guarded Artifact Archival engine module.
- * Complies with RULE-4, RULE-25, RULE-31, RULE-38, and ADR-13.
+ * Complies with RULE-4, RULE-25, RULE-31, RULE-38.
  */
 
 export * from "./types.ts";

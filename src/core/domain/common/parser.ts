@@ -1,6 +1,6 @@
 /**
  * Modie Core Domain Layer: Pure markdown document and context parser.
- * Complies with ADR-13 and RULE-38 with zero platform or engine dependencies.
+ * Complies with RULE-38 with zero platform or engine dependencies.
  */
 
 import { parseArtifactFilename } from "./filename.ts";
