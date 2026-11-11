@@ -6,8 +6,10 @@
 import { describe, expect, it } from "bun:test";
 import { formatArtifactTag } from "../../../../core/index.ts";
 import {
+  createFixtureWorkspace,
+} from "../../../../core/platform/testing/index.ts";
+import {
   captureCli,
-  createTestWorkspace,
 } from "../../test-utils.ts";
 
 describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-25, RULE-26, RULE-27, RULE-34, ADR-8)", () => {
@@ -28,7 +30,7 @@ describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-25, RULE-26, 
 
   // @verifies RULE-2, RULE-9, RULE-25, RULE-26, RULE-27, RULE-34, RULE-35, ADR-8
   it("[RULE-2][RULE-9][RULE-25][RULE-26][RULE-27][RULE-34][RULE-35][ADR-8] should support default stderr summary, --raw markdown on stdout, and --json payload on stdout", async () => {
-    const workspace = await createTestWorkspace("modie-cli-context-");
+    const workspace = await createFixtureWorkspace("modie-cli-context-");
     const ruleTag = formatArtifactTag("RULE", 1);
     const adrTag = formatArtifactTag("ADR", 1);
     const taskTag = formatArtifactTag("TASK", 1);
@@ -68,7 +70,7 @@ describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-25, RULE-26, 
       });
 
       // 1. Default human-readable mode: emits to stderr, stdout is empty (RULE-27)
-      const humanRes = await workspace.captureCli(["context", "src/core"]);
+      const humanRes = await captureCli(["context", "src/core"], workspace.cwd);
       expect(humanRes.exitCode).toBe(0);
       expect(humanRes.stdout).toBe("");
       expect(humanRes.stderr).toContain("Context Compilation: src/core");
@@ -82,7 +84,7 @@ describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-25, RULE-26, 
       expect(humanRes.stderr).toContain("src/core/child");
 
       // 2. --raw mode: emits synthesized Markdown document to stdout, stderr is empty (RULE-27)
-      const rawRes = await workspace.captureCli(["context", taskTag, "--raw"]);
+      const rawRes = await captureCli(["context", taskTag, "--raw"], workspace.cwd);
       expect(rawRes.exitCode).toBe(0);
       expect(rawRes.stderr).toBe("");
       expect(rawRes.stdout).toContain(`# Architectural Context: ${taskTag}`);
@@ -96,11 +98,11 @@ describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-25, RULE-26, 
       expect(rawRes.stdout).toContain("## Child Motives");
 
       // 3. --json mode: emits structured JSON to stdout, stderr is empty (RULE-26, RULE-27)
-      const jsonRes = await workspace.captureCli([
+      const jsonRes = await captureCli([
         "context",
         taskTag,
         "--json",
-      ]);
+      ], workspace.cwd);
       expect(jsonRes.exitCode).toBe(0);
       expect(jsonRes.stderr).toBe("");
       const parsed = JSON.parse(jsonRes.stdout);

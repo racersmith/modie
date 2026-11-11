@@ -14,7 +14,7 @@ CLI tests currently mix importing test fixture helpers from test-utils.ts and pl
 
 # Acceptance Criteria
 
-- [ ] test-utils.ts cleaned up to expose only CLI-specific helpers such as runCli
-- [ ] All CLI test files import test fixtures directly from core platform testing
-- [ ] All checks pass via bun run verify
-- [ ] User Review
+- [x] test-utils.ts cleaned up to expose only CLI-specific helpers such as runCli
+- [x] All CLI test files import test fixtures directly from core platform testing
+- [x] All checks pass via bun run verify
+- [x] User Review

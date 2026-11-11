@@ -5,15 +5,17 @@
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
-  createTestWorkspace,
-  type TestWorkspace,
+  createFixtureWorkspace, type FixtureWorkspace,
+} from "../../../../core/platform/testing/index.ts";
+import {
+  captureCli, execBin,
 } from "../../test-utils.ts";
 
 describe("CLI Scope - Execution & Stream Separation (RULE-6, RULE-8, RULE-9, RULE-12, RULE-25, RULE-27, RULE-34, RULE-35)", () => {
-  let workspace: TestWorkspace;
+  let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
-    workspace = await createTestWorkspace("modie-cli-scope-");
+    workspace = await createFixtureWorkspace("modie-cli-scope-");
 
     // Root scope setup
     await workspace.createRule({
@@ -40,10 +42,10 @@ describe("CLI Scope - Execution & Stream Separation (RULE-6, RULE-8, RULE-9, RUL
 
   // @verifies RULE-27
   it("[RULE-27] should emit scope help to stderr with exit code 0", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "scope",
       "--help",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Usage: modie scope");
@@ -52,7 +54,7 @@ describe("CLI Scope - Execution & Stream Separation (RULE-6, RULE-8, RULE-9, RUL
 
   // @verifies RULE-8, RULE-25, RULE-27
   it("[RULE-8][RULE-25][RULE-27] should default to root scope when target is omitted", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli(["scope"]);
+    const { exitCode, stdout, stderr } = await captureCli(["scope"], workspace.cwd);
     expect(exitCode).toBe(0);
     expect(stdout).toBe("");
     expect(stderr).toContain("Scope Resolution: .");
@@ -67,10 +69,10 @@ describe("CLI Scope - Execution & Stream Separation (RULE-6, RULE-8, RULE-9, RUL
       "export const scope = 1;",
     );
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "scope",
       "src/interfaces/cli/commands/scope/scope.ts",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(0);
     // RULE-27: stdout must be empty
     expect(stdout).toBe("");
@@ -90,11 +92,11 @@ describe("CLI Scope - Execution & Stream Separation (RULE-6, RULE-8, RULE-9, RUL
       "export const scope = 1;",
     );
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "scope",
       "src/interfaces/cli/commands/scope/scope.ts",
       "--json",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
 
@@ -113,11 +115,11 @@ describe("CLI Scope - Execution & Stream Separation (RULE-6, RULE-8, RULE-9, RUL
 
   // @verifies RULE-8, RULE-9, RULE-12, RULE-25, RULE-27
   it("[RULE-8][RULE-9][RULE-12][RULE-25][RULE-27] should resolve artifact tag bidirectionally", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "scope",
       "RULE-TEST-2",
       "--json",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
 
@@ -132,7 +134,7 @@ describe("CLI Scope - Execution & Stream Separation (RULE-6, RULE-8, RULE-9, RUL
 
   // @verifies RULE-25, RULE-27
   it("[RULE-25][RULE-27] should execute scope command via bin.ts subprocess", async () => {
-    const { stdout, stderr } = await workspace.execBin(["scope", "--json"]);
+    const { stdout, stderr } = await execBin(["scope", "--json"], workspace.cwd);
     expect(stderr).toBe("");
 
     const payload = JSON.parse(stdout.trim());
@@ -141,10 +143,10 @@ describe("CLI Scope - Execution & Stream Separation (RULE-6, RULE-8, RULE-9, RUL
   });
 
   it("should report error to stderr when path is outside workspace root", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "scope",
       "../outside",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("path must reside within the workspace root");

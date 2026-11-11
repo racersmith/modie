@@ -5,15 +5,17 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { formatArtifactTag } from "../../../../core/index.ts";
 import {
-  createTestWorkspace,
-  type TestWorkspace,
+  createFixtureWorkspace, type FixtureWorkspace,
+} from "../../../../core/platform/testing/index.ts";
+import {
+  captureCli, execBin,
 } from "../../test-utils.ts";
 
 describe("CLI Task Creation - Execution & Stream Separation (RULE-1, RULE-25, RULE-27, RULE-34, RULE-35, ADR-1, ADR-6, ADR-9)", () => {
-  let workspace: TestWorkspace;
+  let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
-    workspace = await createTestWorkspace("modie-cli-task-create-");
+    workspace = await createFixtureWorkspace("modie-cli-task-create-");
   });
 
   afterEach(async () => {
@@ -26,7 +28,7 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-1, RULE-25, RU
     const adr = await workspace.createAdr({ id: 1, slug: "link-adr" });
     const rule = await workspace.createRule({ id: 27, slug: "link-rule" });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "create",
       "CLI Stream Verification Task",
@@ -42,7 +44,7 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-1, RULE-25, RU
       "Verify stdout path,Verify stderr log",
       "--branch",
       "dev",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
 
@@ -57,7 +59,7 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-1, RULE-25, RU
 
   // @verifies RULE-27, RULE-34
   it("[RULE-27][RULE-34] should emit machine-parsable JSON to stdout when --json is passed", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "create",
       "JSON Output Mode Task",
@@ -66,7 +68,7 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-1, RULE-25, RU
       "--branch",
       "dev",
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
 
@@ -83,7 +85,7 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-1, RULE-25, RU
 
   // @verifies ADR-9, RULE-34, RULE-35
   it("[ADR-9][RULE-34][RULE-35] should support prefix tag via --prefix flag", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "create",
       "Prefixed CLI Task",
@@ -94,7 +96,7 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-1, RULE-25, RU
       "--branch",
       "feature/new-command",
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     const parsed = JSON.parse(stdout);
@@ -105,10 +107,10 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-1, RULE-25, RU
 });
 
 describe("CLI Task Creation - Validation & Errors (RULE-15, RULE-18, RULE-27, RULE-35)", () => {
-  let workspace: TestWorkspace;
+  let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
-    workspace = await createTestWorkspace("modie-cli-task-errors-");
+    workspace = await createFixtureWorkspace("modie-cli-task-errors-");
   });
 
   afterEach(async () => {
@@ -117,10 +119,10 @@ describe("CLI Task Creation - Validation & Errors (RULE-15, RULE-18, RULE-27, RU
 
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr when title is omitted", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "create",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("Error: Missing required task title");
@@ -128,12 +130,12 @@ describe("CLI Task Creation - Validation & Errors (RULE-15, RULE-18, RULE-27, RU
 
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr on unknown flags", async () => {
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "create",
       "Some Title",
       "--unknown-flag",
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain('Error: Unknown flag "--unknown-flag"');
@@ -144,13 +146,13 @@ describe("CLI Task Creation - Validation & Errors (RULE-15, RULE-18, RULE-27, RU
     const illegalLink = formatArtifactTag("TASK", 1);
     const rule15Tag = formatArtifactTag("RULE", 15);
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "create",
       "Invalid Links Test",
       "--links",
       illegalLink,
-    ]);
+    ], workspace.cwd);
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("Invalid task link target");
@@ -159,10 +161,10 @@ describe("CLI Task Creation - Validation & Errors (RULE-15, RULE-18, RULE-27, RU
 });
 
 describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RULE-25, RULE-27, RULE-34, RULE-35)", () => {
-  let workspace: TestWorkspace;
+  let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
-    workspace = await createTestWorkspace("modie-cli-task-flags-");
+    workspace = await createFixtureWorkspace("modie-cli-task-flags-");
   });
 
   afterEach(async () => {
@@ -173,7 +175,7 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
   it("[RULE-25][RULE-27][RULE-34][RULE-35] should preserve criteria with punctuation verbatim when using -a or --criterion", async () => {
     const rule27Tag = formatArtifactTag("RULE", 27);
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "create",
       "Verbatim Criteria Test",
@@ -186,7 +188,7 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
       "--criterion",
       `Ensure stdout and stderr separation, per ${rule27Tag}`,
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     const parsed = JSON.parse(stdout.trim());
@@ -202,7 +204,7 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
 
   // @verifies RULE-25, RULE-27, RULE-34
   it("[RULE-25][RULE-27][RULE-34] should omit User Review criterion when --no-review is passed", async () => {
-    const { exitCode, stdout } = await workspace.captureCli([
+    const { exitCode, stdout } = await captureCli([
       "task",
       "create",
       "No Review CLI Task",
@@ -214,7 +216,7 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
       "-a",
       "Automated step only",
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     const parsed = JSON.parse(stdout.trim());
@@ -230,7 +232,7 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
       slug: "link-rule-twenty-five",
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "create",
       "Repeated Links Test",
@@ -243,7 +245,7 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
       "-l",
       rule.tag,
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(0);
     const parsed = JSON.parse(stdout.trim());
@@ -252,10 +254,10 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
 });
 
 describe("CLI Task Creation - Subprocess Execution (RULE-25, RULE-27, RULE-34)", () => {
-  let workspace: TestWorkspace;
+  let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
-    workspace = await createTestWorkspace("modie-cli-task-subproc-");
+    workspace = await createFixtureWorkspace("modie-cli-task-subproc-");
   });
 
   afterEach(async () => {
@@ -264,7 +266,7 @@ describe("CLI Task Creation - Subprocess Execution (RULE-25, RULE-27, RULE-34)",
 
   // @verifies RULE-25, RULE-27, RULE-34
   it("[RULE-25][RULE-27][RULE-34] should execute bin.ts as a child process and return valid output", async () => {
-    const { stdout, stderr } = await workspace.execBin([
+    const { stdout, stderr } = await execBin([
       "task",
       "create",
       "Subprocess Verification Task",
@@ -273,7 +275,7 @@ describe("CLI Task Creation - Subprocess Execution (RULE-25, RULE-27, RULE-34)",
       "--branch",
       "dev",
       "--json",
-    ]);
+    ], workspace.cwd);
 
     expect(stderr).toContain("✓ Created task");
     const parsed = JSON.parse(stdout.trim());

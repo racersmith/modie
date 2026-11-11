@@ -1,15 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { formatArtifactTag } from "../../../../core/index.ts";
 import {
-  createTestWorkspace,
-  type TestWorkspace,
+  createFixtureWorkspace, type FixtureWorkspace,
+} from "../../../../core/platform/testing/index.ts";
+import {
+  captureCli,
 } from "../../test-utils.ts";
 
 describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-27, RULE-28)", () => {
-  let workspace: TestWorkspace;
+  let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
-    workspace = await createTestWorkspace("modie-cli-branch-");
+    workspace = await createFixtureWorkspace("modie-cli-branch-");
     await workspace.initGit({ defaultBranch: "main", initialCommit: true });
 
     // Create dev trunk branch
@@ -32,26 +34,26 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
   });
 
   it("[RULE-27] should emit help for task start and task merge to stderr with exitCode 0", async () => {
-    const startHelp = await workspace.captureCli(["task", "start", "--help"]);
+    const startHelp = await captureCli(["task", "start", "--help"], workspace.cwd);
     expect(startHelp.exitCode).toBe(0);
     expect(startHelp.stdout).toBe("");
     expect(startHelp.stderr).toContain("Usage: modie task start");
 
-    const mergeHelp = await workspace.captureCli(["task", "merge", "--help"]);
+    const mergeHelp = await captureCli(["task", "merge", "--help"], workspace.cwd);
     expect(mergeHelp.exitCode).toBe(0);
     expect(mergeHelp.stdout).toBe("");
     expect(mergeHelp.stderr).toContain("Usage: modie task merge");
   });
 
   it("[RULE-27] should report error to stderr when identifier argument is missing", async () => {
-    const startRes = await workspace.captureCli(["task", "start"]);
+    const startRes = await captureCli(["task", "start"], workspace.cwd);
     expect(startRes.exitCode).toBe(1);
     expect(startRes.stdout).toBe("");
     expect(startRes.stderr).toContain(
       "Error: Missing required task identifier",
     );
 
-    const mergeRes = await workspace.captureCli(["task", "merge"]);
+    const mergeRes = await captureCli(["task", "merge"], workspace.cwd);
     expect(mergeRes.exitCode).toBe(1);
     expect(mergeRes.stdout).toBe("");
     expect(mergeRes.stderr).toContain(
@@ -66,11 +68,11 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
       criteria: ["Item"],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "start",
       task.tag,
-    ]);
+    ], workspace.cwd);
 
     const expectedBranch = `task/200-${task.slug}`;
     expect(exitCode).toBe(0);
@@ -91,12 +93,12 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
       criteria: ["Item"],
     });
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "start",
       task.tag,
       "--json",
-    ]);
+    ], workspace.cwd);
 
     const expectedBranch = `task/201-${task.slug}`;
     expect(exitCode).toBe(0);
@@ -117,11 +119,11 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     // Switch to main (protected)
     await Bun.$`git checkout main`.cwd(workspace.cwd).quiet();
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "start",
       task.tag,
-    ]);
+    ], workspace.cwd);
 
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
@@ -135,7 +137,7 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
       criteria: ["Item"],
     });
     await workspace.gitCommit("docs: parent");
-    await workspace.captureCli(["task", "start", parentTask.tag]);
+    await captureCli(["task", "start", parentTask.tag], workspace.cwd);
 
     const subTaskTag = formatArtifactTag("TASK", "203-1");
     const subTask = await workspace.createTask({
@@ -145,7 +147,7 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
       criteria: [{ text: "Item", completed: true }],
     });
     await workspace.gitCommit(`feat(${subTaskTag}): sub`);
-    await workspace.captureCli(["task", "start", subTaskTag]);
+    await captureCli(["task", "start", subTaskTag], workspace.cwd);
 
     // Code mutation and artifact deletion on subtask branch
     await workspace.writeFile("code.txt", "hello world\n");
@@ -158,11 +160,11 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     );
 
     // Execute CLI task merge
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "merge",
       subTaskTag,
-    ]);
+    ], workspace.cwd);
 
     const expectedParentBranch = `task/203-${parentTask.slug}`;
     const expectedSubBranch = `task/203-1-${subTask.slug}`;
@@ -186,7 +188,7 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
       criteria: ["Item"],
     });
     await workspace.gitCommit("docs: parent");
-    await workspace.captureCli(["task", "start", parentTask.tag]);
+    await captureCli(["task", "start", parentTask.tag], workspace.cwd);
 
     const subTaskTag = formatArtifactTag("TASK", "204-1");
     const subTask = await workspace.createTask({
@@ -196,7 +198,7 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
       criteria: [{ text: "Item", completed: true }],
     });
     await workspace.gitCommit(`feat(${subTaskTag}): sub`);
-    await workspace.captureCli(["task", "start", subTaskTag]);
+    await captureCli(["task", "start", subTaskTag], workspace.cwd);
 
     await workspace.remove(subTask);
     await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
@@ -204,13 +206,13 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
       `chore(task): delete completed ${subTaskTag} artifact`,
     );
 
-    const { exitCode, stdout, stderr } = await workspace.captureCli([
+    const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "merge",
       subTaskTag,
       "--target",
       "dev",
-    ]);
+    ], workspace.cwd);
 
     const expectedSubBranch = `task/204-1-${subTask.slug}`;
     expect(exitCode).toBe(1);
@@ -232,26 +234,26 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     await workspace.gitCommit(`docs: task ${task.id}`);
 
     // 2. Start task branch (checks out task/205-branch-infer)
-    const startRes = await workspace.captureCli(["task", "start", task.tag]);
+    const startRes = await captureCli(["task", "start", task.tag], workspace.cwd);
     expect(startRes.exitCode).toBe(0);
 
     // 3. Check item 1 omitting task ID
-    const checkRes1 = await workspace.captureCli([
+    const checkRes1 = await captureCli([
       "task",
       "check",
       "--item",
       "1",
-    ]);
+    ], workspace.cwd);
     expect(checkRes1.exitCode).toBe(0);
     expect(checkRes1.stderr).toContain(`Checked item 1 on ${task.tag}`);
 
     // 4. Check item 2 omitting task ID
-    const checkRes2 = await workspace.captureCli([
+    const checkRes2 = await captureCli([
       "task",
       "check",
       "--item",
       "2",
-    ]);
+    ], workspace.cwd);
     expect(checkRes2.exitCode).toBe(0);
     expect(checkRes2.stderr).toContain(`Checked item 2 on ${task.tag}`);
     expect(checkRes2.stderr).toContain(
@@ -264,12 +266,12 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     await workspace.gitCommit("feat: implement feature");
 
     // 5. Complete task omitting task ID
-    const completeRes = await workspace.captureCli(["task", "complete"]);
+    const completeRes = await captureCli(["task", "complete"], workspace.cwd);
     expect(completeRes.exitCode).toBe(0);
     expect(completeRes.stderr).toContain(`✓ Completed task ${task.tag}`);
 
     // 6. Merge task omitting task ID
-    const mergeRes = await workspace.captureCli(["task", "merge"]);
+    const mergeRes = await captureCli(["task", "merge"], workspace.cwd);
     const expectedBranch = `task/205-${task.slug}`;
     expect(mergeRes.exitCode).toBe(0);
     expect(mergeRes.stdout.trim()).toBe("dev");
@@ -291,24 +293,24 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
   // @verifies RULE-27, RULE-28
   it("[RULE-27][RULE-28] should report clear error when omitting task ID on non-task branch", async () => {
     // Current branch is dev (not a task branch)
-    const checkRes = await workspace.captureCli([
+    const checkRes = await captureCli([
       "task",
       "check",
       "--item",
       "1",
-    ]);
+    ], workspace.cwd);
     expect(checkRes.exitCode).toBe(1);
     expect(checkRes.stderr).toContain(
       "Error: Missing required task identifier and current git branch",
     );
 
-    const completeRes = await workspace.captureCli(["task", "complete"]);
+    const completeRes = await captureCli(["task", "complete"], workspace.cwd);
     expect(completeRes.exitCode).toBe(1);
     expect(completeRes.stderr).toContain(
       "Error: Missing required task identifier and current git branch",
     );
 
-    const mergeRes = await workspace.captureCli(["task", "merge"]);
+    const mergeRes = await captureCli(["task", "merge"], workspace.cwd);
     expect(mergeRes.exitCode).toBe(1);
     expect(mergeRes.stderr).toContain(
       "Error: Missing required task identifier and current git branch",
