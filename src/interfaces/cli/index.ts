@@ -4,11 +4,6 @@
  */
 
 export * from "./types.ts";
-export * from "./commands/find/index.ts";
-export * from "./commands/read/index.ts";
-export * from "./commands/scope/index.ts";
-export * from "./commands/task/index.ts";
-export * from "./commands/rule/index.ts";
-export * from "./commands/references/index.ts";
+export * from "./commands/index.ts";
 export * from "./framework/index.ts";
 export * from "./cli.ts";
