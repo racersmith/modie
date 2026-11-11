@@ -156,9 +156,7 @@ export function parseRuleFromContext(context: ArtifactParseContext): RuleArtifac
       ? { superseded_by: context.frontmatterFields.superseded_by }
       : {}),
     assertion,
-    ...(contextSection !== undefined
-      ? { contextSection, context: contextSection }
-      : {}),
+    ...(contextSection !== undefined ? { contextSection } : {}),
     filePath: context.filepath ?? "",
     rawContent: context.rawContent,
   };

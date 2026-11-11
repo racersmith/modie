@@ -26,7 +26,7 @@ export const adrDefinition: AdrDefinition = {
       .map((s) => s.trim().toUpperCase())
       .filter(Boolean);
 
-    const contextContent = (options.contextSection ?? options.context)?.trim();
+    const contextContent = options.contextSection?.trim();
 
     const markdown = renderAdrMarkdown({
       id,
@@ -36,7 +36,6 @@ export const adrDefinition: AdrDefinition = {
       links,
       supersedes: supersedes.length > 0 ? supersedes : undefined,
       contextSection: contextContent,
-      context: contextContent,
       alternatives: options.alternatives?.trim(),
       decision: options.decision?.trim(),
       consequences: options.consequences?.trim(),
@@ -50,7 +49,6 @@ export const adrDefinition: AdrDefinition = {
       links,
       supersedes: supersedes.length > 0 ? supersedes : undefined,
       contextSection: contextContent,
-      context: contextContent,
       alternatives: options.alternatives?.trim(),
       decision: options.decision?.trim(),
       consequences: options.consequences?.trim(),

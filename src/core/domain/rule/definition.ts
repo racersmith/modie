@@ -25,7 +25,6 @@ export const ruleDefinition: RuleDefinition = {
     const assertionText =
       options.assertion?.trim() ||
       options.contextSection?.trim() ||
-      options.context?.trim() ||
       `A discrete invariant assertion regarding ${title}.`;
 
     const summary = options.summary?.trim() || undefined;
@@ -49,7 +48,6 @@ export const ruleDefinition: RuleDefinition = {
       supersedes,
       assertion: assertionText,
       contextSection: assertionText,
-      context: assertionText,
       filePath: filepath,
       rawContent: markdown,
     };

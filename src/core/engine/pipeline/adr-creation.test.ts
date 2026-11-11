@@ -158,7 +158,7 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
 
     const result = await createAdr({
       title: "First Architecture Decision",
-      context: "Context description of the architecture choice.",
+      contextSection: "Context description of the architecture choice.",
       alternatives: "- Alternative 1\n- Alternative 2",
       decision: "We adopt Solution A.",
       cwd: workspace.cwd,
@@ -186,7 +186,7 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
     // Second ADR should allocate ID 2
     const result2 = await createAdr({
       title: "Second Architecture Decision",
-      context: "Another decision context.",
+      contextSection: "Another decision context.",
       cwd: workspace.cwd,
     });
 
@@ -216,7 +216,7 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
       title: "Progressive Context Disclosure",
       summary:
         "Include concise frontmatter summary on ADRs for token-efficient context compilation.",
-      context: "Detailed problem statement.",
+      contextSection: "Detailed problem statement.",
       alternatives: "- Inject full ADR markdown\n- Omit ADRs completely",
       decision: "Emit concise summary signpost in compiled context.",
       cwd: workspace.cwd,
@@ -249,55 +249,22 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
   });
 
   // @verifies ADR-4, RULE-25, RULE-34
-  it("[ADR-4][RULE-25][RULE-34] should accept contextSection and support backward-compatible context alias", async () => {
+  it("[ADR-4][RULE-25][RULE-34] should accept contextSection strictly and populate AdrArtifact.contextSection", async () => {
     const workspace = await createFixtureWorkspace(
       "adr-context-disambiguation-",
     );
 
-    // 1. Create with contextSection
-    const result1 = await createAdr({
+    const result = await createAdr({
       title: "Context Section Disambiguation",
       contextSection: "Domain context rendered via contextSection property.",
       cwd: workspace.cwd,
     });
-    expect(result1.artifact.context).toBe(
+    expect(result.artifact.contextSection).toBe(
       "Domain context rendered via contextSection property.",
     );
-    expect(result1.artifact.contextSection).toBe(
+    const content = await workspace.readFile(result.filepath);
+    expect(content).toContain(
       "Domain context rendered via contextSection property.",
-    );
-    const content1 = await workspace.readFile(result1.filepath);
-    expect(content1).toContain(
-      "Domain context rendered via contextSection property.",
-    );
-
-    // 2. Create with backward-compatible context alias
-    const result2 = await createAdr({
-      title: "Legacy Context Alias",
-      context: "Domain context rendered via backward-compatible context alias.",
-      cwd: workspace.cwd,
-    });
-    expect(result2.artifact.context).toBe(
-      "Domain context rendered via backward-compatible context alias.",
-    );
-    expect(result2.artifact.contextSection).toBe(
-      "Domain context rendered via backward-compatible context alias.",
-    );
-    const content2 = await workspace.readFile(result2.filepath);
-    expect(content2).toContain(
-      "Domain context rendered via backward-compatible context alias.",
-    );
-
-    // 3. contextSection takes precedence when both provided
-    const result3 = await createAdr({
-      title: "Precedence Resolution",
-      contextSection: "Primary context section text.",
-      context: "Ignored fallback context text.",
-      cwd: workspace.cwd,
-    });
-    expect(result3.artifact.context).toBe("Primary context section text.");
-    expect(result3.artifact.contextSection).toBe(
-      "Primary context section text.",
     );
 
     await workspace.cleanup();

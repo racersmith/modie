@@ -140,7 +140,7 @@ describe("TASK Primitive - Template Rendering and Parser Roundtrip (RULE-1, RULE
       title: "Task Primitive Model",
       depends_on: [depTaskTag],
       links: [linkAdrTag, linkRuleTag],
-      context: "Implement domain models for TASK primitive.",
+      contextSection: "Implement domain models for TASK primitive.",
       acceptanceCriteria: [
         "Define TaskArtifact",
         { text: "Add unit tests", completed: true },
@@ -163,7 +163,7 @@ describe("TASK Primitive - Template Rendering and Parser Roundtrip (RULE-1, RULE
     expect(parsed.slug).toBe("task-primitive-model");
     expect(parsed.depends_on).toEqual([depTaskTag]);
     expect(parsed.links).toEqual([linkAdrTag, linkRuleTag]);
-    expect(parsed.context).toBe("Implement domain models for TASK primitive.");
+    expect(parsed.contextSection).toBe("Implement domain models for TASK primitive.");
     expect(parsed.acceptanceCriteria).toHaveLength(2);
     expect(parsed.acceptanceCriteria[0]).toEqual({
       text: "Define TaskArtifact",

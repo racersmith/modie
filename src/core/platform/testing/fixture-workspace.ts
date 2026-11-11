@@ -40,6 +40,7 @@ export interface CreateTaskOptions extends Partial<DomainCreateTaskOptions> {
   slug?: string;
   criteria?: TaskCriterionItem[];
   rawContent?: string;
+  context?: string;
 }
 
 export interface CreateRuleOptions extends Partial<DomainCreateRuleOptions> {
@@ -49,6 +50,7 @@ export interface CreateRuleOptions extends Partial<DomainCreateRuleOptions> {
   superseded_by?: string | string[];
   isArchived?: boolean;
   rawContent?: string;
+  context?: string;
 }
 
 export interface CreateAdrOptions extends Partial<DomainCreateAdrOptions> {
@@ -57,6 +59,7 @@ export interface CreateAdrOptions extends Partial<DomainCreateAdrOptions> {
   superseded_by?: string | string[];
   isArchived?: boolean;
   rawContent?: string;
+  context?: string;
 }
 
 
@@ -235,7 +238,7 @@ function renderFixtureAdrContent(
     links: options.links ?? [],
     supersedes,
     superseded_by,
-    context: contextText,
+    contextSection: contextText,
     alternatives,
     decision,
     consequences,
@@ -253,7 +256,7 @@ function renderFixtureTaskContent(
     slug,
     title: options.title,
     summary: options.summary,
-    context:
+    contextSection:
       options.contextSection ??
       options.context ??
       options.body ??
@@ -358,7 +361,7 @@ export async function createFixtureWorkspace(
             ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
             : undefined),
         summary: options.summary,
-        context: options.contextSection ?? options.context,
+        contextSection: options.contextSection ?? options.context,
         acceptanceCriteria:
           options.criteria ??
           (options.acceptanceCriteria as TaskCriterionItem[] | undefined),
@@ -409,7 +412,7 @@ export async function createFixtureWorkspace(
             ? options.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")
             : undefined),
         summary: options.summary,
-        context: options.contextSection ?? options.context,
+        contextSection: options.contextSection ?? options.context,
         alternatives: options.alternatives,
         decision: options.decision,
         consequences: options.consequences,

@@ -154,7 +154,7 @@ export const adrCreateCommand: CliCommandDefinition<
       summary: result.artifact.summary,
       links: result.artifact.links,
       supersedes: result.artifact.supersedes,
-      context: result.artifact.context,
+      context: result.artifact.contextSection,
       alternatives: result.artifact.alternatives,
       decision: result.artifact.decision,
     };

@@ -27,7 +27,6 @@ export interface TaskArtifact {
   depends_on: string[];
   links: string[];
   contextSection?: string;
-  context?: string;
   acceptanceCriteria: TaskAcceptanceCriteriaItem[];
   rawContent?: string;
   filePath?: string;
@@ -41,7 +40,6 @@ export interface TaskRenderOptions {
   depends_on?: string[];
   links?: string[];
   contextSection?: string;
-  context?: string;
   acceptanceCriteria?: Array<string | { text: string; completed?: boolean }>;
   skipValidation?: boolean;
   allowEmptyCriteria?: boolean;
@@ -84,11 +82,6 @@ export interface CreateTaskOptions {
    * Context / user story / background explanation for the task.
    */
   contextSection?: string;
-
-  /**
-   * @deprecated Use `contextSection` instead. Backward-compatible alias.
-   */
-  context?: string;
 
   /**
    * Task dependencies (`depends_on`). Must only reference `TASK-` identifiers per RULE-18.

@@ -14,8 +14,8 @@ context is currently maintained as a deprecated backward-compatible alias for co
 
 # Acceptance Criteria
 
-- [ ] Deprecated context alias removed from domain ADR, Rule, and Task types and templates
-- [ ] Pipeline creation functions cleaned up to expect contextSection strictly
-- [ ] Legacy alias test cases updated across pipeline tests
-- [ ] All checks pass via bun run verify
-- [ ] User Review
+- [x] Deprecated context alias removed from domain ADR, Rule, and Task types and templates
+- [x] Pipeline creation functions cleaned up to expect contextSection strictly
+- [x] Legacy alias test cases updated across pipeline tests
+- [x] All checks pass via bun run verify
+- [x] User Review

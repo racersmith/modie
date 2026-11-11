@@ -406,7 +406,7 @@ export async function queryTaskHistory(
         filepath: resolve(cwd, entry.relativePath),
         relativePath: entry.relativePath,
         summary: parsed?.summary,
-        context: parsed?.context,
+        context: parsed?.contextSection,
         depends_on: parsed?.depends_on,
         links: parsed?.links,
         acceptanceCriteria: parsed?.acceptanceCriteria,

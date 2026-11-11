@@ -28,7 +28,7 @@ describe("Core ADR Creation - Supersession & Bidirectional Frontmatter (RULE-4, 
     // 2. Create superseding ADR-2 with supersedes option
     const result = await createAdr({
       title: "Distributed Microservices Storage",
-      context: "Need horizontal scale.",
+      contextSection: "Need horizontal scale.",
       alternatives: "Stick with single database.",
       decision: "Adopt distributed storage.",
       supersedes: [adr1.tag],

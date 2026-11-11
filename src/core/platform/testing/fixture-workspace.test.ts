@@ -169,7 +169,7 @@ describe("FixtureWorkspace - Architectural scopeDir Resolution (RULE-8, RULE-12,
     expect(parsedAdr.summary).toBe(
       "Delegate fixture helpers to canonical subtype renderers.",
     );
-    expect(parsedAdr.context).toBe(
+    expect(parsedAdr.contextSection).toBe(
       "Parallel markdown builders in test fixtures drift from schemas.",
     );
     expect(parsedAdr.alternatives).toBe(
