@@ -23,12 +23,12 @@ This task orchestrates the complete cleanup across these areas via structured su
 
 # Acceptance Criteria
 
-- [ ] All child sub-tasks for codebase cleanup completed and verified
-- [ ] makeTestTag eliminated in favor of canonical formatArtifactTag
-- [ ] Duplicate option types in fixture-workspace consolidated with domain definitions
-- [ ] scanActiveTasks wrapper retired in favor of scanActiveArtifacts
-- [ ] interfaces/cli/index.ts export declarations cleaned up
-- [ ] Deprecated context aliases removed across domain schemas and pipelines
-- [ ] CLI test utility imports standardized
-- [ ] Full verification suite passes cleanly via bun run verify
-- [ ] User Review
+- [x] All child sub-tasks for codebase cleanup completed and verified
+- [x] makeTestTag eliminated in favor of canonical formatArtifactTag
+- [x] Duplicate option types in fixture-workspace consolidated with domain definitions
+- [x] scanActiveTasks wrapper retired in favor of scanActiveArtifacts
+- [x] interfaces/cli/index.ts export declarations cleaned up
+- [x] Deprecated context aliases removed across domain schemas and pipelines
+- [x] CLI test utility imports standardized
+- [x] Full verification suite passes cleanly via bun run verify
+- [x] User Review
