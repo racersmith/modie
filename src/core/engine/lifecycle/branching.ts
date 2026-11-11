@@ -3,40 +3,23 @@
  * Complies with ADR-6, ADR-9, ADR-10, RULE-21, RULE-28, and RULE-33.
  */
 
-import { readFile, stat } from "node:fs/promises";
-import { basename, isAbsolute, resolve } from "node:path";
+import { readFile } from "node:fs/promises";
 import { loadModieConfig } from "../../platform/config/loader.ts";
-import {
-  detectGitBranch,
-  runGit,
-  runGitCommand,
-} from "../traversal/git-inspector.ts";
-import {
-  inspectGitDeletedArtifacts,
-  inspectGitTreeArtifacts,
-} from "../traversal/artifact-history.ts";
+import { inspectGitDeletedArtifacts } from "../traversal/artifact-history.ts";
 import {
   formatTaskBranch,
   normalizeTaskId,
-  parseArtifactFilename,
   parseSubtaskId,
   parseTaskBranch,
   parseTaskIdFromBranch,
   parseTaskMarkdown,
   taskBranchGlob,
   taskKey,
-  type DiscoveredArtifact,
-  type IndexableSubtype,
 } from "../../domain/index.ts";
 import { resolveWorkspaceContext, type WorkspaceContext } from "../context/index.ts";
 import type { IVcsAdapter } from "../../platform/vcs/types.ts";
 import { resolveTaskFile } from "./completion.ts";
-import {
-  ActiveSubtaskPendingError,
-  ArtifactCollisionError,
-  TaskIncompleteError,
-} from "./errors.ts";
-import { scanActiveTasks } from "../traversal/active-scanner.ts";
+import { scanActiveArtifacts } from "../traversal/active-scanner.ts";
 import {
   detectArtifactCollisions,
   assertSourceBranchExists,
@@ -58,7 +41,6 @@ export {
 };
 
 import type {
-  ArtifactCollision,
   TaskBranchTopology,
 } from "../../domain/index.ts";
 import type {
@@ -162,7 +144,9 @@ async function findParentTaskBranch(
   }
 
   // 2. Check active task file on disk with exact ID match
-  const activeTasks = await scanActiveTasks(cwd);
+  const activeTasks = (await scanActiveArtifacts(cwd, "TASK")).filter(
+    (a) => !a.isArchived,
+  );
   const parentTask = activeTasks.find((t) => taskKey(t.id) === normParentKey);
   if (parentTask) {
     return formatTaskBranch(normParent, parentTask.slug);

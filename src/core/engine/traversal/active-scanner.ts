@@ -14,7 +14,6 @@ import {
 } from "../../domain/index.ts";
 import { resolveWorkspaceContext } from "../context/resolver.ts";
 import type { WorkspaceContext } from "../context/types.ts";
-import type { DiscoveredTask } from "./types.ts";
 
 const IGNORED_DIRECTORIES = new Set([
   ".git",
@@ -108,22 +107,4 @@ export async function scanActiveArtifactIds(
   return Array.from(new Set(artifacts.map((a) => a.id)));
 }
 
-/**
- * Recursively scans directory for active task files (*.TASK-*.md).
- * Backward compatibility wrapper around scanActiveArtifacts.
- */
-export async function scanActiveTasks(
-  rootDirOrContext?: string | WorkspaceContext,
-): Promise<DiscoveredTask[]> {
-  const artifacts = await scanActiveArtifacts(rootDirOrContext, "TASK");
-  return artifacts
-    .filter((a) => !a.isArchived)
-    .map((a) => ({
-      id: a.id,
-      slug: a.slug,
-      filename: a.filename,
-      filepath: a.filepath,
-      status: "active",
-    }));
-}
 

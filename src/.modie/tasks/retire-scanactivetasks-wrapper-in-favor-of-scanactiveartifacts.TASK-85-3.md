@@ -14,7 +14,7 @@ active-scanner.ts provides scanActiveTasks as an explicitly documented backward 
 
 # Acceptance Criteria
 
-- [ ] Engine services updated to call scanActiveArtifacts with TASK subtype directly
-- [ ] scanActiveTasks wrapper and DiscoveredTask interface removed from active-scanner.ts and traversal/types.ts
-- [ ] All checks pass via bun run verify
-- [ ] User Review
+- [x] Engine services updated to call scanActiveArtifacts with TASK subtype directly
+- [x] scanActiveTasks wrapper and DiscoveredTask interface removed from active-scanner.ts and traversal/types.ts
+- [x] All checks pass via bun run verify
+- [x] User Review
