@@ -3,9 +3,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
   createTestWorkspace,
-  makeTestTag,
   type TestWorkspace,
 } from "../../test-utils.ts";
 
@@ -98,7 +98,7 @@ describe("CLI Task Creation - Execution & Stream Separation (RULE-1, RULE-25, RU
 
     expect(exitCode).toBe(0);
     const parsed = JSON.parse(stdout);
-    const expectedTag = makeTestTag("TASK", "C1");
+    const expectedTag = formatArtifactTag("TASK", "C1");
     expect(parsed.id).toBe("C1");
     expect(parsed.filename).toBe(`prefixed-cli-task.${expectedTag}.md`);
   });
@@ -141,8 +141,8 @@ describe("CLI Task Creation - Validation & Errors (RULE-15, RULE-18, RULE-27, RU
 
   // @verifies RULE-15, RULE-27, RULE-35
   it("[RULE-15][RULE-27][RULE-35] should report domain link validation error to stderr with exit code 1", async () => {
-    const illegalLink = makeTestTag("TASK", 1);
-    const rule15Tag = makeTestTag("RULE", 15);
+    const illegalLink = formatArtifactTag("TASK", 1);
+    const rule15Tag = formatArtifactTag("RULE", 15);
 
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "task",
@@ -171,7 +171,7 @@ describe("CLI Task Creation - Repeated Flags & Punctuation Support (RULE-15, RUL
 
   // @verifies RULE-25, RULE-27, RULE-34, RULE-35
   it("[RULE-25][RULE-27][RULE-34][RULE-35] should preserve criteria with punctuation verbatim when using -a or --criterion", async () => {
-    const rule27Tag = makeTestTag("RULE", 27);
+    const rule27Tag = formatArtifactTag("RULE", 27);
 
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "task",

@@ -5,10 +5,10 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
   captureCli,
   createTestWorkspace,
-  makeTestTag,
 } from "../../test-utils.ts";
 
 describe("CLI ADR List - Execution, Scope Filtering & Stream Separation (ADR-4, RULE-9, RULE-25, RULE-27, RULE-34, RULE-35)", () => {
@@ -27,7 +27,7 @@ describe("CLI ADR List - Execution, Scope Filtering & Stream Separation (ADR-4, 
   // @verifies ADR-4, RULE-25, RULE-27, RULE-34, RULE-35
   it("[ADR-4][RULE-25][RULE-27][RULE-34][RULE-35] should emit formatted table with titles, tags, relative paths, and links to stderr and empty stdout", async () => {
     const workspace = await createTestWorkspace("modie-cli-adr-list-");
-    const rule1Tag = makeTestTag("RULE", 1);
+    const rule1Tag = formatArtifactTag("RULE", 1);
     const adr1 = await workspace.createAdr({
       id: 1,
       slug: "primitive-artifact-taxonomy",
@@ -64,7 +64,7 @@ describe("CLI ADR List - Execution, Scope Filtering & Stream Separation (ADR-4, 
   // @verifies RULE-25, RULE-27, RULE-34, RULE-35
   it("[RULE-25][RULE-27][RULE-34][RULE-35] should emit machine-parsable JSON array to stdout and empty stderr when --json is passed", async () => {
     const workspace = await createTestWorkspace("modie-cli-adr-list-json-");
-    const rule20Tag = makeTestTag("RULE", 20);
+    const rule20Tag = formatArtifactTag("RULE", 20);
     const adr = await workspace.createAdr({
       id: 10,
       slug: "unified-modie-directory-containment",

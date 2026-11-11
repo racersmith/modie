@@ -4,10 +4,10 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
   captureCli,
   createTestWorkspace,
-  makeTestTag,
 } from "../../test-utils.ts";
 
 describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-25, RULE-26, RULE-27, RULE-34, ADR-8)", () => {
@@ -29,9 +29,9 @@ describe("CLI Command: modie context (RULE-2, RULE-6, RULE-9, RULE-25, RULE-26, 
   // @verifies RULE-2, RULE-9, RULE-25, RULE-26, RULE-27, RULE-34, RULE-35, ADR-8
   it("[RULE-2][RULE-9][RULE-25][RULE-26][RULE-27][RULE-34][RULE-35][ADR-8] should support default stderr summary, --raw markdown on stdout, and --json payload on stdout", async () => {
     const workspace = await createTestWorkspace("modie-cli-context-");
-    const ruleTag = makeTestTag("RULE", 1);
-    const adrTag = makeTestTag("ADR", 1);
-    const taskTag = makeTestTag("TASK", 1);
+    const ruleTag = formatArtifactTag("RULE", 1);
+    const adrTag = formatArtifactTag("ADR", 1);
+    const taskTag = formatArtifactTag("TASK", 1);
 
     try {
       await workspace.createMotive({

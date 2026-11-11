@@ -6,7 +6,8 @@
 
 import { describe, expect, it } from "bun:test";
 import { getArtifactDetails, resolveArtifactByTag } from "../query/index.ts";
-import { createFixtureWorkspace, makeTestTag } from "../../platform/testing/index.ts";
+import { createFixtureWorkspace } from "../../platform/testing/index.ts";
+import { formatArtifactTag } from "../../domain/index.ts";
 import { createAdr, resolveAdrDirectories, validateAdrScope } from "./index.ts";
 
 describe("ADR Creation - Scope & Directory Resolution (RULE-8)", () => {
@@ -34,8 +35,8 @@ describe("ADR Creation - Scope & Directory Resolution (RULE-8)", () => {
 describe("ADR Creation - Frontmatter Validation & Rule Scope (RULE-14, RULE-17, RULE-34)", () => {
   // @verifies RULE-14
   it("[RULE-14] should reject non-ADR and non-RULE links with RULE-14 error", async () => {
-    const taskTag = makeTestTag("TASK", 10);
-    const motiveTag = makeTestTag("MOTIVE", 1);
+    const taskTag = formatArtifactTag("TASK", 10);
+    const motiveTag = formatArtifactTag("MOTIVE", 1);
 
     await expect(
       validateAdrScope("/mock/dir", [taskTag], process.cwd()),
@@ -163,7 +164,7 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
       cwd: workspace.cwd,
     });
 
-    const expectedAdr1Tag = makeTestTag("ADR", 1);
+    const expectedAdr1Tag = formatArtifactTag("ADR", 1);
     expect(result.id).toBe("1");
     expect(result.tag).toBe(expectedAdr1Tag);
     expect(result.filename).toBe(
@@ -189,7 +190,7 @@ describe("ADR Creation - Execution & Disk Writing (ADR-1, ADR-2, ADR-4, RULE-1, 
       cwd: workspace.cwd,
     });
 
-    const expectedAdr2Tag = makeTestTag("ADR", 2);
+    const expectedAdr2Tag = formatArtifactTag("ADR", 2);
     expect(result2.id).toBe("2");
     expect(result2.tag).toBe(expectedAdr2Tag);
     expect(result2.filename).toBe(

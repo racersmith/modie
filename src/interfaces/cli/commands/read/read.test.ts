@@ -4,9 +4,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
   createTestWorkspace,
-  makeTestTag,
   type TestWorkspace,
 } from "../../test-utils.ts";
 
@@ -58,8 +58,8 @@ describe("CLI Read - Execution & Stream Separation (RULE-25, RULE-26, RULE-27, R
 
   // @verifies RULE-25, RULE-26, RULE-27, RULE-34, RULE-35
   it("[RULE-25][RULE-26][RULE-27][RULE-34][RULE-35] should emit agent-optimized JSON to stdout and empty stderr when --json is passed", async () => {
-    const linkAdr1 = makeTestTag("ADR", "TEST-1");
-    const linkAdr2 = makeTestTag("ADR", "TEST-2");
+    const linkAdr1 = formatArtifactTag("ADR", "TEST-1");
+    const linkAdr2 = formatArtifactTag("ADR", "TEST-2");
 
     const rule = await workspace.createRule({
       id: "TEST-1",
@@ -90,7 +90,7 @@ describe("CLI Read - Execution & Stream Separation (RULE-25, RULE-26, RULE-27, R
 
   // @verifies RULE-27, RULE-34, RULE-35
   it("[RULE-27][RULE-34][RULE-35] should emit raw unparsed markdown to stdout and empty stderr when --raw is passed", async () => {
-    const linkAdr1 = makeTestTag("ADR", "TEST-1");
+    const linkAdr1 = formatArtifactTag("ADR", "TEST-1");
     const rule = await workspace.createRule({
       id: "TEST-1",
       slug: "artifact-filename-structure",
@@ -113,8 +113,8 @@ describe("CLI Read - Execution & Stream Separation (RULE-25, RULE-26, RULE-27, R
 
   // @verifies RULE-25, RULE-27, RULE-34, RULE-35
   it("[RULE-25][RULE-27][RULE-34][RULE-35] should read task with dependencies, context, criteria, and scope", async () => {
-    const taskDep = makeTestTag("TASK", "TEST-700");
-    const taskLink = makeTestTag("RULE", "TEST-1");
+    const taskDep = formatArtifactTag("TASK", "TEST-700");
+    const taskLink = formatArtifactTag("RULE", "TEST-1");
 
     const task = await workspace.createTask({
       id: "TEST-701",
@@ -194,7 +194,7 @@ Detailed test context for read command.
 
   // @verifies RULE-27, RULE-35
   it("[RULE-27][RULE-35] should report error to stderr when artifact is not found", async () => {
-    const missingTag = makeTestTag("ADR", "TEST-9999");
+    const missingTag = formatArtifactTag("ADR", "TEST-9999");
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "read",
       missingTag,

@@ -5,9 +5,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type FixtureWorkspace,
 } from "../../../../core/platform/testing/index.ts";
 import { runCli } from "../../cli.ts";
@@ -17,12 +17,12 @@ describe("CLI `modie link` and `modie unlink` Commands (ADR-5, RULE-27, RULE-36)
   let stdoutLines: string[];
   let stderrLines: string[];
 
-  const rootAdrTag = makeTestTag("ADR", 601);
-  const subAdrTag = makeTestTag("ADR", 602);
-  const rootRuleTag = makeTestTag("RULE", 601);
-  const subRuleTag = makeTestTag("RULE", 602);
-  const task1Tag = makeTestTag("TASK", 601);
-  const task2Tag = makeTestTag("TASK", 602);
+  const rootAdrTag = formatArtifactTag("ADR", 601);
+  const subAdrTag = formatArtifactTag("ADR", 602);
+  const rootRuleTag = formatArtifactTag("RULE", 601);
+  const subRuleTag = formatArtifactTag("RULE", 602);
+  const task1Tag = formatArtifactTag("TASK", 601);
+  const task2Tag = formatArtifactTag("TASK", 602);
 
   beforeEach(async () => {
     workspace = await createFixtureWorkspace("modie-cli-link-");

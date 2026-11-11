@@ -5,7 +5,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type FixtureWorkspace,
 } from "../../platform/testing/index.ts";
 import {
@@ -19,6 +18,7 @@ import type {
 import {
   ARTIFACT_DEFINITIONS,
   adrDefinition,
+  formatArtifactTag,
   getArtifactDefinition,
   ruleDefinition,
   taskDefinition,
@@ -83,7 +83,7 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
       cwd: workspace.cwd,
     });
 
-    const expectedSpec1Tag = makeTestTag("SPEC", 1);
+    const expectedSpec1Tag = formatArtifactTag("SPEC", 1);
     expect(res.id).toBe("1");
     expect(res.tag).toBe(expectedSpec1Tag);
     expect(res.filename).toBe(`authentication-workflow.${expectedSpec1Tag}.md`);
@@ -108,7 +108,7 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
       overview: "Details scope permissions.",
       cwd: workspace.cwd,
     });
-    const expectedSpec2Tag = makeTestTag("SPEC", 2);
+    const expectedSpec2Tag = formatArtifactTag("SPEC", 2);
     expect(res2.id).toBe("2");
     expect(res2.tag).toBe(expectedSpec2Tag);
   });
@@ -158,9 +158,9 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
 
   // @verifies RULE-1, RULE-8, RULE-34, RULE-35, ADR-1, ADR-4
   it("[RULE-1][RULE-8][RULE-34][RULE-35][ADR-1][ADR-4] should support creating standard artifacts directly via standard definitions", async () => {
-    const expectedRuleTag = makeTestTag("RULE", 1);
-    const expectedAdrTag = makeTestTag("ADR", 1);
-    const expectedTaskTag = makeTestTag("TASK", 1);
+    const expectedRuleTag = formatArtifactTag("RULE", 1);
+    const expectedAdrTag = formatArtifactTag("ADR", 1);
+    const expectedTaskTag = formatArtifactTag("TASK", 1);
 
     // 1. RULE via ruleDefinition
     const ruleRes = await createArtifact(ruleDefinition, {
@@ -198,9 +198,9 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
 
   // @verifies ADR-4, RULE-25, RULE-34, RULE-35
   it("[ADR-4][RULE-25][RULE-34][RULE-35] should roundtrip serialize and parse RULE, ADR, and TASK artifacts bidirectionally via ArtifactDefinition.parse", async () => {
-    const adr1Tag = makeTestTag("ADR", 1);
-    const rule1Tag = makeTestTag("RULE", 1);
-    const task1Tag = makeTestTag("TASK", 1);
+    const adr1Tag = formatArtifactTag("ADR", 1);
+    const rule1Tag = formatArtifactTag("RULE", 1);
+    const task1Tag = formatArtifactTag("TASK", 1);
 
     // 1. Create ADR first so RULE and TASK can link to it
     const adrRes = await createArtifact(adrDefinition, {
@@ -401,7 +401,7 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
       links: [adr.tag],
       cwd: workspace.cwd,
     });
-    expect(result.tag).toBe(makeTestTag("RULE", 1));
+    expect(result.tag).toBe(formatArtifactTag("RULE", 1));
     expect(result.artifact.links).toEqual([adr.tag]);
   });
 });

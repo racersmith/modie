@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type FixtureWorkspace,
 } from "../../platform/testing/index.ts";
 import {
@@ -23,7 +22,7 @@ import {
   startTaskBranch,
 } from "./branching.ts";
 import { defaultVcsAdapter } from "../../platform/vcs/git-cli-adapter.ts";
-import { formatTaskBranch, parseSubtaskId } from "../../domain/index.ts";
+import { formatArtifactTag, formatTaskBranch, parseSubtaskId } from "../../domain/index.ts";
 
 describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
   let workspace: FixtureWorkspace;
@@ -286,7 +285,7 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
 
   // @verifies RULE-33
   it("[RULE-33] should detect artifact collisions when concurrent branches introduce the same artifact tag", async () => {
-    const rule99Tag = makeTestTag("RULE", 99);
+    const rule99Tag = formatArtifactTag("RULE", 99);
     // On dev, create and commit RULE-99
     await workspace.createRule({
       id: 99,
@@ -318,7 +317,7 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
 
   // @verifies RULE-28, RULE-33
   it("[RULE-28][RULE-33] should reject task branch merge when artifact collision exists on target branch", async () => {
-    const adr50Tag = makeTestTag("ADR", 50);
+    const adr50Tag = formatArtifactTag("ADR", 50);
     // 1. On dev, create and commit ADR-50
     await workspace.createAdr({
       id: 50,
@@ -372,7 +371,7 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
 
   // @verifies RULE-33
   it("[RULE-33] should allow merge when task branch archives an artifact without target branch conflict", async () => {
-    const rule24Tag = makeTestTag("RULE", 24);
+    const rule24Tag = formatArtifactTag("RULE", 24);
     // 1. Commit active RULE-24 on dev before branching
     const rule24 = await workspace.createRule({
       id: 24,
@@ -422,7 +421,7 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
 
   // @verifies RULE-33
   it("[RULE-33] should detect divergent_filepath collision when both branches rename the same artifact to different paths", async () => {
-    const rule30Tag = makeTestTag("RULE", 30);
+    const rule30Tag = formatArtifactTag("RULE", 30);
     // 1. Commit active RULE-30 at base
     const rule30 = await workspace.createRule({
       id: 30,
@@ -692,7 +691,7 @@ describe("Task Branching Service (ADR-9, ADR-10, RULE-28)", () => {
     });
 
     it("assertNoCollisions should throw typed ArtifactCollisionError on collision", async () => {
-      const ruleTag = makeTestTag("RULE", 88);
+      const ruleTag = formatArtifactTag("RULE", 88);
       await workspace.createRule({ id: 88, slug: "a", body: "On dev" });
       await workspace.gitCommit(`feat: ${ruleTag} on dev`);
 

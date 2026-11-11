@@ -5,10 +5,10 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
   captureCli,
   createTestWorkspace,
-  makeTestTag,
 } from "../../test-utils.ts";
 
 describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31, RULE-34)", () => {
@@ -37,7 +37,7 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
   // @verifies RULE-25, RULE-27, RULE-31, RULE-34
   it("[RULE-25][RULE-27][RULE-31][RULE-34] should archive an unreferenced RULE with relative path to stdout and status to stderr", async () => {
     const workspace = await createTestWorkspace("cli-rule-archive-");
-    const ruleTag = makeTestTag("RULE", 1);
+    const ruleTag = formatArtifactTag("RULE", 1);
     const rule = await workspace.createRule({
       id: 1,
       slug: "single-purpose",
@@ -68,14 +68,14 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
   it("[RULE-27][RULE-31][RULE-34] should reject archiving when active references exist", async () => {
     const workspace = await createTestWorkspace("cli-rule-reject-");
 
-    const ruleTag = makeTestTag("RULE", 1);
+    const ruleTag = formatArtifactTag("RULE", 1);
     const rule = await workspace.createRule({
       id: 1,
       slug: "target-rule",
       body: "Target rule.",
     });
 
-    const taskTag = makeTestTag("TASK", 1);
+    const taskTag = formatArtifactTag("TASK", 1);
     await workspace.createTask({
       id: 1,
       slug: "dependent-task",
@@ -105,14 +105,14 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
   it("[RULE-25][RULE-27][RULE-31][RULE-34] should bypass active references guard with --force", async () => {
     const workspace = await createTestWorkspace("cli-rule-force-");
 
-    const ruleTag = makeTestTag("RULE", 1);
+    const ruleTag = formatArtifactTag("RULE", 1);
     const rule = await workspace.createRule({
       id: 1,
       slug: "forced-rule",
       body: "Forced rule.",
     });
 
-    const taskTag = makeTestTag("TASK", 1);
+    const taskTag = formatArtifactTag("TASK", 1);
     await workspace.createTask({
       id: 1,
       slug: "dependent-task",
@@ -142,7 +142,7 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
   it("[RULE-27][RULE-34] should emit machine JSON to stdout when --json is passed", async () => {
     const workspace = await createTestWorkspace("cli-rule-json-");
 
-    const ruleTag = makeTestTag("RULE", 1);
+    const ruleTag = formatArtifactTag("RULE", 1);
     const rule = await workspace.createRule({
       id: 1,
       slug: "json-rule",
@@ -171,7 +171,7 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
   it("[RULE-25][RULE-27][RULE-34] should execute rule archive via bin.ts subprocess", async () => {
     const workspace = await createTestWorkspace("cli-rule-subprocess-");
 
-    const ruleTag = makeTestTag("RULE", 1);
+    const ruleTag = formatArtifactTag("RULE", 1);
     const rule = await workspace.createRule({
       id: 1,
       slug: "sub-rule",

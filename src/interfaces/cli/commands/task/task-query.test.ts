@@ -4,7 +4,8 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { createTestWorkspace, makeTestTag } from "../../test-utils.ts";
+import { formatArtifactTag } from "../../../../core/index.ts";
+import { createTestWorkspace } from "../../test-utils.ts";
 
 describe("CLI Task List - Execution & Stream Separation (ADR-6, RULE-18, RULE-25, RULE-27)", () => {
   // @verifies RULE-25, RULE-27
@@ -38,7 +39,7 @@ describe("CLI Task List - Execution & Stream Separation (ADR-6, RULE-18, RULE-25
       id: 502,
       slug: "sample-task",
       criteria: ["Item one"],
-      links: [makeTestTag("ADR", 6)],
+      links: [formatArtifactTag("ADR", 6)],
     });
 
     const { exitCode, stdout, stderr } = await workspace.captureCli([
@@ -160,7 +161,7 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
       id: 601,
       slug: "status-task",
       context: "Inspection test description.",
-      links: [makeTestTag("ADR", 6), makeTestTag("RULE", 22)],
+      links: [formatArtifactTag("ADR", 6), formatArtifactTag("RULE", 22)],
       criteria: [{ text: "Done item", completed: true }, "Pending item"],
     });
 
@@ -208,7 +209,7 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
   // @verifies RULE-27
   it("[RULE-27] should report error to stderr when status targets non-existent task", async () => {
     await using workspace = await createTestWorkspace("modie-cli-status-err-");
-    const nonExistentTag = makeTestTag("TASK", 9999);
+    const nonExistentTag = formatArtifactTag("TASK", 9999);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "task",
       "status",

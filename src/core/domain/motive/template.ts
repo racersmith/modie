@@ -46,7 +46,7 @@ export function validateMotiveContent(content: string): void {
       prohibited.add(match[1].trim());
     }
   }
-  for (const match of body.matchAll(/\b(?:MOTIVE|GIST)\.md\b/g)) {
+  for (const match of body.matchAll(/\b(?:MOTIVE)\.md\b/g)) {
     if (match[0]) {
       prohibited.add(match[0]);
     }
@@ -68,7 +68,7 @@ export function validateMotiveContent(content: string): void {
       continue;
     }
     if (
-      /^(?:MOTIVE|GIST)-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*(?:\.\d+)?$/i.test(token)
+      /^(?:MOTIVE)-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*(?:\.\d+)?$/i.test(token)
     ) {
       prohibited.add(token);
       continue;

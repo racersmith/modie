@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { captureCli, createTestWorkspace, makeTestTag } from "./test-utils.ts";
+import { captureCli, createTestWorkspace } from "./test-utils.ts";
 import { MODIE_VERSION } from "./cli.ts";
 
 describe("CLI Harness - Global Commands & Stream Separation (RULE-25, RULE-27, RULE-34, RULE-35)", () => {

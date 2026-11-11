@@ -7,10 +7,10 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
   captureCli,
   createTestWorkspace,
-  makeTestTag,
 } from "../../test-utils.ts";
 
 describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31, RULE-34)", () => {
@@ -36,7 +36,7 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
   // @verifies RULE-25, RULE-27, RULE-31, RULE-34
   it("[RULE-25][RULE-27][RULE-31][RULE-34] should archive an unreferenced RULE via root archive command", async () => {
     const workspace = await createTestWorkspace("cli-archive-rule-");
-    const ruleTag = makeTestTag("RULE", 5);
+    const ruleTag = formatArtifactTag("RULE", 5);
     const rule = await workspace.createRule({
       id: 5,
       slug: "obsolete-pattern",
@@ -68,7 +68,7 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
   // @verifies RULE-25, RULE-27, RULE-31, RULE-34
   it("[RULE-25][RULE-27][RULE-31][RULE-34] should archive an unreferenced ADR via root archive command", async () => {
     const workspace = await createTestWorkspace("cli-archive-adr-");
-    const adrTag = makeTestTag("ADR", 10);
+    const adrTag = formatArtifactTag("ADR", 10);
     const adr = await workspace.createAdr({
       id: 10,
       slug: "monolith",
@@ -93,14 +93,14 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
   it("[RULE-27][RULE-31][RULE-34] should reject archiving when active references exist without --force", async () => {
     const workspace = await createTestWorkspace("cli-archive-guard-");
 
-    const adrTag = makeTestTag("ADR", 1);
+    const adrTag = formatArtifactTag("ADR", 1);
     const adr = await workspace.createAdr({
       id: 1,
       slug: "core-design",
       context: "Core.",
     });
 
-    const ruleTag = makeTestTag("RULE", 1);
+    const ruleTag = formatArtifactTag("RULE", 1);
     await workspace.createRule({
       id: 1,
       slug: "dependent-rule",
@@ -127,14 +127,14 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
   it("[RULE-25][RULE-27][RULE-31][RULE-34] should bypass active references guard with --force", async () => {
     const workspace = await createTestWorkspace("cli-archive-force-");
 
-    const adrTag = makeTestTag("ADR", 1);
+    const adrTag = formatArtifactTag("ADR", 1);
     const adr = await workspace.createAdr({
       id: 1,
       slug: "forced-design",
       context: "Forced.",
     });
 
-    const ruleTag = makeTestTag("RULE", 1);
+    const ruleTag = formatArtifactTag("RULE", 1);
     await workspace.createRule({
       id: 1,
       slug: "active-link",
@@ -160,7 +160,7 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
   // @verifies RULE-27, RULE-34
   it("[RULE-27][RULE-34] should emit machine JSON to stdout when --json is passed", async () => {
     const workspace = await createTestWorkspace("cli-archive-json-");
-    const ruleTag = makeTestTag("RULE", 9);
+    const ruleTag = formatArtifactTag("RULE", 9);
     const rule = await workspace.createRule({
       id: 9,
       slug: "json-test",
@@ -188,7 +188,7 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
   // @verifies RULE-4, RULE-25, RULE-27, RULE-34
   it("[RULE-4][RULE-25][RULE-27][RULE-34] should transparently execute via modie adr archive alias", async () => {
     const workspace = await createTestWorkspace("cli-alias-adr-");
-    const adrTag = makeTestTag("ADR", 3);
+    const adrTag = formatArtifactTag("ADR", 3);
     const adr = await workspace.createAdr({
       id: 3,
       slug: "alias-test",
@@ -213,7 +213,7 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
   // @verifies RULE-4, RULE-25, RULE-27, RULE-34
   it("[RULE-4][RULE-25][RULE-27][RULE-34] should transparently execute via modie rule archive alias", async () => {
     const workspace = await createTestWorkspace("cli-alias-rule-");
-    const ruleTag = makeTestTag("RULE", 7);
+    const ruleTag = formatArtifactTag("RULE", 7);
     const rule = await workspace.createRule({
       id: 7,
       slug: "alias-rule",
@@ -240,7 +240,7 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
   // @verifies RULE-25, RULE-27, RULE-34
   it("[RULE-25][RULE-27][RULE-34] should execute root archive command via bin.ts subprocess", async () => {
     const workspace = await createTestWorkspace("cli-archive-subproc-");
-    const ruleTag = makeTestTag("RULE", 20);
+    const ruleTag = formatArtifactTag("RULE", 20);
     await workspace.createRule({
       id: 20,
       slug: "subprocess-rule",

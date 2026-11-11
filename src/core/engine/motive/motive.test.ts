@@ -9,6 +9,7 @@ import {
   readMotive,
 } from "./index.ts";
 import {
+  formatArtifactTag,
   renderMotiveMarkdown,
   resolveMotivePath,
   resolveMotivePaths,
@@ -16,7 +17,6 @@ import {
 } from "../../domain/index.ts";
 import {
   createFixtureWorkspace,
-  makeTestTag,
 } from "../../platform/testing/fixture-workspace.ts";
 
 describe("Core MOTIVE Pathing, Creation, Validation & Discovery (RULE-2, RULE-8, RULE-10, ADR-2, ADR-4, ADR-10)", () => {
@@ -138,9 +138,9 @@ describe("Core MOTIVE Pathing, Creation, Validation & Discovery (RULE-2, RULE-8,
       "modie-motive-rule10-",
     );
 
-    const sampleRuleTag = makeTestTag("RULE", 10);
-    const sampleAdrTag = makeTestTag("ADR", 4);
-    const sampleTaskTag = makeTestTag("TASK", 99);
+    const sampleRuleTag = formatArtifactTag("RULE", 10);
+    const sampleAdrTag = formatArtifactTag("ADR", 4);
+    const sampleTaskTag = formatArtifactTag("TASK", 99);
 
     // 1. Rejects canonical artifact tags (RULE, ADR, TASK)
     expect(() =>
@@ -217,11 +217,11 @@ describe("Core MOTIVE Pathing, Creation, Validation & Discovery (RULE-2, RULE-8,
     expect(single?.scope).toBe("src/core");
     expect(single?.content).toBe("Core domain purpose.");
 
-    const missing = await readMotive("src/core/gist", workspace.cwd);
+    const missing = await readMotive("src/core/adr", workspace.cwd);
     expect(missing).toBeNull();
 
-    // Collect upward from deep leaf `src/core/gist` -> `src/core` -> `src` -> `.`
-    const chain = await collectAncestralMotives("src/core/gist", workspace.cwd);
+    // Collect upward from deep leaf `src/core/adr` -> `src/core` -> `src` -> `.`
+    const chain = await collectAncestralMotives("src/core/adr", workspace.cwd);
     expect(chain.map((m) => m.scope)).toEqual(["src/core", "src", "."]);
     expect(chain.map((m) => m.content)).toEqual([
       "Core domain purpose.",

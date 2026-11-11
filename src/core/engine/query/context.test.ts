@@ -9,11 +9,10 @@ import {
   formatCompiledContextMarkdown,
   resolveContextTarget,
 } from "./context.ts";
-import { buildAncestralScopes } from "../../domain/index.ts";
+import { buildAncestralScopes, formatArtifactTag } from "../../domain/index.ts";
 import { computeAncestralScopes } from "./scope.ts";
 import {
   createFixtureWorkspace,
-  makeTestTag,
 } from "../../platform/testing/fixture-workspace.ts";
 
 describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE-12, ADR-4, ADR-8, ADR-10)", () => {
@@ -23,13 +22,13 @@ describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE
       "modie-context-hierarchy-",
     );
 
-    const rootRuleTag = makeTestTag("RULE", 1);
-    const coreRuleTag = makeTestTag("RULE", 2);
-    const leafRuleTag = makeTestTag("RULE", 3);
-    const siblingRuleTag = makeTestTag("RULE", 4);
-    const rootAdrTag = makeTestTag("ADR", 1);
-    const coreAdrTag = makeTestTag("ADR", 2);
-    const siblingAdrTag = makeTestTag("ADR", 3);
+    const rootRuleTag = formatArtifactTag("RULE", 1);
+    const coreRuleTag = formatArtifactTag("RULE", 2);
+    const leafRuleTag = formatArtifactTag("RULE", 3);
+    const siblingRuleTag = formatArtifactTag("RULE", 4);
+    const rootAdrTag = formatArtifactTag("ADR", 1);
+    const coreAdrTag = formatArtifactTag("ADR", 2);
+    const siblingAdrTag = formatArtifactTag("ADR", 3);
 
     // 1. Motives at root (.), src, intermediate (src/core), leaf (src/core/motive), and sibling (src/interfaces)
     await workspace.createMotive({
@@ -169,10 +168,10 @@ describe("Core Context Compilation Service (RULE-2, RULE-6, RULE-8, RULE-9, RULE
   it("[RULE-6][RULE-8][RULE-9][RULE-22][ADR-8][RULE-34][RULE-35] should incorporate task-scoped metadata, dependencies, acceptance criteria, and blast radius when given a task tag", async () => {
     await using workspace = await createFixtureWorkspace("modie-context-task-");
 
-    const prereqTaskTag = makeTestTag("TASK", 10);
-    const targetTaskTag = makeTestTag("TASK", 11);
-    const ruleTag = makeTestTag("RULE", 10);
-    const adrTag = makeTestTag("ADR", 10);
+    const prereqTaskTag = formatArtifactTag("TASK", 10);
+    const targetTaskTag = formatArtifactTag("TASK", 11);
+    const ruleTag = formatArtifactTag("RULE", 10);
+    const adrTag = formatArtifactTag("ADR", 10);
 
     await workspace.createMotive({
       scopeDir: "src/interfaces",

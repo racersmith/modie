@@ -7,9 +7,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { parseArtifact } from "../../engine/pipeline/create.ts";
 import { getArtifactDetails } from "../../engine/query/artifact-query.ts";
+import { formatArtifactTag } from "../../domain/index.ts";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type FixtureWorkspace,
 } from "./fixture-workspace.ts";
 
@@ -128,9 +128,9 @@ describe("FixtureWorkspace - Architectural scopeDir Resolution (RULE-8, RULE-12,
 
   // @verifies ADR-4, RULE-25, RULE-34, RULE-35
   it("[ADR-4][RULE-25][RULE-34][RULE-35] should delegate fixture creation to canonical subtype template renderers and roundtrip parse cleanly", async () => {
-    const adr1Tag = makeTestTag("ADR", 1);
-    const rule1Tag = makeTestTag("RULE", 1);
-    const task1Tag = makeTestTag("TASK", 1);
+    const adr1Tag = formatArtifactTag("ADR", 1);
+    const rule1Tag = formatArtifactTag("RULE", 1);
+    const task1Tag = formatArtifactTag("TASK", 1);
 
     const adr = await workspace.createAdr({
       id: 1,

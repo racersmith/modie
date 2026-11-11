@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { makeTestTag } from "../../platform/testing/index.ts";
+import { formatArtifactTag } from "../../domain/index.ts";
 import { MockVcsAdapter } from "../../platform/vcs/mock-adapter.ts";
 import {
   inspectGitDeletedArtifactIds,
@@ -16,8 +16,8 @@ import {
 
 describe("Artifact History Inspection (ADR-6, ADR-9, RULE-21, RULE-33, RULE-35)", () => {
   it("[RULE-1][RULE-25][RULE-35] should inspect tree artifacts from pure VCS listTreeFiles", async () => {
-    const rule1Tag = makeTestTag("RULE", 1);
-    const adr4Tag = makeTestTag("ADR", 4);
+    const rule1Tag = formatArtifactTag("RULE", 1);
+    const adr4Tag = formatArtifactTag("ADR", 4);
     const mockVcs = new MockVcsAdapter({
       treeFiles: {
         main: [
@@ -48,9 +48,9 @@ describe("Artifact History Inspection (ADR-6, ADR-9, RULE-21, RULE-33, RULE-35)"
   });
 
   it("[RULE-21][ADR-6][RULE-35] should inspect deleted artifacts from pure VCS listDeletedFiles and log grep", async () => {
-    const rule99Tag = makeTestTag("RULE", 99);
-    const task42Tag = makeTestTag("TASK", 42);
-    const taskGrepQuery = `delete completed ${makeTestTag("TASK", "")}`;
+    const rule99Tag = formatArtifactTag("RULE", 99);
+    const task42Tag = formatArtifactTag("TASK", 42);
+    const taskGrepQuery = `delete completed ${formatArtifactTag("TASK", "")}`;
     const mockVcs = new MockVcsAdapter({
       deletedFilesList: [`src/.modie/rules/deprecated-rule.${rule99Tag}.md`],
       activeTrackedFiles: [],
@@ -78,9 +78,9 @@ describe("Artifact History Inspection (ADR-6, ADR-9, RULE-21, RULE-33, RULE-35)"
   });
 
   it("[RULE-33][RULE-35] should inspect active artifacts across multiple branches excluding current branch", async () => {
-    const task1Tag = makeTestTag("TASK", 1);
-    const task71Tag = makeTestTag("TASK", 71);
-    const task99Tag = makeTestTag("TASK", 99);
+    const task1Tag = formatArtifactTag("TASK", 1);
+    const task71Tag = formatArtifactTag("TASK", 71);
+    const task99Tag = formatArtifactTag("TASK", 99);
     const mockVcs = new MockVcsAdapter({
       currentBranch: "task/99-refactor",
       branches: ["main", "task/99-refactor", "task/71-config"],

@@ -5,7 +5,8 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { createFixtureWorkspace, makeTestTag } from "../../platform/testing/index.ts";
+import { createFixtureWorkspace } from "../../platform/testing/index.ts";
+import { formatArtifactTag } from "../../domain/index.ts";
 import {
   createRule,
   resolveRuleDirectories,
@@ -37,8 +38,8 @@ describe("Rule Creation - Scope & Directory Resolution (RULE-8)", () => {
 describe("Rule Creation - Frontmatter Validation & Ancestry (RULE-13, RULE-16, RULE-34)", () => {
   // @verifies RULE-13
   it("[RULE-13] should reject non-ADR links with RULE-13 error", async () => {
-    const ruleTag = makeTestTag("RULE", 1);
-    const taskTag = makeTestTag("TASK", 10);
+    const ruleTag = formatArtifactTag("RULE", 1);
+    const taskTag = formatArtifactTag("TASK", 10);
 
     await expect(
       validateRuleAncestry("/mock/dir", [ruleTag], process.cwd()),
@@ -139,7 +140,7 @@ describe("Rule Creation - Execution & Disk Writing (RULE-1, RULE-3, RULE-8, RULE
       cwd: workspace.cwd,
     });
 
-    const expectedRule1Tag = makeTestTag("RULE", 1);
+    const expectedRule1Tag = formatArtifactTag("RULE", 1);
     expect(result.id).toBe("1");
     expect(result.tag).toBe(expectedRule1Tag);
     expect(result.filename).toBe(`first-invariant-rule.${expectedRule1Tag}.md`);
@@ -160,7 +161,7 @@ describe("Rule Creation - Execution & Disk Writing (RULE-1, RULE-3, RULE-8, RULE
       cwd: workspace.cwd,
     });
 
-    const expectedRule2Tag = makeTestTag("RULE", 2);
+    const expectedRule2Tag = formatArtifactTag("RULE", 2);
     expect(result2.id).toBe("2");
     expect(result2.tag).toBe(expectedRule2Tag);
     expect(result2.filename).toBe(

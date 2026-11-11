@@ -6,7 +6,8 @@
 
 import { describe, expect, it } from "bun:test";
 import { findArtifactReferences } from "../query/references.ts";
-import { createFixtureWorkspace, makeTestTag } from "../../platform/testing/index.ts";
+import { createFixtureWorkspace } from "../../platform/testing/index.ts";
+import { formatArtifactTag } from "../../domain/index.ts";
 import { archiveAdr } from "../archival/index.ts";
 import { createAdr } from "./index.ts";
 
@@ -34,7 +35,7 @@ describe("Core ADR Creation - Supersession & Bidirectional Frontmatter (RULE-4, 
       cwd: workspace.cwd,
     });
 
-    const expectedAdr2Tag = makeTestTag("ADR", 2);
+    const expectedAdr2Tag = formatArtifactTag("ADR", 2);
     expect(result.tag).toBe(expectedAdr2Tag);
     expect(result.artifact.supersedes).toEqual([adr1.tag]);
 
@@ -66,7 +67,7 @@ describe("Core ADR Creation - Supersession & Bidirectional Frontmatter (RULE-4, 
   it("[RULE-4][RULE-34] should append without duplication when superseded_by already exists on predecessor", async () => {
     const workspace = await createFixtureWorkspace("adr-supersession-multi-");
 
-    const adr2Tag = makeTestTag("ADR", 2);
+    const adr2Tag = formatArtifactTag("ADR", 2);
     const adr1 = await workspace.createAdr({
       id: 1,
       slug: "initial-concept",
@@ -99,7 +100,7 @@ describe("Core ADR Creation - Supersession & Bidirectional Frontmatter (RULE-4, 
   // @verifies RULE-14, RULE-34
   it("[RULE-14][RULE-34] should reject supersedes targeting a non-ADR artifact", async () => {
     const workspace = await createFixtureWorkspace("adr-supersession-invalid-");
-    const ruleTag = makeTestTag("RULE", 1);
+    const ruleTag = formatArtifactTag("RULE", 1);
 
     expect(
       createAdr({

@@ -6,9 +6,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type FixtureWorkspace,
 } from "../../platform/testing/index.ts";
+import { formatArtifactTag } from "../../domain/index.ts";
 import { listActiveArtifacts, listAdrs, listRules } from "./index.ts";
 
 describe("Artifact List Service - Listing Active RULE and ADR Artifacts with Ancestral Scope Filtering (ADR-4, RULE-9, RULE-25, RULE-34, RULE-35)", () => {
@@ -24,11 +24,11 @@ describe("Artifact List Service - Listing Active RULE and ADR Artifacts with Anc
 
   // @verifies ADR-4, RULE-25, RULE-34, RULE-35
   it("[ADR-4][RULE-25][RULE-34][RULE-35] should list active RULE and ADR artifacts with titles, tags, relative paths, and links while excluding archived items", async () => {
-    const adr1Tag = makeTestTag("ADR", 1);
-    const adr2Tag = makeTestTag("ADR", 2);
-    const rule1Tag = makeTestTag("RULE", 1);
-    const rule2Tag = makeTestTag("RULE", 2);
-    const rule10Tag = makeTestTag("RULE", 10);
+    const adr1Tag = formatArtifactTag("ADR", 1);
+    const adr2Tag = formatArtifactTag("ADR", 2);
+    const rule1Tag = formatArtifactTag("RULE", 1);
+    const rule2Tag = formatArtifactTag("RULE", 2);
+    const rule10Tag = formatArtifactTag("RULE", 10);
 
     await workspace.createAdr({
       id: 2,
@@ -106,12 +106,12 @@ describe("Artifact List Service - Listing Active RULE and ADR Artifacts with Anc
 
   // @verifies RULE-9, RULE-25, RULE-34, RULE-35
   it("[RULE-9][RULE-25][RULE-34][RULE-35] should filter rules and ADRs by ancestral scope traversal up to workspace root", async () => {
-    const rootRuleTag = makeTestTag("RULE", 1);
-    const srcRuleTag = makeTestTag("RULE", 2);
-    const interfacesRuleTag = makeTestTag("RULE", 3);
-    const cliRuleTag = makeTestTag("RULE", 4);
-    const mcpRuleTag = makeTestTag("RULE", 5);
-    const deepCliRuleTag = makeTestTag("RULE", 6);
+    const rootRuleTag = formatArtifactTag("RULE", 1);
+    const srcRuleTag = formatArtifactTag("RULE", 2);
+    const interfacesRuleTag = formatArtifactTag("RULE", 3);
+    const cliRuleTag = formatArtifactTag("RULE", 4);
+    const mcpRuleTag = formatArtifactTag("RULE", 5);
+    const deepCliRuleTag = formatArtifactTag("RULE", 6);
 
     await workspace.createRule({
       id: 1,

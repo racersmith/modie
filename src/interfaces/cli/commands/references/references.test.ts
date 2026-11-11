@@ -4,18 +4,18 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
   createTestWorkspace,
-  makeTestTag,
   type TestWorkspace,
 } from "../../test-utils.ts";
 
 describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-27, RULE-31, RULE-34)", () => {
   let workspace: TestWorkspace;
-  const adr1Tag = makeTestTag("ADR", 1);
-  const adr4Tag = makeTestTag("ADR", 4);
-  const rule25Tag = makeTestTag("RULE", 25);
-  const rule31Tag = makeTestTag("RULE", 31);
+  const adr1Tag = formatArtifactTag("ADR", 1);
+  const adr4Tag = formatArtifactTag("ADR", 4);
+  const rule25Tag = formatArtifactTag("RULE", 25);
+  const rule31Tag = formatArtifactTag("RULE", 31);
 
   beforeEach(async () => {
     workspace = await createTestWorkspace("modie-cli-refs-");
@@ -167,7 +167,7 @@ export function run() {
   });
 
   it("[RULE-27] should report error to stderr when querying non-existent artifact", async () => {
-    const nonExistent = makeTestTag("RULE", 9999);
+    const nonExistent = formatArtifactTag("RULE", 9999);
     const { exitCode, stdout, stderr } = await workspace.captureCli([
       "references",
       nonExistent,

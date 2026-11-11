@@ -13,8 +13,8 @@ makeTestTag in platform/testing duplicates formatArtifactTag in domain/common/ta
 
 # Acceptance Criteria
 
-- [ ] makeTestTag removed from src/core/platform/testing/fixture-workspace.ts and index.ts
-- [ ] All domain, engine, platform, cli, and mcp test files updated to use formatArtifactTag directly
-- [ ] RULE-35 docstring updated to cite formatArtifactTag instead of makeTestTag
-- [ ] All tests pass via bun run verify test
-- [ ] User Review
+- [x] makeTestTag removed from src/core/platform/testing/fixture-workspace.ts and index.ts
+- [x] All domain, engine, platform, cli, and mcp test files updated to use formatArtifactTag directly
+- [x] RULE-35 docstring updated to cite formatArtifactTag instead of makeTestTag
+- [x] All tests pass via bun run verify test
+- [x] User Review

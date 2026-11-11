@@ -5,10 +5,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { formatArtifactTag } from "../../../../core/index.ts";
 import {
   captureCli,
   createTestWorkspace,
-  makeTestTag,
   type TestWorkspace,
 } from "../../test-utils.ts";
 
@@ -27,8 +27,8 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
 
   // @verifies RULE-22, RULE-25, RULE-27, RULE-34, RULE-35
   it("[RULE-22][RULE-25][RULE-27][RULE-34][RULE-35] should check off an item, emit file path to stdout and status to stderr", async () => {
-    const linkAdr = makeTestTag("ADR", 6);
-    const linkRule = makeTestTag("RULE", 22);
+    const linkAdr = formatArtifactTag("ADR", 6);
+    const linkRule = formatArtifactTag("RULE", 22);
 
     const task = await workspace.createTask({
       id: 200,
@@ -116,7 +116,7 @@ describe("CLI Task Check - Execution & Stream Separation (RULE-22, RULE-25, RULE
 
   // @verifies RULE-27, RULE-35
   it("[RULE-27][RULE-35] should report error to stderr when --item flag is missing", async () => {
-    const dummyTag = makeTestTag("TASK", "7-2");
+    const dummyTag = formatArtifactTag("TASK", "7-2");
     const { exitCode, stdout, stderr } = await captureCli([
       "task",
       "check",
@@ -154,9 +154,9 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
 
   // @verifies RULE-21, RULE-22, RULE-27, RULE-34, RULE-35, ADR-6
   it("[RULE-21][RULE-22][RULE-27][RULE-34][RULE-35][ADR-6] should reject completion with error to stderr when criteria are incomplete", async () => {
-    const linkAdr = makeTestTag("ADR", 6);
-    const linkRule21 = makeTestTag("RULE", 21);
-    const linkRule22 = makeTestTag("RULE", 22);
+    const linkAdr = formatArtifactTag("ADR", 6);
+    const linkRule21 = formatArtifactTag("RULE", 21);
+    const linkRule22 = formatArtifactTag("RULE", 22);
 
     const task = await workspace.createTask({
       id: 300,
@@ -184,9 +184,9 @@ describe("CLI Task Complete - Execution & Stream Separation (RULE-21, RULE-22, R
 
   // @verifies RULE-21, RULE-22, RULE-25, RULE-27, RULE-34, RULE-35, ADR-6
   it("[RULE-21][RULE-22][RULE-25][RULE-27][RULE-34][RULE-35][ADR-6] should complete task and delete file when all criteria are satisfied", async () => {
-    const linkAdr = makeTestTag("ADR", 6);
-    const linkRule21 = makeTestTag("RULE", 21);
-    const linkRule22 = makeTestTag("RULE", 22);
+    const linkAdr = formatArtifactTag("ADR", 6);
+    const linkRule21 = formatArtifactTag("RULE", 21);
+    const linkRule22 = formatArtifactTag("RULE", 22);
 
     const task = await workspace.createTask({
       id: 301,

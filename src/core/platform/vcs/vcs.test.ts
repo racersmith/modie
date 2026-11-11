@@ -4,9 +4,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { formatArtifactTag } from "../../domain/index.ts";
 import {
   createFixtureWorkspace,
-  makeTestTag,
   type FixtureWorkspace,
 } from "../testing/index.ts";
 import { GitCliAdapter } from "./git-cli-adapter.ts";
@@ -99,7 +99,7 @@ describe("GitCliAdapter - Real Subprocess Fixture Tests", () => {
     expect(await adapter.getConfig("non.existent", workspace.cwd)).toBeNull();
 
     // Create and commit a rule artifact
-    const rule10Tag = makeTestTag("RULE", 10);
+    const rule10Tag = formatArtifactTag("RULE", 10);
     await workspace.createRule({
       id: 10,
       slug: "sample-rule",
@@ -173,7 +173,7 @@ describe("MockVcsAdapter - In-Memory Unit Tests", () => {
       { files: ["path/to/file.md"], updateOnly: true },
     ]);
 
-    const task1Tag = makeTestTag("TASK", 1);
+    const task1Tag = formatArtifactTag("TASK", 1);
     const hash1 = await mock.commit(`feat(${task1Tag}): sample`);
     expect(hash1).toBe("hash1");
     expect(mock.history.commits.length).toBe(1);
@@ -209,7 +209,7 @@ describe("Hermetic Core Domain Injections with MockVcsAdapter", () => {
   });
 
   it("should execute completeTask two-phase commit hermetically via MockVcsAdapter", async () => {
-    const task200Tag = makeTestTag("TASK", 200);
+    const task200Tag = formatArtifactTag("TASK", 200);
     const task = await workspace.createTask({
       id: 200,
       slug: "sample-task",
@@ -250,7 +250,7 @@ describe("Hermetic Core Domain Injections with MockVcsAdapter", () => {
   });
 
   it("should execute startTaskBranch and mergeTaskBranch hermetically via MockVcsAdapter", async () => {
-    const task201Tag = makeTestTag("TASK", 201);
+    const task201Tag = formatArtifactTag("TASK", 201);
     const task = await workspace.createTask({
       id: 201,
       slug: "branch-feature",
@@ -298,8 +298,8 @@ describe("Hermetic Core Domain Injections with MockVcsAdapter", () => {
   });
 
   it("should resolve watermark with MockVcsAdapter for deleted and other branch IDs", async () => {
-    const task250_1Tag = makeTestTag("TASK", "250-1");
-    const rule77Tag = makeTestTag("RULE", 77);
+    const task250_1Tag = formatArtifactTag("TASK", "250-1");
+    const rule77Tag = formatArtifactTag("RULE", 77);
 
     const mockVcs = new MockVcsAdapter({
       insideWorkTree: true,

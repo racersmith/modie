@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { createFixtureWorkspace, makeTestTag } from "../../platform/testing/index.ts";
+import { createFixtureWorkspace } from "../../platform/testing/index.ts";
 import { archiveArtifact, archiveAdr, archiveRule } from "./index.ts";
 
 describe("Core Artifact Archival - Guarded Archival & Reference Invariance (RULE-4, RULE-25, RULE-31, RULE-34)", () => {

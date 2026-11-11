@@ -6,7 +6,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import {
   createTestWorkspace,
-  makeTestTag,
   type TestWorkspace,
 } from "../../test-utils.ts";
 

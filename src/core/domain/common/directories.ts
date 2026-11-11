@@ -236,7 +236,7 @@ export function buildAncestralScopes(targetScope: string): string[] {
  *
  * @param targetDirInput Raw directory or file path input.
  * @param normCwd Normalized absolute workspace root directory.
- * @param errorLabel Domain label for error messages (e.g. "GIST", "MOTIVE", "context").
+ * @param errorLabel Domain label for error messages (e.g. "MOTIVE", "context").
  */
 export function resolveScopeDirectory(
   targetDirInput: string | undefined,
