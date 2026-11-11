@@ -52,7 +52,7 @@
     "@types/bun": "latest",
     "@types/node": "^26.6.6",
     "jscpd": "^5.4.2",
-    "knip": "^6.45.0",
+    "knip": "^6.45.1",
     "mcp-checkup": "^0.1.9",
     "oxc-parser": "^0.158.0",
     "typescript": "^7.0.2"

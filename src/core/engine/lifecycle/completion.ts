@@ -12,18 +12,14 @@ import {
   parseTaskIdFromBranch,
   parseTaskMarkdown,
   type TaskArtifact,
+  type DiscoveredArtifact,
 } from "../../domain/index.ts";
 import {
-  scanActiveTasks,
+  scanActiveArtifacts,
 } from "../traversal/active-scanner.ts";
-import {
-  detectGitBranch,
-  runGit,
-  runGitCommand,
-} from "../traversal/git-inspector.ts";
+import { detectGitBranch } from "../traversal/git-inspector.ts";
 import { inspectGitDeletedArtifactIds } from "../traversal/artifact-history.ts";
 
-import type { DiscoveredTask } from "../traversal/types.ts";
 import { resolveWorkspaceContext } from "../context/resolver.ts";
 import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter } from "../../platform/vcs/types.ts";
@@ -135,9 +131,11 @@ export interface CompleteTaskResult {
 export async function detectZombieTasks(
   cwdOrContext?: string | WorkspaceContext,
   vcs?: IVcsAdapter,
-): Promise<DiscoveredTask[]> {
+): Promise<DiscoveredArtifact[]> {
   const ctx = resolveWorkspaceContext(cwdOrContext, vcs);
-  const activeTasks = await scanActiveTasks(ctx);
+  const activeTasks = (await scanActiveArtifacts(ctx, "TASK")).filter(
+    (a) => !a.isArchived,
+  );
   const deletedIds = await inspectGitDeletedArtifactIds(ctx, "TASK");
   const deletedSet = new Set(deletedIds);
   return activeTasks.filter((t) => deletedSet.has(t.id));
@@ -205,7 +203,9 @@ export async function resolveTaskFile(
   }
 
   // 2. Scan active tasks on disk
-  const activeTasks = await scanActiveTasks(cwd);
+  const activeTasks = (await scanActiveArtifacts(cwd, "TASK")).filter(
+    (a) => !a.isArchived,
+  );
   const normalizedInput = normalizeTaskId(trimmed).toLowerCase();
 
   // Exact ID match (case-insensitive)

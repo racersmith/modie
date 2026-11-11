@@ -16,7 +16,7 @@ import {
   inspectGitTreeArtifacts,
   inspectGitDeletedArtifacts,
 } from "../traversal/artifact-history.ts";
-import { scanActiveTasks } from "../traversal/active-scanner.ts";
+import { scanActiveArtifacts } from "../traversal/active-scanner.ts";
 import {
   normalizeTaskId,
   parseArtifactFilename,
@@ -56,7 +56,9 @@ export async function findTaskFileOnDisk(
     }
   }
 
-  const activeTasks = await scanActiveTasks(cwd);
+  const activeTasks = (await scanActiveArtifacts(cwd, "TASK")).filter(
+    (a) => !a.isArchived,
+  );
   const normId = normalizeTaskId(taskId);
   const trimmedIdent = taskIdentifier?.trim().toLowerCase();
   const match = activeTasks.find(

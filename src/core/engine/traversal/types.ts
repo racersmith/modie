@@ -7,14 +7,6 @@ import type { IndexableSubtype } from "../../domain/index.ts";
 import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter } from "../../platform/vcs/types.ts";
 
-export interface DiscoveredTask {
-  id: string;
-  slug: string;
-  filename: string;
-  filepath: string;
-  status: "active" | "deleted";
-}
-
 export interface WatermarkResolutionOptions {
   /**
    * Artifact subtype for watermark allocation (RULE, ADR, or TASK).

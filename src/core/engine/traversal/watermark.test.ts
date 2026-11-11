@@ -21,7 +21,7 @@ import {
   resolveNextArtifactId,
   resolveWatermark,
   scanActiveArtifactIds,
-  scanActiveTasks,
+  scanActiveArtifacts,
   subtaskAllocationStrategy,
   trunkAllocationStrategy,
 } from "./index.ts";
@@ -88,7 +88,7 @@ describe("Watermark Resolver - Active Task Scanner (RULE-1, ADR-6, RULE-34, RULE
       "# Ignored",
     );
 
-    const tasks = await scanActiveTasks(workspace.cwd);
+    const tasks = await scanActiveArtifacts(workspace.cwd, "TASK");
     expect(tasks.length).toBe(2);
 
     const taskIds = await scanActiveArtifactIds(workspace.cwd, "TASK");

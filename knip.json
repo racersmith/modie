@@ -1,5 +1,15 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/index.ts",
+    "src/interfaces/cli/index.ts",
+    "src/interfaces/mcp/bin.ts",
+    "src/interfaces/mcp/index.ts"
+  ],
+  "ignoreDependencies": [
+    "mcp-checkup"
+  ],
+  "ignoreExportsUsedInFile": true,
   "tags": [
     "-lintignore"
   ]

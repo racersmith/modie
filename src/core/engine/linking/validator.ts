@@ -7,15 +7,11 @@
  */
 
 import { readFile } from "node:fs/promises";
-import { isAbsolute, relative, resolve } from "node:path";
+import { isAbsolute, relative } from "node:path";
 import {
-  ADR_LINK_TAG_REGEX,
-  GOVERNANCE_LINK_TAG_REGEX,
-  TASK_DEPENDENCY_TAG_REGEX,
   isValidAdrLinkTag,
   isValidGovernanceLinkTag,
   isValidTaskDependencyTag,
-  parseCanonicalTag,
   resolveArtifactDirectories,
   resolveGoverningScope,
   resolveSubtypeLinkPolicy,
@@ -30,7 +26,7 @@ import {
   splitMarkdownFrontmatter,
 } from "../../platform/markdown/index.ts";
 import type { ResolvedArtifact } from "../query/types.ts";
-import { scanActiveTasks } from "../traversal/active-scanner.ts";
+import { scanActiveArtifacts } from "../traversal/active-scanner.ts";
 import { resolveWorkspaceContext } from "../context/resolver.ts";
 import type { WorkspaceContext } from "../context/types.ts";
 import type {
@@ -79,7 +75,9 @@ export async function detectTaskDependencyCycle(
     return [normSource, normTarget];
   }
 
-  const activeTasks = await scanActiveTasks(cwd);
+  const activeTasks = (await scanActiveArtifacts(cwd, "TASK")).filter(
+    (a) => !a.isArchived,
+  );
   const adjacency = new Map<string, string[]>();
 
   for (const task of activeTasks) {
@@ -142,15 +140,6 @@ function isAncestorOrSelfDir(
   const rel = relative(candidateAncestor, targetDir);
   return !rel.startsWith("..") && !isAbsolute(rel);
 }
-
-export {
-  ADR_LINK_TAG_REGEX,
-  GOVERNANCE_LINK_TAG_REGEX,
-  TASK_DEPENDENCY_TAG_REGEX,
-  isValidAdrLinkTag,
-  isValidGovernanceLinkTag,
-  isValidTaskDependencyTag,
-} from "../../domain/index.ts";
 
 export interface ValidateLinkTargetOptions {
   cwd?: string;
