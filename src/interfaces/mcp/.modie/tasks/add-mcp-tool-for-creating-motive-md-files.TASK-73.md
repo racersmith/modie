@@ -17,4 +17,5 @@ Modie CLI supports `modie motive create`, but the MCP server does not expose an 
 - [ ] Implement MCP request handler delegating to core createMotive domain function
 - [ ] Register motive creation tool on MCP server with operational annotations
 - [ ] Add unit and integration tests verifying motive creation via MCP client transport
+- [ ] Pass `verify` tests.
 - [ ] User Review
