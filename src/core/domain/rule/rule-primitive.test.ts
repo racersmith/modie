@@ -125,8 +125,8 @@ describe("RULE Primitive - Template Rendering & Disk Roundtrip (RULE-3, RULE-11,
     expect(diskContent).toBe(rendered);
   });
 
-  // @verifies RULE-3, RULE-11, RULE-25, RULE-26, RULE-34, RULE-35
-  it("[RULE-3][RULE-11][RULE-25][RULE-26][RULE-34][RULE-35] should extract summary and roundtrip parse RULE markdown", async () => {
+  // @verifies RULE-3, RULE-11, RULE-34, RULE-35
+  it("[RULE-3][RULE-11][RULE-34][RULE-35] should extract summary and roundtrip parse RULE markdown", async () => {
     const linkAdr = formatArtifactTag("ADR", 1);
     const ruleTag = formatArtifactTag("RULE", 1);
     const filename = `test-rule.${ruleTag}.md`;

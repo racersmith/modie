@@ -1,6 +1,6 @@
 /**
  * Integration tests for declarative CLI references command and stream separation.
- * Enforces RULE-25 (interface core decoupling), RULE-27 (stream separation), RULE-31 (archival guard), and RULE-34 (fixture-based test isolation).
+ * Enforces RULE-25 (interface core decoupling), RULE-27 (stream separation) (archival guard), and RULE-34 (fixture-based test isolation).
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
@@ -12,7 +12,7 @@ import {
   captureCli, execBin,
 } from "../../test-utils.ts";
 
-describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-27, RULE-31, RULE-34)", () => {
+describe("CLI References Command - Execution & Stream Separation (RULE-25, RULE-27, RULE-34)", () => {
   let workspace: FixtureWorkspace;
   const adr1Tag = formatArtifactTag("ADR", 1);
   const adr4Tag = formatArtifactTag("ADR", 4);

@@ -1,7 +1,7 @@
 /**
  * Unit tests for core artifact reference resolution and subtype-agnostic archival guard.
- * Complies with RULE-13, RULE-14, RULE-15, RULE-23, RULE-25, RULE-27, RULE-31, RULE-34, and RULE-35.
- * @verifies RULE-23, RULE-25, RULE-31, RULE-34, RULE-35
+ * Complies with RULE-13, RULE-14, RULE-15, RULE-23, RULE-31, RULE-34 and RULE-35.
+ * @verifies RULE-23, RULE-31, RULE-34, RULE-35
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
@@ -14,7 +14,7 @@ import { MockVcsAdapter } from "../../platform/vcs/index.ts";
 import { findArtifactReferences } from "./references.ts";
 import { isTestVerificationCitation } from "./citation-classifier.ts";
 
-describe("Artifact References Query Engine (RULE-25, RULE-31, RULE-34, RULE-35)", () => {
+describe("Artifact References Query Engine (RULE-31, RULE-34, RULE-35)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
@@ -231,8 +231,8 @@ links:
     expect(result.foundIn.total).toBe(1);
   });
 
-  // @verifies RULE-25, RULE-31, RULE-34
-  it("[RULE-25][RULE-31][RULE-34] should discover citations using git-native grep index and include untracked working-tree files", async () => {
+  // @verifies RULE-31, RULE-34
+  it("[RULE-31][RULE-34] should discover citations using git-native grep index and include untracked working-tree files", async () => {
     await workspace.initGit();
     const ruleTag = formatArtifactTag("RULE", 801);
 
@@ -266,8 +266,8 @@ links:
     ).toBe(true);
   });
 
-  // @verifies RULE-25, RULE-31, RULE-34, RULE-35
-  it("[RULE-25][RULE-31][RULE-34][RULE-35] should produce identical citation discovery results between git-native query and filesystem fallback", async () => {
+  // @verifies RULE-31, RULE-34, RULE-35
+  it("[RULE-31][RULE-34][RULE-35] should produce identical citation discovery results between git-native query and filesystem fallback", async () => {
     await workspace.initGit();
     const targetTag = formatArtifactTag("RULE", 802);
     const linkingTag = formatArtifactTag("RULE", 803);
@@ -323,8 +323,8 @@ links:
     expect(gitResult.archivalGuard).toEqual(fallbackResult.archivalGuard);
   });
 
-  // @verifies RULE-25, RULE-31, RULE-34
-  it("[RULE-25][RULE-31][RULE-34] should benchmark git-native query execution against synthetic fixture tree", async () => {
+  // @verifies RULE-31, RULE-34
+  it("[RULE-31][RULE-34] should benchmark git-native query execution against synthetic fixture tree", async () => {
     await workspace.initGit();
     const targetTag = formatArtifactTag("RULE", 804);
 

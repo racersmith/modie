@@ -208,8 +208,8 @@ describe("ADR Creation - Execution & Disk Writing (RULE-1, RULE-8, RULE-34)", ()
     ).rejects.toThrow("ADR title must be a non-empty string.");
   });
 
-  // @verifies RULE-25, RULE-26, RULE-34
-  it("[RULE-25][RULE-26][RULE-34] should persist summary frontmatter and support roundtrip parsing via query services", async () => {
+  // @verifies RULE-34
+  it("[RULE-34] should persist summary frontmatter and support roundtrip parsing via query services", async () => {
     const workspace = await createFixtureWorkspace("adr-summary-roundtrip-");
 
     const result = await createAdr({
@@ -248,8 +248,8 @@ describe("ADR Creation - Execution & Disk Writing (RULE-1, RULE-8, RULE-34)", ()
     await workspace.cleanup();
   });
 
-  // @verifies RULE-25, RULE-34
-  it("[RULE-25][RULE-34] should accept contextSection strictly and populate AdrArtifact.contextSection", async () => {
+  // @verifies RULE-34
+  it("[RULE-34] should accept contextSection strictly and populate AdrArtifact.contextSection", async () => {
     const workspace = await createFixtureWorkspace(
       "adr-context-disambiguation-",
     );
@@ -270,8 +270,8 @@ describe("ADR Creation - Execution & Disk Writing (RULE-1, RULE-8, RULE-34)", ()
     await workspace.cleanup();
   });
 
-  // @verifies RULE-1, RULE-4, RULE-25, RULE-34
-  it("[RULE-1][RULE-4][RULE-25][RULE-34] should reject tombstone titles unless force is true", async () => {
+  // @verifies RULE-1, RULE-4, RULE-34
+  it("[RULE-1][RULE-4][RULE-34] should reject tombstone titles unless force is true", async () => {
     const workspace = await createFixtureWorkspace("adr-tombstone-check-");
 
     await expect(

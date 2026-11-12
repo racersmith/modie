@@ -1,7 +1,6 @@
 /**
  * Declarative CLI command definition for `modie context [target] [options]`.
- * Consumes public core API per RULE-25, enforces token economy per RULE-26,
- * and enforces stdout/stderr separation per RULE-27.
+ * Consumes public core API per RULE-25, and enforces stdout/stderr separation per RULE-27.
  */
 
 import { z } from "zod";

@@ -1,6 +1,6 @@
 /**
  * Unit tests for active task queue querying and DAG dependency readiness evaluation.
- * @verifies RULE-18, RULE-22, RULE-25, RULE-28
+ * @verifies RULE-18, RULE-22, RULE-28
  */
 
 import { describe, expect, it } from "bun:test";
@@ -251,9 +251,9 @@ describe("Task Queue Query Service - Progress & Filtering (RULE-22)", () => {
   });
 });
 
-describe("Task Status Inspection Service - getTaskStatus (RULE-22, RULE-25)", () => {
-  // @verifies RULE-22, RULE-25
-  it("[RULE-22][RULE-25] should retrieve detailed status and incomplete criteria for single task", async () => {
+describe("Task Status Inspection Service - getTaskStatus (RULE-22)", () => {
+  // @verifies RULE-22
+  it("[RULE-22] should retrieve detailed status and incomplete criteria for single task", async () => {
     await using workspace = await createFixtureWorkspace("modie-query-single-");
     const task = await workspace.createTask({
       id: 801,
@@ -289,8 +289,8 @@ describe("Task Status Inspection Service - getTaskStatus (RULE-22, RULE-25)", ()
     ).rejects.toThrow(/was not found among active tasks on disk/);
   });
 
-  // @verifies RULE-21, RULE-25, RULE-34, RULE-35
-  it("[RULE-21][RULE-25][RULE-34][RULE-35] should strictly search active .md files by default and resolve completed tasks and branches when history: true is passed", async () => {
+  // @verifies RULE-21, RULE-34, RULE-35
+  it("[RULE-21][RULE-34][RULE-35] should strictly search active .md files by default and resolve completed tasks and branches when history: true is passed", async () => {
     await using workspace = await createFixtureWorkspace(
       "modie-query-history-",
     );
@@ -537,9 +537,9 @@ describe("Historical Task Collection Handlers (RULE-21, RULE-28)", () => {
   });
 });
 
-describe("Typed VCS Methods for Historical Queries (RULE-21, RULE-25)", () => {
-  // @verifies RULE-21, RULE-25
-  it("[RULE-21][RULE-25] should read files at ref and read deleted files via typed IVcsAdapter", async () => {
+describe("Typed VCS Methods for Historical Queries (RULE-21)", () => {
+  // @verifies RULE-21
+  it("[RULE-21] should read files at ref and read deleted files via typed IVcsAdapter", async () => {
     const mockVcs = new MockVcsAdapter({
       fileContentsAtRef: {
         "task/10-test:src/.modie/tasks/test.TASK-10.md": "# Task 10 content",

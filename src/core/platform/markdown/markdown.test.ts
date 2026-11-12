@@ -1,6 +1,6 @@
 /**
  * Unit tests for foundational Markdown parsing and frontmatter handling layer.
- * @verifies RULE-1, RULE-25, RULE-26, RULE-35
+ * @verifies RULE-1, RULE-35
  */
 
 import { describe, expect, it } from "bun:test";
@@ -14,8 +14,8 @@ import {
   splitMarkdownFrontmatter,
 } from "./index.ts";
 
-describe("Markdown Foundational Layer - splitMarkdownFrontmatter (RULE-1, RULE-25)", () => {
-  it("[RULE-1][RULE-25] should split valid YAML frontmatter and markdown body", () => {
+describe("Markdown Foundational Layer - splitMarkdownFrontmatter (RULE-1)", () => {
+  it("[RULE-1] should split valid YAML frontmatter and markdown body", () => {
     const adr1Tag = formatArtifactTag("ADR", 1);
     const content = `---
 links:
@@ -32,14 +32,14 @@ Body text here.
     expect(body).toBe("# Context\n\nBody text here.");
   });
 
-  it("[RULE-1][RULE-25] should return empty frontmatter when document has no opening delimiter", () => {
+  it("[RULE-1] should return empty frontmatter when document has no opening delimiter", () => {
     const content = `# Context\n\nSome content\n---\nMore content after horizontal rule.`;
     const { frontmatter, body } = splitMarkdownFrontmatter(content);
     expect(frontmatter).toBe("");
     expect(body).toBe(content);
   });
 
-  it("[RULE-1][RULE-25] should return empty frontmatter when opening delimiter is unclosed", () => {
+  it("[RULE-1] should return empty frontmatter when opening delimiter is unclosed", () => {
     const adr1Tag = formatArtifactTag("ADR", 1);
     const content = `---\nlinks:\n  - ${adr1Tag}\n# Context\nUnclosed frontmatter`;
     const { frontmatter, body } = splitMarkdownFrontmatter(content);
@@ -47,7 +47,7 @@ Body text here.
     expect(body).toBe(content);
   });
 
-  it("[RULE-1][RULE-25] should not prematurely split on mid-line --- inside frontmatter comments or values", () => {
+  it("[RULE-1] should not prematurely split on mid-line --- inside frontmatter comments or values", () => {
     const adr1Tag = formatArtifactTag("ADR", 1);
     const content = `---
 # --- Governance Links ---
@@ -70,7 +70,7 @@ End of body.`;
     );
   });
 
-  it("[RULE-1][RULE-25] should handle CRLF line endings cleanly", () => {
+  it("[RULE-1] should handle CRLF line endings cleanly", () => {
     const rule1Tag = formatArtifactTag("RULE", 1);
     const content = `---\r\nlinks:\r\n  - ${rule1Tag}\r\n---\r\n\r\nRule assertion text.\r\n`;
     const { frontmatter, body } = splitMarkdownFrontmatter(content);
@@ -79,8 +79,8 @@ End of body.`;
   });
 });
 
-describe("Markdown Foundational Layer - parseFrontmatterFields (RULE-1, RULE-25, RULE-35)", () => {
-  it("[RULE-1][RULE-25][RULE-35] should parse block list links and depends_on fields", () => {
+describe("Markdown Foundational Layer - parseFrontmatterFields (RULE-1, RULE-35)", () => {
+  it("[RULE-1][RULE-35] should parse block list links and depends_on fields", () => {
     const adr1Tag = formatArtifactTag("ADR", 1);
     const rule2Tag = formatArtifactTag("RULE", 2);
     const task3Tag = formatArtifactTag("TASK", 3);
@@ -100,7 +100,7 @@ links:
     expect(parsed.depends_on).toEqual([task3Tag]);
   });
 
-  it("[RULE-1][RULE-25][RULE-35] should parse inline bracketed arrays and omit empty depends_on", () => {
+  it("[RULE-1][RULE-35] should parse inline bracketed arrays and omit empty depends_on", () => {
     const adr4Tag = formatArtifactTag("ADR", 4);
     const rule9Tag = formatArtifactTag("RULE", 9);
 
@@ -111,7 +111,7 @@ links:
     expect(parsed.depends_on).toBeUndefined();
   });
 
-  it("[RULE-1][RULE-25][RULE-35] should ignore unrelated YAML keys between or after target lists", () => {
+  it("[RULE-1][RULE-35] should ignore unrelated YAML keys between or after target lists", () => {
     const adr1Tag = formatArtifactTag("ADR", 1);
     const adr2Tag = formatArtifactTag("ADR", 2);
 
@@ -130,7 +130,7 @@ superseded_by: []
     expect(parsed.depends_on).toBeUndefined();
   });
 
-  it("[RULE-1][RULE-25][RULE-35] should parse supersedes and superseded_by in block, inline array, and scalar formats and map line numbers", () => {
+  it("[RULE-1][RULE-35] should parse supersedes and superseded_by in block, inline array, and scalar formats and map line numbers", () => {
     const adr1Tag = formatArtifactTag("ADR", 1);
     const adr2Tag = formatArtifactTag("ADR", 2);
     const adr3Tag = formatArtifactTag("ADR", 3);
@@ -163,7 +163,7 @@ Unified context section.
     expect(lineMap.linkLines.get(6)).toBe("superseded_by");
   });
 
-  it("[RULE-25][RULE-26] should parse inline, quoted, and folded block summary fields from frontmatter", () => {
+  it(" should parse inline, quoted, and folded block summary fields from frontmatter", () => {
     const adr1Tag = formatArtifactTag("ADR", 1);
 
     const inlineParsed = parseFrontmatterFields(
@@ -186,8 +186,8 @@ Unified context section.
   });
 });
 
-describe("Markdown Foundational Layer - parseMarkdownSections (RULE-1, RULE-25, RULE-26)", () => {
-  it("[RULE-1][RULE-25][RULE-26] should extract level-1 sections while preserving level-2 subheadings inside sections", () => {
+describe("Markdown Foundational Layer - parseMarkdownSections (RULE-1)", () => {
+  it("[RULE-1] should extract level-1 sections while preserving level-2 subheadings inside sections", () => {
     const body = `# Context
 
 Context paragraph.
@@ -222,7 +222,7 @@ Details under subheading 2.
     expect(sections["Decision"]).toContain("## 2. Verification");
   });
 
-  it("[RULE-1][RULE-25][RULE-26] should ignore # comment lines inside fenced code blocks", () => {
+  it("[RULE-1] should ignore # comment lines inside fenced code blocks", () => {
     const body = `# Decision
 
 We use a line-delimited ledger format:
@@ -259,7 +259,7 @@ Final decision paragraph.
     expect(sections["Consequences"]).toBe("- Fast zero-read verification.");
   });
 
-  it("[RULE-25] should compile unified document and ArtifactParseContext", () => {
+  it("[RULE-1] should compile unified document and ArtifactParseContext", () => {
     const rule1Tag = formatArtifactTag("RULE", 1);
     const adr10Tag = formatArtifactTag("ADR", 10);
     const raw = `---

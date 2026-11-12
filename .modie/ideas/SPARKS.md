@@ -47,3 +47,6 @@ When getting the context of a subtask (`task_context`), include the parent task'
 
 # [b9a6] Expose active sparks via modie://sparks ambient MCP resource
 Provide a zero-token read interface (modie://sparks) on the Modie MCP server so agents and pure-MCP clients can inspect the active sparks ledger on-demand without adding tool prompt bloat.
+
+# [7802] Clean up file-less empty .modie container directories
+When artifacts are relocated or tasks are completed and deleted, parent `.modie/<subtype>` and `.modie/` directories may be left file-less and empty. A dedicated `modie cleanup` command could scan the repository and safely prune empty container directories to reduce clutter without conflating cleanup with relocation.

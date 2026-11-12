@@ -126,8 +126,8 @@ describe("FixtureWorkspace - Architectural scopeDir Resolution (RULE-8, RULE-12,
     expect(await workspace.fileExists(task)).toBe(true);
   });
 
-  // @verifies RULE-25, RULE-34, RULE-35
-  it("[RULE-25][RULE-34][RULE-35] should delegate fixture creation to canonical subtype template renderers and roundtrip parse cleanly", async () => {
+  // @verifies RULE-34, RULE-35
+  it("[RULE-34][RULE-35] should delegate fixture creation to canonical subtype template renderers and roundtrip parse cleanly", async () => {
     const adr1Tag = formatArtifactTag("ADR", 1);
     const rule1Tag = formatArtifactTag("RULE", 1);
     const task1Tag = formatArtifactTag("TASK", 1);

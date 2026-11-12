@@ -1,6 +1,6 @@
 /**
  * Unit tests for active artifact collection listing and ancestral scope traversal.
- * @verifies RULE-9, RULE-25, RULE-34, RULE-35
+ * @verifies RULE-9, RULE-34, RULE-35
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
@@ -11,7 +11,7 @@ import {
 import { formatArtifactTag } from "../../domain/index.ts";
 import { listActiveArtifacts, listAdrs, listRules } from "./index.ts";
 
-describe("Artifact List Service - Listing Active RULE and ADR Artifacts with Ancestral Scope Filtering (RULE-9, RULE-25, RULE-34, RULE-35)", () => {
+describe("Artifact List Service - Listing Active RULE and ADR Artifacts with Ancestral Scope Filtering (RULE-9, RULE-34, RULE-35)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
@@ -22,8 +22,8 @@ describe("Artifact List Service - Listing Active RULE and ADR Artifacts with Anc
     await workspace.cleanup();
   });
 
-  // @verifies RULE-25, RULE-34, RULE-35
-  it("[RULE-25][RULE-34][RULE-35] should list active RULE and ADR artifacts with titles, tags, relative paths, and links while excluding archived items", async () => {
+  // @verifies RULE-34, RULE-35
+  it("[RULE-34][RULE-35] should list active RULE and ADR artifacts with titles, tags, relative paths, and links while excluding archived items", async () => {
     const adr1Tag = formatArtifactTag("ADR", 1);
     const adr2Tag = formatArtifactTag("ADR", 2);
     const rule1Tag = formatArtifactTag("RULE", 1);
@@ -104,8 +104,8 @@ describe("Artifact List Service - Listing Active RULE and ADR Artifacts with Anc
     );
   });
 
-  // @verifies RULE-9, RULE-25, RULE-34, RULE-35
-  it("[RULE-9][RULE-25][RULE-34][RULE-35] should filter rules and ADRs by ancestral scope traversal up to workspace root", async () => {
+  // @verifies RULE-9, RULE-34, RULE-35
+  it("[RULE-9][RULE-34][RULE-35] should filter rules and ADRs by ancestral scope traversal up to workspace root", async () => {
     const rootRuleTag = formatArtifactTag("RULE", 1);
     const srcRuleTag = formatArtifactTag("RULE", 2);
     const interfacesRuleTag = formatArtifactTag("RULE", 3);

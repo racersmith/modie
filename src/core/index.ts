@@ -1,6 +1,6 @@
 /**
  * Modie Core: Governance engine and context compiler domain logic.
- * Public API exposed to interfaces (RULE-25).
+ * Public API surface exposed to consumers.
  */
 
 // Domain layer (RULE-38)

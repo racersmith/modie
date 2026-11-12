@@ -1,6 +1,6 @@
 /**
  * In-memory MockVcsAdapter for hermetic, high-speed unit testing.
- * Complies with RULE-25 and RULE-28.
+ * Complies with RULE-28.
  */
 
 import type {

@@ -1,7 +1,7 @@
 /**
  * Isolated unit tests for CitationSource implementations (GitGrepSource and FsWalkSource).
- * Complies with RULE-25, RULE-31, RULE-34, and RULE-35.
- * @verifies RULE-25, RULE-31, RULE-34, RULE-35
+ * Complies with RULE-31, RULE-34 and RULE-35.
+ * @verifies RULE-31, RULE-34, RULE-35
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
@@ -17,7 +17,7 @@ import {
   createTagRegex,
 } from "./citation-source.ts";
 
-describe("CitationSource Abstraction (RULE-25, RULE-34, RULE-35)", () => {
+describe("CitationSource Abstraction (RULE-34, RULE-35)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
@@ -28,7 +28,7 @@ describe("CitationSource Abstraction (RULE-25, RULE-34, RULE-35)", () => {
     await workspace.cleanup();
   });
 
-  it("[RULE-25][RULE-35] should correctly generate tag regex with word boundary protections", () => {
+  it("[RULE-35] should correctly generate tag regex with word boundary protections", () => {
     const targetTag = formatArtifactTag("RULE", 930);
     const regex = createTagRegex(targetTag);
 
@@ -40,7 +40,7 @@ describe("CitationSource Abstraction (RULE-25, RULE-34, RULE-35)", () => {
     expect(regex.test(`// Cites pre_${targetTag} with prefix`)).toBe(false);
   });
 
-  it("[RULE-25][RULE-34][RULE-35] should extract citations with FsWalkSource", async () => {
+  it("[RULE-34][RULE-35] should extract citations with FsWalkSource", async () => {
     const targetTag = formatArtifactTag("RULE", 931);
     const targetFile = "target.md";
 
@@ -76,7 +76,7 @@ describe("CitationSource Abstraction (RULE-25, RULE-34, RULE-35)", () => {
     expect(codeMatch.snippet).toBe(`// Implements ${targetTag}`);
   });
 
-  it("[RULE-25][RULE-34][RULE-35] should extract citations with GitGrepSource", async () => {
+  it("[RULE-34][RULE-35] should extract citations with GitGrepSource", async () => {
     await workspace.initGit();
     const targetTag = formatArtifactTag("RULE", 932);
     const targetFile = "target.md";
@@ -103,7 +103,7 @@ describe("CitationSource Abstraction (RULE-25, RULE-34, RULE-35)", () => {
     expect(matches.some((m) => m.relPath === targetFile)).toBe(false);
   });
 
-  it("[RULE-25][RULE-35] should fail GitGrepSource scan when directory is not a git repository", async () => {
+  it("[RULE-35] should fail GitGrepSource scan when directory is not a git repository", async () => {
     const targetTag = formatArtifactTag("RULE", 933);
     const mockVcs = new MockVcsAdapter({ insideWorkTree: false });
     const source = new GitGrepSource(mockVcs);

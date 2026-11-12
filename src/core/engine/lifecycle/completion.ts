@@ -1,6 +1,6 @@
 /**
  * Task completion and checklist progression domain services.
- * Implements RULE-21, RULE-22, RULE-25, and RULE-32.
+ * Implements RULE-21, RULE-22 and RULE-32.
  */
 
 import { readFile, rm, stat, writeFile } from "node:fs/promises";

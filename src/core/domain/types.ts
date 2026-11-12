@@ -80,6 +80,11 @@ export interface BaseCreateArtifactOptions {
    * Optional task dependencies.
    */
   depends_on?: string[];
+
+  /**
+   * Optional force flag to bypass collision or advisory guardrails.
+   */
+  force?: boolean;
 }
 
 /**

@@ -2,7 +2,7 @@
  * Types and interfaces for document linking, frontmatter link mutation,
  * and DAG invariant validation.
  * Complies with RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, and RULE-17
- * RULE-18, RULE-19, RULE-25, and RULE-36.
+ * RULE-18, RULE-19 and RULE-36.
  */
 
 import type { ResolvedArtifact } from "../../domain/index.ts";

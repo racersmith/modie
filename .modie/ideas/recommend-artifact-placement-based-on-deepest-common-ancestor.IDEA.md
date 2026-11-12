@@ -202,9 +202,31 @@ Evaluating Modie's existing artifacts illustrates the immediate token and archit
 * **Deepest Common Ancestor:** `src/interfaces/cli`
 * **Diagnosis:** **`OPTIMAL`** (Properly isolated; never leaks into domain or MCP tasks).
 
-### Case 3: `RULE-34` (`fixture-based-test-isolation`)
+### Case 3: The Dual Resolution Model for Under-Scoped Artifacts (`Elevate` vs. `Prune`)
+When an artifact is flagged as **`UNDER_SCOPED`** (i.e. references exist outside its current governing directory scope), there are two distinct architectural paths:
+
+1. **Option 1: Elevate to Common Scope (Generalization)**
+   - **When to choose:** The invariant is genuinely universal or cross-cutting across all referencing subtrees, and future code in those scopes should continue to be constrained by it.
+   - **Action:** Relocate the artifact up to the calculated Deepest Common Ancestor (DCA) via `modie scope move <TAG> [targetScope]`.
+   - **Trade-off:** Broadens the rule's governance reach, purposefully injecting it into the context compilation of all descendant tasks.
+
+2. **Option 2: Prune Out-of-Scope Tags (Scope Retention)**
+   - **When to choose:** The artifact is appropriately specialized to its subtree (e.g. `RULE-27` for CLI stream separation, `RULE-26` for MCP token economy), and foreign citations outside that subtree are:
+     - Stray docstring commentary or halo tags (e.g. core exporting an API and claiming it verifies the consumer's interface rule).
+     - Analogy citations (e.g. borrowing a CLI rule tag in an MCP test).
+     - String examples in help text (e.g. `e.g. RULE-38` in CLI argument descriptions).
+     - Consumer wrapper tests testing CLI command wrappers rather than underlying domain invariants.
+   - **Action:** Remove or reword the out-of-scope references so the rule's reference graph contracts back to its proper territory.
+   - **Trade-off:** Restores least-scope placement without expanding the context blast radius.
+
+#### Tooling Surface in `modie scope audit`:
+The audit command highlights this dual resolution directly:
+- **ACTION Column**: Displays `Elevate to <DCA> or prune (N ext)`
+- **Diagnostic Breakdown**: Lists the exact out-of-scope files causing the violation so developers and agents can immediately inspect them.
+
+### Case 4: `RULE-34` (`fixture-based-test-isolation`)
 * **Current Location:** `src/.modie/rules/fixture-based-test-isolation.RULE-34.md` (Governing Scope: `src`)
-* **Reference Graph:** Cited in 425 test files across `src/core/` and `src/interfaces/`.
+* **Reference Graph:** Cited in test files across `src/core/` and `src/interfaces/`.
 * **Deepest Common Ancestor:** `src`
 * **Diagnosis:** **`OPTIMAL`** (Cross-cutting repository test invariant; belongs at `src`).
 
@@ -286,7 +308,7 @@ When applying a demotion or elevation:
 2. Scaffold `<recommendedScope>/.modie/MOTIVE.md` if the target directory lacks an architectural motive.
 3. Move the file from old path to new path using standard filesystem rename (or Git move if VCS adapter is active).
 4. Verify graph invariants via `linkValidator` to ensure no downward or sideways link constraints were violated (RULE-16, RULE-17, RULE-19).
-5. Prune empty parent `.modie/` directories if the relocated artifact leaves behind a file-less `.modie/` container.
+*(Note: Empty directory cleanup is explicitly decoupled from relocate and tracked in Spark `[7802]` for a dedicated `modie cleanup` command).*
 
 ---
 

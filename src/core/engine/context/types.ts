@@ -1,6 +1,6 @@
 /**
  * Types and interfaces for the Modie explicit workspace context container.
- * Complies with RULE-25, RULE-28, and RULE-34.
+ * Complies with RULE-28 and RULE-34.
  */
 
 import type { DefinitionRegistry } from "../../domain/index.ts";

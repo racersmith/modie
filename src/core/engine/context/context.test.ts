@@ -12,7 +12,7 @@ import {
 import type { ArtifactDefinition } from "../../domain/index.ts";
 import { MockVcsAdapter } from "../../platform/vcs/mock-adapter.ts";
 
-describe("Workspace Context Container (RULE-25, RULE-34)", () => {
+describe("Workspace Context Container (RULE-34)", () => {
   let tempDir: string;
 
   beforeEach(async () => {
