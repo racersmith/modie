@@ -9,7 +9,11 @@ Modie previously maintained an ad-hoc Antigravity plugin bundle in .agents/_plug
 
 # Alternatives Considered
 
-- None recorded.
+## Project specific `.agents/plugins` directory for local dogfooding.  
+This was difficult to manage with the current setup in Antigravity IDE. Project level plugins do not appear in the settings and can not be easily toggled to reset the mcp at will. This created friction between new mcp features, instructions and rules not being deterministically available during development.
+
+## Project level mcp
+This made the instructions and rules intertwined from the deliverable modie project and the dogfooding modie project itself. Consumers of modie didn't have a good way to include and update instructions and rules for agents.
 
 # Decision
 
