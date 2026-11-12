@@ -37,16 +37,6 @@ Break the single monolithic Modie MCP server into smaller, domain-specific MCP s
 
 As part of the Antigravity plugin system, this would be easy to package and distribute modularly.
 
-# [c1f9] Recommend artifact placement based on deepest common ancestor
-Allow for recommended placement of artifacts based on references and the deepest common ancestor of those references.
-
-This would allow for a fairly loose structure of artifacts at the root, but as the codebase grows, a narrower scope can be automatically identified.
-
-# [8a7a] Restrict ADR links to internal Modie artifacts
-Restrict ADR links to only within other Modie artifacts. ADRs should drive RULES which then define code.
-
-For additional context on the rule, the agent can read the related ADR when necessary. The current method ends up with a proliferation of ADR links within the codebase that don't add much value and only pollute the context window.
-
 # [864f] Directed application for repository-wide rules
 How could we handle rules that more or less relate to large swaths of the codebase (e.g. not putting plaintext tags in tests)?
 
