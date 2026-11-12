@@ -305,7 +305,7 @@ export function createModieMcpServer(
     "create_rule",
     {
       description:
-        "Author an architectural governance rule with an invariant assertion and justifying ADR links.",
+        "Author a RULE. LITMUS TEST: Enduring, falsifiable invariant verifiable in code/tests. Never for temporary tasks or subjective styles.",
       inputSchema: createRuleSchema.shape,
       outputSchema: createArtifactOutputSchema.shape,
       annotations: {
@@ -338,7 +338,7 @@ export function createModieMcpServer(
     "create_adr",
     {
       description:
-        "Author an Architectural Decision Record capturing context, decision, consequences, and links.",
+        "Author an ADR. LITMUS TEST: Decision must actively constrain future code. Never author an ADR for deletions, refactors, or sunsets (use archive_artifact or an ephemeral task).",
       inputSchema: createAdrSchema.shape,
       outputSchema: createArtifactOutputSchema.shape,
       annotations: {
@@ -371,7 +371,7 @@ export function createModieMcpServer(
     "create_task",
     {
       description:
-        "Author a scoped task specification with acceptance criteria, dependencies, and blast radius.",
+        "Author a TASK. LITMUS TEST: Converged execution contract with binary criteria ending with User Review. If still inchoate or exploring, use spark_add.",
       inputSchema: createTaskSchema.shape,
       outputSchema: createArtifactOutputSchema.shape,
       annotations: {
@@ -404,7 +404,7 @@ export function createModieMcpServer(
     "create_motive",
     {
       description:
-        "Author or scaffold a MOTIVE.md scope intent file expressing directory-level purpose and trajectory.",
+        "Author a MOTIVE. LITMUS TEST: Enduring architectural reason and domain boundary for this directory node. Never for setup steps or file inventories.",
       inputSchema: createMotiveSchema.shape,
       outputSchema: createMotiveOutputSchema.shape,
       annotations: {
@@ -507,7 +507,7 @@ export function createModieMcpServer(
     "spark_add",
     {
       description:
-        "Capture an out-of-scope architectural realization, idea, or finding without violating active task blast radius.",
+        "Capture a SPARK. LITMUS TEST: Raw, inchoate idea or out-of-scope finding requiring no formal design, branch, or criteria.",
       inputSchema: sparkAddMcpSchema.shape,
       outputSchema: sparkAddOutputSchema.shape,
       annotations: {

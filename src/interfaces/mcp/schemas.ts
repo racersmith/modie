@@ -184,6 +184,13 @@ export const createAdrSchema = z.object({
     .string()
     .optional()
     .describe("Prior ADR tag superseded by this decision"),
+  force: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      "Force creation of an ADR even if the title contains tombstone keywords (sunset, retire, deprecate, delete, remove, cleanup)",
+    ),
 });
 export type CreateAdrInput = z.infer<typeof createAdrSchema>;
 

@@ -426,6 +426,7 @@ export async function handleCreateAdr(
     links: args.links,
     scopeDir: resolvedScopeDir,
     supersedes: args.supersedes,
+    force: args.force,
     cwd,
     workspace: ctx,
   });

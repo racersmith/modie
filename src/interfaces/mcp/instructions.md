@@ -55,7 +55,19 @@ Modie enforces a strict hierarchical directed acyclic graph (DAG):
 
 ---
 
-## 6. The 12 Singular Modie MCP Agent Tools
+## 6. Artifact Authoring Litmus Tests
+
+Before authoring, choose the right subtype:
+
+- **`SPARK` (`spark_add`)**: Raw, inchoate idea or out-of-scope finding requiring no formal design, branch, or criteria. Use when exploring or capturing insights without task scope creep.
+- **`ADR` (`create_adr`)**: Decision that actively constrains how *future* code must be written. Never author an ADR for deletions, cleanups, or sunsets (use `archive_artifact` or an ephemeral cleanup `TASK`).
+- **`RULE` (`create_rule`)**: Enduring, falsifiable invariant programmatically or statically verifiable across code/tests. Never for temporary tasks or subjective styles.
+- **`TASK` (`create_task`)**: Converged contract with strict downward blast radius and binary criteria ending with `User Review`. If still inchoate or exploring, use `spark_add`.
+- **`MOTIVE` (`create_motive`)**: Enduring architectural purpose and domain boundary for a directory node in the DAG. Never for setup steps or file inventories.
+
+---
+
+## 7. The 13 Singular Modie MCP Agent Tools
 
 Modie exposes 13 singular-purpose tools designed for high signal-to-noise and progressive disclosure:
 
@@ -74,7 +86,7 @@ Modie exposes 13 singular-purpose tools designed for high signal-to-noise and pr
 ### Dedicated Artifact Authoring
 
 7. **`create_rule`**: Authors an architectural governance rule (RULE) with a strongly typed invariant assertion claim and optional justifying ADR links.
-8. **`create_adr`**: Authors an Architectural Decision Record (ADR) with strongly typed context, decision, consequences, and links.
+8. **`create_adr`**: Authors an Architectural Decision Record (ADR) with strongly typed context, decision, consequences, and links. Enforces the anti-tombstone guardrail.
 9. **`create_task`**: Authors a scoped task specification (TASK) with contract-based acceptance criteria (must end with `User Review`), prerequisite dependencies, and governing links.
 10. **`create_motive`**: Authors or scaffolds a directory-level intent file (`MOTIVE.md`) expressing scope purpose and trajectory without cross-artifact citations.
 
@@ -86,7 +98,7 @@ Modie exposes 13 singular-purpose tools designed for high signal-to-noise and pr
 
 ---
 
-## 7. Ambient MCP Resources
+## 8. Ambient MCP Resources
 
 For zero-roundtrip context hydration:
 

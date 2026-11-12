@@ -50,6 +50,13 @@ export const adrCreateSchema = z.object({
     .describe(
       "Target ADR tag(s) superseded by this decision (repeat flag or use comma-separated list)",
     ),
+  force: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      "Force creation of an ADR even if the title contains tombstone keywords (sunset, retire, deprecate, delete, remove, cleanup)",
+    ),
 });
 
 export type AdrCreateInput = z.infer<typeof adrCreateSchema>;
@@ -86,6 +93,7 @@ export const adrCreateCommand: CliCommandDefinition<
   description: "Create a new ADR artifact",
   agentGuidance:
     "Call this tool to document significant architectural decisions, trade-offs, and design rationale.\n\n" +
+    "LITMUS TEST: Decision must actively constrain future code. Never author an ADR for deletions, refactors, or sunsets (use archive_artifact or an ephemeral cleanup task).\n\n" +
     "BEST PRACTICE: Author ADRs upfront when introducing major design choices, subsystem abstractions, or structural conventions. Derived invariants should be codified as linked RULE artifacts.",
   helpUsage: "modie adr create --help",
   schema: adrCreateSchema,
@@ -127,6 +135,9 @@ export const adrCreateCommand: CliCommandDefinition<
       short: "S",
       placeholder: "<targets>",
     },
+    force: {
+      short: "f",
+    },
   },
   execute: async (input, context): Promise<AdrCreateResultPayload> => {
     const adrOptions: CreateAdrOptions = {
@@ -138,6 +149,7 @@ export const adrCreateCommand: CliCommandDefinition<
       decision: input.decision,
       links: input.links.length > 0 ? input.links : undefined,
       supersedes: input.supersedes.length > 0 ? input.supersedes : undefined,
+      force: input.force,
       cwd: context.cwd,
     };
 

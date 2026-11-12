@@ -192,6 +192,11 @@ export interface CreateAdrOptions {
   supersedes?: string | string[];
 
   /**
+   * When true, bypasses the tombstone ADR detection guardrail (e.g. titles containing sunset or cleanup keywords).
+   */
+  force?: boolean;
+
+  /**
    * Workspace root directory. Defaults to process.cwd().
    */
   cwd?: string;

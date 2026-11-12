@@ -165,18 +165,25 @@ describe("Modie MCP Server - 12 Singular Agent Tools Suite", () => {
 
     const ruleTool = response.tools.find((t) => t.name === "create_rule")!;
     expect(ruleTool.outputSchema).toBeDefined();
+    expect(ruleTool.description).toContain("LITMUS TEST:");
 
     const adrTool = response.tools.find((t) => t.name === "create_adr")!;
     expect(adrTool.outputSchema).toBeDefined();
+    expect(adrTool.description).toContain("LITMUS TEST:");
 
     const taskTool = response.tools.find((t) => t.name === "create_task")!;
     expect(taskTool.outputSchema).toBeDefined();
+    expect(taskTool.description).toContain("LITMUS TEST:");
 
     const motiveTool = response.tools.find((t) => t.name === "create_motive")!;
     expect(motiveTool.annotations?.readOnlyHint).toBe(false);
     expect(motiveTool.annotations?.idempotentHint).toBe(false);
     expect(motiveTool.annotations?.destructiveHint).toBe(false);
     expect(motiveTool.outputSchema).toBeDefined();
+    expect(motiveTool.description).toContain("LITMUS TEST:");
+
+    const sparkTool = response.tools.find((t) => t.name === "spark_add")!;
+    expect(sparkTool.description).toContain("LITMUS TEST:");
 
     const linkTool = response.tools.find((t) => t.name === "link_artifacts")!;
     expect(linkTool.outputSchema).toBeDefined();
@@ -427,6 +434,32 @@ describe("Modie MCP Server - 12 Singular Agent Tools Suite", () => {
       const content = getStructuredContent(res);
       expect(content.kind).toBe("ADR");
       expect(content.tag).toMatch(/^ADR-\d+$/);
+    });
+
+    // @verifies RULE-1, RULE-4
+    it("create_adr should reject tombstone titles unless force is true", async () => {
+      const rejectRes = await client.callTool({
+        name: "create_adr",
+        arguments: {
+          title: "Sunset Legacy Storage Pipeline",
+          decision: "We sunset the legacy storage pipeline.",
+        },
+      });
+      expect(rejectRes.isError).toBe(true);
+      const errText = getTextContent(rejectRes);
+      expect(errText).toContain("Tombstone ADR detected");
+
+      const forceRes = await client.callTool({
+        name: "create_adr",
+        arguments: {
+          title: "Sunset Legacy Storage Pipeline",
+          decision: "We sunset the legacy storage pipeline.",
+          force: true,
+        },
+      });
+      expect(forceRes.isError).toBeFalsy();
+      const content = getStructuredContent(forceRes);
+      expect(content.kind).toBe("ADR");
     });
 
     // @verifies RULE-30, RULE-26
