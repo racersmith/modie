@@ -19,9 +19,9 @@ Relocate core engine architectural rules that currently reside at src down to sr
 
 # Acceptance Criteria
 
-- [ ] RULE-38 is relocated to src/core/.modie/rules/ with valid container motive and graph invariants
-- [ ] RULE-33 is relocated to src/core/engine/.modie/rules/ with valid container and graph invariants
-- [ ] Scoped engine rules (RULE-31, RULE-36, RULE-2, RULE-9) are evaluated and relocated to least scope in src/core/engine/
-- [ ] modie scope audit confirms optimal least-scope placement across all relocated rules
-- [ ] Automated verification suite (bun run verify) passes cleanly
-- [ ] User Review
+- [x] RULE-38 is relocated to src/core/.modie/rules/ with valid container motive and graph invariants
+- [x] RULE-33 is relocated to src/core/engine/.modie/rules/ with valid container and graph invariants
+- [x] Scoped engine rules (RULE-31, RULE-36, RULE-2, RULE-9) are evaluated and relocated to least scope in src/core/engine/
+- [x] modie scope audit confirms optimal least-scope placement across all relocated rules
+- [x] Automated verification suite (bun run verify) passes cleanly
+- [x] User Review
