@@ -24,4 +24,4 @@ Originating from .modie/ideas/recommend-artifact-placement-based-on-deepest-comm
 - [x] Declarative CLI provides a scope audit command reporting placement status to stderr and machine JSON to stdout, with an --apply flag to execute recommended relocations
 - [x] Declarative CLI provides a scope move command supporting explicit target scopes and auto-calculated optimal placement with invariant validation
 - [x] Automated test suites verify placement classification, relocation mechanics, invariant validation, and duplicate collision prevention under isolated workspaces
-- [ ] User Review
+- [x] User Review
