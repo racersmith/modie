@@ -269,4 +269,25 @@ describe("ADR Creation - Execution & Disk Writing (RULE-1, RULE-8, RULE-34)", ()
 
     await workspace.cleanup();
   });
+
+  // @verifies RULE-1, RULE-4, RULE-25, RULE-34
+  it("[RULE-1][RULE-4][RULE-25][RULE-34] should reject tombstone titles unless force is true", async () => {
+    const workspace = await createFixtureWorkspace("adr-tombstone-check-");
+
+    await expect(
+      createAdr({
+        title: "Sunset Legacy Storage Engine",
+        cwd: workspace.cwd,
+      }),
+    ).rejects.toThrow(/Tombstone ADR detected/);
+
+    const forcedResult = await createAdr({
+      title: "Sunset Legacy Storage Engine",
+      force: true,
+      cwd: workspace.cwd,
+    });
+    expect(forcedResult.artifact.title).toBe("Sunset Legacy Storage Engine");
+
+    await workspace.cleanup();
+  });
 });

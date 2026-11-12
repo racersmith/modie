@@ -7,6 +7,7 @@ import { LINK_POLICY } from "../graph/policy.ts";
 import type { ArtifactDefinition } from "../types.ts";
 import { parseAdrFromContext, renderAdrMarkdown } from "./template.ts";
 import type { AdrArtifact, CreateAdrOptions } from "./types.ts";
+import { validateAdrTitle } from "./validation.ts";
 
 export type AdrDefinition = ArtifactDefinition<CreateAdrOptions, AdrArtifact>;
 
@@ -14,6 +15,9 @@ export const adrDefinition: AdrDefinition = {
   subtype: "ADR",
   containerName: "adrs",
   linkPolicy: LINK_POLICY.ADR,
+  validate: ({ title, options }) => {
+    validateAdrTitle(title, options.force);
+  },
   render: ({ id, slug, title, options, filepath }) => {
     const links = options.links ?? [];
     const summary = options.summary?.trim() || undefined;

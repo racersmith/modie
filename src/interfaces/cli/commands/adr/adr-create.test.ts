@@ -348,4 +348,38 @@ describe("CLI ADR Creation - Execution & Stream Separation (RULE-8, RULE-14, RUL
       "---\nsummary: Concise signpost summary for progressive context disclosure.\nlinks: []\n---",
     );
   });
+
+  // @verifies RULE-1, RULE-4, RULE-25, RULE-27, RULE-34
+  it("[RULE-1][RULE-4][RULE-25][RULE-27][RULE-34] should reject tombstone ADR titles and suggest alternatives in stderr", async () => {
+    await using workspace = await createFixtureWorkspace(
+      "modie-cli-adr-tombstone-reject-",
+    );
+    const { exitCode, stdout, stderr } = await captureCli(
+      ["adr", "create", "Sunset Legacy Pipeline"],
+      workspace.cwd,
+    );
+
+    expect(exitCode).not.toBe(0);
+    expect(stdout).toBe("");
+    expect(stderr).toContain("Tombstone ADR detected");
+    expect(stderr).toContain("ADRs must constrain future code");
+  });
+
+  // @verifies RULE-1, RULE-4, RULE-25, RULE-27, RULE-34
+  it("[RULE-1][RULE-4][RULE-25][RULE-27][RULE-34] should allow tombstone ADR titles when --force flag is passed", async () => {
+    await using workspace = await createFixtureWorkspace(
+      "modie-cli-adr-tombstone-force-",
+    );
+    const expectedTag = formatArtifactTag("ADR", 1);
+    const { exitCode, stdout, stderr } = await captureCli(
+      ["adr", "create", "Sunset Legacy Pipeline", "--force"],
+      workspace.cwd,
+    );
+
+    expect(exitCode).toBe(0);
+    expect(stderr).toContain(`✓ Created ADR ${expectedTag}`);
+    expect(stdout.trim()).toBe(
+      `.modie/adrs/sunset-legacy-pipeline.${expectedTag}.md`,
+    );
+  });
 });

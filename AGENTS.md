@@ -16,3 +16,9 @@ When contributing to the Modie codebase, adhere to these internal invariants:
 - **CLI Stream Separation (RULE-27)**: Declarative CLI commands must write exclusively machine-parseable output (file paths, raw JSON) to `stdout`. All human formatting, status indicators, and summary tables must be written to `stderr`.
 - **Fixture Isolation (RULE-34)**: Engine and CLI tests must execute against isolated temporary workspaces created via `FixtureWorkspace` or `withFixtureWorkspace`. Never manipulate the host repository's `.modie` state directly in tests.
 - **Zero False-Positive Citations (RULE-35)**: Test fixtures and sample data must never contain literal governance tags (e.g. `RULE-1`) that pollute `modie references` queries. Use `formatArtifactTag` to construct synthetic tags dynamically.
+- **Artifact Authoring Litmus Tests & Anti-Tombstone ADRs**: Before authoring governance artifacts, evaluate subtype litmus tests:
+  - `SPARK`: Raw, inchoate idea or out-of-scope finding requiring no formal design, branch, or criteria (via `spark_add` or `.modie/ideas/SPARKS.md`).
+  - `ADR`: Actively constrains how future code must be written. Tombstone ADRs (recording past deletions, retirements, or deprecations) are strictly prohibited and blocked by engine, CLI, and MCP guardrails.
+  - `RULE`: Enduring, falsifiable invariant verifiable in code or tests.
+  - `TASK`: Converged execution contract with binary criteria ending with `User Review`. If still inchoate, use `spark_add`.
+  - `MOTIVE`: Enduring architectural reason for a directory node in the system DAG.

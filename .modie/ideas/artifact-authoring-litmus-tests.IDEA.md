@@ -19,8 +19,8 @@ To keep governance lean, durable, and high-signal, every artifact subtype across
 ┌──────────┬─────────────────────────────────────────────────────────────────────────────┐
 │ Artifact │ The Litmus Test Question                                                    │
 ├──────────┼─────────────────────────────────────────────────────────────────────────────┤
-│ SPARK    │ "Is this a nascent realization, observation, or unvetted idea captured with │
-│          │  zero ceremony before formal architectural design or execution?"            │
+│ SPARK    │ "Is this a raw, inchoate idea or out-of-scope finding requiring no formal   │
+│          │  design, branch, or criteria?"                                              │
 ├──────────┼─────────────────────────────────────────────────────────────────────────────┤
 │ ADR      │ "Does this decision actively constrain, guide, or justify how future code   │
 │          │  must be written in this repository?"                                       │
@@ -42,10 +42,10 @@ To keep governance lean, durable, and high-signal, every artifact subtype across
 
 ### 1. Sparks & Incubation (`SPARK` in `SPARKS.md` / `spark_add`)
 
-* **The Litmus Question:** *"Is this a nascent realization, observation, or unvetted idea captured with zero ceremony before formal architectural design or execution?"*
+* **The Litmus Question:** *"Is this a raw, inchoate idea or out-of-scope finding requiring no formal design, branch, or criteria?"*
 * **Capture a SPARK when:**
   - An engineer or agent has a fleeting thought, observation, or improvement idea during development.
-  - An agent encounters an out-of-scope defect or architectural realization during task execution that cannot be addressed without violating the task's downward blast radius (RULE-6).
+  - An agent encounters an out-of-scope defect or architectural realization during task execution that cannot be addressed without violating the task's scope.
   - Capturing or incubating a rough concept before committing to formal rules, decisions, or executable tasks.
   - *Long Explorations:* If a spark grows into a multi-paragraph architectural exploration, it remains in `SPARKS.md` or can be promoted to a standalone `[slug].IDEA.md` design file via `modie spark promote <handle>`.
 * **DO NOT capture a SPARK when:**

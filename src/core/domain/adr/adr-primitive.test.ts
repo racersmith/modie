@@ -12,6 +12,7 @@ import {
   renderAdrMarkdown,
   validateAdrLinks,
 } from "./template.ts";
+import { validateAdrTitle } from "./validation.ts";
 
 describe("ADR Primitive - Frontmatter Links Validation (RULE-14, RULE-35)", () => {
   // @verifies RULE-14, RULE-35
@@ -231,3 +232,47 @@ Fallback context description when Decision is absent.
     );
   });
 });
+
+describe("ADR Primitive - Tombstone ADR Title Validation (RULE-1, RULE-4, RULE-38)", () => {
+  // @verifies RULE-1, RULE-4, RULE-38
+  it("[RULE-1][RULE-4][RULE-38] should accept forward-looking architectural decision titles", () => {
+    expect(() =>
+      validateAdrTitle("Deterministic Context Compilation"),
+    ).not.toThrow();
+    expect(() =>
+      validateAdrTitle("Declarative CLI Engine Architecture"),
+    ).not.toThrow();
+    expect(() =>
+      validateAdrTitle("Signpost Model with Progressive On-Demand Disclosure"),
+    ).not.toThrow();
+  });
+
+  // @verifies RULE-1, RULE-4, RULE-38
+  it("[RULE-1][RULE-4][RULE-38] should reject titles containing sunset or deletion keywords", () => {
+    const tombstoneTitles = [
+      "Sunset Legacy Markdown Parser",
+      "Retire Deprecated Tooling",
+      "Deprecate Old Configuration Options",
+      "Delete Redundant Graph Index",
+      "Remove Legacy CLI Wrapper",
+      "Cleanup Obsolete Fixtures",
+    ];
+
+    for (const title of tombstoneTitles) {
+      expect(() => validateAdrTitle(title)).toThrow(
+        /Tombstone ADR detected.*ADRs must constrain future code/s,
+      );
+    }
+  });
+
+  // @verifies RULE-1, RULE-4, RULE-38
+  it("[RULE-1][RULE-4][RULE-38] should allow tombstone keywords when force is true", () => {
+    expect(() =>
+      validateAdrTitle("Sunset Legacy Pipeline", true),
+    ).not.toThrow();
+    expect(() =>
+      validateAdrTitle("Deprecate Old Protocol", true),
+    ).not.toThrow();
+  });
+});
+
