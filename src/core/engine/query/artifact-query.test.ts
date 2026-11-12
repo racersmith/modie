@@ -72,7 +72,7 @@ describe("Artifact Query Service - Canonical Tag Parsing (RULE-1, RULE-29, RULE-
   });
 });
 
-describe("Artifact Query Service - Resolution by Tag (RULE-25, RULE-29, RULE-34, RULE-35)", () => {
+describe("Artifact Query Service - Resolution by Tag (RULE-29, RULE-34, RULE-35)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
@@ -83,8 +83,8 @@ describe("Artifact Query Service - Resolution by Tag (RULE-25, RULE-29, RULE-34,
     await workspace.cleanup();
   });
 
-  // @verifies RULE-25, RULE-29, RULE-34, RULE-35
-  it("[RULE-25][RULE-29][RULE-34][RULE-35] should resolve active RULE, ADR, and TASK artifacts by tag in test fixture", async () => {
+  // @verifies RULE-29, RULE-34, RULE-35
+  it("[RULE-29][RULE-34][RULE-35] should resolve active RULE, ADR, and TASK artifacts by tag in test fixture", async () => {
     const ruleTag = formatArtifactTag("RULE", 50);
     const adrTag = formatArtifactTag("ADR", 50);
     const taskTag = formatArtifactTag("TASK", 50);
@@ -239,8 +239,8 @@ describe("Artifact Query Service - Resolution by Tag (RULE-25, RULE-29, RULE-34,
     expect(resolvedAdr6.filepath).toBe(adr6.filepath);
   });
 
-  // @verifies RULE-21, RULE-25, RULE-34, RULE-35
-  it("[RULE-21][RULE-25][RULE-34][RULE-35] should strictly search active .md files by default and resolve deleted task history when history: true is passed", async () => {
+  // @verifies RULE-21, RULE-34, RULE-35
+  it("[RULE-21][RULE-34][RULE-35] should strictly search active .md files by default and resolve deleted task history when history: true is passed", async () => {
     await workspace.initGit({ defaultBranch: "dev", initialCommit: true });
 
     const taskTag = formatArtifactTag("TASK", 75);
@@ -276,7 +276,7 @@ describe("Artifact Query Service - Resolution by Tag (RULE-25, RULE-29, RULE-34,
   });
 });
 
-describe("Artifact Query Service - Deep Inspection (RULE-26, RULE-29, RULE-34, RULE-35)", () => {
+describe("Artifact Query Service - Deep Inspection (RULE-29, RULE-34, RULE-35)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
@@ -287,8 +287,8 @@ describe("Artifact Query Service - Deep Inspection (RULE-26, RULE-29, RULE-34, R
     await workspace.cleanup();
   });
 
-  // @verifies RULE-26, RULE-29, RULE-34, RULE-35
-  it("[RULE-26][RULE-29][RULE-34][RULE-35] should extract structured details, links, and sections from artifact", async () => {
+  // @verifies RULE-29, RULE-34, RULE-35
+  it("[RULE-29][RULE-34][RULE-35] should extract structured details, links, and sections from artifact", async () => {
     const targetAdrTag = formatArtifactTag("ADR", "TEST-60");
     const linkRuleTag = formatArtifactTag("RULE", "TEST-1");
     const linkAdrTag = formatArtifactTag("ADR", "TEST-2");
@@ -318,8 +318,8 @@ describe("Artifact Query Service - Deep Inspection (RULE-26, RULE-29, RULE-34, R
     expect(details.summary).toBe("We decided on solution X.");
   });
 
-  // @verifies RULE-25, RULE-26, RULE-29, RULE-34
-  it("[RULE-25][RULE-26][RULE-29][RULE-34] should extract explicit ADR frontmatter summary in resolveArtifactByTag and getArtifactDetails with sensible fallback", async () => {
+  // @verifies RULE-29, RULE-34
+  it("[RULE-29][RULE-34] should extract explicit ADR frontmatter summary in resolveArtifactByTag and getArtifactDetails with sensible fallback", async () => {
     const explicitAdrTag = formatArtifactTag("ADR", "TEST-62");
     const fallbackAdrTag = formatArtifactTag("ADR", "TEST-63");
 
@@ -367,8 +367,8 @@ describe("Artifact Query Service - Deep Inspection (RULE-26, RULE-29, RULE-34, R
     );
   });
 
-  // @verifies RULE-8, RULE-12, RULE-25, RULE-29, RULE-34
-  it("[RULE-8][RULE-12][RULE-25][RULE-29][RULE-34] should resolve governing directory scope for scoped artifacts", async () => {
+  // @verifies RULE-8, RULE-12, RULE-29, RULE-34
+  it("[RULE-8][RULE-12][RULE-29][RULE-34] should resolve governing directory scope for scoped artifacts", async () => {
     const scopedRule = await workspace.createArtifact({
       subtype: "RULE",
       id: "TEST-SCOPE-1",
@@ -388,8 +388,8 @@ describe("Artifact Query Service - Deep Inspection (RULE-26, RULE-29, RULE-34, R
     expect(details.scope).toBe("src/interfaces/cli");
   });
 
-  // @verifies RULE-22, RULE-26, RULE-29, RULE-34, RULE-35
-  it("[RULE-22][RULE-26][RULE-29][RULE-34][RULE-35] should extract acceptance criteria and depends_on for TASK artifacts", async () => {
+  // @verifies RULE-22, RULE-29, RULE-34, RULE-35
+  it("[RULE-22][RULE-29][RULE-34][RULE-35] should extract acceptance criteria and depends_on for TASK artifacts", async () => {
     const targetTaskTag = formatArtifactTag("TASK", "TEST-61");
     const taskDepTag = formatArtifactTag("TASK", "TEST-10");
     const ruleLinkTag = formatArtifactTag("RULE", "TEST-29");
@@ -429,8 +429,8 @@ Task context description.
     expect(details.acceptanceCriteria?.[1]?.completed).toBe(false);
   });
 
-  // @verifies RULE-1, RULE-25, RULE-26, RULE-29, RULE-34, RULE-35
-  it("[RULE-1][RULE-25][RULE-26][RULE-29][RULE-34][RULE-35] should uniformly extract domain-specific sections across RULE, ADR, and TASK", async () => {
+  // @verifies RULE-1, RULE-29, RULE-34, RULE-35
+  it("[RULE-1][RULE-29][RULE-34][RULE-35] should uniformly extract domain-specific sections across RULE, ADR, and TASK", async () => {
     const linkAdr = formatArtifactTag("ADR", "TEST-70");
     const linkRule = formatArtifactTag("RULE", "TEST-70");
 
@@ -492,8 +492,8 @@ Task context description.
     expect(taskDetails.acceptanceCriteria?.length).toBeGreaterThanOrEqual(2);
   });
 
-  // @verifies RULE-25, RULE-26, RULE-29, RULE-34
-  it("[RULE-25][RULE-26][RULE-29][RULE-34] should delegate getArtifactDetails to custom subtype parse hook without hardcoded subtype checks", async () => {
+  // @verifies RULE-29, RULE-34
+  it("[RULE-29][RULE-34] should delegate getArtifactDetails to custom subtype parse hook without hardcoded subtype checks", async () => {
     const customDefinition = {
       subtype: "SPEC",
       containerName: "specs",

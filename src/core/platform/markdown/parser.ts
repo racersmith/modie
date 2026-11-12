@@ -1,6 +1,6 @@
 /**
  * Unified Markdown document and ArtifactParseContext compiler.
- * Complies with RULE-1, RULE-25, and RULE-26.
+ * Complies with RULE-1.
  */
 
 import { parseArtifactFilename, slugToTitle } from "../../domain/index.ts";

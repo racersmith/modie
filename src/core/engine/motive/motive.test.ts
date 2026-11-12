@@ -230,8 +230,8 @@ describe("Core MOTIVE Pathing, Creation, Validation & Discovery (RULE-2, RULE-8,
     ]);
   });
 
-  // @verifies RULE-8, RULE-25, RULE-34
-  it("[RULE-8][RULE-25][RULE-34] should accept contextSection as alias for content", async () => {
+  // @verifies RULE-8, RULE-34
+  it("[RULE-8][RULE-34] should accept contextSection as alias for content", async () => {
     await using workspace = await createFixtureWorkspace(
       "modie-motive-disambiguation-",
     );

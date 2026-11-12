@@ -1,7 +1,7 @@
 /**
  * Integration tests for `modie link` and `modie unlink` CLI commands.
  * Verifies RULE-13, RULE-15, RULE-16, RULE-17, RULE-18, and RULE-19
- * RULE-25, RULE-27, RULE-34, RULE-35, and RULE-36.
+ * RULE-25, RULE-27, RULE-34 and RULE-35.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
@@ -12,7 +12,7 @@ import {
 } from "../../../../core/platform/testing/index.ts";
 import { captureCli } from "../../test-utils.ts";
 
-describe("CLI `modie link` and `modie unlink` Commands (RULE-27, RULE-36)", () => {
+describe("CLI `modie link` and `modie unlink` Commands (RULE-27)", () => {
   let workspace: FixtureWorkspace;
   let stdoutLines: string[];
   let stderrLines: string[];
@@ -82,8 +82,8 @@ describe("CLI `modie link` and `modie unlink` Commands (RULE-27, RULE-36)", () =
     return res.exitCode;
   }
 
-  // @verifies RULE-16, RULE-27, RULE-36
-  it("[RULE-16][RULE-27][RULE-36] should link and unlink governance artifacts with stdout/stderr separation and --json output", async () => {
+  // @verifies RULE-16, RULE-27
+  it("[RULE-16][RULE-27] should link and unlink governance artifacts with stdout/stderr separation and --json output", async () => {
     // 1. Link subRule -> rootAdr (standard output mode)
     const linkCode = await execCli(["link", subRuleTag, rootAdrTag]);
     expect(linkCode).toBe(0);
@@ -118,8 +118,8 @@ describe("CLI `modie link` and `modie unlink` Commands (RULE-27, RULE-36)", () =
     expect(parsedUnlink.links).toEqual([]);
   });
 
-  // @verifies RULE-16, RULE-18, RULE-27, RULE-36
-  it("[RULE-16][RULE-18][RULE-27][RULE-36] should report clear constraint violation errors to stderr and exit non-zero", async () => {
+  // @verifies RULE-16, RULE-18, RULE-27
+  it("[RULE-16][RULE-18][RULE-27] should report clear constraint violation errors to stderr and exit non-zero", async () => {
     // 1. Spatial ancestry violation: rootRule cannot link to descendant subAdr (RULE-16)
     const scopeFailCode = await execCli(["link", rootRuleTag, subAdrTag]);
     expect(scopeFailCode).toBe(1);

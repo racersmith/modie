@@ -1,6 +1,6 @@
 /**
  * Declarative CLI command definition for `modie rule list [options]`.
- * Consumes public core API per RULE-25, honors ancestral scope traversal per RULE-9,
+ * Consumes public core API per RULE-25, honors ancestral scope traversal per 
  * and enforces stdout/stderr separation per RULE-27.
  */
 

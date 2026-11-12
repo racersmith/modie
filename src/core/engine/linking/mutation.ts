@@ -3,7 +3,7 @@
  * Safely adds or removes links and dependencies in artifact YAML frontmatter blocks
  * while preserving Markdown bodies and unrelated frontmatter fields byte-for-byte.
  * Complies with RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, and RULE-17
- * RULE-18, RULE-19, RULE-25, and RULE-36.
+ * RULE-18, RULE-19 and RULE-36.
  */
 
 import { readFile, writeFile } from "node:fs/promises";

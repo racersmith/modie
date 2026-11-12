@@ -3,7 +3,7 @@
  * Verifies root command execution, subtype auto-inference, stream separation,
  * and transparent aliasing from `modie adr archive` and `modie rule archive`.
  * Tagged per RULE-23 for universal rule verification.
- * @verifies RULE-4, RULE-25, RULE-27, RULE-31, RULE-34
+ * @verifies RULE-4, RULE-25, RULE-27, RULE-34
  */
 
 import { describe, expect, it } from "bun:test";
@@ -15,7 +15,7 @@ import {
   captureCli, execBin,
 } from "../../test-utils.ts";
 
-describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31, RULE-34)", () => {
+describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-34)", () => {
   // @verifies RULE-27
   it("[RULE-27] should emit archive command help to stderr with exit code 0", async () => {
     const { exitCode, stdout, stderr } = await captureCli([
@@ -35,8 +35,8 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
     expect(stderr).toContain("Error: Missing required artifact identifier");
   });
 
-  // @verifies RULE-25, RULE-27, RULE-31, RULE-34
-  it("[RULE-25][RULE-27][RULE-31][RULE-34] should archive an unreferenced RULE via root archive command", async () => {
+  // @verifies RULE-25, RULE-27, RULE-34
+  it("[RULE-25][RULE-27][RULE-34] should archive an unreferenced RULE via root archive command", async () => {
     const workspace = await createFixtureWorkspace("cli-archive-rule-");
     const ruleTag = formatArtifactTag("RULE", 5);
     const rule = await workspace.createRule({
@@ -67,8 +67,8 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
     await workspace.cleanup();
   });
 
-  // @verifies RULE-25, RULE-27, RULE-31, RULE-34
-  it("[RULE-25][RULE-27][RULE-31][RULE-34] should archive an unreferenced ADR via root archive command", async () => {
+  // @verifies RULE-25, RULE-27, RULE-34
+  it("[RULE-25][RULE-27][RULE-34] should archive an unreferenced ADR via root archive command", async () => {
     const workspace = await createFixtureWorkspace("cli-archive-adr-");
     const adrTag = formatArtifactTag("ADR", 10);
     const adr = await workspace.createAdr({
@@ -91,8 +91,8 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
     await workspace.cleanup();
   });
 
-  // @verifies RULE-27, RULE-31, RULE-34
-  it("[RULE-27][RULE-31][RULE-34] should reject archiving when active references exist without --force", async () => {
+  // @verifies RULE-27, RULE-34
+  it("[RULE-27][RULE-34] should reject archiving when active references exist without --force", async () => {
     const workspace = await createFixtureWorkspace("cli-archive-guard-");
 
     const adrTag = formatArtifactTag("ADR", 1);
@@ -125,8 +125,8 @@ describe("CLI Unified Archive - Execution & Stream Separation (RULE-4, RULE-25, 
     await workspace.cleanup();
   });
 
-  // @verifies RULE-25, RULE-27, RULE-31, RULE-34
-  it("[RULE-25][RULE-27][RULE-31][RULE-34] should bypass active references guard with --force", async () => {
+  // @verifies RULE-25, RULE-27, RULE-34
+  it("[RULE-25][RULE-27][RULE-34] should bypass active references guard with --force", async () => {
     const workspace = await createFixtureWorkspace("cli-archive-force-");
 
     const adrTag = formatArtifactTag("ADR", 1);

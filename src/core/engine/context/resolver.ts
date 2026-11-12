@@ -2,7 +2,7 @@
  * Modie Core Workspace Context Resolver and Type Guards.
  * Provides pure context resolution, type checking, and synchronous context fallback.
  * Decoupled from concrete subtype definitions to prevent circular dependencies.
- * Complies with RULE-25, RULE-28, and RULE-34.
+ * Complies with RULE-28 and RULE-34.
  */
 
 import { normalize, resolve } from "node:path";

@@ -1,7 +1,7 @@
 /**
  * Unified Architectural Context Compilation Service.
  * Synthesizes upward ancestral motives (RULE-2), active governing rules (RULE-9, RULE-12),
- * progressive-disclosure ADR summaries (RULE-26), task-scoped metadata and blast radius (RULE-6),
+ * progressive-disclosure ADR summaries (ADR-8), task-scoped metadata and blast radius (RULE-6),
  * and shallow downward child signposts .
  */
 
@@ -367,7 +367,7 @@ async function collectAdrs(
  * - RULE-6: Task blast radius boundary resolution when scoped to a task.
  * - RULE-8 & ADR-10: `.modie/` container scope normalization.
  * - RULE-9: Ancestral rules and motives from P to R.
- * - ADR-8 & RULE-26: Progressive disclosure via ADR summaries and shallow child directory motives.
+ * - ADR-8: Progressive disclosure via ADR summaries and shallow child directory motives.
  */
 export async function compileContext(
   targetInput: string = ".",

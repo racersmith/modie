@@ -207,8 +207,8 @@ describe("Rule Creation - Execution & Disk Writing (RULE-1, RULE-3, RULE-8, RULE
     ).rejects.toThrow("Rule title must be a non-empty string.");
   });
 
-  // @verifies RULE-3, RULE-11, RULE-25, RULE-34
-  it("[RULE-3][RULE-11][RULE-25][RULE-34] should accept contextSection as alias for assertion and prioritize explicit assertion", async () => {
+  // @verifies RULE-3, RULE-11, RULE-34
+  it("[RULE-3][RULE-11][RULE-34] should accept contextSection as alias for assertion and prioritize explicit assertion", async () => {
     const workspace = await createFixtureWorkspace(
       "rule-context-disambiguation-",
     );
@@ -238,6 +238,40 @@ describe("Rule Creation - Execution & Disk Writing (RULE-1, RULE-3, RULE-8, RULE
       cwd: workspace.cwd,
     });
     expect(result2.artifact.assertion).toBe("Primary assertion claim text.");
+
+    await workspace.cleanup();
+  });
+
+  // @verifies RULE-8, RULE-12, RULE-34, RULE-35
+  it("[RULE-8][RULE-12][RULE-34][RULE-35] should block duplicate rule creation across sibling scopes and allow with force: true", async () => {
+    const workspace = await createFixtureWorkspace("rule-duplicate-guard-");
+
+    // 1. Create rule in src/core/engine
+    const existingRule = await createRule({
+      title: "Stream Separation Policy",
+      scopeDir: "src/core/engine",
+      cwd: workspace.cwd,
+    });
+    expect(existingRule.tag).toBeDefined();
+
+    // 2. Attempt to create rule with same slug in sibling scope src/interfaces/cli
+    await expect(
+      createRule({
+        title: "Stream Separation Policy",
+        scopeDir: "src/interfaces/cli",
+        cwd: workspace.cwd,
+      }),
+    ).rejects.toThrow(/Duplicate artifact collision/);
+
+    // 3. Allowed when force: true is provided
+    const forcedRule = await createRule({
+      title: "Stream Separation Policy",
+      scopeDir: "src/interfaces/cli",
+      force: true,
+      cwd: workspace.cwd,
+    });
+    expect(forcedRule.tag).toBeDefined();
+    expect(forcedRule.tag).not.toBe(existingRule.tag);
 
     await workspace.cleanup();
   });

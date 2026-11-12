@@ -1,8 +1,8 @@
 /**
  * Declarative CLI command definition for `modie link <source> <target> [options]`.
  * Exposes `link_artifact` MCP tool via automatic registry projection.
- * Complies with RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, and RULE-17
- * RULE-18, RULE-19, RULE-25, RULE-26, RULE-27, and RULE-36.
+ * Complies with RULE-7, RULE-13, RULE-14, RULE-15, RULE-16, RULE-17,
+ * RULE-18, RULE-19, RULE-25 and RULE-27.
  */
 
 import { z } from "zod";

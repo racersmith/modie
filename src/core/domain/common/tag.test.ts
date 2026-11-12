@@ -1,6 +1,6 @@
 /**
  * Unit tests for canonical tag grammar and subtype normalization helpers.
- * @verifies RULE-1, RULE-25, RULE-35
+ * @verifies RULE-1, RULE-35
  */
 
 import { describe, expect, it } from "bun:test";
@@ -12,7 +12,7 @@ import {
   parseCanonicalTag,
 } from "./tag.ts";
 
-describe("Tag Grammar & Normalization (RULE-1, RULE-25, RULE-35)", () => {
+describe("Tag Grammar & Normalization (RULE-1, RULE-35)", () => {
   it("[RULE-1] should normalize strings to uppercase branded subtype", () => {
     expect(asArtifactSubtype("rule")).toBe("RULE" as any);
     expect(asArtifactSubtype(" ADR ")).toBe("ADR" as any);

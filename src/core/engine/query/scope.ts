@@ -1,6 +1,6 @@
 /**
  * Bidirectional scope resolution and architectural governance query service.
- * Complies with RULE-6, RULE-8, RULE-9, RULE-12, and RULE-25.
+ * Complies with RULE-6, RULE-8, RULE-9 and RULE-12.
  */
 
 import { existsSync } from "node:fs";

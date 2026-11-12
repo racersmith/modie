@@ -86,14 +86,14 @@ export function renderArtifactDetails(
 }
 
 /**
- * Standard structured JSON renderer for artifact details to stdout per RULE-26.
+ * Standard structured JSON renderer for artifact details to stdout per RULE-27 and RULE-29.
  */
 export function renderArtifactDetailsJson(
   details: ArtifactDetails,
   context: CliExecutionContext,
   _input?: ReadInput,
 ): void {
-  // Agent-optimized structured payload per RULE-26
+  // Agent-optimized structured payload per RULE-29
   const payload: Record<string, unknown> = {
     tag: details.tag,
     subtype: details.subtype,

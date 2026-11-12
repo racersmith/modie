@@ -1,7 +1,7 @@
 /**
  * Isolated unit tests for pure citation classifier and rule verification disambiguation.
- * Implements RULE-23, RULE-25, RULE-31, and RULE-35.
- * @verifies RULE-23, RULE-25, RULE-31, RULE-35
+ * Implements RULE-23, RULE-31 and RULE-35.
+ * @verifies RULE-23, RULE-31, RULE-35
  */
 
 import { describe, expect, it } from "bun:test";
@@ -14,8 +14,8 @@ import {
 } from "./citation-classifier.ts";
 import { buildLinksTo } from "./references.ts";
 
-describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-31, RULE-35)", () => {
-  it("[RULE-25][RULE-35] should return null when target tag is not present or boundary check fails", () => {
+describe("Citation Classifier & Invariant Verification (RULE-23, RULE-31, RULE-35)", () => {
+  it("[RULE-35] should return null when target tag is not present or boundary check fails", () => {
     const targetTag = formatArtifactTag("RULE", 901);
     const longerTag = `${targetTag}9`;
 
@@ -40,7 +40,7 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
     ).toBeNull();
   });
 
-  it("[RULE-25][RULE-35] should classify code citations in standard source files", () => {
+  it("[RULE-35] should classify code citations in standard source files", () => {
     const targetTag = formatArtifactTag("RULE", 902);
     const match = {
       relPath: "src/domain/service.ts",
@@ -56,7 +56,7 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
     expect(item?.snippet).toBe(`// Implements ${targetTag} governance`);
   });
 
-  it("[RULE-25][RULE-35] should classify documentation citations in general markdown and text documents", () => {
+  it("[RULE-35] should classify documentation citations in general markdown and text documents", () => {
     const targetTag = formatArtifactTag("ADR", 903);
     const match = {
       relPath: "docs/architecture.md",
@@ -113,7 +113,7 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
     expect(classifyCitation(incidentalMatch, targetTag)).toBeNull();
   });
 
-  it("[RULE-25][RULE-31][RULE-35] should classify active governance links as blocking archival", () => {
+  it("[RULE-31][RULE-35] should classify active governance links as blocking archival", () => {
     const targetTag = formatArtifactTag("ADR", 906);
     const citingTag = formatArtifactTag("RULE", 907);
 
@@ -148,7 +148,7 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
     expect(item?.isBlocking).toBe(true);
   });
 
-  it("[RULE-25][RULE-31][RULE-35] should classify archived governance links as non-blocking archival", () => {
+  it("[RULE-31][RULE-35] should classify archived governance links as non-blocking archival", () => {
     const targetTag = formatArtifactTag("ADR", 908);
     const citingTag = formatArtifactTag("RULE", 909);
 
@@ -180,7 +180,7 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
     expect(item?.isBlocking).toBe(false);
   });
 
-  it("[RULE-25][RULE-31][RULE-35] should classify superseding successor relationships as non-blocking", () => {
+  it("[RULE-31][RULE-35] should classify superseding successor relationships as non-blocking", () => {
     const targetTag = formatArtifactTag("ADR", 910);
     const successorTag = formatArtifactTag("ADR", 911);
 
@@ -211,7 +211,7 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
     expect(item?.isBlocking).toBe(false);
   });
 
-  it("[RULE-25][RULE-35] should classify governance document body citations as governance-prose", () => {
+  it("[RULE-35] should classify governance document body citations as governance-prose", () => {
     const targetTag = formatArtifactTag("ADR", 912);
     const citingTag = formatArtifactTag("RULE", 913);
 
@@ -245,8 +245,8 @@ describe("Citation Classifier & Invariant Verification (RULE-23, RULE-25, RULE-3
   });
 });
 
-describe("buildLinksTo Pure Extraction (RULE-25, RULE-35)", () => {
-  it("[RULE-25][RULE-35] should extract and deduplicate all outbound links, dependencies, and supersessions", () => {
+describe("buildLinksTo Pure Extraction (RULE-35)", () => {
+  it("[RULE-35] should extract and deduplicate all outbound links, dependencies, and supersessions", () => {
     const adrTag = formatArtifactTag("ADR", 920);
     const ruleTag = formatArtifactTag("RULE", 921);
     const taskTag1 = formatArtifactTag("TASK", 922);

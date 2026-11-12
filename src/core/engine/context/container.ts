@@ -2,7 +2,7 @@
  * Modie Core Workspace Context Container.
  * Provides explicit, immutable context bundling root directory, VCS adapter,
  * repository configuration, and instance-scoped artifact definition registry.
- * Complies with RULE-25, RULE-28, and RULE-34.
+ * Complies with RULE-28 and RULE-34.
  */
 
 import { normalize, resolve } from "node:path";

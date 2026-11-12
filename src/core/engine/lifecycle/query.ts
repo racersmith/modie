@@ -1,7 +1,7 @@
 /**
  * Active task queue query service, DAG dependency readiness evaluation,
  * and explicit historical task work querying.
- * Implements RULE-18, RULE-21, RULE-22, and RULE-25.
+ * Implements RULE-18, RULE-21 and RULE-22.
  */
 
 import { readFile } from "node:fs/promises";

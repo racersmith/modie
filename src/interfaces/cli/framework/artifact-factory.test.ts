@@ -1,7 +1,7 @@
 /**
  * Unit and integration tests for standardized artifact CLI command factory and table formatting.
  * Tagged per RULE-23 for universal rule verification.
- * @verifies RULE-9, RULE-25, RULE-27, RULE-34, RULE-35
+ * @verifies RULE-25, RULE-27, RULE-34, RULE-35
  */
 
 import { describe, expect, it } from "bun:test";
@@ -166,8 +166,8 @@ describe("Artifact CLI Command Factory & Table Formatting (RULE-25, RULE-27, RUL
     expect(stderr).toContain("No active ADRs found in workspace.");
   });
 
-  // @verifies RULE-9, RULE-25, RULE-27, RULE-34
-  it("[RULE-9][RULE-25][RULE-27][RULE-34] should emit scope notice when no artifacts govern the scope", async () => {
+  // @verifies RULE-25, RULE-27, RULE-34
+  it("[RULE-25][RULE-27][RULE-34] should emit scope notice when no artifacts govern the scope", async () => {
     await using workspace = await createFixtureWorkspace("modie-artifact-factory-scope-empty-");
     const cmd = createArtifactListCommand(ruleDefinition);
 

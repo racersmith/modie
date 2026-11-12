@@ -116,8 +116,8 @@ describe("ADR Primitive - Template Rendering (RULE-14, RULE-35)", () => {
     );
   });
 
-  // @verifies RULE-26
-  it("[RULE-26] should parse ADR markdown with consequences and summary", () => {
+  // @verifies RULE-4
+  it("[RULE-4] should parse ADR markdown with consequences and summary", () => {
     const markdown = renderAdrMarkdown({
       title: "Extracted ADR",
       summary: "Short signpost summary.",
@@ -141,8 +141,8 @@ describe("ADR Primitive - Template Rendering (RULE-14, RULE-35)", () => {
     expect(parsed.consequences).toBe("Consequences content.");
   });
 
-  // @verifies RULE-26, RULE-35
-  it("[RULE-26][RULE-35] should render summary in canonical YAML frontmatter when provided", () => {
+  // @verifies RULE-4, RULE-35
+  it("[RULE-4][RULE-35] should render summary in canonical YAML frontmatter when provided", () => {
     const adr4 = formatArtifactTag("ADR", 4);
     const rule26 = formatArtifactTag("RULE", 26);
     const rendered = renderAdrMarkdown({
@@ -159,8 +159,8 @@ describe("ADR Primitive - Template Rendering (RULE-14, RULE-35)", () => {
     );
   });
 
-  // @verifies RULE-26
-  it("[RULE-26] should collapse multi-line summary into single-line YAML frontmatter and omit blank summary", () => {
+  // @verifies RULE-4
+  it("[RULE-4] should collapse multi-line summary into single-line YAML frontmatter and omit blank summary", () => {
     const multiLine = renderAdrMarkdown({
       title: "Multi-line Summary ADR",
       summary: "First sentence.\n  Second sentence.",
@@ -177,8 +177,8 @@ describe("ADR Primitive - Template Rendering (RULE-14, RULE-35)", () => {
   });
 });
 
-describe("ADR Summary Extraction (RULE-26)", () => {
-  it("[RULE-26] should prefer explicit frontmatter summary and fallback to Decision or Context when omitted", () => {
+describe("ADR Summary Extraction (RULE-4)", () => {
+  it("[RULE-4] should prefer explicit frontmatter summary and fallback to Decision or Context when omitted", () => {
     const withExplicit = `---
 summary: Explicit frontmatter summary.
 links: []

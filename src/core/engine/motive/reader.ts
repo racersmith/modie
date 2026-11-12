@@ -88,7 +88,7 @@ export async function collectAncestralMotives(
 
 /**
  * Discovers immediate child directory motives (`<child>/.modie/MOTIVE.md`, depth=1)
- * for progressive on-demand territory exploration per RULE-26.
+ * for progressive on-demand territory exploration per ADR-8.
  *
  * Does not descend past depth=1 and ignores dot-directories (`.modie`, `.git`) and build/dependency folders.
  */

@@ -259,14 +259,23 @@ export async function runCli(
   const router = commands ? buildCliRouter(commands) : getDefaultRouter();
   const [command, ...subArgs] = args;
 
-  // Direct root commands (find, read, references, refs, backlog, mcp, etc.)
   const directHandler = router.directCommands[command!];
+  const ns = router.namespaces[command!];
+
+  // If namespace exists and subArgs point to a recognized subcommand or alias, delegate to namespace
+  if (ns && subArgs.length > 0) {
+    const rawSub = subArgs[0]!;
+    if (ns.commands[rawSub] || ns.aliases[rawSub]) {
+      return handleNamespaceCommand(command!, subArgs, ns, options, stderr);
+    }
+  }
+
+  // Direct root commands (find, read, references, refs, backlog, mcp, etc.)
   if (directHandler) {
     return directHandler(subArgs, options);
   }
 
   // Namespaced command groups (task, rule, adr)
-  const ns = router.namespaces[command!];
   if (ns) {
     return handleNamespaceCommand(command!, subArgs, ns, options, stderr);
   }

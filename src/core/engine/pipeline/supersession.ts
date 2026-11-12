@@ -2,7 +2,7 @@
  * Generic artifact supersession service.
  * Manages bidirectional supersession linking and frontmatter updates across
  * all indexable governance artifacts (ADR, RULE, etc.).
- * Complies with RULE-1, RULE-4, and RULE-25.
+ * Complies with RULE-1 and RULE-4.
  */
 
 import { readFile, writeFile } from "node:fs/promises";

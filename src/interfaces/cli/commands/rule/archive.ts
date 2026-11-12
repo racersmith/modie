@@ -1,7 +1,7 @@
 /**
  * Declarative CLI command definition for `modie rule archive <tag> [options]`.
  * Transparent alias delegating to unified `modie archive` command.
- * Enforces RULE-4, RULE-25, RULE-27, and RULE-31.
+ * Enforces RULE-4, RULE-25, and RULE-27.
  */
 
 import { z } from "zod";

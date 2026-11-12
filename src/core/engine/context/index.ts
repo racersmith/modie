@@ -1,5 +1,5 @@
 /**
- * Modie Core: Context compilation and workspace context container services (RULE-25, RULE-28, RULE-34, RULE-38).
+ * Modie Core: Context compilation and workspace context container services (RULE-28, RULE-34, RULE-38).
  */
 
 export * from "./types.ts";

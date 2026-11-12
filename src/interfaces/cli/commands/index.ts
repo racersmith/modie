@@ -6,7 +6,11 @@
 import type { CliCommandDefinition } from "../framework/index.ts";
 import { findCommand } from "./find/index.ts";
 import { readCommand } from "./read/index.ts";
-import { scopeCommand } from "./scope/index.ts";
+import {
+  scopeCommand,
+  scopeAuditCommand,
+  scopeMoveCommand,
+} from "./scope/index.ts";
 import { contextCommand } from "./context/index.ts";
 import { referencesCommandDefinition } from "./references/index.ts";
 import { archiveCommand } from "./archive/index.ts";
@@ -61,6 +65,8 @@ export const allCliCommands: CliCommandDefinition<any, any, any>[] = [
   findCommand,
   readCommand,
   scopeCommand,
+  scopeAuditCommand,
+  scopeMoveCommand,
   contextCommand,
   referencesCommandDefinition,
   archiveCommand,

@@ -1,14 +1,14 @@
 /**
  * Unit tests for Guarded Artifact Archival core service.
  * Tagged per RULE-23 for universal rule verification.
- * @verifies RULE-4, RULE-25, RULE-31, RULE-34
+ * @verifies RULE-4, RULE-31, RULE-34
  */
 
 import { describe, expect, it } from "bun:test";
 import { createFixtureWorkspace } from "../../platform/testing/index.ts";
 import { archiveArtifact, archiveAdr, archiveRule } from "./index.ts";
 
-describe("Core Artifact Archival - Guarded Archival & Reference Invariance (RULE-4, RULE-25, RULE-31, RULE-34)", () => {
+describe("Core Artifact Archival - Guarded Archival & Reference Invariance (RULE-4, RULE-31, RULE-34)", () => {
   // @verifies RULE-4, RULE-31, RULE-34
   it("[RULE-4][RULE-31][RULE-34] should successfully archive an unreferenced ADR and rename to .ARCHIVED.md", async () => {
     const workspace = await createFixtureWorkspace("archival-adr-");
