@@ -1,6 +1,6 @@
 /**
  * Integration and unit tests for `modie read` and equivalence with `modie show`.
- * Validates TASK-50, RULE-25, RULE-26, RULE-27, RULE-29, RULE-34, and RULE-35.
+ * Validates TASK-50, RULE-25, RULE-27, RULE-29, RULE-34, and RULE-35.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
@@ -12,7 +12,7 @@ import {
   captureCli, execBin,
 } from "../../test-utils.ts";
 
-describe("CLI Read - Execution & Stream Separation (RULE-25, RULE-26, RULE-27, RULE-29, RULE-34, RULE-35)", () => {
+describe("CLI Read - Execution & Stream Separation (RULE-25, RULE-27, RULE-29, RULE-34, RULE-35)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
@@ -58,8 +58,8 @@ describe("CLI Read - Execution & Stream Separation (RULE-25, RULE-26, RULE-27, R
     expect(stderr).toContain("Status:      Active");
   });
 
-  // @verifies RULE-25, RULE-26, RULE-27, RULE-34, RULE-35
-  it("[RULE-25][RULE-26][RULE-27][RULE-34][RULE-35] should emit agent-optimized JSON to stdout and empty stderr when --json is passed", async () => {
+  // @verifies RULE-25, RULE-27, RULE-34, RULE-35
+  it("[RULE-25][RULE-27][RULE-34][RULE-35] should emit agent-optimized JSON to stdout and empty stderr when --json is passed", async () => {
     const linkAdr1 = formatArtifactTag("ADR", "TEST-1");
     const linkAdr2 = formatArtifactTag("ADR", "TEST-2");
 
@@ -231,8 +231,8 @@ Detailed test context for read command.
     expect(stderr).toContain('Error: Unknown flag "--invalid"');
   });
 
-  // @verifies RULE-25, RULE-26, RULE-27, RULE-29, RULE-34
-  it("[RULE-25][RULE-26][RULE-27][RULE-29][RULE-34] should execute read via bin.ts subprocess", async () => {
+  // @verifies RULE-25, RULE-27, RULE-29, RULE-34
+  it("[RULE-25][RULE-27][RULE-29][RULE-34] should execute read via bin.ts subprocess", async () => {
     const rule = await workspace.createRule({
       id: "TEST-1",
       slug: "artifact-filename-structure",

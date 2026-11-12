@@ -1,6 +1,6 @@
 /**
  * VCS domain module index.
- * Complies with RULE-25 and RULE-28.
+ * Complies with RULE-28.
  */
 
 export * from "./types.ts";

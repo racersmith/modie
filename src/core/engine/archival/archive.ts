@@ -1,6 +1,6 @@
 /**
  * Guarded artifact archival core service.
- * Enforces RULE-4, RULE-25, and RULE-31.
+ * Enforces RULE-4 and RULE-31.
  */
 
 import { rename } from "node:fs/promises";

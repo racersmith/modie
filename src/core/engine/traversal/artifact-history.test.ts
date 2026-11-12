@@ -1,6 +1,6 @@
 /**
  * Unit tests for artifact history inspection over pure VCS operations.
- * @verifies RULE-1, RULE-21, RULE-25, RULE-33, RULE-35
+ * @verifies RULE-1, RULE-21, RULE-33, RULE-35
  */
 
 import { describe, expect, it } from "bun:test";
@@ -15,7 +15,7 @@ import {
 } from "./artifact-history.ts";
 
 describe("Artifact History Inspection (RULE-21, RULE-33, RULE-35)", () => {
-  it("[RULE-1][RULE-25][RULE-35] should inspect tree artifacts from pure VCS listTreeFiles", async () => {
+  it("[RULE-1][RULE-35] should inspect tree artifacts from pure VCS listTreeFiles", async () => {
     const rule1Tag = formatArtifactTag("RULE", 1);
     const adr4Tag = formatArtifactTag("ADR", 4);
     const mockVcs = new MockVcsAdapter({

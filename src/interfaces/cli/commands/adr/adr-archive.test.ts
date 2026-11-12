@@ -1,7 +1,7 @@
 /**
  * Integration and unit tests for `modie adr archive`.
  * Tagged per RULE-23 for universal rule verification.
- * @verifies RULE-4, RULE-25, RULE-27, RULE-31, RULE-34
+ * @verifies RULE-4, RULE-25, RULE-27, RULE-34
  */
 
 import { describe, expect, it } from "bun:test";
@@ -14,7 +14,7 @@ import {
   execBin,
 } from "../../test-utils.ts";
 
-describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31, RULE-34)", () => {
+describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-34)", () => {
   // @verifies RULE-27
   it("[RULE-27] should emit adr archive subcommand help to stderr with exit code 0", async () => {
     const { exitCode, stdout, stderr } = await captureCli([
@@ -37,8 +37,8 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
     expect(stderr).toContain("Error: Missing required ADR identifier.");
   });
 
-  // @verifies RULE-25, RULE-27, RULE-31, RULE-34
-  it("[RULE-25][RULE-27][RULE-31][RULE-34] should archive an unreferenced ADR with relative path to stdout and status to stderr", async () => {
+  // @verifies RULE-25, RULE-27, RULE-34
+  it("[RULE-25][RULE-27][RULE-34] should archive an unreferenced ADR with relative path to stdout and status to stderr", async () => {
     const workspace = await createFixtureWorkspace("cli-adr-archive-");
     const adrTag = formatArtifactTag("ADR", 1);
     const adr = await workspace.createAdr({
@@ -67,8 +67,8 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
     await workspace.cleanup();
   });
 
-  // @verifies RULE-27, RULE-31, RULE-34
-  it("[RULE-27][RULE-31][RULE-34] should reject archiving when active references exist", async () => {
+  // @verifies RULE-27, RULE-34
+  it("[RULE-27][RULE-34] should reject archiving when active references exist", async () => {
     const workspace = await createFixtureWorkspace("cli-adr-reject-");
 
     const adrTag = formatArtifactTag("ADR", 1);
@@ -104,8 +104,8 @@ describe("CLI ADR Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE
     await workspace.cleanup();
   });
 
-  // @verifies RULE-25, RULE-27, RULE-31, RULE-34
-  it("[RULE-25][RULE-27][RULE-31][RULE-34] should bypass active references guard with --force", async () => {
+  // @verifies RULE-25, RULE-27, RULE-34
+  it("[RULE-25][RULE-27][RULE-34] should bypass active references guard with --force", async () => {
     const workspace = await createFixtureWorkspace("cli-adr-force-");
 
     const adrTag = formatArtifactTag("ADR", 1);

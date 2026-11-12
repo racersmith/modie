@@ -106,7 +106,7 @@ describe("Task Creation Service - Downward Blast Radius & Least Scope Validation
   });
 });
 
-describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-1, RULE-8, RULE-15, RULE-18, RULE-21, RULE-22, RULE-25, RULE-34, RULE-35)", () => {
+describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-1, RULE-8, RULE-15, RULE-18, RULE-21, RULE-22, RULE-34, RULE-35)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
@@ -117,8 +117,8 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     await workspace.cleanup();
   });
 
-  // @verifies RULE-1, RULE-8, RULE-22, RULE-25, RULE-34, RULE-35
-  it("[RULE-1][RULE-8][RULE-22][RULE-25][RULE-34][RULE-35] should create a valid TASK file on disk via core API", async () => {
+  // @verifies RULE-1, RULE-8, RULE-22, RULE-34, RULE-35
+  it("[RULE-1][RULE-8][RULE-22][RULE-34][RULE-35] should create a valid TASK file on disk via core API", async () => {
     const testTitle = "Task Service Integration Verification";
     const testScope = "src/core";
 
@@ -185,8 +185,8 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     expect(result.artifact.links).toEqual([linkAdr6, linkRule25]);
   });
 
-  // @verifies RULE-22, RULE-25, RULE-34
-  it("[RULE-22][RULE-25][RULE-34] should omit User Review acceptance criterion when review is false", async () => {
+  // @verifies RULE-22, RULE-34
+  it("[RULE-22][RULE-34] should omit User Review acceptance criterion when review is false", async () => {
     const result = await createTask({
       title: "No Review Core Task",
       scopeDir: "src/core",
@@ -204,8 +204,8 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     expect(fileContents).not.toContain("User Review");
   });
 
-  // @verifies RULE-22, RULE-25, RULE-34
-  it("[RULE-22][RULE-25][RULE-34] should not duplicate User Review if explicitly passed in acceptanceCriteria", async () => {
+  // @verifies RULE-22, RULE-34
+  it("[RULE-22][RULE-34] should not duplicate User Review if explicitly passed in acceptanceCriteria", async () => {
     const result = await createTask({
       title: "Explicit Review Task",
       scopeDir: "src/core",
@@ -310,8 +310,8 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     expect(res.filename).toBe(`new-task-after-deletion.${expectedNextTag}.md`);
   });
 
-  // @verifies RULE-25, RULE-26, RULE-34, RULE-35
-  it("[RULE-25][RULE-26][RULE-34][RULE-35] should persist explicit summary in frontmatter and roundtrip via query services", async () => {
+  // @verifies RULE-34, RULE-35
+  it("[RULE-34][RULE-35] should persist explicit summary in frontmatter and roundtrip via query services", async () => {
     const summaryText = "Decompose monolithic tools into singular interfaces";
     const res = await createTask({
       title: "Explicit Summary Task",
@@ -336,8 +336,8 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     expect(queueItem?.summary).toBe(summaryText);
   });
 
-  // @verifies RULE-25, RULE-26, RULE-34, RULE-35
-  it("[RULE-25][RULE-26][RULE-34][RULE-35] should extract fallback summary from context when summary is omitted", async () => {
+  // @verifies RULE-34, RULE-35
+  it("[RULE-34][RULE-35] should extract fallback summary from context when summary is omitted", async () => {
     const res = await createTask({
       title: "Omitted Summary Task",
       contextSection:
@@ -364,8 +364,8 @@ describe("Task Creation Service - End-to-End Task Creation via Public API (RULE-
     );
   });
 
-  // @verifies RULE-22, RULE-25, RULE-34
-  it("[RULE-22][RULE-25][RULE-34] should accept contextSection strictly and populate TaskArtifact.contextSection", async () => {
+  // @verifies RULE-22, RULE-34
+  it("[RULE-22][RULE-34] should accept contextSection strictly and populate TaskArtifact.contextSection", async () => {
     const res = await createTask({
       title: "Task With Context Section",
       contextSection: "Task context defined via contextSection property.",

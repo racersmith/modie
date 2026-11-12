@@ -1,6 +1,6 @@
 /**
  * Unit and integration tests for task checklist progression and completion lifecycle.
- * @verifies RULE-21, RULE-22, RULE-25
+ * @verifies RULE-21, RULE-22
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
@@ -59,7 +59,7 @@ describe("Task Completion & Checklist Services - Normalization & Resolution", ()
   });
 });
 
-describe("Task Checklist Progression - checkTaskItem (RULE-22, RULE-25)", () => {
+describe("Task Checklist Progression - checkTaskItem (RULE-22)", () => {
   let workspace: FixtureWorkspace;
   let testTask: CreatedFixtureArtifact;
 
@@ -83,8 +83,8 @@ describe("Task Checklist Progression - checkTaskItem (RULE-22, RULE-25)", () => 
     await workspace.cleanup();
   });
 
-  // @verifies RULE-22, RULE-25
-  it("[RULE-22][RULE-25] should check off an item and update file on disk", async () => {
+  // @verifies RULE-22
+  it("[RULE-22] should check off an item and update file on disk", async () => {
     const result = await checkTaskItem(testTask.filepath, 1, {
       completed: true,
       cwd: workspace.cwd,

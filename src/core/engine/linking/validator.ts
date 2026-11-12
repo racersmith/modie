@@ -3,7 +3,7 @@
  * Enforces subtype compatibility, spatial ancestry/subtree scoping,
  * sideways sibling prohibition, and task dependency cycle detection.
  * Complies with RULE-7, RULE-8, RULE-13, RULE-14, RULE-15, and RULE-16
- * RULE-17, RULE-18, RULE-19, RULE-25, and RULE-36.
+ * RULE-17, RULE-18, RULE-19 and RULE-36.
  */
 
 import { readFile } from "node:fs/promises";

@@ -1,7 +1,7 @@
 /**
  * Declarative CLI command definition for `modie archive <tag> [options]`.
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
- * Enforces RULE-4 and RULE-31 across all indexable governance artifacts.
+ * Enforces RULE-4 across all indexable governance artifacts.
  */
 
 import { z } from "zod";

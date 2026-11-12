@@ -1,7 +1,7 @@
 /**
  * Declarative CLI command definition for `modie references <tag> [options]` (alias: refs).
  * Consumes public core API per RULE-25 and enforces stdout/stderr separation per RULE-27.
- * Evaluates subtype-agnostic archival safety per RULE-31.
+ * Evaluates subtype-agnostic archival safety.
  */
 
 import { z } from "zod";

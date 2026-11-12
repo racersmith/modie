@@ -351,7 +351,7 @@ export function toMcpErrorPayload(
 
 /**
  * Standardizes MCP tool execution error responses for the Model Context Protocol.
- * Emits diagnostics to stderr (RULE-27) and returns structured JSON envelope
+ * Emits diagnostics to stderr and returns structured JSON envelope
  * in both `content[0].text` and `structuredContent`.
  */
 export function formatMcpToolError(

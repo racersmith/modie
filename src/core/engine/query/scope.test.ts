@@ -1,6 +1,6 @@
 /**
  * Tests for bidirectional scope resolution and architectural governance query service.
- * Complies with RULE-6, RULE-8, RULE-9, RULE-12, and RULE-25.
+ * Complies with RULE-6, RULE-8, RULE-9 and RULE-12.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
@@ -10,7 +10,7 @@ import {
 } from "../../platform/testing/index.ts";
 import { resolveScope } from "./scope.ts";
 
-describe("Core Scope Resolution Service (RULE-6, RULE-8, RULE-9, RULE-12, RULE-25)", () => {
+describe("Core Scope Resolution Service (RULE-6, RULE-8, RULE-9, RULE-12)", () => {
   let workspace: FixtureWorkspace;
 
   beforeEach(async () => {
@@ -145,8 +145,8 @@ describe("Core Scope Resolution Service (RULE-6, RULE-8, RULE-9, RULE-12, RULE-2
     expect(deepScope.tasks[0]?.scope).toBe("src/interfaces/cli");
   });
 
-  // @verifies RULE-8, RULE-9, RULE-12, RULE-25
-  it("[RULE-8][RULE-9][RULE-12][RULE-25] should resolve artifact identifiers bidirectionally by tag, filename, and slug", async () => {
+  // @verifies RULE-8, RULE-9, RULE-12
+  it("[RULE-8][RULE-9][RULE-12] should resolve artifact identifiers bidirectionally by tag, filename, and slug", async () => {
     const cwd = workspace.cwd;
 
     // 1. By canonical tag

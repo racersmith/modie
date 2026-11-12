@@ -1,7 +1,7 @@
 /**
  * Core Task Creation Service.
  * Coordinates watermark resolution, template generation, filesystem scoping, and file writing.
- * Complies with RULE-1, RULE-6, RULE-8, RULE-12, RULE-15, RULE-18, RULE-22, and RULE-25.
+ * Complies with RULE-1, RULE-6, RULE-8, RULE-12, RULE-15, RULE-18 and RULE-22.
  */
 
 import {
@@ -26,7 +26,7 @@ export function resolveTaskDirectories(
 
 /**
  * Orchestrating domain service to create a new TASK artifact.
- * Follows RULE-1, RULE-6, RULE-8, RULE-12, RULE-15, RULE-18, RULE-22, RULE-25, and ADR-9.
+ * Follows RULE-1, RULE-6, RULE-8, RULE-12, RULE-15, RULE-18, RULE-22 and ADR-9.
  */
 export async function createTask(
   options: CreateTaskOptions,

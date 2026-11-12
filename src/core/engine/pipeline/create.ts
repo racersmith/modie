@@ -2,7 +2,7 @@
  * Generic artifact creation pipeline.
  * Coordinates slugging, directory resolution, lifecycle validation,
  * monotonic ID allocation, template rendering, and atomic file writing.
- * Complies with RULE-1, RULE-8, and RULE-25.
+ * Complies with RULE-1 and RULE-8.
  */
 
 import { mkdir, writeFile } from "node:fs/promises";
@@ -13,6 +13,7 @@ import {
   generateSlug,
   parseCanonicalTag,
   resolveArtifactDirectories,
+  resolveGoverningScope,
   resolveSubtypeLinkPolicy,
   type ArtifactDefinition,
   type ArtifactLinkRelationship,
@@ -23,6 +24,7 @@ import {
 import { resolveWorkspaceContext, type WorkspaceContext } from "../context/index.ts";
 import { buildArtifactParseContext } from "../../platform/markdown/index.ts";
 import { resolveArtifactByTag } from "../query/artifact-query.ts";
+import { scanActiveArtifacts } from "../traversal/active-scanner.ts";
 import {
   resolveNextArtifactId,
   resolveWatermark,
@@ -102,6 +104,38 @@ export async function createArtifact<
 
   // 1. Generate canonical slug per RULE-1
   const slug = generateSlug(options.title);
+
+  // 1.5 Global workspace duplicate and slug collision check across scopes
+  if (!options.force) {
+    const subtypeUpper = (definition.subtype as string).toUpperCase();
+    if (subtypeUpper === "RULE" || subtypeUpper === "ADR") {
+      const activeArtifacts = await scanActiveArtifacts(
+        cwd,
+        definition.subtype as IndexableSubtype,
+      );
+      const supersedesList = options.supersedes
+        ? (Array.isArray(options.supersedes)
+            ? options.supersedes
+            : [options.supersedes]
+          ).map((s) => s.trim().toUpperCase())
+        : [];
+
+      const existing = activeArtifacts.find(
+        (a) =>
+          !a.isArchived &&
+          a.slug === slug &&
+          !supersedesList.includes(a.tag.toUpperCase()),
+      );
+
+      if (existing) {
+        const existingGov = resolveGoverningScope(existing.filepath, cwd);
+        const article = subtypeUpper === "ADR" ? "an" : "a";
+        throw new Error(
+          `Duplicate artifact collision: ${article} ${subtypeUpper} with slug "${slug}" already exists at "${existingGov.relativeScope}" (${existing.tag}). Relocate the existing artifact via "modie scope move ${existing.tag} [targetScope]" or pass force: true to proceed.`,
+        );
+      }
+    }
+  }
 
   // 2. Resolve directory scope & target placement per RULE-8
   const { normalizedScopeDir, targetDir } = resolveArtifactDirectories(

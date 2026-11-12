@@ -149,6 +149,11 @@ export interface CreateRuleOptions {
   supersedes?: string | string[];
 
   /**
+   * Optional force flag to bypass collision or advisory guardrails.
+   */
+  force?: boolean;
+
+  /**
    * Workspace root directory. Defaults to process.cwd().
    */
   cwd?: string;

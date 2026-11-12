@@ -176,9 +176,9 @@ describe("TASK Primitive - Template Rendering and Parser Roundtrip (RULE-1, RULE
   });
 });
 
-describe("TASK Primitive - Summary Extraction (RULE-26)", () => {
-  // @verifies RULE-26
-  it("[RULE-26] should prefer explicit frontmatter summary and fallback to Context sentence or slug", () => {
+describe("TASK Primitive - Summary Extraction (RULE-1)", () => {
+  // @verifies RULE-1
+  it("[RULE-1] should prefer explicit frontmatter summary and fallback to Context sentence or slug", () => {
     const withExplicit = `---
 summary: Explicit task summary
 ---

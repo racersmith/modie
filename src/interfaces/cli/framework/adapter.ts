@@ -1,6 +1,6 @@
 /**
  * Adapter bridging CLI command arguments to declarative Zod action schemas.
- * Enforces RULE-25 (interface-core decoupling), RULE-26 (token economy), and RULE-27 (stream separation).
+ * Enforces RULE-25 (interface-core decoupling) and RULE-27 (stream separation).
  */
 
 import { z } from "zod";

@@ -1,7 +1,7 @@
 /**
  * Integration and unit tests for `modie rule archive`.
  * Tagged per RULE-23 for universal rule verification.
- * @verifies RULE-4, RULE-25, RULE-27, RULE-31, RULE-34
+ * @verifies RULE-4, RULE-25, RULE-27, RULE-34
  */
 
 import { describe, expect, it } from "bun:test";
@@ -13,7 +13,7 @@ import {
   captureCli, execBin,
 } from "../../test-utils.ts";
 
-describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-31, RULE-34)", () => {
+describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RULE-27, RULE-34)", () => {
   // @verifies RULE-27
   it("[RULE-27] should emit rule archive subcommand help to stderr with exit code 0", async () => {
     const { exitCode, stdout, stderr } = await captureCli([
@@ -36,8 +36,8 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
     expect(stderr).toContain("Error: Missing required RULE identifier.");
   });
 
-  // @verifies RULE-25, RULE-27, RULE-31, RULE-34
-  it("[RULE-25][RULE-27][RULE-31][RULE-34] should archive an unreferenced RULE with relative path to stdout and status to stderr", async () => {
+  // @verifies RULE-25, RULE-27, RULE-34
+  it("[RULE-25][RULE-27][RULE-34] should archive an unreferenced RULE with relative path to stdout and status to stderr", async () => {
     const workspace = await createFixtureWorkspace("cli-rule-archive-");
     const ruleTag = formatArtifactTag("RULE", 1);
     const rule = await workspace.createRule({
@@ -66,8 +66,8 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
     await workspace.cleanup();
   });
 
-  // @verifies RULE-27, RULE-31, RULE-34
-  it("[RULE-27][RULE-31][RULE-34] should reject archiving when active references exist", async () => {
+  // @verifies RULE-27, RULE-34
+  it("[RULE-27][RULE-34] should reject archiving when active references exist", async () => {
     const workspace = await createFixtureWorkspace("cli-rule-reject-");
 
     const ruleTag = formatArtifactTag("RULE", 1);
@@ -103,8 +103,8 @@ describe("CLI Rule Archive - Execution & Stream Separation (RULE-4, RULE-25, RUL
     await workspace.cleanup();
   });
 
-  // @verifies RULE-25, RULE-27, RULE-31, RULE-34
-  it("[RULE-25][RULE-27][RULE-31][RULE-34] should bypass active references guard with --force", async () => {
+  // @verifies RULE-25, RULE-27, RULE-34
+  it("[RULE-25][RULE-27][RULE-34] should bypass active references guard with --force", async () => {
     const workspace = await createFixtureWorkspace("cli-rule-force-");
 
     const ruleTag = formatArtifactTag("RULE", 1);

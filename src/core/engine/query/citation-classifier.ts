@@ -1,6 +1,6 @@
 /**
  * Pure citation classification and rule verification disambiguation engine.
- * Implements RULE-23, RULE-25, and RULE-31.
+ * Implements RULE-23 and RULE-31.
  */
 
 import { readFile } from "node:fs/promises";

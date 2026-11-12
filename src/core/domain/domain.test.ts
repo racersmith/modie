@@ -120,8 +120,8 @@ describe("Domain Architectural Layer Invariants (RULE-38)", () => {
     expect(violations).toEqual([]);
   });
 
-  // @verifies RULE-25
-  it("[RULE-25] domain registry centralizes composition root across built-in subtypes", () => {
+  // @verifies RULE-38
+  it("[RULE-38] domain registry centralizes composition root across built-in subtypes", () => {
     const registry = createDefaultDefinitionRegistry();
     expect(registry.has("RULE")).toBe(true);
     expect(registry.has("ADR")).toBe(true);

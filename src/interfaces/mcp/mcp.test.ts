@@ -1,8 +1,8 @@
 /**
  * Integration and unit tests for Modie Model Context Protocol (MCP) server.
  * Verifies the 12 Singular Agent Tools, Frontmatter-to-Markdown rendering engine,
- * RULE-25 (interface-core decoupling), RULE-26 (token economy), and RULE-27 (stream separation).
- * @verifies RULE-6, RULE-21, RULE-22, RULE-25, RULE-26, RULE-27, RULE-28, RULE-30, RULE-31, RULE-32, RULE-36
+ * RULE-25 (interface-core decoupling) and RULE-26 (token economy).
+ * @verifies RULE-6, RULE-21, RULE-22, RULE-25, RULE-26, RULE-28, RULE-30, RULE-32
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
@@ -250,7 +250,7 @@ describe("Modie MCP Server - 12 Singular Agent Tools Suite", () => {
       expect(detailedText).toContain("Source modules and services.");
     });
 
-    // @verifies RULE-26, RULE-36
+    // @verifies RULE-26
     it("read_artifact should return pure Markdown with tag, title, scope header and semantic Appendix", async () => {
       const res = await client.callTool({
         name: "read_artifact",
@@ -654,7 +654,7 @@ describe("Modie MCP Server - 12 Singular Agent Tools Suite", () => {
   });
 
   describe("Cluster 4: Graph Mutation Tools", () => {
-    // @verifies RULE-36, RULE-26
+    // @verifies RULE-26
     it("link_artifacts should mutate YAML frontmatter links byte-safely", async () => {
       // Create a new rule
       const ruleRes = await client.callTool({
@@ -689,7 +689,7 @@ describe("Modie MCP Server - 12 Singular Agent Tools Suite", () => {
       expect(markdown).toContain(newRuleTag);
     });
 
-    // @verifies RULE-31, RULE-26
+    // @verifies RULE-26
     it("archive_artifact should archive obsolete artifact safely", async () => {
       // Create a standalone rule with no incoming references
       const ruleRes = await client.callTool({
@@ -740,8 +740,7 @@ describe("Modie MCP Server - 12 Singular Agent Tools Suite", () => {
     });
   });
 
-  describe("Stream Separation & Stdio Diagnostics (RULE-27)", () => {
-    // @verifies RULE-27
+  describe("Stream Separation & Stdio Diagnostics", () => {
     it("should emit diagnostic to stderr on tool error without corrupting result", async () => {
       let stderrOutput = "";
       const customServer = createModieMcpServer({

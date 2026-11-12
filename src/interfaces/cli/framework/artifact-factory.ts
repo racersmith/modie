@@ -49,14 +49,14 @@ const STANDARD_METADATA: Record<string, SubtypeMetadata> = {
     pluralLabel: "rules",
     headerLabel: "Active Rules",
     agentGuidance:
-      "Call this tool to discover active governance rules across the repository or governing a specific directory scope (honoring ancestral scope traversal per RULE-9).",
+      "Call this tool to discover active governance rules across the repository or governing a specific directory scope (honoring ancestral scope traversal per ).",
   },
   ADR: {
     singularLabel: "ADR",
     pluralLabel: "ADRs",
     headerLabel: "Active ADRs",
     agentGuidance:
-      "Call this tool to discover active architectural decision records (ADRs) across the repository or governing a specific directory scope (honoring ancestral scope traversal per RULE-9).",
+      "Call this tool to discover active architectural decision records (ADRs) across the repository or governing a specific directory scope (honoring ancestral scope traversal per ).",
   },
 };
 
@@ -123,7 +123,7 @@ function resolveLabels(
   const agentGuidance =
     options.agentGuidance ??
     standard?.agentGuidance ??
-    `Call this tool to discover active ${pluralLabel} across the repository or governing a specific directory scope (honoring ancestral scope traversal per RULE-9).`;
+    `Call this tool to discover active ${pluralLabel} across the repository or governing a specific directory scope (honoring ancestral scope traversal per ).`;
 
   return { singularLabel, pluralLabel, headerLabel, agentGuidance };
 }

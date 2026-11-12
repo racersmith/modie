@@ -1,6 +1,6 @@
 /**
  * Level-1 Markdown section parsing with code fence awareness.
- * Complies with RULE-1 and RULE-26.
+ * Complies with RULE-1.
  */
 
 /**

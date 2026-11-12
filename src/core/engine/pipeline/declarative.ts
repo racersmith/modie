@@ -1,7 +1,7 @@
 /**
  * Declarative artifact creation services for ADR and Rule workflows.
  * Coordinates pipeline execution, directory resolution, and frontmatter validation.
- * Complies with RULE-1, RULE-3, RULE-4, RULE-8, RULE-11, RULE-13, RULE-14, RULE-16, RULE-17, RULE-25, and RULE-38.
+ * Complies with RULE-1, RULE-3, RULE-4, RULE-8, RULE-11, RULE-13, RULE-14, RULE-16, RULE-17 and RULE-38.
  */
 
 import {
@@ -72,7 +72,7 @@ export function resolveAdrDirectories(
 
 /**
  * Orchestrating domain service to create a new ADR artifact.
- * Follows RULE-1, RULE-4, RULE-8, RULE-14, RULE-17, and RULE-25.
+ * Follows RULE-1, RULE-4, RULE-8, RULE-14 and RULE-17.
  */
 export async function createAdr(
   options: CreateAdrOptions,
@@ -114,7 +114,7 @@ export function resolveRuleDirectories(
 
 /**
  * Orchestrating domain service to create a new RULE artifact.
- * Follows RULE-1, RULE-3, RULE-8, RULE-11, RULE-13, RULE-16, and RULE-25.
+ * Follows RULE-1, RULE-3, RULE-8, RULE-11, RULE-13 and RULE-16.
  */
 export async function createRule(
   options: CreateRuleOptions,

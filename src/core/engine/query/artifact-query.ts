@@ -1,6 +1,6 @@
 /**
  * Single-artifact resolution and deep inspection domain service.
- * Implements RULE-1, RULE-21, RULE-25, RULE-26, and RULE-29.
+ * Implements RULE-1, RULE-21 and RULE-29.
  */
 
 import { readFile, stat } from "node:fs/promises";

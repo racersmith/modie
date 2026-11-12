@@ -318,8 +318,8 @@ describe("CLI ADR Creation - Execution & Stream Separation (RULE-8, RULE-14, RUL
     expect(parsed.slug).toBe("subprocess-adr");
   });
 
-  // @verifies RULE-25, RULE-26, RULE-27, RULE-34
-  it("[RULE-25][RULE-26][RULE-27][RULE-34] should support --summary flag and write summary to YAML frontmatter and JSON output", async () => {
+  // @verifies RULE-25, RULE-27, RULE-34
+  it("[RULE-25][RULE-27][RULE-34] should support --summary flag and write summary to YAML frontmatter and JSON output", async () => {
     await using workspace = await createFixtureWorkspace("modie-cli-adr-summary-");
     const expectedTag = formatArtifactTag("ADR", 1);
     const { exitCode, stdout, stderr } = await captureCli([

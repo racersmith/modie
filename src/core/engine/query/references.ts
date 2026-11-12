@@ -1,6 +1,6 @@
 /**
  * Artifact reference discovery and subtype-agnostic archival guard pipeline orchestrator.
- * Implements RULE-13, RULE-14, RULE-15, RULE-25, RULE-27, and RULE-31.
+ * Implements RULE-13, RULE-14, RULE-15, and RULE-31.
  */
 
 import { basename, resolve } from "node:path";

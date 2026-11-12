@@ -196,8 +196,8 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
     expect(taskRes.watermark).toBeDefined();
   });
 
-  // @verifies RULE-25, RULE-34, RULE-35
-  it("[RULE-25][RULE-34][RULE-35] should roundtrip serialize and parse RULE, ADR, and TASK artifacts bidirectionally via ArtifactDefinition.parse", async () => {
+  // @verifies RULE-34, RULE-35
+  it("[RULE-34][RULE-35] should roundtrip serialize and parse RULE, ADR, and TASK artifacts bidirectionally via ArtifactDefinition.parse", async () => {
     const adr1Tag = formatArtifactTag("ADR", 1);
     const rule1Tag = formatArtifactTag("RULE", 1);
     const task1Tag = formatArtifactTag("TASK", 1);
@@ -295,8 +295,8 @@ describe("Generic Declarative Artifact Pipeline (RULE-1, RULE-8, RULE-34, RULE-3
     expect(ARTIFACT_DEFINITIONS["TASK"]).toBe(taskDefinition);
   });
 
-  // @verifies RULE-1, RULE-8, RULE-25, RULE-34, RULE-35
-  it("[RULE-1][RULE-8][RULE-25][RULE-34] should return standardized CreateArtifactResult from createRule, createAdr, and createTask", async () => {
+  // @verifies RULE-1, RULE-8, RULE-34, RULE-35
+  it("[RULE-1][RULE-8][RULE-34] should return standardized CreateArtifactResult from createRule, createAdr, and createTask", async () => {
     // 1. Create predecessor ADR
     const adr1 = await createAdr({
       title: "Predecessor Architecture Decision",

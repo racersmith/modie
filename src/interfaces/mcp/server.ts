@@ -2,7 +2,7 @@
  * Model Context Protocol (MCP) server implementation for Modie.
  * Registers 12 singular-purpose agent tools with flat Zod input/output schemas,
  * declared behavioral annotations, stateless parameters with Git branch fallback,
- * and token economy progressive disclosure (RULE-25, RULE-26, RULE-27).
+ * and token economy progressive disclosure (RULE-25, RULE-26).
  */
 
 import {
@@ -78,7 +78,7 @@ export interface ModieMcpServerOptions {
   serverOptions?: McpServerOptions;
 
   /**
-   * Diagnostics/logging stderr sink (RULE-27: never emit human diagnostics to stdout in stdio mode).
+   * Diagnostics/logging stderr sink (never emit human diagnostics to stdout in stdio mode).
    */
   stderr?: (msg: string) => void;
 }

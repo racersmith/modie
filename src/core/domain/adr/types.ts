@@ -29,7 +29,7 @@ export interface AdrArtifact {
   title: string;
 
   /**
-   * Concise 1-2 sentence signpost summary of the decision for progressive disclosure (RULE-26).
+   * Concise 1-2 sentence signpost summary of the decision for progressive disclosure.
    */
   summary?: string;
 
@@ -96,7 +96,7 @@ export interface AdrRenderOptions {
   title?: string;
 
   /**
-   * Concise 1-2 sentence signpost summary of the decision for progressive disclosure (RULE-26).
+   * Concise 1-2 sentence signpost summary of the decision for progressive disclosure.
    */
   summary?: string;
 
@@ -155,7 +155,7 @@ export interface CreateAdrOptions {
   scopeDir?: string;
 
   /**
-   * Concise 1-2 sentence signpost summary of the decision for progressive disclosure (RULE-26).
+   * Concise 1-2 sentence signpost summary of the decision for progressive disclosure.
    */
   summary?: string;
 

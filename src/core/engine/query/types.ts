@@ -1,6 +1,6 @@
 /**
  * Types and schema for artifact queries, listing, references, and archival guard.
- * Complies with RULE-9, RULE-25, RULE-27, and RULE-31.
+ * Complies with RULE-9 and RULE-31.
  */
 
 import type {
@@ -565,4 +565,71 @@ export interface CompiledContextResult {
   rules: CompiledContextRule[];
   adrs: CompiledContextAdr[];
   childMotives: CompiledContextChildMotive[];
+}
+
+export type ArtifactPlacementStatus =
+  | "OPTIMAL"
+  | "OVER_SCOPED"
+  | "UNDER_SCOPED"
+  | "INCHOATE";
+
+export interface ArtifactPlacementSuggestion {
+  tag: string;
+  subtype: IndexableSubtype;
+  id: string;
+  slug: string;
+  title: string;
+  filename: string;
+  filepath: string;
+  relativePath: string;
+  currentScope: string;
+  currentScopeDir: string;
+  recommendedScope: string;
+  recommendedScopeDir: string;
+  suggestedRelativePath: string;
+  suggestedFilepath: string;
+  status: ArtifactPlacementStatus;
+  citationsCount: number;
+  referencingPaths: string[];
+  violations: string[];
+  outOfScopePaths?: string[];
+  outOfScopeCitationsCount?: number;
+}
+
+export interface AuditPlacementOptions {
+  /**
+   * Workspace root directory (defaults to process.cwd()).
+   */
+  cwd?: string;
+
+  /**
+   * Optional pre-resolved workspace context container.
+   */
+  workspace?: WorkspaceContext;
+
+  /**
+   * Minimum citation threshold to justify least-scope demotion (default: 3).
+   * Artifacts with fewer citations without out-of-scope violations are classified as INCHOATE.
+   */
+  minCitationsThreshold?: number;
+
+  /**
+   * Optional scope boundary filter (e.g. "src" or "src/interfaces").
+   */
+  scope?: string;
+
+  /**
+   * Subtypes to audit (defaults to ["RULE", "ADR"]).
+   */
+  subtypes?: IndexableSubtype[];
+}
+
+export interface ArtifactPlacementAuditReport {
+  scope: string;
+  totalAudited: number;
+  optimalCount: number;
+  overScopedCount: number;
+  underScopedCount: number;
+  inchoateCount: number;
+  suggestions: ArtifactPlacementSuggestion[];
 }

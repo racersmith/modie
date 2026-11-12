@@ -1,6 +1,6 @@
 /**
  * Domain types and options for guarded artifact archival.
- * Enforces RULE-25, RULE-27, and RULE-31.
+ * Enforces RULE-31.
  */
 
 import type { IndexableSubtype } from "../../domain/index.ts";

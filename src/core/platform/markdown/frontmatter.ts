@@ -1,6 +1,6 @@
 /**
  * Markdown frontmatter parsing and line-mapping helpers for governance artifacts.
- * Complies with RULE-1, RULE-25, and RULE-26.
+ * Complies with RULE-1.
  */
 
 import YAML from "yaml";
