@@ -1,6 +1,7 @@
 # Modie
 
-> Give every folder in your repo a memory, and give your AI agent exactly the memory it needs, no more.
+> **Graph-Governed Development (GGD) for human-agent teams.**
+> Go from atomic idea to verified execution using your folder tree as a live governance graph—where rules endure beside the code they govern, task plans self-delete when merged, and agents compile only the context in their path.
 
 > [!NOTE]
 > **Early Beta (v0.1.x)**: Modie is built using Modie. The core workflow is stable for daily use, though `0.x` CLI flags, MCP schemas, and file formats may still evolve.
@@ -17,9 +18,14 @@ AI coding agents start every session knowing nothing about your project. Today w
 
 The result is bloated prompts, agents that break unwritten rules, and docs nobody trusts.
 
-## The idea
+## The idea: Graph-Governed Development
 
-**Your folder tree is already a hierarchy of scope. Modie uses it as the structure for project knowledge.**
+**Your folder tree is already a hierarchy of scope. Modie turns it into a closed-loop governance and execution graph:**
+
+1. **Incubate (`SPARK` → `IDEA`)**: Capture raw realizations without derailing active work.
+2. **Codify (`MOTIVE`, `ADR`, `RULE`)**: Distill decisions and falsifiable laws into the exact `<dir>/.modie/` folder they govern.
+3. **Execute (`TASK`)**: Run bounded work on isolated branches with checklists that **self-delete on merge**—leaving verified code and rules, never stale plans.
+4. **Compile (`modie context`)**: Walk the folder DAG upward to hand your agent the exact motives, rules, and decisions in its path—and audit citations to keep every rule at its deepest common ancestor.
 
 Put a small `.modie/` directory next to the code it's about. Knowledge placed there applies to that folder and everything beneath it, and _only_ there. An agent working in `src/interfaces/mcp/` inherits what `src/interfaces/` and `src/` say, and never sees what `src/core/` says.
 
