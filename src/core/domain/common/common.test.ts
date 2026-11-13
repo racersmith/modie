@@ -3,6 +3,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import packageJson from "../../../../package.json";
 import {
   createFixtureWorkspace,
   type FixtureWorkspace,
@@ -493,7 +494,8 @@ describe("Common Primitives - Dynamic Version Resolution", () => {
   it("should export non-empty dynamic package version", () => {
     expect(typeof MODIE_VERSION).toBe("string");
     expect(MODIE_VERSION.length).toBeGreaterThan(0);
-    expect(MODIE_VERSION).toBe("0.0.1");
+    expect(MODIE_VERSION).toMatch(/^\d+\.\d+\.\d+/);
+    expect(MODIE_VERSION).toBe(packageJson.version);
   });
 });
 
