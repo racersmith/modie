@@ -98,7 +98,8 @@ export const taskCreateCommand: CliCommandDefinition<
   usage: "modie task create <title> [options]",
   description: "Create a new TASK artifact with automatic watermark resolution",
   agentGuidance:
-    "Call this tool to generate a new TASK artifact with automatic sequence watermark resolution, link validation, and least-scope directory placement.",
+    "Call this tool to generate a new TASK artifact with automatic sequence watermark resolution, link validation, and least-scope directory placement. " +
+    "Task ID allocation is branch-aware: running on trunk allocates a root task (TASK-<id>), whereas running on an active parent task branch 'task/<parent_id>-<slug>' (or passing --branch) automatically allocates a hierarchical sub-task (TASK-<parent_id>-<sequence>).",
   helpUsage: "modie task create --help",
   schema: taskCreateSchema,
   positionals: [

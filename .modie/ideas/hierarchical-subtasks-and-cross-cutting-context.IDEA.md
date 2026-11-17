@@ -36,7 +36,6 @@ Allow a parent task to act as the cross-cutting coordinator at the Deepest Commo
 src/
 ├── .modie/tasks/
 │   └── cross-cutting-feature.TASK-90.md          ← Parent scope: src/
-│       (depends_on: [TASK-90-1, TASK-90-2])
 ├── core/
 │   └── .modie/tasks/
 │       └── engine-pipeline.TASK-90-1.md          ← Subtask 1 scope: src/core/
@@ -45,10 +44,14 @@ src/
         └── cli-and-mcp-exposure.TASK-90-2.md     ← Subtask 2 scope: src/interfaces/
 ```
 
-- **Creation (`modie task create --parent TASK-90 -s src/core` or `create_task`):**
+- **Creation (`create_task` on parent branch `task/90-*` or via `--parent TASK-90`):**
   - Automatically allocates the next child watermark ID (`90-1`, `90-2`) under parent `90`.
   - Validates that the child subtask's `scopeDir` (`src/core`) is at or strictly below the parent task's `scopeDir` (`src/`).
-  - Automatically registers `TASK-90-1` in the parent `TASK-90`'s `depends_on` list so the parent task remains `BLOCKED` until all child subtasks are completed and merged into the parent branch.
+- **Zero-Touch Parent-Child Dependency Inference (No `link_artifacts` Needed):**
+  - Because `parseSubtaskId("90-1")` already encodes `parentId: "90"`, parent-child blocking should be **100% automatic without mutating frontmatter**:
+    - In `buildTaskQueueItems` (`src/core/engine/lifecycle/readiness.ts`), any active child subtask `TASK-90-<seq>` on disk automatically adds itself to parent `TASK-90`'s `blockedBy` list (marking `TASK-90` as `BLOCKED` until all its subtasks are completed and deleted).
+    - In `assertNoActiveSubtasks` (`src/core/engine/lifecycle/branch-guard.ts`), check both active subtask Git branches (`task/90-\d+-*`) *and* any uncompleted `TASK-90-<seq>` files on disk before allowing `TASK-90` to complete or merge into trunk.
+    - Explicit `depends_on` in frontmatter is only needed when ordering sibling subtasks relative to each other (e.g. `TASK-90-2` depends on `TASK-90-1`).
 
 ### 2. Parent & Sibling Awareness in `task_context` (`[657f]`)
 

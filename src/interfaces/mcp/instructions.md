@@ -44,7 +44,23 @@ When planning and authoring tasks:
 
 ---
 
-## 5. Spatial Graph Link Invariants
+## 5. Hierarchical Sub-Tasks (`TASK-XX-1`) & Branch-Aware Allocation
+
+- **Branch-Aware ID Allocation**: Modie allocates task IDs based on the active Git branch:
+  - Calling `create_task` on trunk (`dev` or `main`) allocates a top-level root task (`TASK-XX`).
+  - Calling `create_task` while checked out on a parent task branch (`task/XX-<slug>`) **automatically** allocates a hierarchical sub-task ID (`TASK-XX-1`, `TASK-XX-2`, etc.).
+- **How to Create Sub-Tasks**: When asked to create sub-tasks or decompose a task into sub-tasks, **never** stay on trunk and create separate top-level tasks that merely reference each other via `depends_on` or `links`. Instead, follow this exact sequence:
+  1. Ensure the parent task (`TASK-XX`) exists (create it on trunk via `create_task` if needed).
+  2. Switch to the parent task branch via `start_task("TASK-XX")` so the active Git branch is `task/XX-<slug>`.
+  3. While on `task/XX-<slug>`, call `create_task` for each sub-task—Modie will automatically mint `TASK-XX-1`, `TASK-XX-2`, etc. (Parent-child lineage is encoded directly in the `TASK-XX-1` ID—no `link_artifacts` call is needed between a parent task and its sub-tasks; only use `depends_on` if one sibling sub-task must wait on another, e.g. `TASK-XX-2` depends on `TASK-XX-1`).
+- **Sub-Task Execution & Merge Topology**:
+  - Calling `start_task("TASK-XX-1")` creates and checks out `task/XX-1-<slug>` branched off the parent branch `task/XX-<slug>` (note: create all sibling sub-tasks on `task/XX-<slug>` *before* switching to `task/XX-1-<slug>`).
+  - Calling `complete_task("TASK-XX-1")` verifies criteria, deletes the sub-task artifact, and merges `task/XX-1-<slug>` back into the **parent task branch** (`task/XX-<slug>`), never directly into trunk.
+  - Only call `complete_task("TASK-XX")` on the parent task after all child sub-tasks have completed and merged into the parent branch.
+
+---
+
+## 6. Spatial Graph Link Invariants
 
 Modie enforces a strict hierarchical directed acyclic graph (DAG):
 
@@ -55,7 +71,7 @@ Modie enforces a strict hierarchical directed acyclic graph (DAG):
 
 ---
 
-## 6. Artifact Authoring Litmus Tests
+## 7. Artifact Authoring Litmus Tests
 
 Before authoring, choose the right subtype:
 
@@ -67,7 +83,7 @@ Before authoring, choose the right subtype:
 
 ---
 
-## 7. The 13 Singular Modie MCP Agent Tools
+## 8. The 13 Singular Modie MCP Agent Tools
 
 Modie exposes 13 singular-purpose tools designed for high signal-to-noise and progressive disclosure:
 
@@ -79,15 +95,15 @@ Modie exposes 13 singular-purpose tools designed for high signal-to-noise and pr
 
 ### Task Lifecycle State Machine
 
-4. **`start_task`**: Checks out or creates the hierarchical task branch (`task/<id>-<slug>`), verifies dependencies, and returns the full active Mission Brief in Markdown.
+4. **`start_task`**: Checks out or creates the hierarchical task branch (`task/<id>-<slug>` from trunk, or `task/<parent>-<seq>-<slug>` from the parent task branch), verifies dependencies, and returns the full active Mission Brief in Markdown.
 5. **`check_criteria`**: Atomically marks 1-based acceptance criteria complete or incomplete (`items: [1, 2]`). Returns updated checklist progress and remaining items.
-6. **`complete_task`**: Executes the atomic two-phase commit completion ceremony, verifies all criteria are checked, merges to trunk, and deletes the task branch.
+6. **`complete_task`**: Executes the atomic two-phase commit completion ceremony, verifies all criteria are checked, merges into the target branch (parent task branch for sub-tasks, trunk for root tasks), and deletes the task branch.
 
 ### Dedicated Artifact Authoring
 
 7. **`create_rule`**: Authors an architectural governance rule (RULE) with a strongly typed invariant assertion claim and optional justifying ADR links.
 8. **`create_adr`**: Authors an Architectural Decision Record (ADR) with strongly typed context, decision, consequences, and links. Enforces the anti-tombstone guardrail.
-9. **`create_task`**: Authors a scoped task specification (TASK) with contract-based acceptance criteria (must end with `User Review`), prerequisite dependencies, and governing links.
+9. **`create_task`**: Authors a scoped task specification (TASK) with contract-based acceptance criteria (must end with `User Review`), prerequisite dependencies, and governing links. Allocates a root `TASK-XX` on trunk, or a hierarchical sub-task `TASK-XX-1` when invoked from an active parent task branch (`task/XX-<slug>`).
 10. **`create_motive`**: Authors or scaffolds a directory-level intent file (`MOTIVE.md`) expressing scope purpose and trajectory without cross-artifact citations.
 
 ### Graph Mutation & Incubation
@@ -98,7 +114,7 @@ Modie exposes 13 singular-purpose tools designed for high signal-to-noise and pr
 
 ---
 
-## 8. Ambient MCP Resources
+## 9. Ambient MCP Resources
 
 For zero-roundtrip context hydration:
 

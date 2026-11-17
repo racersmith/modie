@@ -209,7 +209,7 @@ export function createModieMcpServer(
     "start_task",
     {
       description:
-        "Check out or create task branch, verify dependencies, and return active Mission Brief in Markdown.",
+        "Check out or create hierarchical task branch (from trunk for root tasks, or from parent task branch for sub-tasks), verify dependencies, and return active Mission Brief in Markdown.",
       inputSchema: startTaskSchema.shape,
       annotations: {
         readOnlyHint: false,
@@ -268,7 +268,7 @@ export function createModieMcpServer(
     "complete_task",
     {
       description:
-        "Execute atomic two-phase commit completion ceremony, verify criteria, merge to trunk, and delete task branch.",
+        "Execute atomic two-phase commit completion ceremony, verify criteria, merge into target branch (parent task branch for sub-tasks, trunk for root tasks), and delete task branch.",
       inputSchema: completeTaskSchema.shape,
       outputSchema: completeTaskOutputSchema.shape,
       annotations: {
@@ -371,7 +371,7 @@ export function createModieMcpServer(
     "create_task",
     {
       description:
-        "Author a TASK. LITMUS TEST: Converged execution contract with binary criteria ending with User Review. If still inchoate or exploring, use spark_add.",
+        "Author a TASK (mints root TASK-<id> on trunk, or sub-task TASK-<parent>-<seq> when on parent branch task/<parent>-<slug> via start_task). LITMUS TEST: Converged execution contract with binary criteria ending with User Review. If still inchoate or exploring, use spark_add.",
       inputSchema: createTaskSchema.shape,
       outputSchema: createArtifactOutputSchema.shape,
       annotations: {

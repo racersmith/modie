@@ -17,4 +17,5 @@ Modie maintains architectural governance and task lifecycle alongside code using
 - **Zero-Roundtrip Context**: Read `modie://task` for the active task Mission Brief, or `modie://tasks/ready` to triage unblocked tasks.
 - **Artifact Inspection**: Use `read_artifact(TAG)` to read any tagged document (`RULE-XX`, `ADR-XX`, `TASK-XX`).
 - **Task Lifecycle**: Check out branches with `start_task`, track progress with `check_criteria`, and complete tasks with `complete_task`.
+- **Hierarchical Sub-Tasks (`TASK-XX-1`)**: Task IDs are branch-aware. To create sub-tasks under a parent task `TASK-XX`, first switch to the parent branch via `start_task("TASK-XX")` (`task/XX-<slug>`), then call `create_task` so Modie automatically mints `TASK-XX-1`, `TASK-XX-2`, etc. Never create flat top-level tasks with `depends_on` or `links` as a substitute for sub-tasks.
 - **Authoritative Protocols**: Read `modie://instructions` for comprehensive governance rules and workflows.
