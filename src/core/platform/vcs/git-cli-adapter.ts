@@ -200,6 +200,18 @@ export class GitCliAdapter implements IVcsAdapter {
     return output ? output.trim() : null;
   }
 
+  async isAncestor(
+    ancestor: string,
+    descendant: string,
+    cwd: string = process.cwd(),
+  ): Promise<boolean> {
+    const output = await this.run(
+      ["merge-base", "--is-ancestor", ancestor, descendant],
+      cwd,
+    );
+    return output !== null;
+  }
+
   async merge(
     sourceBranch: string,
     targetBranch: string,

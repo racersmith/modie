@@ -776,4 +776,42 @@ describe("Sequence Calculator & Strategy Handlers (RULE-1, RULE-35)", () => {
     expect(forcedTrunkRes.strategy).toBe("trunk");
     expect(forcedTrunkRes.nextId).toBe("11");
   });
+
+  // @verifies RULE-28, RULE-34, RULE-35
+  it("[RULE-28][RULE-34][RULE-35] should hard-reject task allocation when checked out on a subtask or multi-level branch", async () => {
+    expect(() =>
+      allocateTaskStrategy(["5-2"], {
+        taskBranchInfo: { taskId: "5-2" },
+      }),
+    ).toThrow(/Cannot create a task while checked out on subtask branch/);
+
+    await withWatermarkFixture(
+      {
+        branch: "task/5-2-subtask-branch",
+        activeFiles: [`.modie/tasks/sub.${formatArtifactTag("TASK", "5-2")}.md`],
+      },
+      async (cwd, vcs) => {
+        await expect(resolveWatermark({ cwd, vcs })).rejects.toThrow(
+          /Modie limits subtasks to root task parents \(depth 1\) per RULE-28/,
+        );
+        await expect(
+          resolveWatermark({ cwd, vcs, forceTrunk: true }),
+        ).rejects.toThrow(
+          /Cannot create a task while checked out on subtask branch/,
+        );
+      },
+    );
+
+    await withWatermarkFixture(
+      {
+        branch: "task/5-2-1-deep-branch",
+        activeFiles: [],
+      },
+      async (cwd, vcs) => {
+        await expect(resolveWatermark({ cwd, vcs })).rejects.toThrow(
+          /Cannot create a task while checked out on subtask branch/,
+        );
+      },
+    );
+  });
 });

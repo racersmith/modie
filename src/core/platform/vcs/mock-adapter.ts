@@ -23,6 +23,7 @@ export interface MockVcsOptions {
   stagedFiles?: string[];
   shortHash?: string;
   mergeBaseResult?: string | null;
+  nonAncestors?: Array<{ ancestor: string; descendant: string }>;
   grepResults?: Record<string, GitGrepMatch[]> | Map<string, GitGrepMatch[]>;
   fileContentsAtRef?: Record<string, string> | Map<string, string>;
   deletedFiles?: Record<string, string> | Map<string, string>;
@@ -62,6 +63,7 @@ export class MockVcsAdapter implements IVcsAdapter {
   public stagedFiles: string[];
   public shortHash: string;
   public mergeBaseResult: string | null;
+  public nonAncestors: Set<string>;
   public grepResults: Map<string, GitGrepMatch[]> | null = null;
   public fileContentsAtRef: Map<string, string>;
   public deletedFiles: Map<string, string>;
@@ -101,6 +103,11 @@ export class MockVcsAdapter implements IVcsAdapter {
     this.stagedFiles = [...(options.stagedFiles ?? [])];
     this.shortHash = options.shortHash ?? "mock001";
     this.mergeBaseResult = options.mergeBaseResult ?? "base001";
+    this.nonAncestors = new Set(
+      (options.nonAncestors ?? []).map(
+        (pair) => `${pair.ancestor}->${pair.descendant}`,
+      ),
+    );
     this.grepResults = initStringMap(options.grepResults);
     this.fileContentsAtRef = initStringMap(options.fileContentsAtRef);
     this.deletedFiles = initStringMap(options.deletedFiles);
@@ -220,6 +227,14 @@ export class MockVcsAdapter implements IVcsAdapter {
     _cwd?: string,
   ): Promise<string | null> {
     return this.mergeBaseResult;
+  }
+
+  async isAncestor(
+    ancestor: string,
+    descendant: string,
+    _cwd?: string,
+  ): Promise<boolean> {
+    return !this.nonAncestors.has(`${ancestor}->${descendant}`);
   }
 
   async merge(

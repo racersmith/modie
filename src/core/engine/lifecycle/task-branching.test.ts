@@ -6,6 +6,7 @@ import {
 import {
   ActiveSubtaskPendingError,
   ArtifactCollisionError,
+  ForeignBranchAncestryError,
   TaskIncompleteError,
 } from "./errors.ts";
 import {
@@ -730,6 +731,213 @@ describe("Task Branching Service (RULE-28)", () => {
           { force: true },
         ),
       ).resolves.toBeUndefined();
+    });
+
+    // @verifies RULE-28, RULE-34, RULE-35
+    it("[RULE-28][RULE-34][RULE-35] should explicitly reject multi-level task IDs in topology, start, and merge", async () => {
+      const deepTag = formatArtifactTag("TASK", "300-1-1");
+      const deepTask = await workspace.createTask({
+        id: "300-1-1",
+        slug: "too-deep",
+        criteria: [{ text: "Done", completed: true }],
+      });
+      await workspace.gitCommit(`feat(${deepTag}): add deep task`);
+
+      await expect(
+        computeTaskBranchTopology(deepTask.tag, { cwd: workspace.cwd }),
+      ).rejects.toThrow(/exceeds the maximum subtask depth of 1 per RULE-28/);
+
+      await expect(
+        startTaskBranch(deepTask.tag, { cwd: workspace.cwd }),
+      ).rejects.toThrow(/exceeds the maximum subtask depth of 1 per RULE-28/);
+
+      await expect(
+        mergeTaskBranch(deepTask.tag, { cwd: workspace.cwd }),
+      ).rejects.toThrow(/exceeds the maximum subtask depth of 1 per RULE-28/);
+    });
+
+    // @verifies RULE-28, RULE-34, RULE-35
+    it("[RULE-28][RULE-34][RULE-35] should block merging into trunk when source branch contains unmerged commits from another active task branch", async () => {
+      // 1. Start TASK-301 from dev and add an unmerged commit
+      const taskA = await workspace.createTask({
+        id: 301,
+        slug: "parent-a",
+        criteria: [{ text: "Item", completed: true }],
+      });
+      await workspace.gitCommit(`docs: add ${taskA.tag}`);
+      await startTaskBranch(taskA.tag, { cwd: workspace.cwd });
+      await workspace.writeFile("parent-work.txt", "unmerged parent work\n");
+      await Bun.$`git add parent-work.txt`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit("feat: unmerged work on task 301");
+
+      // 2. Branch TASK-302 from TASK-301 instead of dev (carrying task 301's commit)
+      const taskB = await workspace.createTask({
+        id: 302,
+        slug: "leaked-child",
+        criteria: [{ text: "Item", completed: true }],
+      });
+      await Bun.$`git checkout -b task/302-${taskB.slug}`
+        .cwd(workspace.cwd)
+        .quiet();
+      await workspace.gitCommit(`feat(${taskB.tag}): task on leaked branch`);
+      await workspace.remove(taskB);
+      await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit(
+        `chore(task): delete completed ${taskB.tag} artifact`,
+      );
+
+      // 3. Merging TASK-302 into dev must throw ForeignBranchAncestryError
+      let thrown: unknown;
+      try {
+        await mergeTaskBranch(taskB.tag, { cwd: workspace.cwd });
+      } catch (err) {
+        thrown = err;
+      }
+
+      expect(thrown).toBeInstanceOf(ForeignBranchAncestryError);
+      const ancErr = thrown as ForeignBranchAncestryError;
+      expect(ancErr.sourceBranch).toBe(`task/302-${taskB.slug}`);
+      expect(ancErr.targetBranch).toBe("dev");
+      expect(ancErr.foreignTaskBranch).toBe(`task/301-${taskA.slug}`);
+
+      // 4. Independent branch started cleanly from dev should NOT trigger false positive
+      await Bun.$`git checkout dev`.cwd(workspace.cwd).quiet();
+      const taskC = await workspace.createTask({
+        id: 303,
+        slug: "clean-root",
+        criteria: [{ text: "Item", completed: true }],
+      });
+      await workspace.gitCommit(`docs: add ${taskC.tag}`);
+      await startTaskBranch(taskC.tag, { cwd: workspace.cwd });
+      await workspace.remove(taskC);
+      await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit(
+        `chore(task): delete completed ${taskC.tag} artifact`,
+      );
+
+      const cleanMerge = await mergeTaskBranch(taskC.tag, {
+        cwd: workspace.cwd,
+      });
+      expect(cleanMerge.targetBranch).toBe("dev");
+
+      // 5. --force allows overriding the ancestry guard
+      const forcedMerge = await mergeTaskBranch(taskB.tag, {
+        cwd: workspace.cwd,
+        force: true,
+      });
+      expect(forcedMerge.targetBranch).toBe("dev");
+    });
+
+    // @verifies RULE-28, RULE-34, RULE-35
+    it("[RULE-28][RULE-34][RULE-35] should reject invalid --base targets and mis-parented existing subtask branches on startTaskBranch", async () => {
+      const parent = await workspace.createTask({
+        id: 304,
+        slug: "root-parent",
+        criteria: ["Item"],
+      });
+      await workspace.gitCommit(`docs: add ${parent.tag}`);
+      await startTaskBranch(parent.tag, { cwd: workspace.cwd });
+
+      const subTag = formatArtifactTag("TASK", "304-1");
+      const sub = await workspace.createTask({
+        id: "304-1",
+        slug: "child-sub",
+        depends_on: [parent.tag],
+        criteria: ["Item"],
+      });
+      await workspace.gitCommit(`docs: add ${subTag}`);
+      await startTaskBranch(sub.tag, { cwd: workspace.cwd });
+
+      const rootOther = await workspace.createTask({
+        id: 305,
+        slug: "other-root",
+        criteria: ["Item"],
+      });
+      await workspace.gitCommit(`docs: add ${rootOther.tag}`);
+
+      // Cannot use a protected branch as --base
+      await expect(
+        startTaskBranch(rootOther.tag, { base: "main", cwd: workspace.cwd }),
+      ).rejects.toThrow(/from protected base branch "main"/);
+
+      // Cannot use a subtask branch as --base
+      await expect(
+        startTaskBranch(rootOther.tag, {
+          base: `task/304-1-${sub.slug}`,
+          cwd: workspace.cwd,
+        }),
+      ).rejects.toThrow(/from subtask branch .* Subtasks cannot spawn nested/);
+
+      // Cannot start a subtask with --base pointing to dev instead of parent
+      const sub2Tag = formatArtifactTag("TASK", "304-2");
+      await Bun.$`git checkout task/304-${parent.slug}`
+        .cwd(workspace.cwd)
+        .quiet();
+      const sub2 = await workspace.createTask({
+        id: "304-2",
+        slug: "wrong-base-sub",
+        depends_on: [parent.tag],
+        criteria: ["Item"],
+      });
+      await workspace.gitCommit(`docs: add ${sub2Tag}`);
+
+      await expect(
+        startTaskBranch(sub2.tag, { base: "dev", cwd: workspace.cwd }),
+      ).rejects.toThrow(/Subtasks must branch from their parent task branch/);
+
+      // Pre-existing subtask branch containing trunk history absent from parent must be rejected
+      await Bun.$`git checkout dev`.cwd(workspace.cwd).quiet();
+      await workspace.writeFile("trunk-advance.txt", "trunk commit\n");
+      await Bun.$`git add trunk-advance.txt`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit("feat: advance dev ahead of parent");
+      await Bun.$`git branch task/304-2-${sub2.slug} dev`
+        .cwd(workspace.cwd)
+        .quiet();
+
+      await expect(
+        startTaskBranch(sub2.tag, { cwd: workspace.cwd }),
+      ).rejects.toThrow(/contains trunk history .* not present in parent branch/);
+    });
+
+    // @verifies RULE-28, RULE-34, RULE-35
+    it("[RULE-28][RULE-34][RULE-35] should block start and merge when tracked working tree has uncommitted changes", async () => {
+      const task = await workspace.createTask({
+        id: 306,
+        slug: "dirty-tree",
+        criteria: [{ text: "Item", completed: true }],
+      });
+      await workspace.writeFile("tracked.txt", "v1\n");
+      await Bun.$`git add tracked.txt`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit(`docs: add ${task.tag} and tracked.txt`);
+
+      await startTaskBranch(task.tag, { cwd: workspace.cwd });
+      await workspace.remove(task);
+      await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit(
+        `chore(task): delete completed ${task.tag} artifact`,
+      );
+
+      // Introduce dirty tracked modification
+      await workspace.writeFile("tracked.txt", "uncommitted v2\n");
+
+      await expect(
+        mergeTaskBranch(task.tag, { cwd: workspace.cwd }),
+      ).rejects.toThrow(/Cannot merge task branch with uncommitted tracked/);
+
+      // Switching back to dev via startTaskBranch on another task should also block
+      const otherTask = await workspace.createTask({
+        id: 307,
+        slug: "clean-switch",
+        criteria: ["Item"],
+      });
+      await expect(
+        startTaskBranch(otherTask.tag, { cwd: workspace.cwd }),
+      ).rejects.toThrow(/Cannot start task branch with uncommitted tracked/);
+
+      // Restoring tracked file allows merge to proceed
+      await Bun.$`git checkout -- tracked.txt`.cwd(workspace.cwd).quiet();
+      const mergeRes = await mergeTaskBranch(task.tag, { cwd: workspace.cwd });
+      expect(mergeRes.targetBranch).toBe("dev");
     });
   });
 });

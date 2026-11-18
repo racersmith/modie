@@ -18,8 +18,12 @@ import {
 } from "../traversal/artifact-history.ts";
 import { scanActiveArtifacts } from "../traversal/active-scanner.ts";
 import {
+  escapeRegex,
+  isMultiLevelSubtaskId,
   normalizeTaskId,
   parseArtifactFilename,
+  parseSubtaskId,
+  parseTaskBranch,
   parseTaskMarkdown,
   type ArtifactCollision,
   type DiscoveredArtifact,
@@ -28,6 +32,7 @@ import {
 import {
   ActiveSubtaskPendingError,
   ArtifactCollisionError,
+  ForeignBranchAncestryError,
   TaskIncompleteError,
 } from "./errors.ts";
 
@@ -263,12 +268,14 @@ export async function assertNoActiveSubtasks(
     return;
   }
 
+  const escapedNormId = escapeRegex(normId);
+  const childBranchRegex = new RegExp(`^task/${escapedNormId}-\\d+-`);
   const activeChildBranches = subtaskBranchesOut
     .split("\n")
     .map((b) => b.replace(/^\*?\s+/, "").trim())
     .filter(
       (b) =>
-        new RegExp(`^task/${normId}-\\d+-`).test(b) &&
+        childBranchRegex.test(b) &&
         b !== topology.branchName,
     );
 
@@ -388,5 +395,152 @@ export async function assertTaskCompleted(
         reason: "no_completion_record",
       },
     );
+  }
+}
+
+/**
+ * Verifies that there are no uncommitted tracked/staged working tree changes
+ * before executing branch-switching start or merge operations.
+ */
+export async function assertCleanTrackedWorkingTree(
+  vcs: IVcsAdapter,
+  cwd: string,
+  operation: "start" | "merge",
+  options: { force?: boolean } = {},
+): Promise<void> {
+  if (options.force) {
+    return;
+  }
+
+  const porcelain = await vcs.getStatusPorcelain(cwd);
+  const dirtyTracked = porcelain
+    .split(/\r?\n/)
+    .map((l) => l.trimEnd())
+    .filter((l) => l.trim().length > 0 && !l.startsWith("?? "));
+
+  if (dirtyTracked.length > 0) {
+    throw new Error(
+      `Cannot ${operation} task branch with uncommitted tracked or staged changes:\n  ${dirtyTracked.join("\n  ")}\nCommit or stash your changes first (or pass --force to override).`,
+    );
+  }
+}
+
+/**
+ * Validates an explicit --base branch override when starting a task branch per RULE-28.
+ */
+export function assertValidStartBaseBranch(
+  topology: TaskBranchTopology,
+  base: string | undefined,
+  options: { force?: boolean } = {},
+): void {
+  if (!base || options.force) {
+    return;
+  }
+
+  if (topology.protectedBranches.includes(base)) {
+    throw new Error(
+      `Cannot start task "TASK-${topology.taskId}" from protected base branch "${base}". Protected branches cannot be used as task branch bases per RULE-28.`,
+    );
+  }
+
+  const baseTask = parseTaskBranch(base);
+  if (
+    baseTask &&
+    (parseSubtaskId(baseTask.taskId) !== null ||
+      isMultiLevelSubtaskId(baseTask.taskId))
+  ) {
+    throw new Error(
+      `Cannot start task "TASK-${topology.taskId}" from subtask branch "${base}" per RULE-28. Subtasks cannot spawn nested task branches.`,
+    );
+  }
+
+  if (
+    topology.isSubtask &&
+    topology.parentBranchName &&
+    base !== topology.parentBranchName
+  ) {
+    throw new Error(
+      `Cannot start subtask "TASK-${topology.taskId}" from base branch "${base}" per RULE-28. Subtasks must branch from their parent task branch "${topology.parentBranchName}".`,
+    );
+  }
+}
+
+/**
+ * Verifies that a pre-existing subtask branch has not diverged onto trunk history
+ * absent from its parent task branch per RULE-28.
+ */
+export async function assertSubtaskBranchAncestry(
+  vcs: IVcsAdapter,
+  topology: TaskBranchTopology,
+  cwd: string,
+  options: { force?: boolean } = {},
+): Promise<void> {
+  if (!topology.isSubtask || !topology.parentBranchName || options.force) {
+    return;
+  }
+
+  const subTrunkMb = await vcs.mergeBase(
+    topology.branchName,
+    topology.trunkBranch,
+    cwd,
+  );
+  if (!subTrunkMb) {
+    return;
+  }
+
+  const inParent = await vcs.isAncestor(
+    subTrunkMb,
+    topology.parentBranchName,
+    cwd,
+  );
+  if (!inParent) {
+    throw new Error(
+      `Subtask branch "${topology.branchName}" contains trunk history (${subTrunkMb}) not present in parent branch "${topology.parentBranchName}" per RULE-28. Rebase onto "${topology.parentBranchName}" or pass --force to override.`,
+    );
+  }
+}
+
+/**
+ * Verifies before merging into trunk that the source branch does not carry
+ * unmerged commits inherited from another active task branch per RULE-28.
+ */
+export async function assertNoForeignTaskAncestry(
+  vcs: IVcsAdapter,
+  topology: TaskBranchTopology,
+  sourceBranch: string,
+  targetBranch: string,
+  cwd: string,
+  options: { force?: boolean } = {},
+): Promise<void> {
+  if (targetBranch !== topology.trunkBranch || options.force) {
+    return;
+  }
+
+  const branches = await vcs.listBranches(cwd);
+  for (const otherBranch of branches) {
+    if (otherBranch === sourceBranch || otherBranch === targetBranch) {
+      continue;
+    }
+    if (!parseTaskBranch(otherBranch)) {
+      continue;
+    }
+
+    const mb = await vcs.mergeBase(sourceBranch, otherBranch, cwd);
+    if (!mb) {
+      continue;
+    }
+
+    const mbInTrunk = await vcs.isAncestor(mb, targetBranch, cwd);
+    if (!mbInTrunk) {
+      throw new ForeignBranchAncestryError(
+        `Cannot merge "${sourceBranch}" into trunk "${targetBranch}": source branch contains unmerged commit (${mb}) from active task branch "${otherBranch}" per RULE-28. Merge into the parent branch or pass --force to override.`,
+        {
+          sourceBranch,
+          targetBranch,
+          foreignTaskBranch: otherBranch,
+          sharedCommit: mb,
+        },
+      );
+    }
   }
 }

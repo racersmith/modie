@@ -7,6 +7,7 @@ import { readFile } from "node:fs/promises";
 import { loadModieConfig } from "../../platform/config/loader.ts";
 import { inspectGitDeletedArtifacts } from "../traversal/artifact-history.ts";
 import {
+  assertValidTaskDepth,
   formatTaskBranch,
   normalizeTaskId,
   parseSubtaskId,
@@ -22,21 +23,29 @@ import { resolveTaskFile } from "./completion.ts";
 import { scanActiveArtifacts } from "../traversal/active-scanner.ts";
 import {
   detectArtifactCollisions,
+  assertCleanTrackedWorkingTree,
+  assertNoForeignTaskAncestry,
   assertSourceBranchExists,
+  assertSubtaskBranchAncestry,
   assertTargetBranchExists,
   assertNoActiveSubtasks,
   assertNoCollisions,
   assertTaskCompleted,
+  assertValidStartBaseBranch,
   findTaskFileOnDisk,
 } from "./branch-guard.ts";
 
 export {
   detectArtifactCollisions,
+  assertCleanTrackedWorkingTree,
+  assertNoForeignTaskAncestry,
   assertSourceBranchExists,
+  assertSubtaskBranchAncestry,
   assertTargetBranchExists,
   assertNoActiveSubtasks,
   assertNoCollisions,
   assertTaskCompleted,
+  assertValidStartBaseBranch,
   findTaskFileOnDisk,
 };
 
@@ -180,6 +189,7 @@ export async function computeTaskBranchTopology(
   const vcs = ctx.vcs;
   const config = await loadModieConfig(cwd, vcs);
   const meta = await resolveTaskMetaForBranching(taskIdentifier, cwd, vcs);
+  assertValidTaskDepth(meta.id);
   const currentBranch = await vcs.detectCurrentBranch(cwd);
 
   const subtaskInfo = parseSubtaskId(meta.id);
@@ -242,12 +252,13 @@ export async function startTaskBranch(
     vcs,
   });
 
-  // 1. Guard against starting directly from a protected branch
+  // 1. Guard against starting directly from a protected branch or invalid --base
   if (topology.isCurrentBranchProtected && !options.base && !options.force) {
     throw new Error(
       `Cannot start task from protected branch "${topology.currentBranch}". Protected branches cannot spawn task branches directly. Please switch to trunk branch "${topology.trunkBranch}" or specify --base.`,
     );
   }
+  assertValidStartBaseBranch(topology, options.base, options);
 
   // 2. Validate subtask parent branch existence per RULE-28
   if (topology.isSubtask) {
@@ -270,7 +281,11 @@ export async function startTaskBranch(
 
   // 3. Checkout or create the target branch
   if (targetExists) {
+    if (topology.isSubtask) {
+      await assertSubtaskBranchAncestry(vcs, topology, cwd, options);
+    }
     if (topology.currentBranch !== topology.branchName) {
+      await assertCleanTrackedWorkingTree(vcs, cwd, "start", options);
       await vcs.checkout(topology.branchName, cwd);
     }
     return {
@@ -282,6 +297,10 @@ export async function startTaskBranch(
       isSubtask: topology.isSubtask,
       parentBranch: topology.parentBranchName,
     };
+  }
+
+  if (topology.currentBranch !== baseBranch) {
+    await assertCleanTrackedWorkingTree(vcs, cwd, "start", options);
   }
 
   // Create new branch from baseBranch
@@ -427,8 +446,9 @@ export async function mergeTaskBranch(
   });
   const sourceBranch = topology.branchName;
 
-  // 1. Verify source branch exists
+  // 1. Verify source branch exists and working tree has no uncommitted tracked changes
   await assertSourceBranchExists(vcs, sourceBranch, topology.taskId, cwd);
+  await assertCleanTrackedWorkingTree(vcs, cwd, "merge", options);
 
   // 2. Verify completion status per RULE-21 and RULE-22
   await assertTaskCompleted(taskIdentifier, topology.taskId, sourceBranch, {
@@ -446,7 +466,17 @@ export async function mergeTaskBranch(
   // 5. Verify all child subtasks have completed and merged per RULE-28
   await assertNoActiveSubtasks(vcs, topology, cwd, options);
 
-  // 6. Pre-merge artifact collision guard (RULE-33)
+  // 6. Verify trunk merge does not carry unmerged commits from other active task branches
+  await assertNoForeignTaskAncestry(
+    vcs,
+    topology,
+    sourceBranch,
+    targetBranch,
+    cwd,
+    options,
+  );
+
+  // 7. Pre-merge artifact collision guard (RULE-33)
   await assertNoCollisions(vcs, sourceBranch, targetBranch, cwd, options);
 
   // 7. Execute checkout, merge, and source branch deletion
