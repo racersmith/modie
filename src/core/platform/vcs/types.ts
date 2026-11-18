@@ -74,6 +74,11 @@ export interface IVcsAdapter {
     branchB: string,
     cwd?: string,
   ): Promise<string | null>;
+  isAncestor(
+    ancestor: string,
+    descendant: string,
+    cwd?: string,
+  ): Promise<boolean>;
   merge(
     sourceBranch: string,
     targetBranch: string,

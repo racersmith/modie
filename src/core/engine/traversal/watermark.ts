@@ -15,6 +15,8 @@ import type { WatermarkResolutionOptions } from "./types.ts";
 import type { IVcsAdapter } from "../../platform/vcs/types.ts";
 import {
   escapeRegex,
+  isMultiLevelSubtaskId,
+  parseSubtaskId,
   parseTaskBranch,
   type AllocationStrategy,
   type IndexableSubtype,
@@ -127,6 +129,26 @@ export const prefixedAllocationStrategy = {
   },
 };
 
+function assertNotSubtaskBranchForAllocation(
+  taskBranchInfo: { taskId: string } | null | undefined,
+  branchName?: string,
+): void {
+  if (!taskBranchInfo) {
+    return;
+  }
+  const sub = parseSubtaskId(taskBranchInfo.taskId);
+  const isMulti = isMultiLevelSubtaskId(taskBranchInfo.taskId);
+  if (sub !== null || isMulti) {
+    const rootId = sub
+      ? sub.parentId
+      : (taskBranchInfo.taskId.split("-")[0] ?? taskBranchInfo.taskId);
+    const branchDisplay = branchName ? ` "${branchName}"` : "";
+    throw new Error(
+      `Cannot create a task while checked out on subtask branch${branchDisplay} (TASK-${taskBranchInfo.taskId}): Modie limits subtasks to root task parents (depth 1) per RULE-28. Switch to root task branch "task/${rootId}-*" to add a sibling subtask, or switch to trunk to create a new root task.`,
+    );
+  }
+}
+
 export function allocateTaskStrategy(
   knownIds: Iterable<string>,
   options: {
@@ -139,6 +161,7 @@ export function allocateTaskStrategy(
     return prefixedAllocationStrategy.allocate(knownIds, options.prefix);
   }
   if (!options.forceTrunk && options.taskBranchInfo) {
+    assertNotSubtaskBranchForAllocation(options.taskBranchInfo);
     return subtaskAllocationStrategy.allocate(
       knownIds,
       options.taskBranchInfo.taskId,
@@ -229,8 +252,11 @@ export async function resolveWatermark(
     };
   }
 
+  const branchTaskInfo = parseTaskBranch(branch);
+  assertNotSubtaskBranchForAllocation(branchTaskInfo, branch);
+
   const prefix = await resolveTaskPrefix(options, cwd, vcs);
-  const taskBranchInfo = !options.forceTrunk ? parseTaskBranch(branch) : null;
+  const taskBranchInfo = !options.forceTrunk ? branchTaskInfo : null;
   const alloc = allocateTaskStrategy(allKnownIds, {
     forceTrunk: options.forceTrunk,
     prefix,

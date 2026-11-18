@@ -75,3 +75,30 @@ export class ArtifactCollisionError extends Error {
     this.collisions = details?.collisions ?? [];
   }
 }
+
+export interface ForeignBranchAncestryErrorDetails {
+  sourceBranch: string;
+  targetBranch: string;
+  foreignTaskBranch: string;
+  sharedCommit?: string;
+}
+
+/**
+ * Thrown when a branch targeting trunk contains unmerged commits inherited from
+ * another active task branch per RULE-28.
+ */
+export class ForeignBranchAncestryError extends Error {
+  readonly sourceBranch: string;
+  readonly targetBranch: string;
+  readonly foreignTaskBranch: string;
+  readonly sharedCommit?: string;
+
+  constructor(message: string, details?: ForeignBranchAncestryErrorDetails) {
+    super(message);
+    this.name = "ForeignBranchAncestryError";
+    this.sourceBranch = details?.sourceBranch ?? "";
+    this.targetBranch = details?.targetBranch ?? "";
+    this.foreignTaskBranch = details?.foreignTaskBranch ?? "";
+    this.sharedCommit = details?.sharedCommit;
+  }
+}

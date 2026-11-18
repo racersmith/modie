@@ -48,7 +48,8 @@ When planning and authoring tasks:
 
 - **Branch-Aware ID Allocation**: Modie allocates task IDs based on the active Git branch:
   - Calling `create_task` on trunk (`dev` or `main`) allocates a top-level root task (`TASK-XX`).
-  - Calling `create_task` while checked out on a parent task branch (`task/XX-<slug>`) **automatically** allocates a hierarchical sub-task ID (`TASK-XX-1`, `TASK-XX-2`, etc.).
+  - Calling `create_task` while checked out on a root task branch (`task/XX-<slug>`) **automatically** allocates a single-level hierarchical sub-task ID (`TASK-XX-1`, `TASK-XX-2`, etc.).
+  - **Depth Cap (Max 1 Level)**: Sub-tasks may only have root tasks as parents. Calling `create_task` while checked out on a sub-task branch (`task/XX-1-<slug>`) is **hard-rejected**; switch back to the root parent branch `task/XX-<slug>` to add a sibling sub-task, or switch to trunk for a new root task.
 - **How to Create Sub-Tasks**: When asked to create sub-tasks or decompose a task into sub-tasks, **never** stay on trunk and create separate top-level tasks that merely reference each other via `depends_on` or `links`. Instead, follow this exact sequence:
   1. Ensure the parent task (`TASK-XX`) exists (create it on trunk via `create_task` if needed).
   2. Switch to the parent task branch via `start_task("TASK-XX")` so the active Git branch is `task/XX-<slug>`.

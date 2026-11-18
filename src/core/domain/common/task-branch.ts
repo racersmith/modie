@@ -30,7 +30,8 @@ export function taskKey(raw: string): string {
 
 /**
  * Parses subtask parent ID and sequence from task ID token per RULE-28.
- * Subtasks follow `TASK-<parentId>-<sequence>` (e.g. `2-1`, `11-2`, `J101-1`).
+ * Subtasks are strictly single-level: `TASK-<parentId>-<sequence>` (e.g. `2-1`, `11-2`, `J101-1`).
+ * Returns null for root task IDs or invalid multi-level IDs (e.g. `5-2-1`).
  */
 export function parseSubtaskId(
   taskId: string,
@@ -44,6 +45,27 @@ export function parseSubtaskId(
     parentId: match[1],
     sequence: match[2],
   };
+}
+
+/**
+ * Returns true when a task ID contains more than one subtask nesting level (e.g. `5-2-1`).
+ * Modie enforces a maximum subtask depth of 1 (root task -> subtask) per RULE-28.
+ */
+export function isMultiLevelSubtaskId(taskId: string): boolean {
+  const normId = normalizeTaskId(taskId);
+  return /^[A-Za-z0-9]+(?:-[0-9]+){2,}$/.test(normId);
+}
+
+/**
+ * Asserts that a task ID does not exceed the maximum subtask nesting depth of 1 per RULE-28.
+ */
+export function assertValidTaskDepth(taskId: string): void {
+  if (isMultiLevelSubtaskId(taskId)) {
+    const normId = normalizeTaskId(taskId);
+    throw new Error(
+      `Task "TASK-${normId}" exceeds the maximum subtask depth of 1 per RULE-28. Subtasks may only be created under root tasks (e.g. TASK-<root>-<seq>), never nested under another subtask.`,
+    );
+  }
 }
 
 export interface ParsedTaskBranch {

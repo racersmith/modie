@@ -9,6 +9,7 @@ import {
   type FixtureWorkspace,
 } from "../../platform/testing/index.ts";
 import {
+  assertValidTaskDepth,
   escapeRegex,
   findDeepestCommonAncestor,
   formatArtifactFilename,
@@ -17,6 +18,7 @@ import {
   generateSlug,
   getSubtypeContainerName,
   isArtifactFilename,
+  isMultiLevelSubtaskId,
   isValidArtifactId,
   isValidSlug,
   MODIE_VERSION,
@@ -477,6 +479,27 @@ describe("Common Primitives - Task Branch Grammar & Hierarchy (RULE-28)", () => 
     });
     expect(parseSubtaskId("42")).toBeNull();
     expect(parseSubtaskId("TASK-42")).toBeNull();
+    expect(parseSubtaskId("5-2-1")).toBeNull();
+    expect(parseSubtaskId("TASK-5-2-1")).toBeNull();
+  });
+
+  // @verifies RULE-28
+  it("[RULE-28] should detect and reject multi-level subtask IDs exceeding depth 1", () => {
+    expect(isMultiLevelSubtaskId("5-2-1")).toBe(true);
+    expect(isMultiLevelSubtaskId("TASK-5-2-1")).toBe(true);
+    expect(isMultiLevelSubtaskId("J101-2-1")).toBe(true);
+    expect(isMultiLevelSubtaskId("5-2")).toBe(false);
+    expect(isMultiLevelSubtaskId("5")).toBe(false);
+    expect(isMultiLevelSubtaskId("J101")).toBe(false);
+
+    expect(() => assertValidTaskDepth("5-2")).not.toThrow();
+    expect(() => assertValidTaskDepth("5")).not.toThrow();
+    expect(() => assertValidTaskDepth("5-2-1")).toThrow(
+      /exceeds the maximum subtask depth of 1 per RULE-28/,
+    );
+    expect(() => assertValidTaskDepth("TASK-J101-2-1")).toThrow(
+      /exceeds the maximum subtask depth of 1 per RULE-28/,
+    );
   });
 
   // @verifies RULE-28
