@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { formatArtifactTag } from "../../domain/index.ts";
 import type { FixtureWorkspace } from "../../platform/testing/index.ts";
 import { defaultVcsAdapter } from "../../platform/vcs/git-cli-adapter.ts";
+import { MockVcsAdapter } from "../../platform/vcs/mock-adapter.ts";
+import { createWorkspaceContextSync } from "../context/index.ts";
 import { assertNoCollisions, detectArtifactCollisions } from "./collision-guard.ts";
 import { mergeTaskBranch } from "./branching.ts";
 import { ArtifactCollisionError } from "./errors.ts";
@@ -220,5 +222,55 @@ describe("Pre-Merge Artifact Collision Guard (RULE-33)", () => {
         { force: true },
       ),
     ).resolves.toBeUndefined();
+  });
+
+  // @verifies RULE-33, RULE-34, RULE-35
+  it("[RULE-33][RULE-34][RULE-35] should use WorkspaceContext MockVcsAdapter consistently across source, target, and merge-base inspections", async () => {
+    const sharedRuleTag = formatArtifactTag("RULE", 77);
+    const movedRuleTag = formatArtifactTag("RULE", 78);
+    const sharedPath = `.modie/rules/shared.${sharedRuleTag}.md`;
+
+    const mockVcs = new MockVcsAdapter({
+      currentBranch: "task/77-mock-source",
+      branches: ["dev", "task/77-mock-source"],
+      mergeBaseResult: "mock-merge-base-sha",
+      treeFiles: {
+        "task/77-mock-source": [
+          sharedPath,
+          `.modie/rules/moved-source.${movedRuleTag}.md`,
+        ],
+        dev: [
+          sharedPath,
+          `.modie/rules/moved-target.${movedRuleTag}.md`,
+        ],
+        "mock-merge-base-sha": [
+          sharedPath,
+          `.modie/rules/moved-base.${movedRuleTag}.md`,
+        ],
+      },
+    });
+
+    const ctx = createWorkspaceContextSync({
+      root: "/virtual/hermetic-collision-workspace",
+      vcs: mockVcs,
+    });
+
+    const collisions = await detectArtifactCollisions(
+      "task/77-mock-source",
+      "dev",
+      ctx,
+    );
+
+    // sharedRuleTag existed at merge-base so it must NOT trigger a false duplicate_tag collision;
+    // movedRuleTag existed at merge-base at a third path so it must classify as divergent_filepath (not duplicate_tag).
+    expect(collisions).toHaveLength(1);
+    expect(collisions[0]?.tag).toBe(movedRuleTag);
+    expect(collisions[0]?.reason).toBe("divergent_filepath");
+    expect(collisions[0]?.sourceFilepath).toBe(
+      `.modie/rules/moved-source.${movedRuleTag}.md`,
+    );
+    expect(collisions[0]?.targetFilepath).toBe(
+      `.modie/rules/moved-target.${movedRuleTag}.md`,
+    );
   });
 });

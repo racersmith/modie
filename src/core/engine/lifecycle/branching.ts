@@ -364,7 +364,7 @@ export async function startTaskBranch(
   };
 }
 
-async function resolveTaskIdentifier(
+export async function resolveTaskIdentifier(
   taskIdentifier: string | undefined,
   vcs: IVcsAdapter,
   cwd: string,

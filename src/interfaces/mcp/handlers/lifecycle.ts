@@ -4,14 +4,10 @@
  */
 
 import {
-  assertTargetBranchExists,
   checkTaskItem,
-  completeTask,
-  computeTaskBranchTopology,
+  completeAndMergeTask,
   detectGitBranch,
   getTaskStatus,
-  mergeTaskBranch,
-  resolveMergeTarget,
   resolveWorkspaceContext,
   startTaskBranch,
   type TaskStatusDetails,
@@ -129,34 +125,12 @@ export async function handleCompleteTask(
   const cwd = ctx.root;
   const taskId = await resolveActiveTaskId(args.task_id, ctx);
 
-  // 1. Pre-validate merge target resolution and existence before artifact deletion/commits
-  const topology = await computeTaskBranchTopology(taskId, {
-    cwd,
-    workspace: ctx,
-  });
-  const resolvedTarget = resolveMergeTarget(topology, {
-    target: args.target,
-  });
-  await assertTargetBranchExists(ctx.vcs, resolvedTarget, cwd, {
-    recordedBase:
-      !args.target &&
-      !topology.isSubtask &&
-      Boolean(topology.recordedBaseBranch),
-  });
-
-  // 2. Complete task (verifies criteria, two-phase commit, deletes task artifact)
-  const completeResult = await completeTask(taskId, {
-    commit: true,
-    cwd,
-    workspace: ctx,
-  });
-
-  // 3. Merge task branch into resolved target and delete task branch
-  const mergeResult = await mergeTaskBranch(taskId, {
-    target: args.target,
-    cwd,
-    workspace: ctx,
-  });
+  const { completion: completeResult, merge: mergeResult } =
+    await completeAndMergeTask(taskId, {
+      target: args.target,
+      cwd,
+      workspace: ctx,
+    });
 
   return {
     taskId: `TASK-${completeResult.taskId}`,

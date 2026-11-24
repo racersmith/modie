@@ -189,6 +189,9 @@ describe("Cluster 2: Task Lifecycle State Machine Tools", () => {
     await Bun.$`git branch -D feat/mcp-origin`
       .cwd(harness.workspace.cwd)
       .quiet();
+    const headBeforeMissingTarget = (
+      await Bun.$`git rev-parse HEAD`.cwd(harness.workspace.cwd).text()
+    ).trim();
 
     const missingTargetRes = await harness.client.callTool({
       name: "complete_task",
@@ -198,6 +201,9 @@ describe("Cluster 2: Task Lifecycle State Machine Tools", () => {
     expect(getTextContent(missingTargetRes)).toContain(
       "Cannot merge into recorded origin branch",
     );
+    expect(
+      (await Bun.$`git rev-parse HEAD`.cwd(harness.workspace.cwd).text()).trim(),
+    ).toBe(headBeforeMissingTarget);
 
     const stillOnDisk = await harness.workspace.readFile(
       `.modie/tasks/mcp-feature-root.${featTaskTag}.md`,
@@ -219,6 +225,151 @@ describe("Cluster 2: Task Lifecycle State Machine Tools", () => {
     expect(baseStartRes.isError).toBeFalsy();
     expect(getTextContent(baseStartRes)).toContain(
       "**Origin / Merge Target**: `dev`",
+    );
+  });
+
+  // @verifies RULE-21, RULE-22, RULE-28, RULE-32, RULE-34, RULE-35
+  it("complete_task should abort atomically without deleting artifact or creating commits on active subtask, foreign ancestry, or missing source branch", async () => {
+    const getHead = async () =>
+      (await Bun.$`git rev-parse HEAD`.cwd(harness.workspace.cwd).text()).trim();
+
+    // 1. Missing source branch: calling complete_task before starting the task branch
+    const unstartedTag = formatArtifactTag("TASK", 105);
+    const unstartedTask = await harness.workspace.createTask({
+      id: 105,
+      slug: "mcp-unstarted",
+      title: "MCP Unstarted",
+      criteria: [{ text: "Done", completed: true }],
+    });
+    await harness.workspace.gitCommit(`docs: add ${unstartedTag}`);
+    const headBeforeUnstarted = await getHead();
+
+    const unstartedRes = await harness.client.callTool({
+      name: "complete_task",
+      arguments: { task_id: unstartedTag },
+    });
+    expect(unstartedRes.isError).toBe(true);
+    expect(getTextContent(unstartedRes)).toContain("does not exist");
+    expect(await getHead()).toBe(headBeforeUnstarted);
+    expect(await harness.workspace.fileExists(unstartedTask.filepath)).toBe(true);
+
+    // 2. Active child subtask blocks parent complete_task atomically and allows clean retry
+    const parentTag = formatArtifactTag("TASK", 106);
+    const parentTask = await harness.workspace.createTask({
+      id: 106,
+      slug: "mcp-preflight-parent",
+      title: "MCP Preflight Parent",
+      criteria: ["Parent criterion", "User Review"],
+    });
+    await harness.workspace.gitCommit(`docs: add ${parentTag}`);
+
+    const startParentRes = await harness.client.callTool({
+      name: "start_task",
+      arguments: { task_id: parentTag },
+    });
+    expect(startParentRes.isError).toBeFalsy();
+
+    const createSubRes = await harness.client.callTool({
+      name: "create_task",
+      arguments: {
+        title: "MCP Preflight Child",
+        acceptance_criteria: ["Child criterion"],
+      },
+    });
+    expect(createSubRes.isError).toBeFalsy();
+    const childTag = getStructuredContent(createSubRes).tag;
+    await harness.workspace.gitCommit(`docs: add ${childTag}`);
+
+    const startChildRes = await harness.client.callTool({
+      name: "start_task",
+      arguments: { task_id: childTag },
+    });
+    expect(startChildRes.isError).toBeFalsy();
+
+    await Bun.$`git checkout task/106-mcp-preflight-parent`
+      .cwd(harness.workspace.cwd)
+      .quiet();
+    await harness.client.callTool({
+      name: "check_criteria",
+      arguments: { task_id: parentTag, items: [1, 2] },
+    });
+    const headBeforeActiveSubtask = await getHead();
+
+    const blockedParentRes = await harness.client.callTool({
+      name: "complete_task",
+      arguments: { task_id: parentTag },
+    });
+    expect(blockedParentRes.isError).toBe(true);
+    expect(getTextContent(blockedParentRes)).toContain(
+      "Active child subtask branch",
+    );
+    expect(await getHead()).toBe(headBeforeActiveSubtask);
+    expect(await harness.workspace.fileExists(parentTask.filepath)).toBe(true);
+
+    // Commit criteria check, complete child subtask, then retry parent complete_task cleanly
+    await harness.workspace.gitCommit("chore: check parent criteria");
+    await Bun.$`git checkout task/106-1-mcp-preflight-child`
+      .cwd(harness.workspace.cwd)
+      .quiet();
+    await harness.client.callTool({
+      name: "check_criteria",
+      arguments: { task_id: childTag, items: [1, 2] },
+    });
+    const completeChildRes = await harness.client.callTool({
+      name: "complete_task",
+      arguments: { task_id: childTag },
+    });
+    expect(completeChildRes.isError).toBeFalsy();
+
+    const retryParentRes = await harness.client.callTool({
+      name: "complete_task",
+      arguments: { task_id: parentTag },
+    });
+    expect(retryParentRes.isError).toBeFalsy();
+    expect(getStructuredContent(retryParentRes).targetBranch).toBe("dev");
+
+    // 3. Foreign task ancestry blocks complete_task atomically without committing or deleting artifact
+    const foreignTag = formatArtifactTag("TASK", 107);
+    await harness.workspace.createTask({
+      id: 107,
+      slug: "mcp-foreign",
+      title: "MCP Foreign",
+      criteria: ["Foreign item", "User Review"],
+    });
+    await harness.workspace.gitCommit(`docs: add ${foreignTag}`);
+    await harness.client.callTool({
+      name: "start_task",
+      arguments: { task_id: foreignTag },
+    });
+    await harness.workspace.writeFile("foreign-mcp.txt", "foreign work\n");
+    await harness.workspace.gitCommit("feat: foreign unmerged work");
+
+    const leakedTag = formatArtifactTag("TASK", 108);
+    const leakedTask = await harness.workspace.createTask({
+      id: 108,
+      slug: "mcp-leaked",
+      title: "MCP Leaked",
+      criteria: [{ text: "Done", completed: true }],
+    });
+    await Bun.$`git checkout -b task/108-mcp-leaked`
+      .cwd(harness.workspace.cwd)
+      .quiet();
+    await harness.workspace.gitCommit(`docs: add ${leakedTag}`);
+    await harness.workspace.writeFile("leaked-mcp-dirty.txt", "dirty work\n");
+    const headBeforeForeign = await getHead();
+
+    const foreignBlockedRes = await harness.client.callTool({
+      name: "complete_task",
+      arguments: { task_id: leakedTag },
+    });
+    expect(foreignBlockedRes.isError).toBe(true);
+    expect(getTextContent(foreignBlockedRes)).toContain(
+      "contains unmerged commit",
+    );
+    expect(await getHead()).toBe(headBeforeForeign);
+    expect(await harness.workspace.fileExists(leakedTask.filepath)).toBe(true);
+    expect(await harness.workspace.readFile("leaked-mcp-dirty.txt")).toBe(
+      "dirty work\n",
     );
   });
 });
