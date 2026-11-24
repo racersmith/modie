@@ -16,8 +16,8 @@ Decompose MCP handlers into exploration, lifecycle, authoring, mutation, and sha
 
 # Acceptance Criteria
 
-- [ ] MCP tool handlers are organized into cohesive feature-cluster modules with shared active-task ID and default scope inference helpers eliminating duplicated branch-to-scope lookup logic
-- [ ] MCP Markdown renderers are organized into separate modules for artifact rendering, mission briefs, directory context, and task queues while preserving all public exports
-- [ ] MCP server tool registration uses shared registration wrappers for Markdown and structured JSON tools to eliminate repeated workspace-resolution and error-envelope boilerplate
-- [ ] MCP integration tests are split by feature cluster using a shared test harness helper, and all repository verification checks pass with zero lint warnings in the MCP interface
-- [ ] User Review
+- [x] MCP tool handlers are organized into cohesive feature-cluster modules with shared active-task ID and default scope inference helpers eliminating duplicated branch-to-scope lookup logic
+- [x] MCP Markdown renderers are organized into separate modules for artifact rendering, mission briefs, directory context, and task queues while preserving all public exports
+- [x] MCP server tool registration uses shared registration wrappers for Markdown and structured JSON tools to eliminate repeated workspace-resolution and error-envelope boilerplate
+- [x] MCP integration tests are split by feature cluster using a shared test harness helper, and all repository verification checks pass with zero lint warnings in the MCP interface
+- [x] User Review

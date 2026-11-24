@@ -1,6 +1,6 @@
 /**
  * Model Context Protocol (MCP) server implementation for Modie.
- * Registers 12 singular-purpose agent tools with flat Zod input/output schemas,
+ * Registers 13 singular-purpose agent tools with flat Zod input/output schemas,
  * declared behavioral annotations, stateless parameters with Git branch fallback,
  * and token economy progressive disclosure (RULE-25, RULE-26).
  */
@@ -30,7 +30,7 @@ import {
   handleSparkAdd,
   handleStartTask,
   handleTaskContext,
-} from "./handlers.ts";
+} from "./handlers/index.ts";
 import { loadMcpInstructions } from "./instructions.ts";
 import { registerAllResources } from "./resources.ts";
 import {
@@ -83,8 +83,14 @@ export interface ModieMcpServerOptions {
   stderr?: (msg: string) => void;
 }
 
+interface ToolAnnotations {
+  readOnlyHint: boolean;
+  idempotentHint: boolean;
+  destructiveHint: boolean;
+}
+
 /**
- * Creates and initializes a Modie MCP server with the 12 singular agent tools
+ * Creates and initializes a Modie MCP server with the 13 singular agent tools
  * and ambient governance resources.
  */
 export function createModieMcpServer(
@@ -118,12 +124,69 @@ export function createModieMcpServer(
   });
   const workspace = dynamicManager.workspace;
 
-  // ==========================================================================
-  // Cluster 1: Spatial & Artifact Exploration Tools (Plaintext/Markdown)
-  // ==========================================================================
+  const registerMarkdownTool = (
+    name: string,
+    config: {
+      description: string;
+      inputSchema: Record<string, any>;
+      annotations: ToolAnnotations;
+    },
+    handler: (args: any, ctx: WorkspaceContext) => Promise<string>,
+  ) => {
+    server.registerTool(
+      name,
+      config,
+      (async (args: any): Promise<any> => {
+        try {
+          const callWorkspace = await dynamicManager.resolveCallWorkspace(
+            args.workspace,
+          );
+          const text = await handler(args, callWorkspace);
+          return { content: [{ type: "text" as const, text }] };
+        } catch (error: any) {
+          return formatMcpToolError(error, name, args, stderr);
+        }
+      }) as any,
+    );
+  };
 
-  // 1. directory_context
-  server.registerTool(
+  const registerStructuredTool = (
+    name: string,
+    config: {
+      description: string;
+      inputSchema: Record<string, any>;
+      outputSchema: Record<string, any>;
+      annotations: ToolAnnotations;
+    },
+    handler: (args: any, ctx: WorkspaceContext) => Promise<Record<string, any>>,
+  ) => {
+    server.registerTool(
+      name,
+      config,
+      (async (args: any): Promise<any> => {
+        try {
+          const callWorkspace = await dynamicManager.resolveCallWorkspace(
+            args.workspace,
+          );
+          const result = await handler(args, callWorkspace);
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+            structuredContent: result,
+          };
+        } catch (error: any) {
+          return formatMcpToolError(error, name, args, stderr);
+        }
+      }) as any,
+    );
+  };
+
+  // Cluster 1: Spatial & Artifact Exploration Tools (Plaintext/Markdown)
+  registerMarkdownTool(
     "directory_context",
     {
       description:
@@ -135,23 +198,10 @@ export function createModieMcpServer(
         destructiveHint: false,
       },
     },
-    (async (args: any): Promise<any> => {
-      try {
-        const callWorkspace = await dynamicManager.resolveCallWorkspace(
-          args.workspace,
-        );
-        const text = await handleDirectoryContext(args, callWorkspace);
-        return {
-          content: [{ type: "text" as const, text }],
-        };
-      } catch (error: any) {
-        return formatMcpToolError(error, "directory_context", args, stderr);
-      }
-    }) as any,
+    handleDirectoryContext,
   );
 
-  // 2. read_artifact
-  server.registerTool(
+  registerMarkdownTool(
     "read_artifact",
     {
       description:
@@ -163,23 +213,10 @@ export function createModieMcpServer(
         destructiveHint: false,
       },
     },
-    (async (args: any): Promise<any> => {
-      try {
-        const callWorkspace = await dynamicManager.resolveCallWorkspace(
-          args.workspace,
-        );
-        const text = await handleReadArtifact(args, callWorkspace);
-        return {
-          content: [{ type: "text" as const, text }],
-        };
-      } catch (error: any) {
-        return formatMcpToolError(error, "read_artifact", args, stderr);
-      }
-    }) as any,
+    handleReadArtifact,
   );
 
-  // 3. task_context
-  server.registerTool(
+  registerMarkdownTool(
     "task_context",
     {
       description:
@@ -191,27 +228,11 @@ export function createModieMcpServer(
         destructiveHint: false,
       },
     },
-    (async (args: any): Promise<any> => {
-      try {
-        const callWorkspace = await dynamicManager.resolveCallWorkspace(
-          args.workspace,
-        );
-        const text = await handleTaskContext(args, callWorkspace);
-        return {
-          content: [{ type: "text" as const, text }],
-        };
-      } catch (error: any) {
-        return formatMcpToolError(error, "task_context", args, stderr);
-      }
-    }) as any,
+    handleTaskContext,
   );
 
-  // ==========================================================================
   // Cluster 2: Task Lifecycle State Machine Tools
-  // ==========================================================================
-
-  // 4. start_task
-  server.registerTool(
+  registerMarkdownTool(
     "start_task",
     {
       description:
@@ -223,23 +244,10 @@ export function createModieMcpServer(
         destructiveHint: false,
       },
     },
-    (async (args: any): Promise<any> => {
-      try {
-        const callWorkspace = await dynamicManager.resolveCallWorkspace(
-          args.workspace,
-        );
-        const text = await handleStartTask(args, callWorkspace);
-        return {
-          content: [{ type: "text" as const, text }],
-        };
-      } catch (error: any) {
-        return formatMcpToolError(error, "start_task", args, stderr);
-      }
-    }) as any,
+    handleStartTask,
   );
 
-  // 5. check_criteria
-  server.registerTool(
+  registerStructuredTool(
     "check_criteria",
     {
       description:
@@ -252,29 +260,10 @@ export function createModieMcpServer(
         destructiveHint: false,
       },
     },
-    (async (args: any): Promise<any> => {
-      try {
-        const callWorkspace = await dynamicManager.resolveCallWorkspace(
-          args.workspace,
-        );
-        const result = await handleCheckCriteria(args, callWorkspace);
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-          structuredContent: result,
-        };
-      } catch (error: any) {
-        return formatMcpToolError(error, "check_criteria", args, stderr);
-      }
-    }) as any,
+    handleCheckCriteria,
   );
 
-  // 6. complete_task
-  server.registerTool(
+  registerStructuredTool(
     "complete_task",
     {
       description:
@@ -287,33 +276,11 @@ export function createModieMcpServer(
         destructiveHint: true,
       },
     },
-    (async (args: any): Promise<any> => {
-      try {
-        const callWorkspace = await dynamicManager.resolveCallWorkspace(
-          args.workspace,
-        );
-        const result = await handleCompleteTask(args, callWorkspace);
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-          structuredContent: result,
-        };
-      } catch (error: any) {
-        return formatMcpToolError(error, "complete_task", args, stderr);
-      }
-    }) as any,
+    handleCompleteTask,
   );
 
-  // ==========================================================================
   // Cluster 3: Dedicated Artifact Authoring Tools
-  // ==========================================================================
-
-  // 7. create_rule
-  server.registerTool(
+  registerStructuredTool(
     "create_rule",
     {
       description:
@@ -326,29 +293,10 @@ export function createModieMcpServer(
         destructiveHint: false,
       },
     },
-    (async (args: any): Promise<any> => {
-      try {
-        const callWorkspace = await dynamicManager.resolveCallWorkspace(
-          args.workspace,
-        );
-        const result = await handleCreateRule(args, callWorkspace);
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-          structuredContent: result,
-        };
-      } catch (error: any) {
-        return formatMcpToolError(error, "create_rule", args, stderr);
-      }
-    }) as any,
+    handleCreateRule,
   );
 
-  // 8. create_adr
-  server.registerTool(
+  registerStructuredTool(
     "create_adr",
     {
       description:
@@ -361,29 +309,10 @@ export function createModieMcpServer(
         destructiveHint: false,
       },
     },
-    (async (args: any): Promise<any> => {
-      try {
-        const callWorkspace = await dynamicManager.resolveCallWorkspace(
-          args.workspace,
-        );
-        const result = await handleCreateAdr(args, callWorkspace);
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-          structuredContent: result,
-        };
-      } catch (error: any) {
-        return formatMcpToolError(error, "create_adr", args, stderr);
-      }
-    }) as any,
+    handleCreateAdr,
   );
 
-  // 9. create_task
-  server.registerTool(
+  registerStructuredTool(
     "create_task",
     {
       description:
@@ -396,29 +325,10 @@ export function createModieMcpServer(
         destructiveHint: false,
       },
     },
-    (async (args: any): Promise<any> => {
-      try {
-        const callWorkspace = await dynamicManager.resolveCallWorkspace(
-          args.workspace,
-        );
-        const result = await handleCreateTask(args, callWorkspace);
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-          structuredContent: result,
-        };
-      } catch (error: any) {
-        return formatMcpToolError(error, "create_task", args, stderr);
-      }
-    }) as any,
+    handleCreateTask,
   );
 
-  // 10. create_motive
-  server.registerTool(
+  registerStructuredTool(
     "create_motive",
     {
       description:
@@ -431,33 +341,11 @@ export function createModieMcpServer(
         destructiveHint: false,
       },
     },
-    (async (args: any): Promise<any> => {
-      try {
-        const callWorkspace = await dynamicManager.resolveCallWorkspace(
-          args.workspace,
-        );
-        const result = await handleCreateMotive(args, callWorkspace);
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-          structuredContent: result,
-        };
-      } catch (error: any) {
-        return formatMcpToolError(error, "create_motive", args, stderr);
-      }
-    }) as any,
+    handleCreateMotive,
   );
 
-  // ==========================================================================
-  // Cluster 4: Graph Mutation Tools
-  // ==========================================================================
-
-  // 11. link_artifacts
-  server.registerTool(
+  // Cluster 4: Graph Mutation & Incubation Tools
+  registerStructuredTool(
     "link_artifacts",
     {
       description:
@@ -470,29 +358,10 @@ export function createModieMcpServer(
         destructiveHint: false,
       },
     },
-    (async (args: any): Promise<any> => {
-      try {
-        const callWorkspace = await dynamicManager.resolveCallWorkspace(
-          args.workspace,
-        );
-        const result = await handleLinkArtifacts(args, callWorkspace);
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-          structuredContent: result,
-        };
-      } catch (error: any) {
-        return formatMcpToolError(error, "link_artifacts", args, stderr);
-      }
-    }) as any,
+    handleLinkArtifacts,
   );
 
-  // 12. archive_artifact
-  server.registerTool(
+  registerStructuredTool(
     "archive_artifact",
     {
       description:
@@ -505,29 +374,10 @@ export function createModieMcpServer(
         destructiveHint: true,
       },
     },
-    (async (args: any): Promise<any> => {
-      try {
-        const callWorkspace = await dynamicManager.resolveCallWorkspace(
-          args.workspace,
-        );
-        const result = await handleArchiveArtifact(args, callWorkspace);
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-          structuredContent: result,
-        };
-      } catch (error: any) {
-        return formatMcpToolError(error, "archive_artifact", args, stderr);
-      }
-    }) as any,
+    handleArchiveArtifact,
   );
 
-  // 13. spark_add
-  server.registerTool(
+  registerStructuredTool(
     "spark_add",
     {
       description:
@@ -540,30 +390,10 @@ export function createModieMcpServer(
         destructiveHint: false,
       },
     },
-    (async (args: any): Promise<any> => {
-      try {
-        const callWorkspace = await dynamicManager.resolveCallWorkspace(
-          args.workspace,
-        );
-        const result = await handleSparkAdd(args, callWorkspace);
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-          structuredContent: result,
-        };
-      } catch (error: any) {
-        return formatMcpToolError(error, "spark_add", args, stderr);
-      }
-    }) as any,
+    handleSparkAdd,
   );
 
-  // ==========================================================================
   // Ambient Resources (RULE-25, RULE-26)
-  // ==========================================================================
   registerAllResources(server, {
     cwd,
     workspace,
