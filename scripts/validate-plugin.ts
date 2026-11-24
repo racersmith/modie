@@ -91,6 +91,61 @@ const checks: ValidationCheck[] = [
     },
   },
   {
+    description: "hooks.json and bundled PreToolUse workspace hook comply with RULE-37",
+    run: () => {
+      const hooksPath = join(pluginDir, "hooks.json");
+      if (!existsSync(hooksPath)) {
+        throw new Error("Missing hooks.json in plugin bundle");
+      }
+      const raw = readFileSync(hooksPath, "utf8");
+      const json = JSON.parse(raw);
+      const hookEntries = Object.values(json) as any[];
+      if (hookEntries.length === 0) {
+        throw new Error("hooks.json must define at least one hook entry");
+      }
+
+      let foundPreToolUse = false;
+      for (const entry of hookEntries) {
+        if (!Array.isArray(entry?.PreToolUse)) continue;
+        for (const group of entry.PreToolUse) {
+          if (!Array.isArray(group?.hooks)) continue;
+          for (const handler of group.hooks) {
+            foundPreToolUse = true;
+            const cmd = String(handler?.command ?? "").trim();
+            if (!cmd) {
+              throw new Error("Hook handler command must be non-empty");
+            }
+            if (cmd.includes("/home/") || cmd.includes("/Users/")) {
+              throw new Error(`Found static host path in hook command: '${cmd}' (RULE-37 violation)`);
+            }
+            const tokens = cmd.split(/\s+/);
+            const binary = tokens[0];
+            if (!binary || binary.includes("/") || binary.includes("\\")) {
+              throw new Error(
+                `Hook binary must be environment-resolved without path separators: got '${binary}' (RULE-37 violation)`,
+              );
+            }
+            const scriptToken = tokens.slice(1).find((t) => !t.startsWith("-"));
+            if (!scriptToken) {
+              throw new Error(`Hook command must reference a bundled script: '${cmd}'`);
+            }
+            if (scriptToken.endsWith(".ts")) {
+              throw new Error(`Hook command must not execute live TypeScript source: '${scriptToken}'`);
+            }
+            const resolvedScript = resolve(pluginDir, scriptToken);
+            if (!existsSync(resolvedScript)) {
+              throw new Error(`Hook script not found at target: ${resolvedScript}`);
+            }
+          }
+        }
+      }
+
+      if (!foundPreToolUse) {
+        throw new Error("hooks.json must configure a PreToolUse workspace resolver hook");
+      }
+    },
+  },
+  {
     description: "rules/AGENTS.md governance rules exist and are non-empty",
     run: () => {
       const rulesPath = join(pluginDir, "rules", "AGENTS.md");

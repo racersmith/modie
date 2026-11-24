@@ -137,8 +137,10 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        await dynamicManager.ensureWorkspace();
-        const text = await handleDirectoryContext(args, workspace);
+        const callWorkspace = await dynamicManager.resolveCallWorkspace(
+          args.workspace,
+        );
+        const text = await handleDirectoryContext(args, callWorkspace);
         return {
           content: [{ type: "text" as const, text }],
         };
@@ -163,8 +165,10 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        await dynamicManager.ensureWorkspace();
-        const text = await handleReadArtifact(args, workspace);
+        const callWorkspace = await dynamicManager.resolveCallWorkspace(
+          args.workspace,
+        );
+        const text = await handleReadArtifact(args, callWorkspace);
         return {
           content: [{ type: "text" as const, text }],
         };
@@ -189,8 +193,10 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        await dynamicManager.ensureWorkspace();
-        const text = await handleTaskContext(args, workspace);
+        const callWorkspace = await dynamicManager.resolveCallWorkspace(
+          args.workspace,
+        );
+        const text = await handleTaskContext(args, callWorkspace);
         return {
           content: [{ type: "text" as const, text }],
         };
@@ -219,8 +225,10 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        await dynamicManager.ensureWorkspace();
-        const text = await handleStartTask(args, workspace);
+        const callWorkspace = await dynamicManager.resolveCallWorkspace(
+          args.workspace,
+        );
+        const text = await handleStartTask(args, callWorkspace);
         return {
           content: [{ type: "text" as const, text }],
         };
@@ -246,8 +254,10 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        await dynamicManager.ensureWorkspace();
-        const result = await handleCheckCriteria(args, workspace);
+        const callWorkspace = await dynamicManager.resolveCallWorkspace(
+          args.workspace,
+        );
+        const result = await handleCheckCriteria(args, callWorkspace);
         return {
           content: [
             {
@@ -279,8 +289,10 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        await dynamicManager.ensureWorkspace();
-        const result = await handleCompleteTask(args, workspace);
+        const callWorkspace = await dynamicManager.resolveCallWorkspace(
+          args.workspace,
+        );
+        const result = await handleCompleteTask(args, callWorkspace);
         return {
           content: [
             {
@@ -316,8 +328,10 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        await dynamicManager.ensureWorkspace();
-        const result = await handleCreateRule(args, workspace);
+        const callWorkspace = await dynamicManager.resolveCallWorkspace(
+          args.workspace,
+        );
+        const result = await handleCreateRule(args, callWorkspace);
         return {
           content: [
             {
@@ -349,8 +363,10 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        await dynamicManager.ensureWorkspace();
-        const result = await handleCreateAdr(args, workspace);
+        const callWorkspace = await dynamicManager.resolveCallWorkspace(
+          args.workspace,
+        );
+        const result = await handleCreateAdr(args, callWorkspace);
         return {
           content: [
             {
@@ -382,8 +398,10 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        await dynamicManager.ensureWorkspace();
-        const result = await handleCreateTask(args, workspace);
+        const callWorkspace = await dynamicManager.resolveCallWorkspace(
+          args.workspace,
+        );
+        const result = await handleCreateTask(args, callWorkspace);
         return {
           content: [
             {
@@ -415,8 +433,10 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        await dynamicManager.ensureWorkspace();
-        const result = await handleCreateMotive(args, workspace);
+        const callWorkspace = await dynamicManager.resolveCallWorkspace(
+          args.workspace,
+        );
+        const result = await handleCreateMotive(args, callWorkspace);
         return {
           content: [
             {
@@ -452,8 +472,10 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        await dynamicManager.ensureWorkspace();
-        const result = await handleLinkArtifacts(args, workspace);
+        const callWorkspace = await dynamicManager.resolveCallWorkspace(
+          args.workspace,
+        );
+        const result = await handleLinkArtifacts(args, callWorkspace);
         return {
           content: [
             {
@@ -485,8 +507,10 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        await dynamicManager.ensureWorkspace();
-        const result = await handleArchiveArtifact(args, workspace);
+        const callWorkspace = await dynamicManager.resolveCallWorkspace(
+          args.workspace,
+        );
+        const result = await handleArchiveArtifact(args, callWorkspace);
         return {
           content: [
             {
@@ -518,8 +542,10 @@ export function createModieMcpServer(
     },
     (async (args: any): Promise<any> => {
       try {
-        await dynamicManager.ensureWorkspace();
-        const result = await handleSparkAdd(args, workspace);
+        const callWorkspace = await dynamicManager.resolveCallWorkspace(
+          args.workspace,
+        );
+        const result = await handleSparkAdd(args, callWorkspace);
         return {
           content: [
             {
@@ -538,7 +564,12 @@ export function createModieMcpServer(
   // ==========================================================================
   // Ambient Resources (RULE-25, RULE-26)
   // ==========================================================================
-  registerAllResources(server, { cwd, workspace, instructions });
+  registerAllResources(server, {
+    cwd,
+    workspace,
+    instructions,
+    resolveWorkspace: dynamicManager.resolveCallWorkspace,
+  });
 
   return server;
 }

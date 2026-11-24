@@ -771,4 +771,82 @@ describe("Modie MCP Server - 12 Singular Agent Tools Suite", () => {
       await customServer.close();
     });
   });
+
+  // @verifies RULE-34, RULE-35, RULE-37
+  describe("Per-Call Workspace Resolution", () => {
+    it("should expose optional workspace parameter on all 13 MCP tools", async () => {
+      const response = await client.listTools();
+      expect(response.tools).toHaveLength(13);
+      for (const tool of response.tools) {
+        const props = (tool.inputSchema as any)?.properties ?? {};
+        expect(props.workspace).toBeDefined();
+      }
+    });
+
+    it("should resolve reads and writes against explicit per-call workspace without mutating server-wide state", async () => {
+      const secondWorkspace = await createFixtureWorkspace(
+        "modie-mcp-second-ws-",
+      );
+      const secondRuleTag = formatArtifactTag("RULE", 202);
+
+      try {
+        await secondWorkspace.initGit({
+          defaultBranch: "dev",
+          initialCommit: true,
+        });
+        await secondWorkspace.createRule({
+          id: 202,
+          slug: "second-ws-rule",
+          title: "Second Workspace Rule",
+          body: "Rule scoped exclusively to the second workspace.",
+        });
+        await secondWorkspace.gitCommit("chore: seed second workspace");
+
+        // Read artifact from second workspace via per-call workspace override
+        const readRes = await client.callTool({
+          name: "read_artifact",
+          arguments: {
+            tag: secondRuleTag,
+            workspace: secondWorkspace.cwd,
+          },
+        });
+        expect(readRes.isError).toBeFalsy();
+        expect(getTextContent(readRes)).toContain(
+          "Rule scoped exclusively to the second workspace.",
+        );
+
+        // Write spark into second workspace via per-call workspace override
+        const sparkRes = await client.callTool({
+          name: "spark_add",
+          arguments: {
+            title: "Second Repo Spark",
+            workspace: secondWorkspace.cwd,
+          },
+        });
+        expect(sparkRes.isError).toBeFalsy();
+        const secondSparks = await secondWorkspace.readFile(
+          ".modie/ideas/SPARKS.md",
+        );
+        expect(secondSparks).toContain("Second Repo Spark");
+
+        // Subsequent call without workspace must still resolve to primary workspace
+        const primaryRead = await client.callTool({
+          name: "read_artifact",
+          arguments: { tag: ruleTag },
+        });
+        expect(primaryRead.isError).toBeFalsy();
+        expect(getTextContent(primaryRead)).toContain(
+          "All code must be tested with isolated fixtures.",
+        );
+
+        const crossCheck = await client.callTool({
+          name: "read_artifact",
+          arguments: { tag: secondRuleTag },
+        });
+        expect(crossCheck.isError).toBe(true);
+      } finally {
+        await secondWorkspace.cleanup();
+      }
+    });
+  });
 });

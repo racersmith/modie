@@ -1,10 +1,17 @@
 /**
- * Flat Zod schemas for the 12 singular Modie MCP agent tools.
+ * Flat Zod schemas for the 13 singular Modie MCP agent tools.
  * Complies with RULE-25 (interface-core decoupling), RULE-26 (token economy),
- * and scratch/mcp-design.md specifications.
+ * RULE-37 (dynamic workspace resolution), and scratch/mcp-design.md specifications.
  */
 
 import { z } from "zod";
+
+const workspaceParam = z
+  .string()
+  .optional()
+  .describe(
+    "Optional workspace root directory for per-call repository resolution (defaults to active MCP workspace).",
+  );
 
 // ============================================================================
 // 1. Spatial & Artifact Exploration Tools
@@ -28,6 +35,7 @@ export const directoryContextSchema = z.object({
     .describe(
       "Context detail mode: 'summary' for token-conscious overview, 'detailed' for full rule bodies and ADR summaries.",
     ),
+  workspace: workspaceParam,
 });
 export type DirectoryContextInput = z.infer<typeof directoryContextSchema>;
 
@@ -41,6 +49,7 @@ export const readArtifactSchema = z.object({
     .describe(
       "Canonical artifact tag (e.g. 'RULE-<id>', 'ADR-<id>', 'TASK-<id>')",
     ),
+  workspace: workspaceParam,
 });
 export type ReadArtifactInput = z.infer<typeof readArtifactSchema>;
 
@@ -53,6 +62,7 @@ export const taskContextSchema = z.object({
     .string()
     .optional()
     .describe("Task tag or numeric ID (defaults to active git branch)"),
+  workspace: workspaceParam,
 });
 export type TaskContextInput = z.infer<typeof taskContextSchema>;
 
@@ -69,6 +79,7 @@ export const startTaskSchema = z.object({
     .string()
     .optional()
     .describe("Task tag or numeric ID (defaults to active git branch)"),
+  workspace: workspaceParam,
 });
 export type StartTaskInput = z.infer<typeof startTaskSchema>;
 
@@ -88,6 +99,7 @@ export const checkCriteriaSchema = z.object({
     .boolean()
     .default(false)
     .describe("Marks specified criteria incomplete if true"),
+  workspace: workspaceParam,
 });
 export type CheckCriteriaInput = z.infer<typeof checkCriteriaSchema>;
 
@@ -117,6 +129,7 @@ export const completeTaskSchema = z.object({
     .string()
     .optional()
     .describe("Task tag (defaults to active git branch)"),
+  workspace: workspaceParam,
 });
 export type CompleteTaskInput = z.infer<typeof completeTaskSchema>;
 
@@ -158,6 +171,7 @@ export const createRuleSchema = z.object({
     .string()
     .optional()
     .describe("Prior rule tag that this rule supersedes"),
+  workspace: workspaceParam,
 });
 export type CreateRuleInput = z.infer<typeof createRuleSchema>;
 
@@ -191,6 +205,7 @@ export const createAdrSchema = z.object({
     .describe(
       "Force creation of an ADR even if the title contains tombstone keywords (sunset, retire, deprecate, delete, remove, cleanup)",
     ),
+  workspace: workspaceParam,
 });
 export type CreateAdrInput = z.infer<typeof createAdrSchema>;
 
@@ -213,6 +228,7 @@ export const createTaskSchema = z.object({
   depends_on: z.array(z.string()).optional().describe("Prerequisite task tags"),
   links: z.array(z.string()).optional().describe("Governing RULE and ADR tags"),
   scope_dir: z.string().optional().describe("Blast radius root directory"),
+  workspace: workspaceParam,
 });
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 
@@ -241,6 +257,7 @@ export const createMotiveSchema = z.object({
     .describe(
       "Explicitly allow overwriting an existing MOTIVE.md in the target scope",
     ),
+  workspace: workspaceParam,
 });
 export type CreateMotiveInput = z.infer<typeof createMotiveSchema>;
 
@@ -286,6 +303,7 @@ export const linkArtifactsSchema = z.object({
     .string()
     .optional()
     .describe("Source artifact tag (defaults to active task branch)"),
+  workspace: workspaceParam,
 });
 export type LinkArtifactsInput = z.infer<typeof linkArtifactsSchema>;
 
@@ -305,6 +323,7 @@ export type LinkArtifactsOutput = z.infer<typeof linkArtifactsOutputSchema>;
 export const archiveArtifactSchema = z.object({
   tag: z.string().describe("Tag of the RULE or ADR to archive"),
   reason: z.string().optional().describe("Optional archival rationale"),
+  workspace: workspaceParam,
 });
 export type ArchiveArtifactInput = z.infer<typeof archiveArtifactSchema>;
 
@@ -333,6 +352,7 @@ export const sparkAddMcpSchema = z.object({
     .string()
     .optional()
     .describe("Optional custom handle for the spark"),
+  workspace: workspaceParam,
 });
 export type SparkAddMcpInput = z.infer<typeof sparkAddMcpSchema>;
 

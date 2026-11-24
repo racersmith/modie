@@ -15,6 +15,7 @@ import type { IVcsAdapter } from "../../core/platform/vcs/types.ts";
 export interface DynamicWorkspaceManager {
   workspace: WorkspaceContext;
   ensureWorkspace: () => Promise<WorkspaceContext>;
+  resolveCallWorkspace: (workspacePath?: string) => Promise<WorkspaceContext>;
 }
 
 export function createDynamicWorkspaceManager(
@@ -50,6 +51,15 @@ export function createDynamicWorkspaceManager(
   };
 
   let rootsResolved = false;
+  let loggedFallbackDiagnostic = false;
+
+  const logFallbackOnce = (reason: string) => {
+    if (loggedFallbackDiagnostic) return;
+    loggedFallbackDiagnostic = true;
+    options.stderr?.(
+      `[modie-mcp] roots/list fallback to "${currentWorkspace.root}": ${reason}`,
+    );
+  };
 
   const updateFromRoots = async () => {
     if (options.explicitWorkspace || options.hasExplicitEnvCwd) return;
@@ -64,10 +74,14 @@ export function createDynamicWorkspaceManager(
             vcs: options.vcs,
           });
           rootsResolved = true;
+          loggedFallbackDiagnostic = false;
+          return;
         }
       }
-    } catch {
-      // Client does not support roots/list; retain fallback workspace
+      logFallbackOnce("client returned no file:// workspace roots");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      logFallbackOnce(message || "client does not support roots/list");
     }
   };
 
@@ -84,18 +98,33 @@ export function createDynamicWorkspaceManager(
     },
   );
 
+  const ensureWorkspace = async (): Promise<WorkspaceContext> => {
+    if (
+      !rootsResolved &&
+      !options.explicitWorkspace &&
+      !options.hasExplicitEnvCwd
+    ) {
+      await updateFromRoots();
+    }
+    return dynamicWorkspace;
+  };
+
+  const resolveCallWorkspace = async (
+    workspacePath?: string,
+  ): Promise<WorkspaceContext> => {
+    const trimmed = workspacePath?.trim();
+    if (trimmed) {
+      return createWorkspaceContextSync({
+        root: trimmed,
+        vcs: options.vcs ?? options.explicitWorkspace?.vcs,
+      });
+    }
+    return ensureWorkspace();
+  };
+
   return {
     workspace: dynamicWorkspace,
-    ensureWorkspace: async () => {
-      if (
-        !rootsResolved &&
-        !options.explicitWorkspace &&
-        !options.hasExplicitEnvCwd
-      ) {
-        await updateFromRoots();
-      }
-      return dynamicWorkspace;
-    },
+    ensureWorkspace,
+    resolveCallWorkspace,
   };
 }
-
