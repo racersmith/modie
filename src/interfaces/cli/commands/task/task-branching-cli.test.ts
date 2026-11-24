@@ -78,6 +78,7 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     expect(exitCode).toBe(0);
     expect(stdout.trim()).toBe(expectedBranch);
     expect(stderr).toContain(`✓ Switched to branch "${expectedBranch}"`);
+    expect(stderr).toContain("merge target: dev");
 
     // Verify git branch is currently task/200-cli-feat
     const curBranch = await Bun.$`git branch --show-current`
@@ -106,6 +107,7 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     const parsed = JSON.parse(stdout.trim());
     expect(parsed.branchName).toBe(expectedBranch);
     expect(parsed.baseBranch).toBe("dev");
+    expect(parsed.targetBranch).toBe("dev");
     expect(parsed.created).toBe(true);
   });
 
@@ -315,5 +317,87 @@ describe("CLI Task Start & Merge - Execution & Stream Separation (RULE-25, RULE-
     expect(mergeRes.stderr).toContain(
       "Error: Missing required task identifier and current git branch",
     );
+  });
+
+  // @verifies RULE-27, RULE-28, RULE-34, RULE-35
+  it("[RULE-27][RULE-28][RULE-34][RULE-35] should branch from feature branch, reject cross-task start, and merge back into recorded origin", async () => {
+    await Bun.$`git checkout -b feat/cli-loop`.cwd(workspace.cwd).quiet();
+    const taskA = await workspace.createTask({
+      id: 206,
+      slug: "cli-origin",
+      criteria: ["Implement origin support"],
+    });
+    const taskB = await workspace.createTask({
+      id: 207,
+      slug: "cli-other",
+      criteria: ["Other task"],
+    });
+    await workspace.gitCommit(`docs: add ${taskA.tag} and ${taskB.tag}`);
+
+    // Start taskA from feat/cli-loop
+    const startA = await captureCli(
+      ["task", "start", taskA.tag, "--json"],
+      workspace.cwd,
+    );
+    expect(startA.exitCode).toBe(0);
+    const startPayload = JSON.parse(startA.stdout.trim());
+    expect(startPayload.baseBranch).toBe("feat/cli-loop");
+    expect(startPayload.targetBranch).toBe("feat/cli-loop");
+    expect(startA.stderr).toContain("from feat/cli-loop; merge target: feat/cli-loop");
+
+    // Cross-task-branch start is rejected with exit code 1
+    const crossStart = await captureCli(
+      ["task", "start", taskB.tag],
+      workspace.cwd,
+    );
+    expect(crossStart.exitCode).toBe(1);
+    expect(crossStart.stderr).toContain(
+      "while checked out on active task branch",
+    );
+
+    // Check criterion, implement, complete, and merge back into feat/cli-loop
+    await captureCli(["task", "check", "-i", "1"], workspace.cwd);
+    await workspace.writeFile("cli-origin.txt", "done\n");
+    await Bun.$`git add cli-origin.txt`.cwd(workspace.cwd).quiet();
+    await workspace.gitCommit("feat: cli origin work");
+
+    const completeA = await captureCli(["task", "complete"], workspace.cwd);
+    expect(completeA.exitCode).toBe(0);
+
+    const mergeA = await captureCli(["task", "merge"], workspace.cwd);
+    expect(mergeA.exitCode).toBe(0);
+    expect(mergeA.stdout.trim()).toBe("feat/cli-loop");
+    expect(mergeA.stderr).toContain('into "feat/cli-loop"');
+  });
+
+  // @verifies RULE-27, RULE-28, RULE-34, RULE-35
+  it("[RULE-27][RULE-28][RULE-34][RULE-35] should fail loudly on task merge when recorded origin branch was deleted and allow --target recovery", async () => {
+    await Bun.$`git checkout -b feat/gone`.cwd(workspace.cwd).quiet();
+    const task = await workspace.createTask({
+      id: 208,
+      slug: "missing-target-cli",
+      criteria: ["Ship"],
+    });
+    await workspace.gitCommit(`docs: add ${task.tag}`);
+
+    await captureCli(["task", "start", task.tag], workspace.cwd);
+    await captureCli(["task", "check", "-i", "1"], workspace.cwd);
+    await captureCli(["task", "complete"], workspace.cwd);
+
+    // Delete feat/gone locally
+    await Bun.$`git branch -D feat/gone`.cwd(workspace.cwd).quiet();
+
+    const failMerge = await captureCli(["task", "merge"], workspace.cwd);
+    expect(failMerge.exitCode).toBe(1);
+    expect(failMerge.stderr).toContain(
+      'Cannot merge into recorded origin branch "feat/gone": Branch no longer exists locally',
+    );
+
+    const recoverMerge = await captureCli(
+      ["task", "merge", "--target", "dev"],
+      workspace.cwd,
+    );
+    expect(recoverMerge.exitCode).toBe(0);
+    expect(recoverMerge.stdout.trim()).toBe("dev");
   });
 });

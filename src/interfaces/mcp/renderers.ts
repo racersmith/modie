@@ -417,11 +417,22 @@ function formatMissionBriefHeader(
       ? "All modifications, new files, and tests must reside strictly within the workspace root or its subdirectories."
       : `All modifications, new files, and tests must reside strictly within \`${scope}/\` or its subdirectories. Never edit files in sibling or ancestor directories.`;
 
+  const originBranch =
+    "baseBranch" in taskDetails ? taskDetails.baseBranch : undefined;
+  const targetBranch =
+    "targetBranch" in taskDetails ? taskDetails.targetBranch : undefined;
+  let branchLine = `**Active Branch**: \`${branchName}\`  `;
+  if (originBranch && targetBranch && originBranch !== targetBranch) {
+    branchLine = `**Active Branch**: \`${branchName}\` | **Origin**: \`${originBranch}\` | **Merge Target**: \`${targetBranch}\`  `;
+  } else if (targetBranch ?? originBranch) {
+    branchLine = `**Active Branch**: \`${branchName}\` | **Origin / Merge Target**: \`${targetBranch ?? originBranch}\`  `;
+  }
+
   return [
     `# Mission Brief: ${taskTag}`,
     "",
     `**Title**: ${taskDetails.title}  `,
-    `**Active Branch**: \`${branchName}\`  `,
+    branchLine,
     `**Scope**: \`${scope}\` | **Progress**: ${progressText}  `,
     "",
     "> **BLAST RADIUS CONSTRAINT**  ",

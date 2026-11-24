@@ -30,13 +30,13 @@ Design:
 
 # Acceptance Criteria
 
-- [ ] The VCS adapter interface, Git CLI adapter, and mock adapter support writing and unsetting local Git configuration values.
-- [ ] Starting a root task from a non-protected, non-task branch defaults to branching from that active branch and persists branch.<taskBranch>.modieBase in local Git config.
-- [ ] Starting a root task while checked out on a protected branch remains rejected unless overridden, and starting a root task while checked out on another task branch is rejected with an actionable error directing the user to switch branches or specify an explicit base.
-- [ ] Subtask branching and merging remain strictly bound to the parent task branch per RULE-28.
-- [ ] Merging or completing a root task without an explicit target automatically merges into its recorded modieBase branch (falling back to configured trunk only when no modieBase is recorded), fails loudly if the recorded modieBase branch no longer exists, and rejects protected merge targets.
-- [ ] The foreign task ancestry guard prevents unmerged commits from unrelated active task branches from leaking into any root-task merge target (both feature branches and trunk).
-- [ ] MCP start_task accepts an optional base override, MCP complete_task accepts an optional target override, and task start and status outputs surface the resolved origin/target branch.
-- [ ] Isolated fixture-workspace unit and CLI/MCP integration tests verify the feature-branch multi-task loop, missing recorded base error, cross-task-branch start rejection, and subtask invariance, with all repository verification checks passing.
-- [ ] Update documentation for users and agents as necessary. Agent docs should work on progressive disclosure when possible to keep baseline context small.
-- [ ] User Review
+- [x] The VCS adapter interface, Git CLI adapter, and mock adapter support writing and unsetting local Git configuration values.
+- [x] Starting a root task from a non-protected, non-task branch defaults to branching from that active branch and persists branch.<taskBranch>.modieBase in local Git config.
+- [x] Starting a root task while checked out on a protected branch remains rejected unless overridden, and starting a root task while checked out on another task branch is rejected with an actionable error directing the user to switch branches or specify an explicit base.
+- [x] Subtask branching and merging remain strictly bound to the parent task branch per RULE-28.
+- [x] Merging or completing a root task without an explicit target automatically merges into its recorded modieBase branch (falling back to configured trunk only when no modieBase is recorded), fails loudly if the recorded modieBase branch no longer exists, and rejects protected merge targets.
+- [x] The foreign task ancestry guard prevents unmerged commits from unrelated active task branches from leaking into any root-task merge target (both feature branches and trunk).
+- [x] MCP start_task accepts an optional base override, MCP complete_task accepts an optional target override, and task start and status outputs surface the resolved origin/target branch.
+- [x] Isolated fixture-workspace unit and CLI/MCP integration tests verify the feature-branch multi-task loop, missing recorded base error, cross-task-branch start rejection, and subtask invariance, with all repository verification checks passing.
+- [x] Update documentation for users and agents as necessary. Agent docs should work on progressive disclosure when possible to keep baseline context small.
+- [x] User Review

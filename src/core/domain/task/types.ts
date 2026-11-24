@@ -53,6 +53,7 @@ export interface TaskBranchTopology {
   parentId?: string;
   subtaskSequence?: string;
   parentBranchName?: string;
+  recordedBaseBranch?: string;
   expectedBaseBranch: string;
   currentBranch: string | null;
   isCurrentBranchProtected: boolean;

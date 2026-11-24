@@ -23,7 +23,7 @@ export const taskStartSchema = z.object({
     .string()
     .optional()
     .describe(
-      "Base branch to branch from (default: parent task branch or trunk)",
+      "Base branch to branch from (default: active non-protected, non-task branch or trunk; parent task branch for subtasks)",
     ),
   force: z.boolean().default(false).describe("Bypass branch protection checks"),
 });
@@ -77,7 +77,7 @@ export const taskStartCommand: CliCommandDefinition<
 
     const action = result.created ? "created and checked out" : "checked out";
     context.stderr(
-      `✓ Switched to branch "${result.branchName}" (${action} from ${result.baseBranch})`,
+      `✓ Switched to branch "${result.branchName}" (${action} from ${result.baseBranch}; merge target: ${result.targetBranch})`,
     );
   },
   renderJson: (result, context) => {
@@ -85,7 +85,7 @@ export const taskStartCommand: CliCommandDefinition<
 
     const action = result.created ? "created and checked out" : "checked out";
     context.stderr(
-      `✓ Switched to branch "${result.branchName}" (${action} from ${result.baseBranch})`,
+      `✓ Switched to branch "${result.branchName}" (${action} from ${result.baseBranch}; merge target: ${result.targetBranch})`,
     );
   },
 });

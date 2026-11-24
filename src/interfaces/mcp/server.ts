@@ -215,7 +215,7 @@ export function createModieMcpServer(
     "start_task",
     {
       description:
-        "Check out or create hierarchical task branch (from trunk for root tasks, or from parent task branch for sub-tasks), verify dependencies, and return active Mission Brief in Markdown.",
+        "Check out or create hierarchical task branch (from active non-protected non-task branch or trunk for root tasks, or from parent task branch for sub-tasks), verify dependencies, and return active Mission Brief in Markdown.",
       inputSchema: startTaskSchema.shape,
       annotations: {
         readOnlyHint: false,
@@ -278,7 +278,7 @@ export function createModieMcpServer(
     "complete_task",
     {
       description:
-        "Execute atomic two-phase commit completion ceremony, verify criteria, merge into target branch (parent task branch for sub-tasks, trunk for root tasks), and delete task branch.",
+        "Execute atomic two-phase commit completion ceremony, verify criteria, merge into target branch (parent task branch for sub-tasks, recorded origin branch or trunk for root tasks), and delete task branch.",
       inputSchema: completeTaskSchema.shape,
       outputSchema: completeTaskOutputSchema.shape,
       annotations: {

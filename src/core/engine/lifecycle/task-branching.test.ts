@@ -23,7 +23,12 @@ import {
   startTaskBranch,
 } from "./branching.ts";
 import { defaultVcsAdapter } from "../../platform/vcs/git-cli-adapter.ts";
-import { formatArtifactTag, formatTaskBranch, parseSubtaskId } from "../../domain/index.ts";
+import {
+  formatArtifactTag,
+  formatTaskBranch,
+  parseSubtaskId,
+  taskBranchBaseConfigKey,
+} from "../../domain/index.ts";
 
 describe("Task Branching Service (RULE-28)", () => {
   let workspace: FixtureWorkspace;
@@ -627,12 +632,31 @@ describe("Task Branching Service (RULE-28)", () => {
         protectedBranches: ["main"],
       };
 
-      // Root default resolves to trunk
+      // Root default resolves to trunk when no recordedBaseBranch exists
       expect(resolveMergeTarget(rootTopology)).toBe("dev");
 
-      // Root cannot merge into protected branch
+      // Root with recordedBaseBranch resolves to recorded origin unless overridden
+      const featureOriginTopology = {
+        ...rootTopology,
+        recordedBaseBranch: "feat/abc",
+        expectedBaseBranch: "feat/abc",
+      };
+      expect(resolveMergeTarget(featureOriginTopology)).toBe("feat/abc");
+      expect(
+        resolveMergeTarget(featureOriginTopology, { target: "dev" }),
+      ).toBe("dev");
+
+      // Root cannot merge into protected branch (even if recordedBaseBranch is protected)
       expect(() =>
         resolveMergeTarget(rootTopology, { target: "main" }),
+      ).toThrow(
+        /Cannot merge root task branch .* directly into protected branch/,
+      );
+      expect(() =>
+        resolveMergeTarget({
+          ...rootTopology,
+          recordedBaseBranch: "main",
+        }),
       ).toThrow(
         /Cannot merge root task branch .* directly into protected branch/,
       );
@@ -931,13 +955,394 @@ describe("Task Branching Service (RULE-28)", () => {
         criteria: ["Item"],
       });
       await expect(
-        startTaskBranch(otherTask.tag, { cwd: workspace.cwd }),
+        startTaskBranch(otherTask.tag, { base: "dev", cwd: workspace.cwd }),
       ).rejects.toThrow(/Cannot start task branch with uncommitted tracked/);
 
       // Restoring tracked file allows merge to proceed
       await Bun.$`git checkout -- tracked.txt`.cwd(workspace.cwd).quiet();
       const mergeRes = await mergeTaskBranch(task.tag, { cwd: workspace.cwd });
       expect(mergeRes.targetBranch).toBe("dev");
+    });
+  });
+
+  describe("Current-Branch Origin Tracking & Merge-Back Automation (RULE-28, RULE-34, RULE-35)", () => {
+    // @verifies RULE-28, RULE-34, RULE-35
+    it("[RULE-28][RULE-34][RULE-35] should complete a multi-task loop on a zero-commit feature branch and clean up branch config", async () => {
+      // Create feat/abc sharing dev's exact HEAD commit
+      await Bun.$`git checkout -b feat/abc`.cwd(workspace.cwd).quiet();
+      const featHeadBefore = (
+        await Bun.$`git rev-parse HEAD`.cwd(workspace.cwd).text()
+      ).trim();
+      const devHeadBefore = (
+        await Bun.$`git rev-parse dev`.cwd(workspace.cwd).text()
+      ).trim();
+      expect(featHeadBefore).toBe(devHeadBefore);
+
+      // Task 1 started on feat/abc
+      const task1 = await workspace.createTask({
+        id: 401,
+        slug: "feat-step-one",
+        criteria: [{ text: "Deliver step 1", completed: true }],
+      });
+      await workspace.gitCommit(`docs: add ${task1.tag}`);
+
+      const start1 = await startTaskBranch(task1.tag, { cwd: workspace.cwd });
+      expect(start1.baseBranch).toBe("feat/abc");
+      expect(start1.targetBranch).toBe("feat/abc");
+      expect(start1.created).toBe(true);
+
+      const recorded1 = await defaultVcsAdapter.getConfig(
+        taskBranchBaseConfigKey(start1.branchName),
+        workspace.cwd,
+      );
+      expect(recorded1).toBe("feat/abc");
+
+      await workspace.writeFile("step1.txt", "step 1\n");
+      await Bun.$`git add step1.txt`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit("feat: step 1");
+      await workspace.remove(task1);
+      await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit(
+        `chore(task): delete completed ${task1.tag} artifact`,
+      );
+
+      // Merge task 1 without explicit target -> merges back into feat/abc, not dev
+      const merge1 = await mergeTaskBranch(task1.tag, { cwd: workspace.cwd });
+      expect(merge1.targetBranch).toBe("feat/abc");
+      expect(merge1.deletedSourceBranch).toBe(true);
+
+      const currentAfter1 = (
+        await Bun.$`git branch --show-current`.cwd(workspace.cwd).text()
+      ).trim();
+      expect(currentAfter1).toBe("feat/abc");
+      expect(
+        await defaultVcsAdapter.getConfig(
+          taskBranchBaseConfigKey(start1.branchName),
+          workspace.cwd,
+        ),
+      ).toBeNull();
+
+      // dev must remain untouched at original HEAD
+      const devHeadAfter1 = (
+        await Bun.$`git rev-parse dev`.cwd(workspace.cwd).text()
+      ).trim();
+      expect(devHeadAfter1).toBe(devHeadBefore);
+
+      // Task 2 started from feat/abc sees task 1's work and merges back to feat/abc
+      const task2 = await workspace.createTask({
+        id: 402,
+        slug: "feat-step-two",
+        criteria: [{ text: "Deliver step 2", completed: true }],
+      });
+      await workspace.gitCommit(`docs: add ${task2.tag}`);
+
+      const start2 = await startTaskBranch(task2.tag, { cwd: workspace.cwd });
+      expect(start2.baseBranch).toBe("feat/abc");
+      expect(start2.targetBranch).toBe("feat/abc");
+      expect(await workspace.readFile("step1.txt")).toBe("step 1\n");
+
+      await workspace.remove(task2);
+      await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit(
+        `chore(task): delete completed ${task2.tag} artifact`,
+      );
+
+      const merge2 = await mergeTaskBranch(task2.tag, { cwd: workspace.cwd });
+      expect(merge2.targetBranch).toBe("feat/abc");
+      expect(
+        (await Bun.$`git rev-parse dev`.cwd(workspace.cwd).text()).trim(),
+      ).toBe(devHeadBefore);
+    });
+
+    // @verifies RULE-28, RULE-34, RULE-35
+    it("[RULE-28][RULE-34][RULE-35] should fall back to trunk on detached HEAD and allow base override on protected branch", async () => {
+      await Bun.$`git checkout -b feat/override-base`.cwd(workspace.cwd).quiet();
+      await workspace.writeFile("override.txt", "from feature\n");
+      await Bun.$`git add override.txt`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit("feat: feature commit");
+
+      // Detached HEAD falls back to configured trunk (dev)
+      await Bun.$`git checkout --detach dev`.cwd(workspace.cwd).quiet();
+      const detachedTask = await workspace.createTask({
+        id: 403,
+        slug: "detached-root",
+        criteria: ["Item"],
+      });
+      await workspace.gitCommit(`docs: add ${detachedTask.tag}`);
+
+      const detachedStart = await startTaskBranch(detachedTask.tag, {
+        cwd: workspace.cwd,
+      });
+      expect(detachedStart.baseBranch).toBe("dev");
+      expect(detachedStart.targetBranch).toBe("dev");
+      expect(
+        await defaultVcsAdapter.getConfig(
+          taskBranchBaseConfigKey(detachedStart.branchName),
+          workspace.cwd,
+        ),
+      ).toBe("dev");
+
+      // Protected branch main rejects start without override, succeeds with explicit base
+      await Bun.$`git checkout main`.cwd(workspace.cwd).quiet();
+      const protTask = await workspace.createTask({
+        id: 404,
+        slug: "protected-override",
+        criteria: ["Item"],
+      });
+
+      await expect(
+        startTaskBranch(protTask.tag, { cwd: workspace.cwd }),
+      ).rejects.toThrow(/Cannot start task from protected branch "main"/);
+
+      const overrideStart = await startTaskBranch(protTask.tag, {
+        base: "feat/override-base",
+        cwd: workspace.cwd,
+      });
+      expect(overrideStart.baseBranch).toBe("feat/override-base");
+      expect(overrideStart.targetBranch).toBe("feat/override-base");
+    });
+
+    // @verifies RULE-28, RULE-34, RULE-35
+    it("[RULE-28][RULE-34][RULE-35] should reject starting a root task while on another active task branch unless base is specified", async () => {
+      const firstTask = await workspace.createTask({
+        id: 405,
+        slug: "active-root",
+        criteria: ["Item"],
+      });
+      const secondTask = await workspace.createTask({
+        id: 406,
+        slug: "chained-root",
+        criteria: ["Item"],
+      });
+      await workspace.gitCommit(`docs: add ${firstTask.tag} and ${secondTask.tag}`);
+
+      const firstStart = await startTaskBranch(firstTask.tag, {
+        cwd: workspace.cwd,
+      });
+      expect(firstStart.created).toBe(true);
+
+      // Re-starting the currently checked-out task branch remains idempotent
+      const reStart = await startTaskBranch(firstTask.tag, {
+        cwd: workspace.cwd,
+      });
+      expect(reStart.created).toBe(false);
+      expect(reStart.branchName).toBe(firstStart.branchName);
+
+      // Starting another root task while on task/405-active-root is rejected
+      await expect(
+        startTaskBranch(secondTask.tag, { cwd: workspace.cwd }),
+      ).rejects.toThrow(
+        /Cannot start root task .* while checked out on active task branch "task\/405-active-root"/,
+      );
+
+      // Explicit base override succeeds
+      const explicitStart = await startTaskBranch(secondTask.tag, {
+        base: "dev",
+        cwd: workspace.cwd,
+      });
+      expect(explicitStart.created).toBe(true);
+      expect(explicitStart.baseBranch).toBe("dev");
+    });
+
+    // @verifies RULE-28, RULE-34, RULE-35
+    it("[RULE-28][RULE-34][RULE-35] should fail loudly if recorded modieBase no longer exists and fall back to trunk only when unrecorded", async () => {
+      // 1. Create feat/ephemeral, start task from it, complete task, then delete feat/ephemeral
+      await Bun.$`git checkout -b feat/ephemeral`.cwd(workspace.cwd).quiet();
+      const task = await workspace.createTask({
+        id: 407,
+        slug: "deleted-origin",
+        criteria: [{ text: "Done", completed: true }],
+      });
+      await workspace.gitCommit(`docs: add ${task.tag}`);
+
+      const started = await startTaskBranch(task.tag, { cwd: workspace.cwd });
+      expect(started.baseBranch).toBe("feat/ephemeral");
+
+      await workspace.remove(task);
+      await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit(
+        `chore(task): delete completed ${task.tag} artifact`,
+      );
+
+      // Delete the origin branch locally
+      await Bun.$`git branch -D feat/ephemeral`.cwd(workspace.cwd).quiet();
+
+      // Merging without target must fail loudly, not silently merge into dev
+      await expect(
+        mergeTaskBranch(task.tag, { cwd: workspace.cwd }),
+      ).rejects.toThrow(
+        /Cannot merge into recorded origin branch "feat\/ephemeral": Branch no longer exists locally/,
+      );
+
+      // Explicit target override recovers and completes merge
+      const recovered = await mergeTaskBranch(task.tag, {
+        target: "dev",
+        cwd: workspace.cwd,
+      });
+      expect(recovered.targetBranch).toBe("dev");
+
+      // 2. Legacy task branch without modieBase falls back to configured trunk
+      const legacyTask = await workspace.createTask({
+        id: 408,
+        slug: "legacy-no-config",
+        criteria: [{ text: "Done", completed: true }],
+      });
+      await Bun.$`git checkout -b task/408-legacy-no-config`
+        .cwd(workspace.cwd)
+        .quiet();
+      await workspace.gitCommit(`feat(${legacyTask.tag}): add legacy`);
+      await workspace.remove(legacyTask);
+      await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit(
+        `chore(task): delete completed ${legacyTask.tag} artifact`,
+      );
+
+      const legacyMerge = await mergeTaskBranch(legacyTask.tag, {
+        cwd: workspace.cwd,
+      });
+      expect(legacyMerge.targetBranch).toBe("dev");
+    });
+
+    // @verifies RULE-28, RULE-34, RULE-35
+    it("[RULE-28][RULE-34][RULE-35] should enforce foreign task ancestry guard when merging into feature branch targets", async () => {
+      await Bun.$`git checkout -b feat/guarded`.cwd(workspace.cwd).quiet();
+      await workspace.writeFile("base.txt", "feature base\n");
+      await Bun.$`git add base.txt`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit("feat: base");
+
+      // Task A branched from feat/guarded with unmerged commit
+      const taskA = await workspace.createTask({
+        id: 409,
+        slug: "foreign-a",
+        criteria: ["Item"],
+      });
+      await workspace.gitCommit(`docs: add ${taskA.tag}`);
+      await startTaskBranch(taskA.tag, { cwd: workspace.cwd });
+      await workspace.writeFile("foreign.txt", "foreign commit\n");
+      await Bun.$`git add foreign.txt`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit("feat: foreign unmerged work");
+
+      // Task B improperly branched from taskA instead of feat/guarded, with modieBase=feat/guarded
+      const taskB = await workspace.createTask({
+        id: 410,
+        slug: "leaked-b",
+        criteria: [{ text: "Done", completed: true }],
+      });
+      await Bun.$`git checkout -b task/410-leaked-b`.cwd(workspace.cwd).quiet();
+      await defaultVcsAdapter.setConfig(
+        taskBranchBaseConfigKey("task/410-leaked-b"),
+        "feat/guarded",
+        workspace.cwd,
+      );
+      await workspace.gitCommit(`feat(${taskB.tag}): task B`);
+      await workspace.remove(taskB);
+      await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit(
+        `chore(task): delete completed ${taskB.tag} artifact`,
+      );
+
+      let thrown: unknown;
+      try {
+        await mergeTaskBranch(taskB.tag, { cwd: workspace.cwd });
+      } catch (err) {
+        thrown = err;
+      }
+      expect(thrown).toBeInstanceOf(ForeignBranchAncestryError);
+      const ancErr = thrown as ForeignBranchAncestryError;
+      expect(ancErr.targetBranch).toBe("feat/guarded");
+      expect(ancErr.foreignTaskBranch).toBe("task/409-foreign-a");
+
+      // Clean sibling task C branched cleanly from feat/guarded succeeds without false positive
+      await Bun.$`git checkout feat/guarded`.cwd(workspace.cwd).quiet();
+      const taskC = await workspace.createTask({
+        id: 411,
+        slug: "clean-c",
+        criteria: [{ text: "Done", completed: true }],
+      });
+      await workspace.gitCommit(`docs: add ${taskC.tag}`);
+      await startTaskBranch(taskC.tag, { cwd: workspace.cwd });
+      await workspace.remove(taskC);
+      await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit(
+        `chore(task): delete completed ${taskC.tag} artifact`,
+      );
+
+      const cleanMerge = await mergeTaskBranch(taskC.tag, {
+        cwd: workspace.cwd,
+      });
+      expect(cleanMerge.targetBranch).toBe("feat/guarded");
+    });
+
+    // @verifies RULE-28, RULE-34, RULE-35
+    it("[RULE-28][RULE-34][RULE-35] should keep subtask branching and merging bound to parent branch when parent originates from a feature branch", async () => {
+      await Bun.$`git checkout -b feat/parent-origin`.cwd(workspace.cwd).quiet();
+
+      const parent = await workspace.createTask({
+        id: 412,
+        slug: "feat-parent",
+        criteria: [{ text: "Parent done", completed: true }],
+      });
+      await workspace.gitCommit(`docs: add ${parent.tag}`);
+
+      const parentStart = await startTaskBranch(parent.tag, {
+        cwd: workspace.cwd,
+      });
+      expect(parentStart.baseBranch).toBe("feat/parent-origin");
+      expect(parentStart.targetBranch).toBe("feat/parent-origin");
+
+      const sub = await workspace.createTask({
+        id: "412-1",
+        slug: "feat-sub",
+        depends_on: [parent.tag],
+        criteria: [{ text: "Sub done", completed: true }],
+      });
+      await workspace.gitCommit(`docs: add ${sub.tag}`);
+
+      const subStart = await startTaskBranch(sub.tag, { cwd: workspace.cwd });
+      expect(subStart.isSubtask).toBe(true);
+      expect(subStart.baseBranch).toBe(parentStart.branchName);
+      expect(subStart.targetBranch).toBe(parentStart.branchName);
+      expect(
+        await defaultVcsAdapter.getConfig(
+          taskBranchBaseConfigKey(subStart.branchName),
+          workspace.cwd,
+        ),
+      ).toBeNull();
+
+      await workspace.writeFile("sub-feature.txt", "sub work\n");
+      await Bun.$`git add sub-feature.txt`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit("feat: sub work");
+      await workspace.remove(sub);
+      await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit(
+        `chore(task): delete completed ${sub.tag} artifact`,
+      );
+
+      // Subtask rejects merging directly to dev or feat/parent-origin
+      await expect(
+        mergeTaskBranch(sub.tag, { target: "dev", cwd: workspace.cwd }),
+      ).rejects.toThrow(/cannot be merged directly into trunk/);
+      await expect(
+        mergeTaskBranch(sub.tag, {
+          target: "feat/parent-origin",
+          cwd: workspace.cwd,
+        }),
+      ).rejects.toThrow(/Subtasks must merge back into their parent task branch/);
+
+      // Subtask merges into parent branch
+      const subMerge = await mergeTaskBranch(sub.tag, { cwd: workspace.cwd });
+      expect(subMerge.targetBranch).toBe(parentStart.branchName);
+
+      // Parent completes and merges back into feat/parent-origin
+      await workspace.remove(parent);
+      await Bun.$`git add -u`.cwd(workspace.cwd).quiet();
+      await workspace.gitCommit(
+        `chore(task): delete completed ${parent.tag} artifact`,
+      );
+      const parentMerge = await mergeTaskBranch(parent.tag, {
+        cwd: workspace.cwd,
+      });
+      expect(parentMerge.targetBranch).toBe("feat/parent-origin");
     });
   });
 });

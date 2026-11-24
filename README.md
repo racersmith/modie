@@ -84,11 +84,11 @@ Using those citations and governance links, `modie scope audit` computes the **D
 A TASK is a Markdown file with context and a contract-based acceptance-criteria checklist, scoped to the deepest folder that contains the work (least-scope placement) with bounded mutation authority (downward blast radius). It exists **only while the work is pending**:
 
 1. Author any new governing `ADR`s or `RULE`s *before* (or as discovered during) the task, and link them onto the task (`--link ADR-X`, `--link RULE-Y`). Code and tests cite durable `RULE` tags, never ephemeral `TASK` or `ADR` tags.
-2. `modie task start` (or `start_task` in MCP) creates and checks out a hierarchical branch (`task/<id>-<slug>`), verifying `depends_on` blockers first.
+2. `modie task start` (or `start_task` in MCP) creates and checks out a hierarchical branch (`task/<id>-<slug>` from the active non-protected, non-task branch or trunk, or `task/<parent>-<seq>-<slug>` from the parent task branch), verifying `depends_on` blockers first and recording the origin branch.
 3. You (or your agent) tick off criteria with `modie task check` (`check_criteria`) as they're verified.
 4. Every task includes a **User Review** criterion by default, ensuring a human reviews the changes before completion.
 5. `modie task complete` executes an atomic two-phase Git commit: one commit for verified work, and one commit that deletes the task artifact.
-6. `modie task merge` brings the verified work back to trunk after running pre-merge artifact collision guards (and in MCP, `complete_task` performs completion, trunk merge, and branch cleanup together).
+6. `modie task merge` brings the verified work back to its recorded origin branch (or trunk/parent branch) after running pre-merge artifact collision and ancestry guards (and in MCP, `complete_task` performs completion, origin/target merge, and branch cleanup together).
 
 Git history is the permanent record of what was done. The working tree only ever shows work _still to do_, so neither you nor an agent wades through stale plans. Out-of-scope realizations discovered mid-task can be captured via `modie spark add` / `spark_add` without breaking blast radius boundaries.
 
@@ -257,10 +257,10 @@ modie task create "Add JWT Auth" \
   -a "Verify token signatures" \
   -a "Test token expiry" \
   -l ADR-2
-modie task start TASK-10             # creates and checks out branch task/10-add-jwt-auth
+modie task start TASK-10             # creates task/10-add-jwt-auth from active branch (or --base)
 modie task check -i 1                # tick off criterion 1 (inferred from active branch)
 modie task complete                  # atomic two-phase commit & artifact deletion (alias: finish)
-modie task merge                     # validate collisions and merge back to trunk
+modie task merge                     # validate guards and merge back to origin/trunk (or --target)
 
 # Architectural Governance
 modie motive create "Purpose text" -s src/interfaces/cli   # scaffold or update MOTIVE.md
@@ -293,9 +293,9 @@ modie mcp                            # run MCP server over stdio (also: modie-mc
 | `directory_context`  | Exploration | Compile upward motives, governing rules, and child motives (`summary`/`detailed`) |
 | `read_artifact`      | Exploration | Read any `RULE`, `ADR`, or `TASK` tag in Markdown with relationship appendix      |
 | `task_context`       | Exploration | High-signal Mission Brief with active branch, blast radius, criteria, and rules   |
-| `start_task`         | Lifecycle   | Check out or create `task/<id>-<slug>` branch, verify blockers, return brief      |
+| `start_task`         | Lifecycle   | Check out or create `task/<id>-<slug>` branch (optional `base`), verify blockers, return brief |
 | `check_criteria`     | Lifecycle   | Atomically mark 1-based acceptance criteria complete or incomplete                |
-| `complete_task`      | Lifecycle   | Verify criteria, run two-phase completion commit, merge to trunk, delete branch   |
+| `complete_task`      | Lifecycle   | Verify criteria, run two-phase commit, merge to origin/trunk/parent (optional `target`), delete branch |
 | `create_rule`        | Authoring   | Author a `RULE` with invariant assertion and optional justifying `ADR` links      |
 | `create_adr`         | Authoring   | Author an `ADR` with context/decision/consequences and anti-tombstone validation  |
 | `create_task`        | Authoring   | Author a scoped `TASK` with contract-based criteria ending in `User Review`       |

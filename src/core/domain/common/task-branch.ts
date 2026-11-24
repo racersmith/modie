@@ -119,6 +119,13 @@ export function formatTaskBranch(taskId: string, slug?: string): string {
 }
 
 /**
+ * Formats the local Git config key used to persist a task branch's recorded origin/base branch.
+ */
+export function taskBranchBaseConfigKey(branchName: string): string {
+  return `branch.${branchName}.modieBase`;
+}
+
+/**
  * Generates git branch search glob for a task or all tasks per RULE-28.
  */
 export function taskBranchGlob(taskId?: string): string {

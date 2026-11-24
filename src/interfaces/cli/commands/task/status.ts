@@ -69,6 +69,7 @@ export const taskStatusCommand: CliCommandDefinition<
     if (input.id) {
       return getTaskStatus(input.id, {
         cwd: context.cwd,
+        workspace: context.workspace,
         history: input.history,
       });
     }
@@ -77,6 +78,7 @@ export const taskStatusCommand: CliCommandDefinition<
     if (input.current) {
       const current = await resolveCurrentTask({
         cwd: context.cwd,
+        workspace: context.workspace,
         history: input.history,
       });
       if (!current) {
@@ -89,17 +91,26 @@ export const taskStatusCommand: CliCommandDefinition<
 
     // 3. If --history is explicitly passed without an ID, query historical tasks and branches
     if (input.history) {
-      return queryTaskHistory({ cwd: context.cwd });
+      return queryTaskHistory({
+        cwd: context.cwd,
+        workspace: context.workspace,
+      });
     }
 
     // 4. If no ID and no --current, attempt to resolve current task from active git branch
-    const current = await resolveCurrentTask({ cwd: context.cwd });
+    const current = await resolveCurrentTask({
+      cwd: context.cwd,
+      workspace: context.workspace,
+    });
     if (current) {
       return current;
     }
 
     // 5. Fallback to active task queue if not on a task branch
-    return queryTaskQueue({ cwd: context.cwd });
+    return queryTaskQueue({
+      cwd: context.cwd,
+      workspace: context.workspace,
+    });
   },
   render: (status, context, input) => {
     if (!status || typeof status === "number") return;
@@ -121,6 +132,12 @@ export const taskStatusCommand: CliCommandDefinition<
     context.stderr(`Status:      ${status.readiness}`);
     if (status.branch) {
       context.stderr(`Branch:      ${status.branch}`);
+    }
+    if (status.baseBranch) {
+      context.stderr(`Origin:      ${status.baseBranch}`);
+    }
+    if (status.targetBranch) {
+      context.stderr(`Target:      ${status.targetBranch}`);
     }
     if (status.blockedBy.length > 0) {
       context.stderr(`Blocked By:  ${status.blockedBy.join(", ")}`);

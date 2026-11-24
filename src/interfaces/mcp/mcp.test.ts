@@ -394,6 +394,124 @@ describe("Modie MCP Server - 12 Singular Agent Tools Suite", () => {
       expect(successContent.merged).toBe(true);
       expect(successContent.targetBranch).toBe("dev");
     });
+
+    // @verifies RULE-28, RULE-34, RULE-35
+    it("start_task and complete_task should support feature-branch origin tracking, overrides, cross-task rejection, and subtask invariance", async () => {
+      // 1. Switch to feature branch feat/mcp-origin
+      await workspace.gitCheckout("feat/mcp-origin", { create: true });
+
+      const featTaskTag = formatArtifactTag("TASK", 103);
+      await workspace.createTask({
+        id: 103,
+        slug: "mcp-feature-root",
+        title: "MCP Feature Root",
+        criteria: ["Implement feature", "User Review"],
+      });
+      const extraTaskTag = formatArtifactTag("TASK", 104);
+      await workspace.createTask({
+        id: 104,
+        slug: "mcp-extra-root",
+        title: "MCP Extra Root",
+        criteria: ["Extra item", "User Review"],
+      });
+      await workspace.gitCommit(`docs: add ${featTaskTag} and ${extraTaskTag}`);
+
+      // 2. start_task from feat/mcp-origin defaults origin & merge target to feat/mcp-origin
+      const startRes = await client.callTool({
+        name: "start_task",
+        arguments: { task_id: featTaskTag },
+      });
+      expect(startRes.isError).toBeFalsy();
+      const brief = getTextContent(startRes);
+      expect(brief).toContain("**Active Branch**: `task/103-mcp-feature-root`");
+      expect(brief).toContain("**Origin / Merge Target**: `feat/mcp-origin`");
+
+      // 3. Starting another root task while on task/103-mcp-feature-root is rejected without base override
+      const crossReject = await client.callTool({
+        name: "start_task",
+        arguments: { task_id: extraTaskTag },
+      });
+      expect(crossReject.isError).toBe(true);
+      expect(getTextContent(crossReject)).toContain(
+        "while checked out on active task branch",
+      );
+
+      // 4. Create and complete a subtask under the root task -> remains bound to parent branch
+      const subCreateRes = await client.callTool({
+        name: "create_task",
+        arguments: {
+          title: "MCP Feature Subtask",
+          acceptance_criteria: ["Sub criterion"],
+        },
+      });
+      expect(subCreateRes.isError).toBeFalsy();
+      const subTag = getStructuredContent(subCreateRes).tag;
+      await workspace.gitCommit(`docs: add ${subTag}`);
+
+      const subStartRes = await client.callTool({
+        name: "start_task",
+        arguments: { task_id: subTag },
+      });
+      expect(subStartRes.isError).toBeFalsy();
+      expect(getTextContent(subStartRes)).toContain(
+        "**Origin / Merge Target**: `task/103-mcp-feature-root`",
+      );
+
+      await client.callTool({
+        name: "check_criteria",
+        arguments: { task_id: subTag, items: [1, 2] },
+      });
+      const subCompleteRes = await client.callTool({
+        name: "complete_task",
+        arguments: { task_id: subTag },
+      });
+      expect(subCompleteRes.isError).toBeFalsy();
+      expect(getStructuredContent(subCompleteRes).targetBranch).toBe(
+        "task/103-mcp-feature-root",
+      );
+
+      // 5. Check criteria on root task, delete feat/mcp-origin to verify loud failure without deleting task file
+      await client.callTool({
+        name: "check_criteria",
+        arguments: { task_id: featTaskTag, items: [1, 2] },
+      });
+      await workspace.gitCommit("feat: verify criteria on root task");
+      await Bun.$`git branch -D feat/mcp-origin`.cwd(workspace.cwd).quiet();
+
+      const missingTargetRes = await client.callTool({
+        name: "complete_task",
+        arguments: { task_id: featTaskTag },
+      });
+      expect(missingTargetRes.isError).toBe(true);
+      expect(getTextContent(missingTargetRes)).toContain(
+        "Cannot merge into recorded origin branch",
+      );
+
+      // Task artifact must still exist on disk because pre-validation failed before deletion
+      const stillOnDisk = await workspace.readFile(
+        `.modie/tasks/mcp-feature-root.${featTaskTag}.md`,
+      );
+      expect(stillOnDisk).toContain("MCP Feature Root");
+
+      // 6. Retry complete_task with explicit target: "dev" succeeds
+      const overrideCompleteRes = await client.callTool({
+        name: "complete_task",
+        arguments: { task_id: featTaskTag, target: "dev" },
+      });
+      expect(overrideCompleteRes.isError).toBeFalsy();
+      expect(getStructuredContent(overrideCompleteRes).targetBranch).toBe("dev");
+
+      // 7. Starting extra root task with explicit base override from a feature branch works
+      await workspace.gitCheckout("feat/second-origin", { create: true });
+      const baseStartRes = await client.callTool({
+        name: "start_task",
+        arguments: { task_id: extraTaskTag, base: "dev" },
+      });
+      expect(baseStartRes.isError).toBeFalsy();
+      expect(getTextContent(baseStartRes)).toContain(
+        "**Origin / Merge Target**: `dev`",
+      );
+    });
   });
 
   describe("Cluster 3: Dedicated Artifact Authoring Tools", () => {

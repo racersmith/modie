@@ -23,6 +23,7 @@ import {
 import { resolveWorkspaceContext } from "../context/resolver.ts";
 import type { WorkspaceContext } from "../context/types.ts";
 import type { IVcsAdapter } from "../../platform/vcs/types.ts";
+import { computeTaskBranchTopology } from "./branching.ts";
 import { resolveTaskFile } from "./completion.ts";
 import {
   type TaskQueueItem,
@@ -105,6 +106,8 @@ export interface TaskStatusQueryOptions {
 
 export interface TaskStatusDetails extends TaskQueueItem {
   incompleteCriteria: string[];
+  baseBranch?: string;
+  targetBranch?: string;
 }
 
 export interface HistoricalTaskEntry {
@@ -500,8 +503,43 @@ export async function getTaskStatus(
       .filter((c) => !c.completed)
       .map((c) => c.text);
 
+    let branch = item.branch;
+    let baseBranch: string | undefined;
+    let targetBranch: string | undefined;
+
+    if (await ctx.vcs.isInsideWorkTree(cwd)) {
+      try {
+        const topology = await computeTaskBranchTopology(item.id, {
+          cwd,
+          vcs: ctx.vcs,
+          workspace: ctx,
+        });
+        const exists = await ctx.vcs.branchExists(topology.branchName, cwd);
+        if (exists) {
+          branch = topology.branchName;
+        }
+        if (topology.isSubtask) {
+          const parent = topology.parentBranchName ?? topology.expectedBaseBranch;
+          baseBranch = parent;
+          targetBranch = parent;
+        } else if (exists) {
+          const origin = topology.recordedBaseBranch ?? topology.trunkBranch;
+          baseBranch = origin;
+          targetBranch = origin;
+        } else {
+          baseBranch = topology.expectedBaseBranch;
+          targetBranch = topology.expectedBaseBranch;
+        }
+      } catch {
+        // Graceful fallback if branch topology cannot be resolved
+      }
+    }
+
     return {
       ...item,
+      branch,
+      baseBranch,
+      targetBranch,
       incompleteCriteria,
     };
   } catch (activeError: unknown) {

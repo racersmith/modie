@@ -26,7 +26,9 @@ export const taskMergeSchema = z.object({
   target: z
     .string()
     .optional()
-    .describe("Target branch to merge into (default: parent branch or trunk)"),
+    .describe(
+      "Target branch to merge into (default: recorded origin branch or trunk; parent task branch for subtasks)",
+    ),
   keepBranch: z
     .boolean()
     .default(false)
@@ -52,9 +54,9 @@ export const taskMergeCommand: CliCommandDefinition<
   name: "merge",
   summaryUsage: "<id>",
   usage: "modie task merge [id-or-path] [options]",
-  description: "Merge completed task branch back into parent or trunk",
+  description: "Merge completed task branch back into origin, parent, or trunk",
   agentGuidance:
-    "Call this tool only when the task has been completed and the user explicitly requests to merge the task branch back into its parent branch or trunk.",
+    "Call this tool only when the task has been completed and the user explicitly requests to merge the task branch back into its parent branch, recorded origin branch, or trunk.",
   helpUsage: "modie task merge --help",
   schema: taskMergeSchema,
   positionals: [
