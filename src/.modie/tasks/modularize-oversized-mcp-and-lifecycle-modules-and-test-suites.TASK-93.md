@@ -15,7 +15,7 @@ Several source and test files have grown beyond the 500-line maintainability thr
 
 # Acceptance Criteria
 
-- [ ] MCP interface handlers, Markdown renderers, tool registration wrappers, and integration tests are decomposed by feature cluster with zero breaking changes to public exports
-- [ ] Lifecycle collision guards, historical query services, and branching test suites are decomposed by responsibility with shared test fixture helpers and zero breaking changes to public exports
-- [ ] All repository verification checks pass with zero lint warnings across the modularized source modules
-- [ ] User Review
+- [x] MCP interface handlers, Markdown renderers, tool registration wrappers, and integration tests are decomposed by feature cluster with zero breaking changes to public exports
+- [x] Lifecycle collision guards, historical query services, and branching test suites are decomposed by responsibility with shared test fixture helpers and zero breaking changes to public exports
+- [x] All repository verification checks pass with zero lint warnings across the modularized source modules
+- [x] User Review
