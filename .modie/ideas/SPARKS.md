@@ -23,3 +23,11 @@ Provide a zero-token read interface (modie://sparks) on the Modie MCP server so 
 
 # [7802] Clean up file-less empty .modie container directories
 When artifacts are relocated or tasks are completed and deleted, parent `.modie/<subtype>` and `.modie/` directories may be left file-less and empty. A dedicated `modie cleanup` command could scan the repository and safely prune empty container directories to reduce clutter without conflating cleanup with relocation.
+
+# [b067] Single cli tool for complete & merge
+I think that perhaps the tool names should be reevaluated so we can have:
+1. task close: current task complete
+2. task merge: merge the task branch and cleanup task branch
+3. task finalize: do both step 1 and 2
+
+I'm not sure on the CLI names.
