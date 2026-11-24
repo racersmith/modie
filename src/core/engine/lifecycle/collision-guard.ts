@@ -106,8 +106,8 @@ export async function detectArtifactCollisions(
   const effectiveVcs = ctx.vcs;
 
   const [sourceArtifacts, targetArtifacts] = await Promise.all([
-    inspectGitTreeArtifacts(sourceBranch, cwd, undefined, effectiveVcs),
-    inspectGitTreeArtifacts(targetBranch, cwd, undefined, effectiveVcs),
+    inspectGitTreeArtifacts(sourceBranch, ctx, undefined, effectiveVcs),
+    inspectGitTreeArtifacts(targetBranch, ctx, undefined, effectiveVcs),
   ]);
 
   if (sourceArtifacts.length === 0 || targetArtifacts.length === 0) {
@@ -122,7 +122,7 @@ export async function detectArtifactCollisions(
   );
 
   const baseArtifacts = mergeBase
-    ? await inspectGitTreeArtifacts(mergeBase, cwd, undefined, vcs)
+    ? await inspectGitTreeArtifacts(mergeBase, ctx, undefined, effectiveVcs)
     : [];
 
   const baseMap = new Map<string, DiscoveredArtifact>();

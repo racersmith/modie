@@ -135,6 +135,8 @@ describe("Engine Architectural Layer Invariants (RULE-38)", () => {
     expect(typeof engine.queryTaskQueue).toBe("function");
     expect(typeof engine.startTaskBranch).toBe("function");
     expect(typeof engine.mergeTaskBranch).toBe("function");
+    expect(typeof engine.assertTaskMergePreflight).toBe("function");
+    expect(typeof engine.completeAndMergeTask).toBe("function");
     expect(typeof engine.completeTask).toBe("function");
     expect(typeof engine.checkTaskItem).toBe("function");
 

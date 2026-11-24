@@ -20,14 +20,21 @@ import {
   startTaskBranch,
 } from "./branching.ts";
 import {
+  assertTaskMergePreflight,
+  completeAndMergeTask,
+} from "./merge-preflight.ts";
+import {
   ActiveSubtaskPendingError,
   ForeignBranchAncestryError,
   TaskIncompleteError,
 } from "./errors.ts";
 import {
+  branchExistsInGit,
   commitFile,
   completeTaskInGit,
   createBranchingWorkspace,
+  getCurrentBranch,
+  getHeadHash,
 } from "./test-helpers.ts";
 
 describe("Pre-Merge Guard Decomposition & Domain Errors (RULE-21, RULE-22, RULE-28)", () => {
@@ -459,5 +466,162 @@ describe("Pre-Merge Guard Decomposition & Domain Errors (RULE-21, RULE-22, RULE-
     await Bun.$`git checkout -- tracked.txt`.cwd(workspace.cwd).quiet();
     const mergeRes = await mergeTaskBranch(task.tag, { cwd: workspace.cwd });
     expect(mergeRes.targetBranch).toBe("dev");
+  });
+
+  // @verifies RULE-21, RULE-22, RULE-28, RULE-32, RULE-34, RULE-35
+  it("[RULE-21][RULE-28][RULE-32][RULE-34][RULE-35] completeAndMergeTask should abort atomically before commits or deletion on missing source, missing target, active subtask, and foreign ancestry", async () => {
+    // 1. Missing source branch (task never started on a branch)
+    const unstartedTask = await workspace.createTask({
+      id: 310,
+      slug: "no-source-branch",
+      criteria: [{ text: "Done", completed: true }],
+    });
+    await workspace.gitCommit(`docs: add ${unstartedTask.tag}`);
+    const headBeforeUnstarted = await getHeadHash(workspace);
+
+    await expect(
+      completeAndMergeTask(unstartedTask.tag, { cwd: workspace.cwd }),
+    ).rejects.toThrow(/Task branch "task\/310-no-source-branch" does not exist/);
+    expect(await getHeadHash(workspace)).toBe(headBeforeUnstarted);
+    expect(await workspace.fileExists(unstartedTask.filepath)).toBe(true);
+
+    // 2. Missing target branch (deleted recorded origin branch & missing explicit target)
+    await Bun.$`git checkout -b feat/ephemeral-preflight`
+      .cwd(workspace.cwd)
+      .quiet();
+    const missingTargetTask = await workspace.createTask({
+      id: 311,
+      slug: "missing-target",
+      criteria: [{ text: "Done", completed: true }],
+    });
+    await workspace.gitCommit(`docs: add ${missingTargetTask.tag}`);
+    await startTaskBranch(missingTargetTask.tag, { cwd: workspace.cwd });
+    await workspace.writeFile("pending-work.txt", "unsaved work\n");
+    const headBeforeMissingTarget = await getHeadHash(workspace);
+
+    await Bun.$`git branch -D feat/ephemeral-preflight`
+      .cwd(workspace.cwd)
+      .quiet();
+
+    await expect(
+      completeAndMergeTask(missingTargetTask.tag, { cwd: workspace.cwd }),
+    ).rejects.toThrow(/Cannot merge into recorded origin branch/);
+    expect(await getHeadHash(workspace)).toBe(headBeforeMissingTarget);
+    expect(await workspace.fileExists(missingTargetTask.filepath)).toBe(true);
+    expect(await workspace.readFile("pending-work.txt")).toBe("unsaved work\n");
+
+    await expect(
+      completeAndMergeTask(missingTargetTask.tag, {
+        target: "non-existent-branch",
+        cwd: workspace.cwd,
+      }),
+    ).rejects.toThrow(/Branch does not exist in local git repository/);
+    expect(await getHeadHash(workspace)).toBe(headBeforeMissingTarget);
+    expect(await workspace.fileExists(missingTargetTask.filepath)).toBe(true);
+
+    // Retry with valid target succeeds atomically
+    const recovered = await completeAndMergeTask(missingTargetTask.tag, {
+      target: "dev",
+      cwd: workspace.cwd,
+    });
+    expect(recovered.completion.deleted).toBe(true);
+    expect(recovered.merge.targetBranch).toBe("dev");
+    expect(await getCurrentBranch(workspace)).toBe("dev");
+    expect(await workspace.readFile("pending-work.txt")).toBe("unsaved work\n");
+
+    // 3. Active child subtask branch blocks parent completion atomically
+    const parentTask = await workspace.createTask({
+      id: 312,
+      slug: "preflight-parent",
+      criteria: [{ text: "Parent done", completed: true }],
+    });
+    await workspace.gitCommit(`docs: add ${parentTask.tag}`);
+    await startTaskBranch(parentTask.tag, { cwd: workspace.cwd });
+
+    const childTask = await workspace.createTask({
+      id: "312-1",
+      slug: "preflight-child",
+      depends_on: [parentTask.tag],
+      criteria: [{ text: "Child done", completed: true }],
+    });
+    await workspace.gitCommit(`docs: add ${childTask.tag}`);
+    await startTaskBranch(childTask.tag, { cwd: workspace.cwd });
+    await Bun.$`git checkout task/312-preflight-parent`
+      .cwd(workspace.cwd)
+      .quiet();
+    await workspace.writeFile("parent-pending.txt", "parent work\n");
+    const headBeforeSubtaskGuard = await getHeadHash(workspace);
+
+    let subtaskErr: unknown;
+    try {
+      await completeAndMergeTask(parentTask.tag, { cwd: workspace.cwd });
+    } catch (err) {
+      subtaskErr = err;
+    }
+    expect(subtaskErr).toBeInstanceOf(ActiveSubtaskPendingError);
+    expect(await getHeadHash(workspace)).toBe(headBeforeSubtaskGuard);
+    expect(await workspace.fileExists(parentTask.filepath)).toBe(true);
+    expect(await workspace.readFile("parent-pending.txt")).toBe("parent work\n");
+
+    // Clean up parent working tree and finish child so parent preflight succeeds
+    await workspace.remove("parent-pending.txt");
+    await Bun.$`git checkout task/312-1-preflight-child`
+      .cwd(workspace.cwd)
+      .quiet();
+    const childResult = await completeAndMergeTask(childTask.tag, {
+      cwd: workspace.cwd,
+    });
+    expect(childResult.merge.targetBranch).toBe("task/312-preflight-parent");
+
+    const preflightOk = await assertTaskMergePreflight(parentTask.tag, {
+      cwd: workspace.cwd,
+    });
+    expect(preflightOk.targetBranch).toBe("dev");
+
+    const parentResult = await completeAndMergeTask(parentTask.tag, {
+      cwd: workspace.cwd,
+    });
+    expect(parentResult.merge.targetBranch).toBe("dev");
+    expect(await branchExistsInGit(workspace, "task/312-preflight-parent")).toBe(
+      false,
+    );
+
+    // 4. Foreign task ancestry blocks completion atomically
+    const foreignTask = await workspace.createTask({
+      id: 313,
+      slug: "foreign-source",
+      criteria: [{ text: "Done", completed: true }],
+    });
+    await workspace.gitCommit(`docs: add ${foreignTask.tag}`);
+    await startTaskBranch(foreignTask.tag, { cwd: workspace.cwd });
+    await commitFile(
+      workspace,
+      "foreign-only.txt",
+      "unmerged foreign commit\n",
+      "feat: foreign work",
+    );
+
+    const leakedTask = await workspace.createTask({
+      id: 314,
+      slug: "leaked-preflight",
+      criteria: [{ text: "Done", completed: true }],
+    });
+    await Bun.$`git checkout -b task/314-leaked-preflight`
+      .cwd(workspace.cwd)
+      .quiet();
+    await workspace.gitCommit(`docs: add ${leakedTask.tag}`);
+    await workspace.writeFile("leaked-pending.txt", "pending\n");
+    const headBeforeForeignGuard = await getHeadHash(workspace);
+
+    let foreignErr: unknown;
+    try {
+      await completeAndMergeTask(leakedTask.tag, { cwd: workspace.cwd });
+    } catch (err) {
+      foreignErr = err;
+    }
+    expect(foreignErr).toBeInstanceOf(ForeignBranchAncestryError);
+    expect(await getHeadHash(workspace)).toBe(headBeforeForeignGuard);
+    expect(await workspace.fileExists(leakedTask.filepath)).toBe(true);
+    expect(await workspace.readFile("leaked-pending.txt")).toBe("pending\n");
   });
 });

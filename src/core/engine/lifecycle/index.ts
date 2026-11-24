@@ -12,3 +12,4 @@ export * from "./completion.ts";
 export * from "./history-query.ts";
 export * from "./query.ts";
 export * from "./branching.ts";
+export * from "./merge-preflight.ts";
