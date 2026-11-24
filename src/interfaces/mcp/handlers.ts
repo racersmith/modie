@@ -7,9 +7,11 @@
 import { dirname } from "node:path";
 import {
   archiveArtifact,
+  assertTargetBranchExists,
   checkTaskItem,
   completeTask,
   compileContext,
+  computeTaskBranchTopology,
   createAdr,
   createMotive,
   createRule,
@@ -22,6 +24,7 @@ import {
   mergeTaskBranch,
   normalizeTaskId,
   parseTaskIdFromBranch,
+  resolveMergeTarget,
   resolveWorkspaceContext,
   sparkAdd,
   startTaskBranch,
@@ -223,13 +226,14 @@ export async function handleStartTask(
   const taskId = await resolveActiveTaskId(args.task_id, ctx);
   try {
     await startTaskBranch(taskId, {
+      base: args.base,
       cwd,
       workspace: ctx,
     });
   } catch (err: any) {
     throw McpToolError.invalidParameter({
       message: `Failed to start task "${taskId}": ${err?.message}`,
-      parameter: "task_id",
+      parameter: args.base ? "base" : "task_id",
       tool: "start_task",
     });
   }
@@ -310,15 +314,31 @@ export async function handleCompleteTask(
   const cwd = ctx.root;
   const taskId = await resolveActiveTaskId(args.task_id, ctx);
 
-  // 1. Complete task (verifies criteria, two-phase commit, deletes task artifact)
+  // 1. Pre-validate merge target resolution and existence before artifact deletion/commits
+  const topology = await computeTaskBranchTopology(taskId, {
+    cwd,
+    workspace: ctx,
+  });
+  const resolvedTarget = resolveMergeTarget(topology, {
+    target: args.target,
+  });
+  await assertTargetBranchExists(ctx.vcs, resolvedTarget, cwd, {
+    recordedBase:
+      !args.target &&
+      !topology.isSubtask &&
+      Boolean(topology.recordedBaseBranch),
+  });
+
+  // 2. Complete task (verifies criteria, two-phase commit, deletes task artifact)
   const completeResult = await completeTask(taskId, {
     commit: true,
     cwd,
     workspace: ctx,
   });
 
-  // 2. Merge task branch to trunk and delete task branch
+  // 3. Merge task branch into resolved target and delete task branch
   const mergeResult = await mergeTaskBranch(taskId, {
+    target: args.target,
     cwd,
     workspace: ctx,
   });

@@ -98,6 +98,21 @@ describe("GitCliAdapter - Real Subprocess Fixture Tests", () => {
     );
     expect(await adapter.getConfig("non.existent", workspace.cwd)).toBeNull();
 
+    // Test setConfig and unsetConfig (including idempotent unset of non-existent key)
+    await adapter.setConfig("branch.task/10-test.modieBase", "feat/abc", workspace.cwd);
+    expect(
+      await adapter.getConfig("branch.task/10-test.modieBase", workspace.cwd),
+    ).toBe("feat/abc");
+
+    await adapter.unsetConfig("branch.task/10-test.modieBase", workspace.cwd);
+    expect(
+      await adapter.getConfig("branch.task/10-test.modieBase", workspace.cwd),
+    ).toBeNull();
+
+    await expect(
+      adapter.unsetConfig("branch.task/10-test.modieBase", workspace.cwd),
+    ).resolves.toBeUndefined();
+
     // Create and commit a rule artifact
     const rule10Tag = formatArtifactTag("RULE", 10);
     await workspace.createRule({
@@ -154,6 +169,30 @@ describe("MockVcsAdapter - In-Memory Unit Tests", () => {
     expect(mock.history.deletedBranches).toEqual([
       { branch: "task/99-test", force: undefined },
     ]);
+
+    // Test setConfig, unsetConfig, and automatic branch config cleanup on deleteBranch
+    await mock.setConfig("branch.task/100-origin.modieBase", "feat/xyz");
+    expect(await mock.getConfig("branch.task/100-origin.modieBase")).toBe(
+      "feat/xyz",
+    );
+    expect(mock.history.setConfigCalls).toEqual([
+      { key: "branch.task/100-origin.modieBase", value: "feat/xyz" },
+    ]);
+
+    await mock.unsetConfig("branch.task/100-origin.modieBase");
+    expect(
+      await mock.getConfig("branch.task/100-origin.modieBase"),
+    ).toBeNull();
+    expect(mock.history.unsetConfigCalls).toEqual([
+      "branch.task/100-origin.modieBase",
+    ]);
+
+    await mock.checkoutNewBranch("task/101-cleanup", "feat/xyz");
+    await mock.setConfig("branch.task/101-cleanup.modieBase", "feat/xyz");
+    await mock.deleteBranch("task/101-cleanup");
+    expect(
+      await mock.getConfig("branch.task/101-cleanup.modieBase"),
+    ).toBeNull();
   });
 
   it("should simulate staging, commits, and merges", async () => {

@@ -235,9 +235,15 @@ export async function assertTargetBranchExists(
   vcs: IVcsAdapter,
   targetBranch: string,
   cwd: string,
+  options: { recordedBase?: boolean } = {},
 ): Promise<void> {
   const targetExists = await vcs.branchExists(targetBranch, cwd);
   if (!targetExists) {
+    if (options.recordedBase) {
+      throw new Error(
+        `Cannot merge into recorded origin branch "${targetBranch}": Branch no longer exists locally. Specify an explicit target branch (--target or target) to complete the merge.`,
+      );
+    }
     throw new Error(
       `Cannot merge into target branch "${targetBranch}": Branch does not exist in local git repository.`,
     );
@@ -501,7 +507,7 @@ export async function assertSubtaskBranchAncestry(
 }
 
 /**
- * Verifies before merging into trunk that the source branch does not carry
+ * Verifies before merging a root task branch that the source branch does not carry
  * unmerged commits inherited from another active task branch per RULE-28.
  */
 export async function assertNoForeignTaskAncestry(
@@ -512,9 +518,14 @@ export async function assertNoForeignTaskAncestry(
   cwd: string,
   options: { force?: boolean } = {},
 ): Promise<void> {
-  if (targetBranch !== topology.trunkBranch || options.force) {
+  if (topology.isSubtask || options.force) {
     return;
   }
+
+  const targetLabel =
+    targetBranch === topology.trunkBranch
+      ? `trunk "${targetBranch}"`
+      : `target branch "${targetBranch}"`;
 
   const branches = await vcs.listBranches(cwd);
   for (const otherBranch of branches) {
@@ -530,10 +541,10 @@ export async function assertNoForeignTaskAncestry(
       continue;
     }
 
-    const mbInTrunk = await vcs.isAncestor(mb, targetBranch, cwd);
-    if (!mbInTrunk) {
+    const mbInTarget = await vcs.isAncestor(mb, targetBranch, cwd);
+    if (!mbInTarget) {
       throw new ForeignBranchAncestryError(
-        `Cannot merge "${sourceBranch}" into trunk "${targetBranch}": source branch contains unmerged commit (${mb}) from active task branch "${otherBranch}" per RULE-28. Merge into the parent branch or pass --force to override.`,
+        `Cannot merge "${sourceBranch}" into ${targetLabel}: source branch contains unmerged commit (${mb}) from active task branch "${otherBranch}" per RULE-28. Merge into the parent branch or pass --force to override.`,
         {
           sourceBranch,
           targetBranch,

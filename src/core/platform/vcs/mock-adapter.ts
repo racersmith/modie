@@ -84,6 +84,8 @@ export class MockVcsAdapter implements IVcsAdapter {
     stagedFileCalls: Array<{ files: string[]; updateOnly?: boolean }>;
     readFileAtRefCalls: Array<{ ref: string; path: string; cwd?: string }>;
     readDeletedFileCalls: Array<{ path: string; cwd?: string }>;
+    setConfigCalls: Array<{ key: string; value: string }>;
+    unsetConfigCalls: string[];
     rawRuns: Array<{ args: string[]; cwd?: string }>;
     rawCommands: Array<{ args: string[]; cwd?: string }>;
   };
@@ -122,6 +124,8 @@ export class MockVcsAdapter implements IVcsAdapter {
       stagedFileCalls: [],
       readFileAtRefCalls: [],
       readDeletedFileCalls: [],
+      setConfigCalls: [],
+      unsetConfigCalls: [],
       rawRuns: [],
       rawCommands: [],
     };
@@ -169,6 +173,12 @@ export class MockVcsAdapter implements IVcsAdapter {
   ): Promise<void> {
     this.history.deletedBranches.push({ branch: branchName, force });
     this.branches.delete(branchName);
+    const branchPrefix = `branch.${branchName}.`;
+    for (const key of Array.from(this.config.keys())) {
+      if (key.startsWith(branchPrefix)) {
+        this.config.delete(key);
+      }
+    }
   }
 
   async getStatusPorcelain(_cwd?: string): Promise<string> {
@@ -302,6 +312,16 @@ export class MockVcsAdapter implements IVcsAdapter {
 
   async getConfig(key: string, _cwd?: string): Promise<string | null> {
     return this.config.get(key) ?? null;
+  }
+
+  async setConfig(key: string, value: string, _cwd?: string): Promise<void> {
+    this.history.setConfigCalls.push({ key, value });
+    this.config.set(key, value);
+  }
+
+  async unsetConfig(key: string, _cwd?: string): Promise<void> {
+    this.history.unsetConfigCalls.push(key);
+    this.config.delete(key);
   }
 
   async run(args: string[], cwd?: string): Promise<string | null> {

@@ -79,6 +79,12 @@ export const startTaskSchema = z.object({
     .string()
     .optional()
     .describe("Task tag or numeric ID (defaults to active git branch)"),
+  base: z
+    .string()
+    .optional()
+    .describe(
+      "Optional base branch override for root tasks (defaults to active non-protected, non-task branch or trunk; subtasks always branch from parent task branch)",
+    ),
   workspace: workspaceParam,
 });
 export type StartTaskInput = z.infer<typeof startTaskSchema>;
@@ -129,6 +135,12 @@ export const completeTaskSchema = z.object({
     .string()
     .optional()
     .describe("Task tag (defaults to active git branch)"),
+  target: z
+    .string()
+    .optional()
+    .describe(
+      "Optional target branch override for merging completed root tasks (defaults to recorded origin branch or trunk; subtasks always merge into parent task branch)",
+    ),
   workspace: workspaceParam,
 });
 export type CompleteTaskInput = z.infer<typeof completeTaskSchema>;

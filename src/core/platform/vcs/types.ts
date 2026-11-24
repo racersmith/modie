@@ -109,6 +109,8 @@ export interface IVcsAdapter {
 
   // Configuration & Raw Execution (Escape Hatch)
   getConfig(key: string, cwd?: string): Promise<string | null>;
+  setConfig(key: string, value: string, cwd?: string): Promise<void>;
+  unsetConfig(key: string, cwd?: string): Promise<void>;
   run(args: string[], cwd?: string): Promise<string | null>;
   runCommand(args: string[], cwd?: string): Promise<string>;
 }

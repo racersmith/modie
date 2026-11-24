@@ -272,6 +272,9 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
     const branchStatus = await captureCli(["task", "status"], workspace.cwd);
     expect(branchStatus.exitCode).toBe(0);
     expect(branchStatus.stderr).toContain(`${task.tag}: ${task.slug}`);
+    expect(branchStatus.stderr).toContain(`Branch:      ${branchName}`);
+    expect(branchStatus.stderr).toContain("Origin:      dev");
+    expect(branchStatus.stderr).toContain("Target:      dev");
     expect(branchStatus.stderr).toContain(
       "Progress:    1/2 criteria satisfied",
     );
@@ -290,6 +293,9 @@ describe("CLI Task Status - Deep Inspection & Stream Separation (RULE-22, RULE-2
     expect(parsedCurrent.id).toBe("701");
     expect(parsedCurrent.fullTaskId).toBe(task.tag);
     expect(parsedCurrent.isCurrent).toBe(true);
+    expect(parsedCurrent.branch).toBe(branchName);
+    expect(parsedCurrent.baseBranch).toBe("dev");
+    expect(parsedCurrent.targetBranch).toBe("dev");
 
     // `task list` should display CURRENT in STATUS column
     const listResult = await captureCli(["task", "list"], workspace.cwd);

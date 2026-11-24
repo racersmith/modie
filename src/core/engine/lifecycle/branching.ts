@@ -14,6 +14,7 @@ import {
   parseTaskBranch,
   parseTaskIdFromBranch,
   parseTaskMarkdown,
+  taskBranchBaseConfigKey,
   taskBranchGlob,
   taskKey,
 } from "../../domain/index.ts";
@@ -195,6 +196,15 @@ export async function computeTaskBranchTopology(
   const subtaskInfo = parseSubtaskId(meta.id);
   const isSubtask = subtaskInfo !== null;
   const branchName = formatTaskBranch(meta.id, meta.slug);
+  const isCurrentBranchProtected = currentBranch
+    ? config.protectedBranches.includes(currentBranch)
+    : false;
+
+  const rawRecordedBase = !isSubtask
+    ? await vcs.getConfig(taskBranchBaseConfigKey(branchName), cwd)
+    : null;
+  const recordedBaseBranch =
+    !isSubtask && rawRecordedBase?.trim() ? rawRecordedBase.trim() : undefined;
 
   let parentBranchName: string | undefined;
   let expectedBaseBranch: string;
@@ -210,12 +220,14 @@ export async function computeTaskBranchTopology(
       parentBranchName ??
       formatTaskBranch(subtaskInfo.parentId);
   } else {
-    expectedBaseBranch = options.base ?? config.trunk;
+    const currentDefault =
+      currentBranch &&
+      !isCurrentBranchProtected &&
+      parseTaskBranch(currentBranch) === null
+        ? currentBranch
+        : config.trunk;
+    expectedBaseBranch = options.base ?? recordedBaseBranch ?? currentDefault;
   }
-
-  const isCurrentBranchProtected = currentBranch
-    ? config.protectedBranches.includes(currentBranch)
-    : false;
 
   return {
     taskId: meta.id,
@@ -225,6 +237,7 @@ export async function computeTaskBranchTopology(
     parentId: subtaskInfo?.parentId,
     subtaskSequence: subtaskInfo?.sequence,
     parentBranchName,
+    recordedBaseBranch,
     expectedBaseBranch,
     currentBranch,
     isCurrentBranchProtected,
@@ -279,7 +292,22 @@ export async function startTaskBranch(
   const baseBranch = options.base ?? topology.expectedBaseBranch;
   const targetExists = await vcs.branchExists(topology.branchName, cwd);
 
-  // 3. Checkout or create the target branch
+  // 3. Reject starting a new root task while checked out on another active task branch
+  if (
+    !targetExists &&
+    !topology.isSubtask &&
+    !options.base &&
+    !options.force &&
+    topology.currentBranch &&
+    parseTaskBranch(topology.currentBranch) !== null &&
+    topology.currentBranch !== topology.branchName
+  ) {
+    throw new Error(
+      `Cannot start root task "TASK-${topology.taskId}" while checked out on active task branch "${topology.currentBranch}". Switch to your intended base branch (e.g. "${topology.trunkBranch}" or a feature branch) or specify an explicit base override (--base).`,
+    );
+  }
+
+  // 4. Checkout or create the target branch
   if (targetExists) {
     if (topology.isSubtask) {
       await assertSubtaskBranchAncestry(vcs, topology, cwd, options);
@@ -288,11 +316,18 @@ export async function startTaskBranch(
       await assertCleanTrackedWorkingTree(vcs, cwd, "start", options);
       await vcs.checkout(topology.branchName, cwd);
     }
+    const resolvedBase = topology.isSubtask
+      ? baseBranch
+      : (topology.recordedBaseBranch ?? options.base ?? topology.trunkBranch);
+    const resolvedTarget = topology.isSubtask
+      ? (topology.parentBranchName ?? baseBranch)
+      : (topology.recordedBaseBranch ?? topology.trunkBranch);
     return {
       taskId: topology.taskId,
       slug: topology.slug,
       branchName: topology.branchName,
-      baseBranch,
+      baseBranch: resolvedBase,
+      targetBranch: resolvedTarget,
       created: false,
       isSubtask: topology.isSubtask,
       parentBranch: topology.parentBranchName,
@@ -303,14 +338,24 @@ export async function startTaskBranch(
     await assertCleanTrackedWorkingTree(vcs, cwd, "start", options);
   }
 
-  // Create new branch from baseBranch
+  // Create new branch from baseBranch and persist origin for root tasks
   await vcs.checkoutNewBranch(topology.branchName, baseBranch, cwd);
+  if (!topology.isSubtask) {
+    await vcs.setConfig(
+      taskBranchBaseConfigKey(topology.branchName),
+      baseBranch,
+      cwd,
+    );
+  }
 
   return {
     taskId: topology.taskId,
     slug: topology.slug,
     branchName: topology.branchName,
     baseBranch,
+    targetBranch: topology.isSubtask
+      ? (topology.parentBranchName ?? baseBranch)
+      : baseBranch,
     created: true,
     isSubtask: topology.isSubtask,
     parentBranch: topology.parentBranchName,
@@ -359,6 +404,16 @@ function resolveSubtaskTarget(
     );
   }
 
+  if (
+    topology.parentBranchName &&
+    targetBranch !== topology.parentBranchName &&
+    !force
+  ) {
+    throw new Error(
+      `Subtask branch "${topology.branchName}" cannot be merged into "${targetBranch}" per RULE-28. Subtasks must merge back into their parent task branch ("${topology.parentBranchName}").`,
+    );
+  }
+
   return targetBranch;
 }
 
@@ -367,12 +422,18 @@ function resolveRootTaskTarget(
   targetOverride?: string,
   force?: boolean,
 ): string {
-  const targetBranch = targetOverride ?? topology.trunkBranch;
+  const targetBranch =
+    targetOverride ?? topology.recordedBaseBranch ?? topology.trunkBranch;
 
   // Prohibit merging root tasks directly into protected branches
   if (topology.protectedBranches.includes(targetBranch) && !force) {
+    const suggestedTarget =
+      topology.recordedBaseBranch &&
+      !topology.protectedBranches.includes(topology.recordedBaseBranch)
+        ? topology.recordedBaseBranch
+        : topology.trunkBranch;
     throw new Error(
-      `Cannot merge root task branch "${topology.branchName}" directly into protected branch "${targetBranch}". Merges must target trunk branch "${topology.trunkBranch}".`,
+      `Cannot merge root task branch "${topology.branchName}" directly into protected branch "${targetBranch}". Merges must target "${suggestedTarget}".`,
     );
   }
 
@@ -461,7 +522,12 @@ export async function mergeTaskBranch(
   const targetBranch = resolveMergeTarget(topology, options);
 
   // 4. Verify target branch exists in local git branches
-  await assertTargetBranchExists(vcs, targetBranch, cwd);
+  await assertTargetBranchExists(vcs, targetBranch, cwd, {
+    recordedBase:
+      !options.target &&
+      !topology.isSubtask &&
+      Boolean(topology.recordedBaseBranch),
+  });
 
   // 5. Verify all child subtasks have completed and merged per RULE-28
   await assertNoActiveSubtasks(vcs, topology, cwd, options);

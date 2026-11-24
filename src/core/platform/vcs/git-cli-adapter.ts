@@ -311,6 +311,36 @@ export class GitCliAdapter implements IVcsAdapter {
     return value && value.length > 0 ? value : null;
   }
 
+  async setConfig(
+    key: string,
+    value: string,
+    cwd: string = process.cwd(),
+  ): Promise<void> {
+    await this.runCommand(["config", "--local", key, value], cwd);
+  }
+
+  async unsetConfig(
+    key: string,
+    cwd: string = process.cwd(),
+  ): Promise<void> {
+    try {
+      await execFileAsync("git", ["config", "--local", "--unset-all", key], {
+        cwd,
+        encoding: "utf8",
+        maxBuffer: 10 * 1024 * 1024,
+      });
+    } catch (error: any) {
+      // Exit code 5 means the key was not present in local git config
+      if (error && (error.code === 5 || error.status === 5)) {
+        return;
+      }
+      const message = error.stderr?.trim() || error.message || String(error);
+      throw new Error(
+        `Git command failed "git config --local --unset-all ${key}": ${message}`,
+      );
+    }
+  }
+
   async grep(
     query: string,
     cwd: string = process.cwd(),

@@ -47,9 +47,13 @@ When planning and authoring tasks:
 ## 5. Hierarchical Sub-Tasks (`TASK-XX-1`) & Branch-Aware Allocation
 
 - **Branch-Aware ID Allocation**: Modie allocates task IDs based on the active Git branch:
-  - Calling `create_task` on trunk (`dev` or `main`) allocates a top-level root task (`TASK-XX`).
+  - Calling `create_task` on trunk (`dev` or `main`) or a feature branch allocates a top-level root task (`TASK-XX`).
   - Calling `create_task` while checked out on a root task branch (`task/XX-<slug>`) **automatically** allocates a single-level hierarchical sub-task ID (`TASK-XX-1`, `TASK-XX-2`, etc.).
   - **Depth Cap (Max 1 Level)**: Sub-tasks may only have root tasks as parents. Calling `create_task` while checked out on a sub-task branch (`task/XX-1-<slug>`) is **hard-rejected**; switch back to the root parent branch `task/XX-<slug>` to add a sibling sub-task, or switch to trunk for a new root task.
+- **Root Task Origin & Merge-Back**:
+  - Calling `start_task("TASK-XX")` defaults to branching from the active non-protected, non-task branch (e.g., `feat/abc`, `dev`, or `release/*`, falling back to trunk on detached HEAD) and persists `branch.<taskBranch>.modieBase` in local Git config.
+  - Starting a new root task while checked out on a protected branch or another active `task/*` branch is rejected unless an explicit `base` override is passed.
+  - Calling `complete_task("TASK-XX")` (or `modie task merge`) automatically merges back into the recorded `modieBase` origin branch (falling back to trunk only when unrecorded, and failing loudly if the recorded origin branch no longer exists locally unless an explicit `target` override is passed).
 - **How to Create Sub-Tasks**: When asked to create sub-tasks or decompose a task into sub-tasks, **never** stay on trunk and create separate top-level tasks that merely reference each other via `depends_on` or `links`. Instead, follow this exact sequence:
   1. Ensure the parent task (`TASK-XX`) exists (create it on trunk via `create_task` if needed).
   2. Switch to the parent task branch via `start_task("TASK-XX")` so the active Git branch is `task/XX-<slug>`.
@@ -96,9 +100,9 @@ Modie exposes 13 singular-purpose tools designed for high signal-to-noise and pr
 
 ### Task Lifecycle State Machine
 
-4. **`start_task`**: Checks out or creates the hierarchical task branch (`task/<id>-<slug>` from trunk, or `task/<parent>-<seq>-<slug>` from the parent task branch), verifies dependencies, and returns the full active Mission Brief in Markdown.
+4. **`start_task`**: Checks out or creates the hierarchical task branch (`task/<id>-<slug>` from the active non-protected, non-task branch or trunk, or `task/<parent>-<seq>-<slug>` from the parent task branch; accepts optional `base` override), verifies dependencies, and returns the full active Mission Brief in Markdown.
 5. **`check_criteria`**: Atomically marks 1-based acceptance criteria complete or incomplete (`items: [1, 2]`). Returns updated checklist progress and remaining items.
-6. **`complete_task`**: Executes the atomic two-phase commit completion ceremony, verifies all criteria are checked, merges into the target branch (parent task branch for sub-tasks, trunk for root tasks), and deletes the task branch.
+6. **`complete_task`**: Executes the atomic two-phase commit completion ceremony, verifies all criteria are checked, merges into the target branch (parent task branch for sub-tasks, recorded origin branch or trunk for root tasks; accepts optional `target` override), and deletes the task branch.
 
 ### Dedicated Artifact Authoring
 

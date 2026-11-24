@@ -19,6 +19,7 @@ export interface StartTaskBranchResult {
   slug: string;
   branchName: string;
   baseBranch: string;
+  targetBranch: string;
   created: boolean;
   isSubtask: boolean;
   parentBranch?: string;
