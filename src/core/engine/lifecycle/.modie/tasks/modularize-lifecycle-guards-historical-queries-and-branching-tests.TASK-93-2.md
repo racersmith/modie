@@ -17,8 +17,8 @@ Separate pre-merge artifact collision detection from branch-policy and completio
 
 # Acceptance Criteria
 
-- [ ] Pre-merge artifact collision analysis is extracted into a dedicated collision-guard module separate from branch-policy and completion guards while preserving all public lifecycle exports
-- [ ] Historical Git task and multi-branch reconstruction is extracted into a dedicated history-query module separate from active task queue and status queries
-- [ ] Shared lifecycle test fixture helpers encapsulate repetitive Git branch setup and task deletion ceremony without coupling to host repository state
-- [ ] Branching tests are split into focused suites covering artifact collisions, pre-merge guard units, hierarchical branching workflows, and origin-tracking merge-back automation, with all repository verification checks passing
-- [ ] User Review
+- [x] Pre-merge artifact collision analysis is extracted into a dedicated collision-guard module separate from branch-policy and completion guards while preserving all public lifecycle exports
+- [x] Historical Git task and multi-branch reconstruction is extracted into a dedicated history-query module separate from active task queue and status queries
+- [x] Shared lifecycle test fixture helpers encapsulate repetitive Git branch setup and task deletion ceremony without coupling to host repository state
+- [x] Branching tests are split into focused suites covering artifact collisions, pre-merge guard units, hierarchical branching workflows, and origin-tracking merge-back automation, with all repository verification checks passing
+- [x] User Review
