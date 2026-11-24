@@ -4,8 +4,8 @@
  */
 
 export * from "./schemas.ts";
-export * from "./renderers.ts";
-export * from "./handlers.ts";
+export * from "./renderers/index.ts";
+export * from "./handlers/index.ts";
 export * from "./errors.ts";
 export * from "./instructions.ts";
 export * from "./resources.ts";
