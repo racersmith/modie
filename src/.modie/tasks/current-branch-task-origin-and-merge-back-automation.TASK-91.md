@@ -38,4 +38,5 @@ Design:
 - [ ] The foreign task ancestry guard prevents unmerged commits from unrelated active task branches from leaking into any root-task merge target (both feature branches and trunk).
 - [ ] MCP start_task accepts an optional base override, MCP complete_task accepts an optional target override, and task start and status outputs surface the resolved origin/target branch.
 - [ ] Isolated fixture-workspace unit and CLI/MCP integration tests verify the feature-branch multi-task loop, missing recorded base error, cross-task-branch start rejection, and subtask invariance, with all repository verification checks passing.
+- [ ] Update documentation for users and agents as necessary. Agent docs should work on progressive disclosure when possible to keep baseline context small.
 - [ ] User Review
