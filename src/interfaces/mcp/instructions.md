@@ -86,7 +86,7 @@ Before authoring, choose the right subtype:
 
 ## 8. The 13 Singular Modie MCP Agent Tools
 
-Modie exposes 13 singular-purpose tools designed for high signal-to-noise and progressive disclosure:
+Modie exposes 13 singular-purpose tools designed for high signal-to-noise and progressive disclosure (all tools accept an optional `workspace` root path for per-call multi-repository targeting):
 
 ### Spatial & Artifact Exploration
 
@@ -117,7 +117,7 @@ Modie exposes 13 singular-purpose tools designed for high signal-to-noise and pr
 
 ## 9. Ambient MCP Resources
 
-For zero-roundtrip context hydration:
+For zero-roundtrip context hydration (dynamic resources also accept `?workspace=<encodedPath>` for per-call multi-repository resolution):
 
 - `modie://task`: Dynamic, unescaped Markdown Mission Brief for the active task branch.
 - `modie://tasks/ready`: Real-time Markdown triage queue of unblocked ready tasks with summary teasers and downstream leverage (`Blocks`).

@@ -1,0 +1,16 @@
+{
+  "modie-workspace-resolver": {
+    "PreToolUse": [
+      {
+        "matcher": "call_mcp_tool|read_resource",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./hooks/resolve-workspace.mjs",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

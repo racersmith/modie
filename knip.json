@@ -4,7 +4,8 @@
     "src/index.ts",
     "src/interfaces/cli/index.ts",
     "src/interfaces/mcp/bin.ts",
-    "src/interfaces/mcp/index.ts"
+    "src/interfaces/mcp/index.ts",
+    "integrations/antigravity/hooks/resolve-workspace.mjs"
   ],
   "ignoreDependencies": [
     "mcp-checkup"

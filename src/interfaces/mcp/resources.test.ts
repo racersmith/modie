@@ -1,21 +1,24 @@
 /**
  * Unit and integration tests for Modie Ambient MCP Resources.
- * Verifies strictly 4 parameterless ambient resources (modie://task, modie://tasks/ready, modie://tasks/all, modie://instructions).
- * @verifies RULE-25, RULE-26
+ * Verifies the 4 canonical ambient resources plus workspace-parameterized URI templates.
+ * @verifies RULE-25, RULE-26, RULE-34, RULE-35, RULE-37
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { formatArtifactTag } from "../../core/index.ts";
+import {
+  createWorkspaceContextSync,
+  formatArtifactTag,
+} from "../../core/index.ts";
 import {
   createFixtureWorkspace,
   type FixtureWorkspace,
 } from "../../core/platform/testing/index.ts";
 import { registerAllResources } from "./resources.ts";
 
-describe("Modie Ambient MCP Resources (RULE-25, RULE-26)", () => {
+describe("Modie Ambient MCP Resources (RULE-25, RULE-26, RULE-37)", () => {
   let workspace: FixtureWorkspace;
   let server: McpServer;
   let client: Client;
@@ -52,8 +55,8 @@ describe("Modie Ambient MCP Resources (RULE-25, RULE-26)", () => {
     await workspace.cleanup();
   });
 
-  // @verifies RULE-26
-  it("should expose strictly 4 ambient resources and no parameterized templates", async () => {
+  // @verifies RULE-26, RULE-37
+  it("should expose strictly 4 canonical ambient resources and 3 workspace URI templates", async () => {
     const res = await client.listResources();
     const uris = res.resources.map((r) => r.uri);
 
@@ -64,14 +67,23 @@ describe("Modie Ambient MCP Resources (RULE-25, RULE-26)", () => {
       "modie://tasks/ready",
     ]);
 
-    // Ensure legacy bloated resources and templates are pruned
+    // Ensure legacy bloated resources are pruned
     expect(uris).not.toContain("modie://context");
     expect(uris).not.toContain("modie://rules");
     expect(uris).not.toContain("modie://task/current");
     expect(uris).not.toContain("modie://tasks");
 
     const templatesRes = await client.listResourceTemplates();
-    expect(templatesRes.resourceTemplates).toHaveLength(0);
+    const templateUris = templatesRes.resourceTemplates
+      .map((t) => t.uriTemplate)
+      .sort();
+    expect(templateUris).toEqual(
+      [
+        "modie://task{?workspace}",
+        "modie://tasks/all{?workspace}",
+        "modie://tasks/ready{?workspace}",
+      ].sort(),
+    );
   });
 
   // @verifies RULE-26
@@ -153,5 +165,94 @@ describe("Modie Ambient MCP Resources (RULE-25, RULE-26)", () => {
     expect(contentWithTask.text).toContain("- [ ] 1. Criterion 1");
     expect(contentWithTask.text).toContain("- [ ] 2. Criterion 2");
     expect(contentWithTask.text).toContain("- [ ] 3. User Review");
+  });
+
+  // @verifies RULE-34, RULE-35, RULE-37
+  it("should resolve dynamic resources against ?workspace query parameter without mutating default workspace", async () => {
+    const secondWorkspace = await createFixtureWorkspace(
+      "modie-resource-second-",
+    );
+    const secondTaskTag = formatArtifactTag("TASK", 205);
+
+    try {
+      await secondWorkspace.initGit({
+        defaultBranch: "dev",
+        initialCommit: true,
+      });
+      await secondWorkspace.createTask({
+        id: 205,
+        slug: "second-repo-task",
+        title: "Second Repo Task",
+        context: "Task living in second repository.",
+        criteria: ["Verify isolation", "User Review"],
+      });
+      await secondWorkspace.gitCommit("chore: add second repo task");
+      await secondWorkspace.gitCheckout("task/205-second-repo-task", {
+        create: true,
+      });
+
+      const encodedWs = encodeURIComponent(secondWorkspace.cwd);
+
+      const resAll = await client.readResource({
+        uri: `modie://tasks/all?workspace=${encodedWs}`,
+      });
+      const textAll = (resAll.contents[0] as any).text;
+      expect(textAll).toContain(secondTaskTag);
+      expect(textAll).not.toContain(taskTag);
+
+      const resTask = await client.readResource({
+        uri: `modie://task?workspace=${encodedWs}`,
+      });
+      const textTask = (resTask.contents[0] as any).text;
+      expect(textTask).toContain(`# Mission Brief: ${secondTaskTag}`);
+
+      const resReady = await client.readResource({
+        uri: `modie://tasks/ready?workspace=${encodedWs}`,
+      });
+      const textReady = (resReady.contents[0] as any).text;
+      expect(textReady).toContain("# Ready Tasks Queue");
+      expect(textReady).not.toContain(taskTag);
+
+      // Default workspace must remain completely untouched
+      const resDefault = await client.readResource({
+        uri: "modie://tasks/ready",
+      });
+      const textDefault = (resDefault.contents[0] as any).text;
+      expect(textDefault).toContain(taskTag);
+      expect(textDefault).not.toContain(secondTaskTag);
+    } finally {
+      await secondWorkspace.cleanup();
+    }
+  });
+
+  // @verifies RULE-37
+  it("should invoke resolveWorkspace callback on unparameterized resource reads", async () => {
+    const invokedWith: (string | undefined)[] = [];
+    const dynServer = new McpServer({
+      name: "test-dynamic-resource-server",
+      version: "1.0.0",
+    });
+
+    registerAllResources(dynServer, {
+      cwd: "/nonexistent/fallback",
+      resolveWorkspace: async (wsPath) => {
+        invokedWith.push(wsPath);
+        return createWorkspaceContextSync({ root: wsPath ?? workspace.cwd });
+      },
+    });
+
+    const [cTransport, sTransport] = InMemoryTransport.createLinkedPair();
+    await dynServer.connect(sTransport);
+    const dynClient = new Client({ name: "dyn-client", version: "1.0.0" });
+    await dynClient.connect(cTransport);
+
+    try {
+      const res = await dynClient.readResource({ uri: "modie://tasks/ready" });
+      expect((res.contents[0] as any).text).toContain(taskTag);
+      expect(invokedWith).toEqual([undefined]);
+    } finally {
+      await dynClient.close();
+      await dynServer.close();
+    }
   });
 });
