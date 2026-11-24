@@ -23,14 +23,16 @@ import type { IVcsAdapter } from "../../platform/vcs/types.ts";
 import { resolveTaskFile } from "./completion.ts";
 import { scanActiveArtifacts } from "../traversal/active-scanner.ts";
 import {
+  assertNoCollisions,
   detectArtifactCollisions,
+} from "./collision-guard.ts";
+import {
   assertCleanTrackedWorkingTree,
   assertNoForeignTaskAncestry,
   assertSourceBranchExists,
   assertSubtaskBranchAncestry,
   assertTargetBranchExists,
   assertNoActiveSubtasks,
-  assertNoCollisions,
   assertTaskCompleted,
   assertValidStartBaseBranch,
   findTaskFileOnDisk,

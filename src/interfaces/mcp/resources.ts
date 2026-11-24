@@ -26,7 +26,7 @@ import {
   renderReadyTasks,
   renderTaskMissionBrief,
   renderTasksBacklog,
-} from "./renderers.ts";
+} from "./renderers/index.ts";
 
 export interface RegisterResourcesOptions {
   cwd?: string;
